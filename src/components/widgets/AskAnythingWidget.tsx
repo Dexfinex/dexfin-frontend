@@ -1,0 +1,337 @@
+import React, {useCallback, useEffect, useState} from 'react';
+import {Mic, Send} from 'lucide-react';
+import {useStore} from '../../store/useStore';
+import {VoiceModal} from '../VoiceModal';
+
+interface VoiceCommand {
+  command: string;
+  description: string;
+}
+
+export const AskAnythingWidget: React.FC = () => {
+  const [input, setInput] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [isProcessing/*, setIsProcessing*/] = useState(false);
+  const [recognitionInstance, setRecognitionInstance] = useState<any>(null);
+  const [isManualStop, setIsManualStop] = useState(false);
+  const [noSpeechTimeout, setNoSpeechTimeout] = useState<NodeJS.Timeout | null>(null);
+  
+  const { 
+    theme,
+    setIsAIAgentOpen,
+    setIsSettingsOpen,
+    setIsDashboardOpen,
+    setIsDefiOpen,
+    setIsSwapOpen,
+    setIsMarketDataOpen,
+    setIsChatOpen,
+    setIsCartOpen,
+    setIsSocialFeedOpen,
+    setIsGamesOpen,
+    // setIsWalletOpen,
+    setMarketDataView,
+    // setWallpaper,
+    // wallpapers
+  } = useStore();
+
+  const voiceCommands: VoiceCommand[] = [
+    { 
+      command: "Open settings and change wallpaper to Downtown",
+      description: "Chain multiple commands together"
+    },
+    {
+      command: "Open market data and show trending tokens",
+      description: "Navigate and view data in sequence"
+    },
+    {
+      command: "Open dashboard and show portfolio",
+      description: "Combined navigation commands"
+    },
+    {
+      command: "Show Bitcoin price and latest news",
+      description: "Get multiple data points at once"
+    }
+  ];
+
+  const cleanupRecognition = useCallback(() => {
+    if (recognitionInstance) {
+      try {
+        setIsManualStop(true);
+        recognitionInstance.abort();
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {
+        // Ignore errors during cleanup
+      }
+      setRecognitionInstance(null);
+    }
+    if (noSpeechTimeout) {
+      clearTimeout(noSpeechTimeout);
+      setNoSpeechTimeout(null);
+    }
+  }, [recognitionInstance, noSpeechTimeout]);
+
+  useEffect(() => {
+    return () => {
+      cleanupRecognition();
+    };
+  }, [cleanupRecognition]);
+
+  const handleClick = () => {
+    if (input.trim()) {
+      processCommand(input);
+      setInput('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && input.trim()) {
+      processCommand(input);
+      setInput('');
+    }
+  };
+
+  const processCommand = (text: string) => {
+    const commands = text.toLowerCase().split(/\s+(?:and|&)\s+/i);
+    
+    commands.forEach(async (command) => {
+      const normalizedCommand = command.trim();
+      
+      if (normalizedCommand.includes('open settings')) {
+        setIsSettingsOpen(true);
+        return;
+      }
+      
+      if (normalizedCommand.includes('change wallpaper to')) {
+/*
+        const wallpaperName = normalizedCommand.split('to').pop()?.trim();
+        if (wallpaperName && wallpapers) {
+          const wallpaper = wallpapers.find(w => 
+            w.name.toLowerCase() === wallpaperName.toLowerCase()
+          );
+          if (wallpaper) {
+            setWallpaper(wallpaper);
+          }
+        }
+*/
+        return;
+      }
+
+      if (normalizedCommand.includes('open dashboard')) {
+        setIsDashboardOpen(true);
+      } else if (normalizedCommand.includes('open defi')) {
+        setIsDefiOpen(true);
+      } else if (normalizedCommand.includes('open swap')) {
+        setIsSwapOpen(true);
+      } else if (normalizedCommand.includes('open market data')) {
+        setIsMarketDataOpen(true);
+      } else if (normalizedCommand.includes('show trending')) {
+        setIsMarketDataOpen(true);
+        setMarketDataView('trending');
+      } else if (normalizedCommand.includes('open chat')) {
+        setIsChatOpen(true);
+      } else if (normalizedCommand.includes('open cart')) {
+        setIsCartOpen(true);
+      } else if (normalizedCommand.includes('open social')) {
+        setIsSocialFeedOpen(true);
+      } else if (normalizedCommand.includes('open games')) {
+        setIsGamesOpen(true);
+      } else if (normalizedCommand.includes('open wallet')) {
+        // setIsWalletOpen(true);
+      } else if (normalizedCommand.includes('open assistant')) {
+        setIsAIAgentOpen(true);
+      }
+    });
+  };
+
+  const startListening = useCallback(() => {
+    if (!('webkitSpeechRecognition' in window)) {
+      setTranscript('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+      setTimeout(() => setTranscript(''), 3000);
+      return;
+    }
+
+    cleanupRecognition();
+    setIsManualStop(false);
+
+    const recognition = new (window as any).webkitSpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    let hasRecognizedSpeech = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setTranscript('');
+      setRecognitionInstance(recognition);
+      hasRecognizedSpeech = false;
+
+      const timeout = setTimeout(() => {
+        if (!hasRecognizedSpeech && isListening) {
+          setTranscript('No speech detected. Please try again.');
+          setTimeout(() => {
+            cleanupRecognition();
+            setTranscript('');
+          }, 2000);
+        }
+      }, 5000);
+
+      setNoSpeechTimeout(timeout);
+    };
+
+    recognition.onresult = (event: any) => {
+      hasRecognizedSpeech = true;
+      if (noSpeechTimeout) {
+        clearTimeout(noSpeechTimeout);
+        setNoSpeechTimeout(null);
+      }
+
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript = transcript;
+          setTranscript(finalTranscript.trim());
+          processCommand(finalTranscript);
+          cleanupRecognition();
+        } else {
+          interimTranscript += transcript;
+          setTranscript(interimTranscript);
+        }
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (noSpeechTimeout) {
+        clearTimeout(noSpeechTimeout);
+        setNoSpeechTimeout(null);
+      }
+
+      if (event.error === 'aborted' && isManualStop) {
+        event.preventDefault();
+        return;
+      }
+
+      switch (event.error) {
+        case 'no-speech':
+          if (!hasRecognizedSpeech) {
+            setTranscript('No speech detected. Please try again.');
+            setTimeout(() => {
+              cleanupRecognition();
+              setTranscript('');
+            }, 2000);
+          }
+          break;
+        case 'audio-capture':
+          setTranscript('Microphone not found. Please check your device settings.');
+          setTimeout(() => {
+            cleanupRecognition();
+            setTranscript('');
+          }, 2000);
+          break;
+        case 'not-allowed':
+          setTranscript('Microphone access denied. Please allow microphone access.');
+          setTimeout(() => {
+            cleanupRecognition();
+            setTranscript('');
+          }, 2000);
+          break;
+        default:
+          if (!isProcessing && !hasRecognizedSpeech) {
+            setTranscript('Something went wrong. Please try again.');
+            setTimeout(() => {
+              cleanupRecognition();
+              setTranscript('');
+            }, 2000);
+          }
+      }
+    };
+
+    recognition.onend = () => {
+      if (noSpeechTimeout) {
+        clearTimeout(noSpeechTimeout);
+        setNoSpeechTimeout(null);
+      }
+
+      setIsListening(false);
+      setRecognitionInstance(null);
+      setIsManualStop(false);
+      
+      if (!isProcessing && !hasRecognizedSpeech) {
+        setTimeout(() => setTranscript(''), 2000);
+      }
+    };
+
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error('Speech recognition start error:', error);
+      setIsListening(false);
+      setTranscript('Failed to start voice recognition. Please try again.');
+      setTimeout(() => {
+        cleanupRecognition();
+        setTranscript('');
+      }, 2000);
+    }
+  }, [isProcessing, cleanupRecognition, isManualStop, noSpeechTimeout, isListening]);
+
+  const stopListening = useCallback(() => {
+    cleanupRecognition();
+    setIsListening(false);
+    setTranscript('');
+  }, [cleanupRecognition]);
+
+  return (
+    <div className="relative">
+      <VoiceModal 
+        isOpen={isListening} 
+        transcript={transcript}
+        commands={voiceCommands}
+      />
+
+      <div className="w-[800px] h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg flex items-center px-4 gap-3 shadow-lg">
+        <input
+          type="text"
+          placeholder='Try saying "Open settings and change wallpaper to Downtown" or "Show Bitcoin price and latest news"'
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className={`flex-1 bg-transparent outline-none ${theme === 'light' ? 'text-gray-900 placeholder:text-gray-500' : 'text-white placeholder:text-white/40'}`}
+        />
+        <div className="flex items-center gap-2">
+          <button 
+            className={`p-1.5 rounded-md transition-colors ${
+              isListening 
+                ? 'bg-red-500/50' 
+                : theme === 'light'
+                  ? 'hover:bg-black/20 text-gray-900'
+                  : 'hover:bg-white/10 text-white'
+            } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+              isListening ? stopListening() : startListening();
+            }}
+            disabled={isProcessing}
+          >
+            <Mic className="w-5 h-5" />
+          </button>
+          <button
+            onClick={handleClick}
+            className={`p-1.5 rounded-md transition-colors ${
+              theme === 'light'
+                ? 'hover:bg-black/20 text-gray-900'
+                : 'hover:bg-white/10 text-white'
+            } ${!input.trim() && 'opacity-50 cursor-not-allowed'}`}
+            disabled={!input.trim()}
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
