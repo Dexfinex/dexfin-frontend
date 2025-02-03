@@ -47,3 +47,4 @@ const useGetTokenPrices = ({
 };
 
 export default useGetTokenPrices;
+
