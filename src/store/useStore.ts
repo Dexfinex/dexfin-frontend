@@ -196,6 +196,10 @@ interface StoreState {
   // Theme
   theme: 'dark' | 'light';
   toggleTheme: () => void;
+
+  // Chat
+  chatId: string;
+  setChatId: (id: string) => void;
 }
 
 const useStore = create<StoreState>((set) => ({
@@ -541,6 +545,9 @@ const useStore = create<StoreState>((set) => ({
   // Theme
   theme: 'dark',
   toggleTheme: () => set(state => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
+
+  chatId: "",
+  setChatId: (id) => set({chatId: id})
 }));
 
 export { useStore };

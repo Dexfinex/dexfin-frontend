@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { 
-  X, Maximize2, Minimize2, Search, Filter, 
+import React, { useContext, useEffect, useState } from 'react';
+import {
+  X, Maximize2, Minimize2, Search, Filter,
   MessageSquare, Share2, Heart, Play, Pause,
   Video, BarChart2, RefreshCw, Users, Bell,
   ChevronDown, ArrowRight, Plus, Lock, Globe,
@@ -8,6 +8,9 @@ import {
   DollarSign, LineChart, Shield, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { VideoCallModal } from './VideoCallModal';
+import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
+import { Web3AuthContext } from '../providers/Web3AuthContext';
+import { useStore } from '../store/useStore';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -123,7 +126,7 @@ const mockGroups: ChatGroup[] = [
     id: 'bayc-alpha',
     name: 'BAYC Alpha',
     description: 'Exclusive BAYC holders chat',
-    members: mockUsers.filter(user => 
+    members: mockUsers.filter(user =>
       user.nftAccess?.some(nft => nft.collection === 'Bored Ape Yacht Club')
     ),
     type: 'nft-gated',
@@ -137,7 +140,7 @@ const mockGroups: ChatGroup[] = [
     id: 'azuki-dao',
     name: 'Azuki DAO',
     description: 'Azuki holders governance chat',
-    members: mockUsers.filter(user => 
+    members: mockUsers.filter(user =>
       user.nftAccess?.some(nft => nft.collection === 'Azuki')
     ),
     type: 'nft-gated',
@@ -187,6 +190,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const { signer, isConnected } = useContext(Web3AuthContext);
+  const { setChatId, chatId } = useStore();
+
   const [newGroup, setNewGroup] = useState({
     name: '',
     description: '',
@@ -207,6 +213,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
+
+  const handleUnlock = async () => { 
+    console.log('chat id = ', chatId)
+    if (!chatId) {
+      const user = await PushAPI.initialize(signer, {
+        env: CONSTANTS.ENV.STAGING,
+      });
+      setChatId(user.uid)
+    }
+  }
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
@@ -246,13 +262,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     if (!user && !group) return true;
     if (group?.type === 'public') return true;
     if (group?.type === 'nft-gated') {
-      return currentUserNfts.some(nft => 
+      return currentUserNfts.some(nft =>
         nft.collection === group.requiredNft?.collection
       );
     }
     if (user?.nftAccess) {
-      return currentUserNfts.some(userNft => 
-        user.nftAccess?.some(requiredNft => 
+      return currentUserNfts.some(userNft =>
+        user.nftAccess?.some(requiredNft =>
           requiredNft.collection === userNft.collection
         )
       );
@@ -262,17 +278,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const renderAccessBadge = (user: ChatUser | null, group: ChatGroup | null) => {
     if (!user && !group) return null;
-    
+
     const hasAccess = canAccessChat(user, group);
-    const requiredNft = group?.type === 'nft-gated' ? group.requiredNft : 
-                       user?.nftAccess?.[0];
+    const requiredNft = group?.type === 'nft-gated' ? group.requiredNft :
+      user?.nftAccess?.[0];
 
     if (!requiredNft) return null;
 
     return (
-      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
-        hasAccess ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-      }`}>
+      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${hasAccess ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+        }`}>
         {hasAccess ? (
           <>
             <ShieldCheck className="w-4 h-4" />
@@ -310,7 +325,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             {selectedGroup?.requiredNft?.collection || selectedUser?.nftAccess?.[0].collection}
           </p>
           <div className="flex items-center gap-4">
-            <img 
+            <img
               src={selectedGroup?.requiredNft?.image || selectedUser?.nftAccess?.[0].image}
               alt="Required NFT"
               className="w-24 h-24 rounded-lg"
@@ -360,9 +375,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     {msg.reactions.map((reaction, index) => (
                       <button
                         key={index}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm ${
-                          reaction.reacted ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 hover:bg-white/10'
-                        } transition-colors`}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm ${reaction.reacted ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 hover:bg-white/10'
+                          } transition-colors`}
                       >
                         <span>{reaction.emoji}</span>
                         <span>{reaction.count}</span>
@@ -398,9 +412,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   <span className="text-sm text-white/60">{msg.sender.ens}</span>
                   <span className="text-sm text-white/40">{msg.timestamp}</span>
                 </div>
-                <div className={`rounded-lg p-3 ${
-                  msg.sender.id === 'me' ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
-                }`}>
+                <div className={`rounded-lg p-3 ${msg.sender.id === 'me' ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
+                  }`}>
                   {msg.content}
                 </div>
               </div>
@@ -427,30 +440,32 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
         <div
-          className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out flex ${
-            isFullscreen
-              ? 'w-full h-full rounded-none'
-              : 'w-[90%] h-[90%] rounded-xl'
-          }`}
+          className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out flex ${isFullscreen
+            ? 'w-full h-full rounded-none'
+            : 'w-[90%] h-[90%] rounded-xl'
+            }`}
         >
+          {!chatId && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center'>
+            <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm" onClick={handleUnlock}>
+              Unlock Profile
+            </button>
+          </div>}
           {/* Left Sidebar */}
           <div className="w-80 border-r border-white/10">
             <div className="p-4 border-b border-white/10">
               <div className="flex items-center gap-2 mb-4">
                 <button
                   onClick={() => setChatMode('group')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                    chatMode === 'group' ? 'bg-white/10' : 'hover:bg-white/5'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${chatMode === 'group' ? 'bg-white/10' : 'hover:bg-white/5'
+                    }`}
                 >
                   <Users className="w-4 h-4" />
                   <span>Groups</span>
                 </button>
                 <button
                   onClick={() => setChatMode('p2p')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                    chatMode === 'p2p' ? 'bg-white/10' : 'hover:bg-white/5'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${chatMode === 'p2p' ? 'bg-white/10' : 'hover:bg-white/5'
+                    }`}
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>Direct</span>
@@ -488,11 +503,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       setSelectedGroup(group);
                       setSelectedUser(null);
                     }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                      selectedGroup?.id === group.id
-                        ? 'bg-white/10'
-                        : 'hover:bg-white/5'
-                    }`}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.id === group.id
+                      ? 'bg-white/10'
+                      : 'hover:bg-white/5'
+                      }`}
                   >
                     {group.id === 'wow' ? (
                       <img src={group.icon} alt="WOW" className="w-10 h-10" />
@@ -525,11 +539,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       setSelectedUser(user);
                       setSelectedGroup(null);
                     }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                      selectedUser?.id === user.id
-                        ? 'bg-white/10'
-                        : 'hover:bg-white/5'
-                    }`}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser?.id === user.id
+                      ? 'bg-white/10'
+                      : 'hover:bg-white/5'
+                      }`}
                   >
                     <div className="relative">
                       <img
@@ -537,9 +550,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                         alt={user.name}
                         className="w-10 h-10 rounded-full"
                       />
-                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0a0c] ${
-                        user.isOnline ? 'bg-green-500' : 'bg-gray-500'
-                      }`} />
+                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0a0c] ${user.isOnline ? 'bg-green-500' : 'bg-gray-500'
+                        }`} />
                     </div>
                     <div className="flex-1 text-left">
                       <div className="flex items-center gap-2">
@@ -571,9 +583,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                         alt={selectedUser.name}
                         className="w-10 h-10 rounded-full"
                       />
-                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0a0c] ${
-                        selectedUser.isOnline ? 'bg-green-500' : 'bg-gray-500'
-                      }`} />
+                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0a0c] ${selectedUser.isOnline ? 'bg-green-500' : 'bg-gray-500'
+                        }`} />
                     </div>
                     <div>
                       <div className="font-medium">{selectedUser.name}</div>
@@ -615,7 +626,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 {renderAccessBadge(selectedUser, selectedGroup)}
                 {selectedUser?.isOnline && (
                   <>
-                    <button 
+                    <button
                       onClick={() => setIsVideoCallActive(true)}
                       className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                     >
@@ -670,12 +681,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                     <Share2 className="w-5 h-5" />
                   </button>
-                  <button 
+                  <button
                     onClick={handleSendMessage}
                     disabled={!message.trim()}
-                    className={`p-2 rounded-lg transition-colors ${
-                      message.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
-                    }`}
+                    className={`p-2 rounded-lg transition-colors ${message.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
+                      }`}
                   >
                     <ArrowRight className="w-5 h-5" />
                   </button>
