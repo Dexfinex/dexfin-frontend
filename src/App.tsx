@@ -1,4 +1,4 @@
-import {useEffect} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {useStore} from './store/useStore';
 import {Header} from './components/Header';
 import {Workspace} from './components/Workspace';
@@ -12,9 +12,16 @@ import {CartModal} from './components/CartModal';
 import {SocialFeedModal} from './components/SocialFeedModal';
 import {GamesModal} from './components/GamesModal';
 import {RewardsModal} from './components/RewardsModal';
+import SignupModal from "./components/SignupModal.tsx";
+import SigninModal from "./components/SigninModal.tsx";
+import {AuthMethodType} from "@lit-protocol/constants";
+import {Web3AuthContext} from "./providers/Web3AuthContext.tsx";
+import {LOCAL_STORAGE_AUTH_REDIRECT_TYPE} from "./constants";
 
 export default function App() {
     const {theme} = useStore();
+    const [isSignupTriggered, setIsSignupTriggered] = useState(false);
+
     const {
         isAIAgentOpen,
         setIsAIAgentOpen,
@@ -34,8 +41,55 @@ export default function App() {
         setIsSocialFeedOpen,
         isGamesOpen,
         setIsGamesOpen,
+        isSignupModalOpen,
+        setIsSignupModalOpen,
+        isSigninModalOpen,
+        setIsSigninModalOpen,
         menuItems
     } = useStore();
+
+    const {
+        authMethod,
+        accounts,
+        setAuthMethod,
+        isConnected,
+    } = useContext(Web3AuthContext);
+
+    // show modal if redirect from social login
+    useEffect(() => {
+        if (authMethod?.authMethodType === AuthMethodType.GoogleJwt ||
+            authMethod?.authMethodType === AuthMethodType.AppleJwt) {
+            // get whether this is from signin or sign-up
+            const redirectType = localStorage.getItem(LOCAL_STORAGE_AUTH_REDIRECT_TYPE)
+            if (redirectType === 'sign-up')
+                setIsSignupModalOpen(true)
+            else
+                setIsSigninModalOpen(true)
+        }
+    }, [authMethod, setIsSigninModalOpen, setIsSignupModalOpen])
+
+    useEffect(() => {
+        if (isConnected) {
+            setIsSigninModalOpen(false)
+            setIsSignupModalOpen(false)
+        }
+    }, [isConnected]);
+
+    // remove authMethod state when need to create new one
+    useEffect(() => {
+        if (!isSigninModalOpen && authMethod && accounts.length === 0)
+            setAuthMethod(undefined)
+
+    }, [accounts.length, authMethod, isSigninModalOpen, setAuthMethod])
+
+    useEffect(() => {
+        // Check if the previous trigger was set and authMethod has become undefined
+        if (isSignupTriggered && authMethod === undefined) {
+            setIsSignupModalOpen(true);
+            setIsSignupTriggered(false); // Reset the trigger
+        }
+    }, [authMethod, isSignupTriggered, setIsSignupModalOpen]);
+
 
     // Update theme
     useEffect(() => {
@@ -56,6 +110,24 @@ export default function App() {
         <div className="min-h-screen flex flex-col">
             <Header/>
             <Workspace/>
+
+            {isSignupModalOpen && (
+                <SignupModal
+                    isOpen={true}
+                    onClose={() => setIsSignupModalOpen(false)}
+                />
+            )}
+
+            {isSigninModalOpen && (
+                <SigninModal
+                    isOpen={true}
+                    onClose={() => setIsSigninModalOpen(false)}
+                    goToSignUp={() => {
+                        setIsSigninModalOpen(false);
+                        setIsSignupTriggered(true); // Set a trigger to wait for authMethod change
+                    }}
+                />
+            )}
 
             <AIAgentModal
                 isOpen={isAIAgentOpen}

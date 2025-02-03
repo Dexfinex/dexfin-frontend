@@ -114,6 +114,10 @@ interface StoreState {
   toggleStarMenuItem: (id: string) => void;
 
   // Modal States
+  isSignupModalOpen: boolean;
+  setIsSignupModalOpen: (isOpen: boolean) => void;
+  isSigninModalOpen: boolean;
+  setIsSigninModalOpen: (isOpen: boolean) => void;
   isAIAgentOpen: boolean;
   setIsAIAgentOpen: (isOpen: boolean) => void;
   isSwapOpen: boolean;
@@ -215,6 +219,10 @@ const useStore = create<StoreState>((set) => ({
   })),
 
   // Modal States
+  isSignupModalOpen: false,
+  setIsSignupModalOpen: (isOpen) => set({ isSignupModalOpen: isOpen }),
+  isSigninModalOpen: false,
+  setIsSigninModalOpen: (isOpen) => set({ isSigninModalOpen: isOpen }),
   isAIAgentOpen: false,
   setIsAIAgentOpen: (isOpen) => set({ isAIAgentOpen: isOpen }),
   isSwapOpen: false,

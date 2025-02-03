@@ -1,9 +1,17 @@
+import {ChakraProvider} from '@chakra-ui/react';
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
+import {StytchProvider} from '@stytch/react';
+import {StytchUIClient} from "@stytch/vanilla-js";
 import App from './App.tsx';
 import './index.css';
 import Web3AuthProvider from './providers/Web3AuthContext';
 import {WalletProvider} from "./providers/WalletProvider";
+
+const stytch = new StytchUIClient(
+    import.meta.env.VITE_STYTCH_PUBLIC_TOKEN || ''
+);
+
 
 // Preload the high-res background image
 const img = new Image();
@@ -19,10 +27,14 @@ img.onload = () => {
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <WalletProvider>
-            <Web3AuthProvider>
-                <App/>
-            </Web3AuthProvider>
-        </WalletProvider>
+        <StytchProvider stytch={stytch}>
+            <WalletProvider>
+                <Web3AuthProvider>
+                    <ChakraProvider>
+                        <App/>
+                    </ChakraProvider>
+                </Web3AuthProvider>
+            </WalletProvider>
+        </StytchProvider>
     </StrictMode>
 );
