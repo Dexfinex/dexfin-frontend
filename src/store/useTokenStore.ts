@@ -1,4 +1,4 @@
-import {create} from "zustand";
+import { create } from "zustand";
 
 // Define the store's state and actions
 interface TokenStoreState {
@@ -15,7 +15,7 @@ const useTokenStore = create<TokenStoreState>((set) => ({
         const state = useTokenStore.getState() as TokenStoreState;
         const value = state.tokenPrices[`${chainId}:${address.toLowerCase()}`];
         return value ? Number(value) : 0;
-        },
+    },
 }));
 
 export default useTokenStore;
