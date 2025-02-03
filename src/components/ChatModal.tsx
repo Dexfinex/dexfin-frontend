@@ -193,7 +193,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isCreateGroupActive, setIsCreateGroupActive] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const { signer, isConnected } = useContext(Web3AuthContext);
-  const { setChatId, chatId } = useStore();
+  const { setChatUser, chatUser } = useStore();
 
   const [newGroup, setNewGroup] = useState({
     name: '',
@@ -217,12 +217,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleUnlock = async () => {
-    console.log('chat id = ', chatId)
-    if (!chatId) {
+    if (!chatUser?.uid) {
       const user = await PushAPI.initialize(signer, {
         env: CONSTANTS.ENV.STAGING,
       });
-      setChatId(user.uid)
+      setChatUser(user)
     }
   }
 
@@ -447,7 +446,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             : 'w-[90%] h-[90%] rounded-xl'
             }`}
         >
-          {!chatId && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center'>
+          {!chatUser?.uid && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center'>
             <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm" onClick={handleUnlock}>
               Unlock Profile
             </button>

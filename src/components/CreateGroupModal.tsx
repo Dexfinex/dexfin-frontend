@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { X, Mic, MicOff, Video, VideoOff, MonitorUp, Settings, User, Camera, MoveLeft, Plus, Search } from 'lucide-react';
 import { Button, Switch, Spinner } from "@chakra-ui/react"
+import { checkIfAddressExists, shrinkAddress } from '../utils/common.util';
+import { Web3AuthContext } from '../providers/Web3AuthContext';
+import { PushAPI } from '@pushprotocol/restapi';
+import { useStore } from '../store/useStore';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -9,29 +13,43 @@ interface CreateGroupModalProps {
 
 interface FirstStepProps {
   setStep: (step: number) => void;
+  setImage: (image: string) => void;
+  setGroupName: (name: string) => void;
+  setGroupDescription: (description: string) => void;
+  setPreview: (preview: any) => void;
+  preview: any;
+  groupName: string;
+  groupDescription: string;
 }
 
 interface SecondStepProps {
-  isPublic: boolean;
-  setIsPublic: (param: boolean) => void;
+  isPrivate: boolean;
+  setIsPrivate: (param: boolean) => void;
   setStep: (step: number) => void;
 }
 
 interface ThirdStepProps {
-  setStep: (step: number) => void;
+  members: Array<string>;
+  addMember: (member: string) => void;
+  removeMember: (member: string) => void;
+  createGroup: () => void;
 }
 
-const FirstStep = ({ setStep }: FirstStepProps) => {
-  const [image, setImage] = useState<any>(null);
-  const [groupName, setGroupName] = useState("");
+const FirstStep = ({ setStep, setImage, setGroupDescription, setGroupName, setPreview, preview, groupDescription, groupName }: FirstStepProps) => {
   const [groupNameErr, setGroupNameErr] = useState(false);
-  const [groupDescription, setGroupDescription] = useState("");
   const [groupDescriptionErr, setGroupDescriptionErr] = useState(false);
 
   const handleImageChange = (event: any) => {
     const file = event.target.files[0];
     if (file) {
-      setImage(URL.createObjectURL(file));
+      setPreview(URL.createObjectURL(file));
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string)
+      };
+      reader.readAsDataURL(file);
+
     }
   };
 
@@ -59,9 +77,9 @@ const FirstStep = ({ setStep }: FirstStepProps) => {
             onChange={handleImageChange}
           />
           {
-            image ?
+            preview ?
               <img
-                src={image} // Replace with actual camera icon path
+                src={preview} // Replace with actual camera icon path
                 alt="Upload"
                 className="w-32 h-32 object-cover border-2 border-gray-300 rounded-full"
               /> :
@@ -89,8 +107,8 @@ const FirstStep = ({ setStep }: FirstStepProps) => {
   )
 }
 
-const SecondStep = ({ setStep, isPublic, setIsPublic }: SecondStepProps) => {
-  const [isGateGroup, setIsGateGroup] = useState(true)
+const SecondStep = ({ setStep, isPrivate, setIsPrivate }: SecondStepProps) => {
+  const [isGateGroup, setIsGateGroup] = useState(false)
 
   const handleNext = () => {
     setStep(3)
@@ -100,15 +118,15 @@ const SecondStep = ({ setStep, isPublic, setIsPublic }: SecondStepProps) => {
     <div className='w-full p-4 text-center'>
       <div className="flex items-center gap-2 mb-4">
         <button
-          onClick={() => setIsPublic(true)}
-          className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${isPublic ? 'bg-white/10' : 'hover:bg-white/5'
+          onClick={() => setIsPrivate(false)}
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${!isPrivate ? 'bg-white/10' : 'hover:bg-white/5'
             }`}
         >
           <span>Public</span>
         </button>
         <button
-          onClick={() => setIsPublic(false)}
-          className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${!isPublic ? 'bg-white/10' : 'hover:bg-white/5'
+          onClick={() => setIsPrivate(true)}
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${isPrivate ? 'bg-white/10' : 'hover:bg-white/5'
             }`}
         >
           <span>Private</span>
@@ -146,23 +164,29 @@ const SecondStep = ({ setStep, isPublic, setIsPublic }: SecondStepProps) => {
   )
 }
 
-const ThirdStep = ({ setStep }: ThirdStepProps) => {
-  const [members, setMembers] = useState<Array<string>>([]);
+const ThirdStep = ({ members, addMember, removeMember, createGroup }: ThirdStepProps) => {
+  const [subMembers, setSumbMembers] = useState<Array<string>>([]);
   const [isSearch, setIsSearch] = useState(false);
-  const [search, setSearch] = useState("");
+  const [searchAddress, setSearchAddress] = useState("");
+  const [creating, setCreating] = useState(false);
+  const { address } = useContext(Web3AuthContext);
 
-  const handleCreateGroup = () => {
-    setStep(3)
+  const handleCreateGroup = async () => {
+    setCreating(true)
+    await createGroup()
+    setCreating(false)
   }
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setIsSearch(true)
-    setMembers([...members, search])
-    setIsSearch(false)
-  }
+    if (address != searchAddress && !subMembers.includes(searchAddress)) {
+      const isExist = await checkIfAddressExists(searchAddress)
+      if (isExist) {
+        setSumbMembers([...subMembers, searchAddress])
+      }
+    }
 
-  const handleAdd = () => {
-    console.log('handle added')
+    setIsSearch(false)
   }
 
   return (
@@ -174,8 +198,8 @@ const ThirdStep = ({ setStep }: ThirdStepProps) => {
       <div className='flex mt-3 items-center justify-center gap-4'>
         <input
           type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={searchAddress}
+          onChange={(e) => setSearchAddress(e.target.value)}
           placeholder="Search Web3 domain or 0x123..."
           className={`w-full bg-white/5 px-4 py-2 rounded-lg outline-none placeholder:text-white/40`}
         />
@@ -186,19 +210,23 @@ const ThirdStep = ({ setStep }: ThirdStepProps) => {
             </button>
         }
       </div>
-
       {
-        members.map((e, i) =>
+        subMembers.map((e, i) =>
           <div key={i} className='flex items-center justify-between mt-1 bg-gray-800 px-4 py-3 rounded-lg outline-none'>
             <div className='flex items-center'>
-              <User />
-              <span>{e}</span>
+              <User className='mr-3' />
+              <span>{shrinkAddress(e)}</span>
             </div>
-            <button onClick={handleAdd}>Add</button>
+            {
+              !members.includes(e) ? <button onClick={() => addMember(e)}>Add</button> : <button onClick={() => removeMember(e)}>Remove</button>
+            }
           </div>)
       }
 
-      <Button className='mt-4' variant={'solid'} colorScheme='teal' onClick={handleCreateGroup}>Create Group</Button>
+      {
+        creating ? <Spinner /> :
+          <Button className='mt-4' variant={'solid'} colorScheme='teal' onClick={handleCreateGroup}>Create Group</Button>
+      }
     </div>
   )
 }
@@ -206,7 +234,51 @@ const ThirdStep = ({ setStep }: ThirdStepProps) => {
 export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
   const [step, setStep] = useState(1);
-  const [isPublic, setIsPublic] = useState(true);
+  const [isPrivate, setIsPrivate] = useState(true);
+  const [preview, setPreview] = useState<any>(null);
+  const [image, setImage] = useState<string>("");
+  const [groupName, setGroupName] = useState("");
+  const [groupDescription, setGroupDescription] = useState("");
+  const [members, setMembers] = useState<Array<string>>([]);
+  const { chatUser } = useStore();
+
+  const addMember = (one: string) => {
+    setMembers([...members, one])
+  }
+
+  const removeMember = (one: string) => {
+    setMembers(members.filter(item => item !== one))
+  }
+
+  const createGroup = async () => {
+    console.log('image = ', image)
+    console.log('name = ', groupName)
+    console.log('description = ', groupDescription)
+    console.log('isPrivate = ', isPrivate)
+    console.log('members = ', members)
+
+    try {
+      const newGroup = await chatUser.chat.group.create(groupName,
+        {
+          description: groupDescription,
+          image: image,
+          members: members,
+          admins: [],
+          private: isPrivate,
+          rules: {
+            entry: { conditions: [] },
+            chat: { conditions: [] },
+          },
+        },
+      );
+      console.log('create group = ', newGroup)
+
+      return true;
+    } catch (err) {
+      console.log('create group error = ', err)
+      return false
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -229,8 +301,9 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onCl
         </div>
 
         {
-          step == 1 ? <FirstStep setStep={setStep} /> : step == 2 ? <SecondStep setStep={setStep} isPublic={isPublic} setIsPublic={setIsPublic} />
-            : <ThirdStep setStep={setStep} />
+          step == 1 ? <FirstStep setStep={setStep} setImage={setImage} setPreview={setPreview} preview={preview} groupName={groupName} groupDescription={groupDescription} setGroupName={setGroupName} setGroupDescription={setGroupDescription} /> :
+            step == 2 ? <SecondStep setStep={setStep} isPrivate={isPrivate} setIsPrivate={setIsPrivate} />
+              : <ThirdStep members={members} addMember={addMember} removeMember={removeMember} createGroup={createGroup} />
         }
       </div>
     </div>
