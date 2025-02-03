@@ -5,6 +5,8 @@ import { useStore } from '../../store/useStore';
 import { coingeckoService } from '../../services/coingecko.service';
 import { formatNumberByFrac } from '../../utils/common.util';
 import { CartModalProps, CoinData, ChartData, ChartOptions } from '../../types/cart.type';
+import useGetTokenPrices from '../../hooks/useGetTokenPrices';
+import useTokenStore from '../../store/useTokenStore';
 
 const chartOptions: ChartOptions = {
   responsive: true,
@@ -39,7 +41,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'card'>('wallet');
   const [loading, setLoading] = useState(false);
   const [coins, setCoins] = useState<CoinData[]>([]);
-  
+
   const {
     cartItems,
     addToCart,
@@ -48,10 +50,20 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     clearCart
   } = useStore();
 
+  // Get token prices from the store
+  const { tokenPrices } = useTokenStore();
+
+  // Fetch token prices for the selected token addresses
+  const tokenAddresses = cartItems.map(item => item.id);
+  const { isLoading: isTokenPricesLoading } = useGetTokenPrices({
+    chainId: 1, // Assuming chainId 1 (Ethereum), modify if necessary
+    tokenAddresses,
+  });
+
   useEffect(() => {
     const fetchCoins = async () => {
       if (!isOpen) return;
-      
+
       setLoading(true);
       try {
         const coinList = await coingeckoService.getTokenList();
@@ -67,10 +79,10 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   }, [isOpen]);
 
   const categories = ['All', 'token', 'meme'];
-  
+
   const filteredCoins = coins.filter(coin => {
     const matchesCategory = selectedCategory === 'All' || coin.category === selectedCategory;
-    const matchesSearch = 
+    const matchesSearch =
       coin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       coin.symbol.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -92,8 +104,8 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
 
   const calculateTotal = () => {
     return cartItems.reduce((total, item) => {
-      const coin = coins.find(c => c.address === item.id);
-      return total + ((coin?.price || item.price) * item.quantity);
+      const coinPrice = tokenPrices[`${1}:${item.id.toLowerCase()}`] || item.price; // Default to item price if not found in token prices
+      return total + (Number(coinPrice) * item.quantity);
     }, 0);
   };
 
@@ -146,9 +158,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
               <div className="text-2xl font-bold">
                 ${formatNumberByFrac(coin.price)}
               </div>
-              <div className={`text-sm flex items-center gap-1 ${
-                coin.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
-              }`}>
+              <div className={`text-sm flex items-center gap-1 ${coin.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {coin.priceChange24h >= 0 ? (
                   <TrendingUp className="w-4 h-4" />
                 ) : (
@@ -196,7 +206,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
             <h3 className="text-lg font-medium mb-4">Order Summary</h3>
             <div className="space-y-3">
               {cartItems.map((item) => {
-                const coin = coins.find(c => c.address === item.id);
+                const coinPrice = tokenPrices[`${1}:${item.id.toLowerCase()}`] || item.price;
                 return (
                   <div
                     key={item.id}
@@ -207,12 +217,12 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                       <div>
                         <div className="font-medium">{item.name}</div>
                         <div className="text-sm text-white/60">
-                          {item.quantity} × ${formatNumberByFrac(coin?.price || item.price)}
+                          {item.quantity} × ${formatNumberByFrac(coinPrice)}
                         </div>
                       </div>
                     </div>
                     <div className="font-medium">
-                      ${formatNumberByFrac((coin?.price || item.price) * item.quantity)}
+                      ${formatNumberByFrac(Number(coinPrice) * item.quantity)}
                     </div>
                   </div>
                 );
@@ -225,11 +235,8 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
             <div className="space-y-3">
               <button
                 onClick={() => setPaymentMethod('wallet')}
-                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  paymentMethod === 'wallet'
-                    ? 'bg-blue-500'
-                    : 'bg-white/5 hover:bg-white/10'
-                }`}
+                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${paymentMethod === 'wallet' ? 'bg-blue-500' : 'bg-white/5 hover:bg-white/10'
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
@@ -247,11 +254,8 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
 
               <button
                 onClick={() => setPaymentMethod('card')}
-                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  paymentMethod === 'card'
-                    ? 'bg-blue-500'
-                    : 'bg-white/5 hover:bg-white/10'
-                }`}
+                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${paymentMethod === 'card' ? 'bg-blue-500' : 'bg-white/5 hover:bg-white/10'
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
@@ -317,11 +321,10 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                     <button
                       key={category}
                       onClick={() => setSelectedCategory(category)}
-                      className={`px-3 py-1.5 rounded-lg transition-colors ${
-                        selectedCategory === category
+                      className={`px-3 py-1.5 rounded-lg transition-colors ${selectedCategory === category
                           ? 'bg-white/10'
                           : 'hover:bg-white/5'
-                      }`}
+                        }`}
                     >
                       {category}
                     </button>
@@ -356,13 +359,13 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {loading && (
+                    {isTokenPricesLoading && (
                       <div className="text-sm text-white/60 text-center mb-3">
                         Updating prices...
                       </div>
                     )}
                     {cartItems.map((item) => {
-                      const coin = coins.find(c => c.address === item.id);
+                      const coinPrice = tokenPrices[`${1}:${item.id.toLowerCase()}`] || item.price;
                       return (
                         <div
                           key={item.id}
@@ -395,27 +398,8 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                                   <Plus className="w-4 h-4" />
                                 </button>
                               </div>
-                              <div className="text-right">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg">
-                                    ${formatNumberByFrac(coin?.price || item.price)}
-                                  </span>
-                                  {coin?.priceChange24h !== undefined && (
-                                    <span className={`text-sm flex items-center gap-0.5 ${
-                                      coin.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
-                                    }`}>
-                                      {coin.priceChange24h >= 0 ? (
-                                        <TrendingUp className="w-3 h-3" />
-                                      ) : (
-                                        <TrendingDown className="w-3 h-3" />
-                                      )}
-                                      {Math.abs(coin.priceChange24h).toFixed(2)}%
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-sm text-white/60">
-                                  Total: ${formatNumberByFrac((coin?.price || item.price) * item.quantity)}
-                                </div>
+                              <div className="font-medium">
+                                ${formatNumberByFrac(Number(coinPrice) * item.quantity)}
                               </div>
                             </div>
                           </div>
@@ -425,29 +409,16 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
               </div>
-
               <div className="p-4 border-t border-white/10">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-lg">Total</span>
-                  <span className="text-2xl font-bold">
-                    ${formatNumberByFrac(calculateTotal())}
-                  </span>
+                <div className="text-lg font-semibold">
+                  Total: ${formatNumberByFrac(calculateTotal())}
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={clearCart}
-                    className="flex-1 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                  >
-                    Clear Cart
-                  </button>
-                  <button
-                    onClick={() => setShowCheckout(true)}
-                    disabled={cartItems.length === 0}
-                    className="flex-1 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
-                  >
-                    Checkout
-                  </button>
-                </div>
+                <button
+                  onClick={() => setShowCheckout(true)}
+                  className="w-full py-2 mt-4 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                >
+                  Proceed to Checkout
+                </button>
               </div>
             </div>
           </div>
@@ -456,3 +427,5 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     </div>
   );
 };
+
+export default CartModal;
