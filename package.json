@@ -23,6 +23,8 @@
     "@lit-protocol/pkp-ethers": "6.3.0",
     "@lit-protocol/types": "6.3.0",
     "@lit-protocol/wrapped-keys": "^7.0.3",
+    "@pushprotocol/restapi": "^1.7.30",
+    "@pushprotocol/socket": "^0.5.3",
     "@solana/web3.js": "^1.98.0",
     "@stytch/react": "^19.1.1",
     "@zerodev/ecdsa-validator": "^5.4.1",

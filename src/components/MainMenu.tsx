@@ -1,11 +1,12 @@
-import React, {useState} from 'react';
+import React, { useState, useContext } from 'react';
 import * as Icons from 'lucide-react';
-import {useStore} from '../store/useStore';
+import { useStore } from '../store/useStore';
+import { Web3AuthContext } from '../providers/Web3AuthContext';
 
 export const MainMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { 
-    menuItems, 
+  const {
+    menuItems,
     toggleStarMenuItem,
     setIsAIAgentOpen,
     setIsSwapOpen,
@@ -16,13 +17,16 @@ export const MainMenu: React.FC = () => {
     setIsCartOpen,
     setIsSocialFeedOpen,
     setIsGamesOpen,
+    setIsSigninModalOpen,
     isTopbarBottom
   } = useStore();
+
+  const { isConnected } = useContext(Web3AuthContext);
 
   const handleMenuItemClick = (itemId: string) => {
     // Close menu first
     setIsOpen(false);
-    
+
     // Use setTimeout to ensure menu is closed before opening modal
     setTimeout(() => {
       switch (itemId) {
@@ -42,7 +46,11 @@ export const MainMenu: React.FC = () => {
           setIsMarketDataOpen(true);
           break;
         case 'chat':
-          setIsChatOpen(true);
+          if (isConnected) {
+            setIsChatOpen(true);
+          } else {
+            setIsSigninModalOpen(true);
+          }
           break;
         case 'cart':
           setIsCartOpen(true);
@@ -94,11 +102,10 @@ export const MainMenu: React.FC = () => {
                       className="p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
                     >
                       <Icons.Star
-                        className={`w-3.5 h-3.5 transition-colors ${
-                          item.isStarred
-                            ? 'text-yellow-400'
-                            : 'text-white/40 opacity-0 group-hover:opacity-100'
-                        }`}
+                        className={`w-3.5 h-3.5 transition-colors ${item.isStarred
+                          ? 'text-yellow-400'
+                          : 'text-white/40 opacity-0 group-hover:opacity-100'
+                          }`}
                       />
                     </div>
                   </div>
