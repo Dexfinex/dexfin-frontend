@@ -8,7 +8,7 @@ import {DeFiModal} from './components/DeFiModal';
 import {DashboardModal} from './components/DashboardModal';
 import {MarketDataModal} from './components/MarketDataModal';
 import {ChatModal} from './components/ChatModal';
-import {CartModal} from './components/CartModal';
+import {CartModal} from './components/ShoppingCart/CartModal.tsx';
 import {SocialFeedModal} from './components/SocialFeedModal';
 import {GamesModal} from './components/GamesModal';
 import {RewardsModal} from './components/RewardsModal';
