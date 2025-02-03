@@ -4,29 +4,9 @@ import { Line } from 'react-chartjs-2';
 import { useStore } from '../../store/useStore';
 import { coingeckoService } from '../../services/coingecko.service';
 import { formatNumberByFrac } from '../../utils/common.util';
+import { CartModalProps, CoinData, ChartData, ChartOptions } from '../../types/cart.type';
 
-interface CartModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-interface CoinData {
-  symbol: string;
-  name: string;
-  address: string;
-  chainId: number;
-  decimals: number;
-  logoURI: string;
-  price: number;
-  priceChange24h: number;
-  marketCap: number;
-  marketCapRank: number;
-  volume24h: number;
-  sparkline: number[];
-  category: string;
-}
-
-const chartOptions = {
+const chartOptions: ChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -96,7 +76,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     return matchesCategory && matchesSearch;
   });
 
-  const generateChartData = (sparklineData: number[]) => {
+  const generateChartData = (sparklineData: number[]): ChartData => {
     return {
       labels: Array.from({ length: sparklineData.length }, (_, i) => i.toString()),
       datasets: [{
@@ -185,7 +165,8 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                 symbol: coin.symbol,
                 price: coin.price,
                 logo: coin.logoURI,
-                category: coin.category
+                category: coin.category,
+                quantity: 1
               })}
               className="w-full py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
             >
@@ -226,12 +207,12 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                       <div>
                         <div className="font-medium">{item.name}</div>
                         <div className="text-sm text-white/60">
-                          {item.quantity} × ${(coin?.price || item.price).toFixed(2)}
+                          {item.quantity} × ${formatNumberByFrac(coin?.price || item.price)}
                         </div>
                       </div>
                     </div>
                     <div className="font-medium">
-                      ${((coin?.price || item.price) * item.quantity).toFixed(2)}
+                      ${formatNumberByFrac((coin?.price || item.price) * item.quantity)}
                     </div>
                   </div>
                 );
@@ -292,7 +273,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
             <div className="p-4 bg-white/5 rounded-lg space-y-2">
               <div className="flex justify-between">
                 <span className="text-white/60">Subtotal</span>
-                <span>${calculateTotal().toFixed(2)}</span>
+                <span>${formatNumberByFrac(calculateTotal())}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-white/60">Network Fee</span>
@@ -301,7 +282,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
               <div className="h-px bg-white/10 my-2" />
               <div className="flex justify-between text-lg font-medium">
                 <span>Total</span>
-                <span>${(calculateTotal() + 2.50).toFixed(2)}</span>
+                <span>${formatNumberByFrac(calculateTotal() + 2.50)}</span>
               </div>
             </div>
           </div>
@@ -417,7 +398,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                               <div className="text-right">
                                 <div className="flex items-center gap-2">
                                   <span className="text-lg">
-                                    ${(coin?.price || item.price).toFixed(2)}
+                                    ${formatNumberByFrac(coin?.price || item.price)}
                                   </span>
                                   {coin?.priceChange24h !== undefined && (
                                     <span className={`text-sm flex items-center gap-0.5 ${
@@ -433,7 +414,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                                   )}
                                 </div>
                                 <div className="text-sm text-white/60">
-                                  Total: ${((coin?.price || item.price) * item.quantity).toFixed(2)}
+                                  Total: ${formatNumberByFrac((coin?.price || item.price) * item.quantity)}
                                 </div>
                               </div>
                             </div>
@@ -449,7 +430,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-lg">Total</span>
                   <span className="text-2xl font-bold">
-                    ${calculateTotal().toFixed(2)}
+                    ${formatNumberByFrac(calculateTotal())}
                   </span>
                 </div>
                 <div className="flex gap-2">
