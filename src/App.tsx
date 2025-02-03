@@ -3,7 +3,7 @@ import {useStore} from './store/useStore';
 import {Header} from './components/Header';
 import {Workspace} from './components/Workspace';
 import AIAgentModal from './components/AIAgentModal';
-import {SwapModal} from './components/SwapModal';
+import SwapModal from './components/swap/SwapModal'
 import {DeFiModal} from './components/DeFiModal';
 import {DashboardModal} from './components/DashboardModal';
 import {MarketDataModal} from './components/MarketDataModal';
