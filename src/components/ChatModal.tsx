@@ -8,6 +8,7 @@ import {
   DollarSign, LineChart, Shield, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { VideoCallModal } from './VideoCallModal';
+import { CreateGroupModal } from './CreateGroupModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
@@ -189,6 +190,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
+  const [isCreateGroupActive, setIsCreateGroupActive] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const { signer, isConnected } = useContext(Web3AuthContext);
   const { setChatId, chatId } = useStore();
@@ -214,7 +216,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const handleUnlock = async () => { 
+  const handleUnlock = async () => {
     console.log('chat id = ', chatId)
     if (!chatId) {
       const user = await PushAPI.initialize(signer, {
@@ -445,7 +447,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             : 'w-[90%] h-[90%] rounded-xl'
             }`}
         >
-          {!chatId && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center'>
+          {!chatId && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center'>
             <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm" onClick={handleUnlock}>
               Unlock Profile
             </button>
@@ -485,7 +487,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
               {chatMode === 'group' && (
                 <button
-                  onClick={() => setShowCreateGroup(true)}
+                  onClick={() => setIsCreateGroupActive(true)}
                   className="w-full flex items-center justify-center gap-2 mt-3 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -696,6 +698,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         </div>
       </div>
 
+      <CreateGroupModal
+        isOpen={isCreateGroupActive}
+        onClose={() => setIsCreateGroupActive(false)}
+      />
       <VideoCallModal
         isOpen={isVideoCallActive}
         onClose={() => setIsVideoCallActive(false)}
