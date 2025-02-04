@@ -41,6 +41,7 @@ import {
 import {ETHRequestSigningPayload} from "@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types";
 import {ethers} from "ethers";
 import {mapChainId2ViemChain} from "../config/networks.ts";
+import {useStore} from "../store/useStore.ts";
 
 interface Web3AuthContextType {
     login: () => void;
@@ -489,6 +490,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
     }
 
     const login = () => {
+        useStore.getState().setIsSigninModalOpen(true)
     }
 
     const logout = async () => {
