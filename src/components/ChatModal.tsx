@@ -14,7 +14,7 @@ import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
 import { Spinner } from '@chakra-ui/react';
-import { checkIfAddressExists, shrinkAddress } from '../utils/common.util';
+import { checkIfAddressExists, extractAddress, shrinkAddress } from '../utils/common.util';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -199,7 +199,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const { setChatUser, chatUser } = useStore();
 
   const [loading, setLoading] = useState(false);
-  const [group, setGroup] = useState([]);
+  const [group, setGroup] = useState<Array<any>>([]);
+  const [connectedUsers, setConnectedUsers] = useState<Array<any>>([]);
   const [searchedOne, setSearchedOne] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -222,19 +223,32 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     setSearchQuery("")
+    setSelectedUser(null)
+    setSearchedOne(null)
+    setSelectedGroup(null)
   }, [chatMode])
+
+  useEffect(() => {
+    setMessage("")
+  }, [selectedUser, selectedGroup])
 
   const getChatList = async () => {
     setLoading(true)
-    // const aliceChats = await chatUser.chat.list('CHATS')
-    // const groupInformation = aliceChats.reduce((prev: any, cur: any) => {
-    //   if (cur.groupInformation) {
-    //     return [...prev, cur.groupInformation]
-    //   }
-    // }, [])
+    const chatData = await chatUser.chat.list('CHATS')
+    console.log('chatdata = ', chatData)
 
-    // console.log('group information = ', groupInformation)
-    // groupInformation.length > 0 && setGroup(groupInformation)
+    let groupInformation: any[] = []
+    let userInformation: any[] = []
+    chatData.forEach((e: any) => {
+      if (e.groupInformation) {
+        groupInformation = [...groupInformation, e.groupInformation]
+      } else {
+        userInformation = [...userInformation, e]
+      }
+    });
+
+    groupInformation.length > 0 && setGroup(groupInformation)
+    userInformation.length > 0 && setConnectedUsers(userInformation)
     setLoading(false)
   }
 
@@ -245,13 +259,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const handleUnlock = async () => {
     if (!chatUser?.uid) {
       const user = await PushAPI.initialize(signer, {
-        env: CONSTANTS.ENV.STAGING,
+        env: CONSTANTS.ENV.PROD,
       });
       setChatUser(user)
     }
   }
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
 
     // const newMessage = {
@@ -275,7 +289,25 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     //   }));
     // }
 
-    setMessage('');
+    // setMessage('');
+
+    if (chatMode === "p2p" && selectedUser) {
+      try {
+        const sentMsg = await chatUser.chat.send("0x99A08ac6254dcf7ccc37CeC662aeba8eFA666666", {
+          type: 'Text',
+          content: message.trim()
+        })
+
+        setMessage("")
+        if (searchedOne == selectedUser) {
+          setSearchedOne("")
+          setConnectedUsers([searchedOne, ...connectedUsers])
+        }
+        console.log('sent msg = ', sentMsg)
+      } catch (err) {
+        console.log('sent msg err: ', err)
+      }
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -522,6 +554,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSearch()}
                   placeholder={`Search ${chatMode === 'group' ? 'groups' : 'users'}...`}
                   className="w-full bg-white/5 px-4 py-2 rounded-lg outline-none placeholder:text-white/40 mr-4"
                 />
@@ -554,7 +587,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       <span className='text-sm text-gray-400'>Start Chat!</span>
                     </div>
                   </button>
-                  <button className='ml-2' onClick={() => {setSearchedOne(""); setSelectedUser(null);}}>
+                  <button className='mx-2' onClick={() => { setSearchedOne(""); setSelectedUser(null); }}>
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -597,10 +630,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 // ))
                 group.length > 0 && group.map((e: any) => <button
                   key={e?.chatId}
-                  onClick={() => {
-                    setSelectedGroup(e);
-                    setSelectedUser(null);
-                  }}
+                  onClick={() => setSelectedGroup(e)}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.chatId === e?.chatId
                     ? 'bg-white/10'
                     : 'hover:bg-white/5'
@@ -650,7 +680,20 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 //     </div>
                 //   </button>
                 // ))
-                <></>
+                connectedUsers.map((user: any) => <button key={user?.chatId}
+                  onClick={() => setSelectedUser(user?.wallets)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser === user?.wallets
+                    ? 'bg-white/10'
+                    : 'hover:bg-white/5'
+                    }`}
+                >
+                  {
+                    user?.profilePicture ? <img src={user?.profilePicture} className='w-10 h-10 rounded-full'/> : <User className='w-10 h-10'/>
+                  }
+                  <div className='flex flex-col'>
+                    <span>{shrinkAddress(extractAddress(user?.wallets))}</span>
+                  </div>
+                </button>)
               )}
             </div>
           </div>
@@ -662,21 +705,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <div className="flex items-center gap-3">
                 {selectedUser ? (
                   <>
-                    <div className="relative">
-                      <img
+                    <div className="relative flex">
+                      {/* <img
                         src={selectedUser.avatar}
                         alt={selectedUser.name}
                         className="w-10 h-10 rounded-full"
                       />
                       <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0a0c] ${selectedUser.isOnline ? 'bg-green-500' : 'bg-gray-500'
-                        }`} />
+                        }`} /> */}
+                      <User className='mr-4' /> {selectedUser}
                     </div>
-                    <div>
+                    {/* <div>
                       <div className="font-medium">{selectedUser.name}</div>
                       <div className="text-sm text-white/60">
                         {selectedUser.isOnline ? selectedUser.status || selectedUser.ens : selectedUser.lastSeen}
                       </div>
-                    </div>
+                    </div> */}
                   </>
                 ) : selectedGroup ? (
                   <>
@@ -759,7 +803,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyPress}
                     placeholder="Type a message..."
                     className="flex-1 bg-white/5 px-4 py-2 rounded-lg outline-none"
                   />
