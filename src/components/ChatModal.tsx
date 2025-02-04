@@ -5,7 +5,8 @@ import {
   Video, BarChart2, RefreshCw, Users, Bell,
   ChevronDown, ArrowRight, Plus, Lock, Globe,
   Settings, ExternalLink, TrendingUp, TrendingDown,
-  DollarSign, LineChart, Shield, ShieldCheck, ShieldAlert
+  DollarSign, LineChart, Shield, ShieldCheck, ShieldAlert,
+  User
 } from 'lucide-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
@@ -13,91 +14,92 @@ import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
 import { Spinner } from '@chakra-ui/react';
+import { checkIfAddressExists, shrinkAddress } from '../utils/common.util';
 
 interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface ChatUser {
-  id: string;
-  name: string;
-  ens: string;
-  avatar: string;
-  isOnline: boolean;
-  lastSeen?: string;
-  status?: string;
-  nftAccess?: {
-    collection: string;
-    tokenId: string;
-    image: string;
-    verified: boolean;
-  }[];
-}
+// interface ChatUser {
+//   id: string;
+//   name: string;
+//   ens: string;
+//   avatar: string;
+//   isOnline: boolean;
+//   lastSeen?: string;
+//   status?: string;
+//   nftAccess?: {
+//     collection: string;
+//     tokenId: string;
+//     image: string;
+//     verified: boolean;
+//   }[];
+// }
 
-interface ChatGroup {
-  id: string;
-  name: string;
-  description: string;
-  members: ChatUser[];
-  type: 'public' | 'private' | 'nft-gated';
-  icon: string;
-  requiredNft?: {
-    collection: string;
-    image: string;
-  };
-}
+// interface ChatGroup {
+//   id: string;
+//   name: string;
+//   description: string;
+//   members: ChatUser[];
+//   type: 'public' | 'private' | 'nft-gated';
+//   icon: string;
+//   requiredNft?: {
+//     collection: string;
+//     image: string;
+//   };
+// }
 
-const mockUsers: ChatUser[] = [
-  {
-    id: '1',
-    name: 'Alice',
-    ens: 'alice.eth',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-    isOnline: true,
-    status: 'Trading BTC/ETH pairs 📈',
-    nftAccess: [
-      {
-        collection: 'Bored Ape Yacht Club',
-        tokenId: '#8817',
-        image: 'https://i.seadn.io/gae/H-eyNE1MwL5ohL-tCfn_Xa1Sl9M9B4612tLYeUlQubzt4ewhr4huJIR5OLuyO3Z5PpJFSwdm7rq-TikAh7f5eUw338A2cy6HRH75?auto=format&dpr=1&w=256',
-        verified: true
-      }
-    ]
-  },
-  {
-    id: '2',
-    name: 'Bob',
-    ens: 'bob.eth',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
-    isOnline: true,
-    status: 'DeFi degen 🌾',
-    nftAccess: [
-      {
-        collection: 'Azuki',
-        tokenId: '#4391',
-        image: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=256',
-        verified: true
-      }
-    ]
-  },
-  {
-    id: '3',
-    name: 'Charlie',
-    ens: 'charlie.eth',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=charlie',
-    isOnline: false,
-    lastSeen: '2 hours ago',
-    nftAccess: [
-      {
-        collection: 'Pudgy Penguins',
-        tokenId: '#2156',
-        image: 'https://i.seadn.io/gae/yNi-XdGxsgQCPpqSio4o31ygAV6wURdIdInWRcFIl46UjUQ1eV7BEndGe8L661OoG-clRi7EgInLX4LPu9Jfw4fq0bnVYHqg7RFi?auto=format&dpr=1&w=256',
-        verified: true
-      }
-    ]
-  }
-];
+// const mockUsers: ChatUser[] = [
+//   {
+//     id: '1',
+//     name: 'Alice',
+//     ens: 'alice.eth',
+//     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
+//     isOnline: true,
+//     status: 'Trading BTC/ETH pairs 📈',
+//     nftAccess: [
+//       {
+//         collection: 'Bored Ape Yacht Club',
+//         tokenId: '#8817',
+//         image: 'https://i.seadn.io/gae/H-eyNE1MwL5ohL-tCfn_Xa1Sl9M9B4612tLYeUlQubzt4ewhr4huJIR5OLuyO3Z5PpJFSwdm7rq-TikAh7f5eUw338A2cy6HRH75?auto=format&dpr=1&w=256',
+//         verified: true
+//       }
+//     ]
+//   },
+//   {
+//     id: '2',
+//     name: 'Bob',
+//     ens: 'bob.eth',
+//     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
+//     isOnline: true,
+//     status: 'DeFi degen 🌾',
+//     nftAccess: [
+//       {
+//         collection: 'Azuki',
+//         tokenId: '#4391',
+//         image: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=256',
+//         verified: true
+//       }
+//     ]
+//   },
+//   {
+//     id: '3',
+//     name: 'Charlie',
+//     ens: 'charlie.eth',
+//     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=charlie',
+//     isOnline: false,
+//     lastSeen: '2 hours ago',
+//     nftAccess: [
+//       {
+//         collection: 'Pudgy Penguins',
+//         tokenId: '#2156',
+//         image: 'https://i.seadn.io/gae/yNi-XdGxsgQCPpqSio4o31ygAV6wURdIdInWRcFIl46UjUQ1eV7BEndGe8L661OoG-clRi7EgInLX4LPu9Jfw4fq0bnVYHqg7RFi?auto=format&dpr=1&w=256',
+//         verified: true
+//       }
+//     ]
+//   }
+// ];
 
 // const mockGroups: ChatGroup[] = [
 //   {
@@ -174,19 +176,19 @@ const mockUsers: ChatUser[] = [
 //   }
 // ];
 
-const bobDirectMessages = [
-  {
-    id: '1',
-    sender: mockUsers[1], // Bob
-    content: "Hey! Just wanted to share my latest trade analysis. Looking at some interesting setups in the DeFi sector. 📊",
-    timestamp: '11:15 AM'
-  }
-];
+// const bobDirectMessages = [
+//   {
+//     id: '1',
+//     sender: mockUsers[1], // Bob
+//     content: "Hey! Just wanted to share my latest trade analysis. Looking at some interesting setups in the DeFi sector. 📊",
+//     timestamp: '11:15 AM'
+//   }
+// ];
 
 export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [chatMode, setChatMode] = useState<'group' | 'p2p'>('group');
-  const [selectedUser, setSelectedUser] = useState<ChatUser | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -198,10 +200,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const [loading, setLoading] = useState(false);
   const [group, setGroup] = useState([]);
+  const [searchedOne, setSearchedOne] = useState<any>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const [messages, setMessages] = useState<Record<string, any[]>>({
-    'bob': bobDirectMessages
-  });
+  const [messages, setMessages] = useState<Record<string, any[]>>();
   const [currentUserNfts] = useState([
     {
       collection: 'Bored Ape Yacht Club',
@@ -218,17 +220,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, chatUser])
 
+  useEffect(() => {
+    setSearchQuery("")
+  }, [chatMode])
+
   const getChatList = async () => {
     setLoading(true)
-    const aliceChats = await chatUser.chat.list('CHATS')
-    const groupInformation = aliceChats.reduce((prev: any, cur: any) => {
-      if (cur.groupInformation) {
-        return [...prev, cur.groupInformation]
-      }
-    }, [])
+    // const aliceChats = await chatUser.chat.list('CHATS')
+    // const groupInformation = aliceChats.reduce((prev: any, cur: any) => {
+    //   if (cur.groupInformation) {
+    //     return [...prev, cur.groupInformation]
+    //   }
+    // }, [])
 
-    console.log('group information = ', groupInformation)
-    groupInformation.length > 0 && setGroup(groupInformation)
+    // console.log('group information = ', groupInformation)
+    // groupInformation.length > 0 && setGroup(groupInformation)
     setLoading(false)
   }
 
@@ -248,26 +254,26 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const handleSendMessage = () => {
     if (!message.trim()) return;
 
-    const newMessage = {
-      id: Date.now().toString(),
-      sender: {
-        id: 'me',
-        name: 'You',
-        ens: 'you.eth',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
-        isOnline: true,
-        status: 'Online'
-      },
-      content: message.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-    };
+    // const newMessage = {
+    //   id: Date.now().toString(),
+    //   sender: {
+    //     id: 'me',
+    //     name: 'You',
+    //     ens: 'you.eth',
+    //     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
+    //     isOnline: true,
+    //     status: 'Online'
+    //   },
+    //   content: message.trim(),
+    //   timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    // };
 
-    if (selectedUser?.id === '2') { // Bob's chat
-      setMessages(prev => ({
-        ...prev,
-        'bob': [...(prev['bob'] || []), newMessage]
-      }));
-    }
+    // if (selectedUser?.id === '2') { // Bob's chat
+    //   setMessages(prev => ({
+    //     ...prev,
+    //     'bob': [...(prev['bob'] || []), newMessage]
+    //   }));
+    // }
 
     setMessage('');
   };
@@ -279,49 +285,60 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const canAccessChat = (user: ChatUser | null, group: ChatGroup | null) => {
-    if (!user && !group) return true;
+  const handleSearch = async () => {
+    if (!searchQuery) return
+    setIsSearching(true)
+    const isValidAddress = await checkIfAddressExists(searchQuery)
+    if (isValidAddress) {
+      setSearchedOne(searchQuery)
+    }
+    setIsSearching(false)
+  }
+
+  const canAccessChat = (user: any, group: any) => {
+    // if (!user && !group) return true;
     // if (group?.type === 'public') return true;
     // if (group?.type === 'nft-gated') {
     //   return currentUserNfts.some(nft =>
     //     nft.collection === group.requiredNft?.collection
     //   );
     // }
-    if (user?.nftAccess) {
-      return currentUserNfts.some(userNft =>
-        user.nftAccess?.some(requiredNft =>
-          requiredNft.collection === userNft.collection
-        )
-      );
-    }
+    // if (user?.nftAccess) {
+    //   return currentUserNfts.some(userNft =>
+    //     user.nftAccess?.some(requiredNft =>
+    //       requiredNft.collection === userNft.collection
+    //     )
+    //   );
+    // }
     return true;
   };
 
-  const renderAccessBadge = (user: ChatUser | null, group: ChatGroup | null) => {
-    if (!user && !group) return null;
+  const renderAccessBadge = (user: any, group: any) => {
+    // if (!user && !group) return null;
 
-    const hasAccess = canAccessChat(user, group);
-    const requiredNft = group?.type === 'nft-gated' ? group.requiredNft :
-      user?.nftAccess?.[0];
+    // const hasAccess = canAccessChat(user, group);
+    // const requiredNft = group?.type === 'nft-gated' ? group.requiredNft :
+    //   user?.nftAccess?.[0];
 
-    if (!requiredNft) return null;
+    // if (!requiredNft) return null;
 
-    return (
-      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${hasAccess ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-        }`}>
-        {hasAccess ? (
-          <>
-            <ShieldCheck className="w-4 h-4" />
-            <span>Access Granted</span>
-          </>
-        ) : (
-          <>
-            <ShieldAlert className="w-4 h-4" />
-            <span>Requires {requiredNft.collection}</span>
-          </>
-        )}
-      </div>
-    );
+    // return (
+    //   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${hasAccess ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+    //     }`}>
+    //     {hasAccess ? (
+    //       <>
+    //         <ShieldCheck className="w-4 h-4" />
+    //         <span>Access Granted</span>
+    //       </>
+    //     ) : (
+    //       <>
+    //         <ShieldAlert className="w-4 h-4" />
+    //         <span>Requires {requiredNft.collection}</span>
+    //       </>
+    //     )}
+    //   </div>
+    // );
+    return null
   };
 
   const renderMessages = () => {
@@ -417,31 +434,32 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
     // Show Bob's direct messages
     if (selectedUser?.id === '2') { // Bob's ID
-      const chatMessages = messages['bob'] || [];
-      return (
-        <div className="space-y-4">
-          {chatMessages.map((msg) => (
-            <div key={msg.id} className="flex items-start gap-3 group">
-              <img
-                src={msg.sender.avatar}
-                alt={msg.sender.name}
-                className="w-8 h-8 rounded-full mt-1"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium">{msg.sender.name}</span>
-                  <span className="text-sm text-white/60">{msg.sender.ens}</span>
-                  <span className="text-sm text-white/40">{msg.timestamp}</span>
-                </div>
-                <div className={`rounded-lg p-3 ${msg.sender.id === 'me' ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
-                  }`}>
-                  {msg.content}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
+      // const chatMessages = messages['bob'] || [];
+      // return (
+      //   <div className="space-y-4">
+      //     {chatMessages.map((msg) => (
+      //       <div key={msg.id} className="flex items-start gap-3 group">
+      //         <img
+      //           src={msg.sender.avatar}
+      //           alt={msg.sender.name}
+      //           className="w-8 h-8 rounded-full mt-1"
+      //         />
+      //         <div className="flex-1 min-w-0">
+      //           <div className="flex items-center gap-2 mb-1">
+      //             <span className="font-medium">{msg.sender.name}</span>
+      //             <span className="text-sm text-white/60">{msg.sender.ens}</span>
+      //             <span className="text-sm text-white/40">{msg.timestamp}</span>
+      //           </div>
+      //           <div className={`rounded-lg p-3 ${msg.sender.id === 'me' ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
+      //             }`}>
+      //             {msg.content}
+      //           </div>
+      //         </div>
+      //       </div>
+      //     ))}
+      //   </div>
+      // );
+      return null
     }
 
     // Empty state for other chats
@@ -466,13 +484,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             : 'w-[90%] h-[90%] rounded-xl'
             }`}
         >
-          {!chatUser?.uid && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center'>
+          {!chatUser?.uid && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10'>
             <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm" onClick={handleUnlock}>
               Unlock Profile
             </button>
           </div>}
 
-          {loading && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center'>
+          {loading && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10'>
             <Spinner />
           </div>}
 
@@ -498,15 +516,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 </button>
               </div>
 
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+              <div className="relative flex items-center justify-center">
+                {/* <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" /> */}
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={`Search ${chatMode === 'group' ? 'groups' : 'users'}...`}
-                  className="w-full bg-white/5 pl-10 pr-4 py-2 rounded-lg outline-none placeholder:text-white/40"
+                  className="w-full bg-white/5 px-4 py-2 rounded-lg outline-none placeholder:text-white/40 mr-4"
                 />
+                {
+                  isSearching ? <Spinner size={'sm'} /> :
+                    <button onClick={handleSearch}>
+                      <Search className='w-4 h-4' />
+                    </button>
+                }
               </div>
 
               {chatMode === 'group' && (
@@ -521,6 +545,20 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             <div className="p-2 space-y-1">
+              {
+                searchedOne && <div className={`flex border-b-2 hover:bg-white/5 ${searchedOne == selectedUser && 'bg-white/10'}`}>
+                  <button className={`flex-1 py-2 flex gap-8 items-center`} onClick={() => setSelectedUser(searchedOne)}>
+                    <User />
+                    <div className='flex flex-col'>
+                      <span>{shrinkAddress(searchedOne)}</span>
+                      <span className='text-sm text-gray-400'>Start Chat!</span>
+                    </div>
+                  </button>
+                  <button className='ml-2' onClick={() => {setSearchedOne(""); setSelectedUser(null);}}>
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              }
               {chatMode === 'group' ? (
                 // mockGroups.map((group) => (
                 //   <button
@@ -564,9 +602,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     setSelectedUser(null);
                   }}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.chatId === e?.chatId
-                          ? 'bg-white/10'
-                          : 'hover:bg-white/5'
-                          }`}>
+                    ? 'bg-white/10'
+                    : 'hover:bg-white/5'
+                    }`}>
                   <img src={e?.groupImage} alt="WOW" className="w-16 h-16 rounded-lg" />
                   <div className="flex-1 text-left">
                     <div className="flex items-center gap-2">
@@ -578,40 +616,41 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 </button>)
               ) : (
-                mockUsers.map((user) => (
-                  <button
-                    key={user.id}
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setSelectedGroup(null);
-                    }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser?.id === user.id
-                      ? 'bg-white/10'
-                      : 'hover:bg-white/5'
-                      }`}
-                  >
-                    <div className="relative">
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        className="w-10 h-10 rounded-full"
-                      />
-                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0a0c] ${user.isOnline ? 'bg-green-500' : 'bg-gray-500'
-                        }`} />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{user.name}</span>
-                        {user.nftAccess && (
-                          <Shield className="w-3 h-3 text-white/40" />
-                        )}
-                      </div>
-                      <div className="text-sm text-white/60">
-                        {user.isOnline ? user.status || user.ens : user.lastSeen}
-                      </div>
-                    </div>
-                  </button>
-                ))
+                // mockUsers.map((user) => (
+                //   <button
+                //     key={user.id}
+                //     onClick={() => {
+                //       setSelectedUser(user);
+                //       setSelectedGroup(null);
+                //     }}
+                //     className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser?.id === user.id
+                //       ? 'bg-white/10'
+                //       : 'hover:bg-white/5'
+                //       }`}
+                //   >
+                //     <div className="relative">
+                //       <img
+                //         src={user.avatar}
+                //         alt={user.name}
+                //         className="w-10 h-10 rounded-full"
+                //       />
+                //       <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0a0c] ${user.isOnline ? 'bg-green-500' : 'bg-gray-500'
+                //         }`} />
+                //     </div>
+                //     <div className="flex-1 text-left">
+                //       <div className="flex items-center gap-2">
+                //         <span className="font-medium">{user.name}</span>
+                //         {user.nftAccess && (
+                //           <Shield className="w-3 h-3 text-white/40" />
+                //         )}
+                //       </div>
+                //       <div className="text-sm text-white/60">
+                //         {user.isOnline ? user.status || user.ens : user.lastSeen}
+                //       </div>
+                //     </div>
+                //   </button>
+                // ))
+                <></>
               )}
             </div>
           </div>
