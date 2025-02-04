@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ExternalLink, ChevronLeft, ChevronRight, Clock, AlertCircle } from 'lucide-react';
-import { getLatestNews } from '../../lib/cryptonews';
+import {cryptonewsService} from "../../services/cryptonews.service";
 import { NewsItem } from '../../types';
 
 export const MarketNewsWidget: React.FC = () => {
@@ -14,7 +14,8 @@ export const MarketNewsWidget: React.FC = () => {
     const fetchNews = async () => {
       try {
         setLoading(true);
-        const newsData = await getLatestNews();
+        const newsData = await cryptonewsService.getLatestNews();
+        console.log(newsData);
         setNews(newsData);
         setError(null);
       } catch (err) {
