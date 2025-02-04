@@ -14,11 +14,26 @@ import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
 import { Spinner } from '@chakra-ui/react';
-import { checkIfAddressExists, extractAddress, shrinkAddress } from '../utils/common.util';
+import { checkIfAddressExists, extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
 
 interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface IUser {
+  name: string;
+  profilePicture: string;
+  address: string;
+  chatId: string;
+}
+
+interface IChat {
+  timestamp: number;
+  type: string;
+  content: string;
+  fromAddress: string;
+  toAddress: string;
 }
 
 // interface ChatUser {
@@ -36,13 +51,6 @@ interface ChatModalProps {
 //     verified: boolean;
 //   }[];
 // }
-
-interface IUser {
-  name: string;
-  profilePicture: string;
-  address: string;
-  chatId: string;
-}
 
 // interface ChatGroup {
 //   id: string;
@@ -210,30 +218,39 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [connectedUsers, setConnectedUsers] = useState<Array<any>>([]);
   const [searchedOne, setSearchedOne] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
+  const [loadingChatHistory, setLoadingChatHistory] = useState(false);
 
-  const [messages, setMessages] = useState<Record<string, any[]>>();
-  const [currentUserNfts] = useState([
-    {
-      collection: 'Bored Ape Yacht Club',
-      tokenId: '#1234',
-      image: 'https://i.seadn.io/gae/H-eyNE1MwL5ohL-tCfn_Xa1Sl9M9B4612tLYeUlQubzt4ewhr4huJIR5OLuyO3Z5PpJFSwdm7rq-TikAh7f5eUw338A2cy6HRH75?auto=format&dpr=1&w=256',
-      verified: true
-    }
-  ]);
+  // const [messages, setMessages] = useState<Record<string, any[]>>();
+  // const [currentUserNfts] = useState([
+  //   {
+  //     collection: 'Bored Ape Yacht Club',
+  //     tokenId: '#1234',
+  //     image: 'https://i.seadn.io/gae/H-eyNE1MwL5ohL-tCfn_Xa1Sl9M9B4612tLYeUlQubzt4ewhr4huJIR5OLuyO3Z5PpJFSwdm7rq-TikAh7f5eUw338A2cy6HRH75?auto=format&dpr=1&w=256',
+  //     verified: true
+  //   }
+  // ]);
 
   useEffect(() => {
     if (isOpen && chatUser?.uid) {
       console.log('get chat user')
       getChatList()
+    } else {
+      clearValues()
     }
   }, [isOpen, chatUser])
 
+
   useEffect(() => {
+    clearValues()
+  }, [chatMode])
+
+  const clearValues = () => {
     setSearchQuery("")
     setSelectedUser(null)
     setSearchedOne(null)
     setSelectedGroup(null)
-  }, [chatMode])
+  }
 
   useEffect(() => {
     setMessage("")
@@ -306,9 +323,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         })
 
         setMessage("")
-        if (searchedOne == selectedUser) {
+        if (searchedOne == selectedUser.address) {
           setSearchedOne("")
-          setConnectedUsers([searchedOne, ...connectedUsers])
+          setConnectedUsers([{
+            profilePicture: "",
+            name: "",
+            wallets: searchedOne,
+            chatId: ""
+          }, ...connectedUsers])
         }
         console.log('sent msg = ', sentMsg)
       } catch (err) {
@@ -316,6 +338,41 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       }
     }
   };
+
+  useEffect(() => {
+    console.log('chat history = ', chatHistory)
+  }, [chatHistory])
+
+  const handleSelectUser = async (user: any) => {
+    setLoadingChatHistory(true)
+    setSelectedUser({
+      name: user.name,
+      profilePicture: user.profilePicture,
+      address: user.wallets,
+      chatId: user.chatId
+    })
+
+    try {
+      const history = await chatUser.chat.history(user.wallets)
+      if (history.length > 0) {
+        console.log('history = ', history)
+        console.log('selected = ', user.wallets)
+        const tmp: IChat[] = history.map((e: any) => {
+          return {
+            timestamp: e.timestamp,
+            type: e.messageType,
+            content: e.messageContent,
+            fromAddress: e.fromDID,
+            toAddress: e.toDID
+          }
+        })
+        setChatHistory(tmp.reverse())
+      }
+    } catch (err) {
+      console.log('load chat history err: ', err)
+    }
+    setLoadingChatHistory(false)
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -329,7 +386,17 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsSearching(true)
     const isValidAddress = await checkIfAddressExists(searchQuery)
     if (isValidAddress) {
-      setSearchedOne(searchQuery)
+      const found = connectedUsers.find((e: any) => extractAddress(e.wallets) == searchQuery)
+      if (found) {
+        setSelectedUser({
+          name: found.name,
+          address: found.wallets,
+          profilePicture: found.profilePicture,
+          chatId: found.chatId
+        })
+      } else {
+        setSearchedOne(searchQuery)
+      }
     }
     setIsSearching(false)
   }
@@ -391,43 +458,78 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       );
     }
 
-    // Check access before showing messages
-    if (!canAccessChat(selectedUser, selectedGroup)) {
+    if (loadingChatHistory) {
       return (
-        <div className="flex flex-col items-center justify-center h-full text-center p-6">
-          <Shield className="w-16 h-16 text-red-400 mb-4" />
-          {/* <h3 className="text-xl font-medium mb-2">NFT Required</h3>
-          <p className="text-white/60 mb-4">
-            This {selectedGroup ? 'group' : 'chat'} requires ownership of{' '}
-            {selectedGroup?.requiredNft?.collection || selectedUser?.nftAccess?.[0].collection}
-          </p>
-          <div className="flex items-center gap-4">
-            <img
-              src={selectedGroup?.requiredNft?.image || selectedUser?.nftAccess?.[0].image}
-              alt="Required NFT"
-              className="w-24 h-24 rounded-lg"
-            />
-            <div className="text-left">
-              <h4 className="font-medium mb-2">Required NFT</h4>
-              <p className="text-sm text-white/60">
-                You need to own at least one NFT from this collection to access the chat
-              </p>
-              <a
-                href="https://opensea.io"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors text-sm"
-              >
-                <span>Buy on OpenSea</span>
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-          </div> */}
+        <div className="flex flex-col items-center justify-center h-full">
+          <Spinner />
         </div>
-      );
+      )
     }
 
-    // Show trading group messages
+    if (chatHistory && chatHistory.length > 0) {
+      return (
+        <div className="space-y-4">
+          {chatHistory.map((msg) => (
+            <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
+              {/* <img
+              src={msg.sender.avatar}
+              alt={msg.sender.name}
+              className="w-8 h-8 rounded-full mt-1"
+            /> */}
+              <div className="flex-1 min-w-0">
+                <div className={`${msg.fromAddress != selectedUser?.address ? "justify-end" : ""} flex items-center gap-2 mb-1`}>
+                  <span className="font-medium">{msg.toAddress != selectedUser?.address ? shrinkAddress(extractAddress(msg.toAddress)) : ""}</span>
+                  {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+                  <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
+                </div>
+                <div className={`rounded-lg p-3 ${msg.fromAddress != selectedUser?.address ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
+                  }`}>
+                  {msg.content}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    // // Check access before showing messages
+    // if (!canAccessChat(selectedUser, selectedGroup)) {
+    //   return (
+    //     <div className="flex flex-col items-center justify-center h-full text-center p-6">
+    //       <Shield className="w-16 h-16 text-red-400 mb-4" />
+    //       <h3 className="text-xl font-medium mb-2">NFT Required</h3>
+    //       <p className="text-white/60 mb-4">
+    //         This {selectedGroup ? 'group' : 'chat'} requires ownership of{' '}
+    //         {selectedGroup?.requiredNft?.collection || selectedUser?.nftAccess?.[0].collection}
+    //       </p>
+    //       <div className="flex items-center gap-4">
+    //         <img
+    //           src={selectedGroup?.requiredNft?.image || selectedUser?.nftAccess?.[0].image}
+    //           alt="Required NFT"
+    //           className="w-24 h-24 rounded-lg"
+    //         />
+    //         <div className="text-left">
+    //           <h4 className="font-medium mb-2">Required NFT</h4>
+    //           <p className="text-sm text-white/60">
+    //             You need to own at least one NFT from this collection to access the chat
+    //           </p>
+    //           <a
+    //             href="https://opensea.io"
+    //             target="_blank"
+    //             rel="noopener noreferrer"
+    //             className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors text-sm"
+    //           >
+    //             <span>Buy on OpenSea</span>
+    //             <ExternalLink className="w-4 h-4" />
+    //           </a>
+    //         </div>
+    //       </div>
+    //     </div>
+    //   );
+    // }
+
+    // // Show trading group messages
     // if (selectedGroup?.id === 'trading') {
     //   return (
     //     <div className="space-y-4">
@@ -471,34 +573,33 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     //   );
     // }
 
-    // Show Bob's direct messages
+    // // Show Bob's direct messages
     // if (selectedUser?.id === '2') { // Bob's ID
-      // const chatMessages = messages['bob'] || [];
-      // return (
-      //   <div className="space-y-4">
-      //     {chatMessages.map((msg) => (
-      //       <div key={msg.id} className="flex items-start gap-3 group">
-      //         <img
-      //           src={msg.sender.avatar}
-      //           alt={msg.sender.name}
-      //           className="w-8 h-8 rounded-full mt-1"
-      //         />
-      //         <div className="flex-1 min-w-0">
-      //           <div className="flex items-center gap-2 mb-1">
-      //             <span className="font-medium">{msg.sender.name}</span>
-      //             <span className="text-sm text-white/60">{msg.sender.ens}</span>
-      //             <span className="text-sm text-white/40">{msg.timestamp}</span>
-      //           </div>
-      //           <div className={`rounded-lg p-3 ${msg.sender.id === 'me' ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
-      //             }`}>
-      //             {msg.content}
-      //           </div>
-      //         </div>
-      //       </div>
-      //     ))}
-      //   </div>
-      // );
-      // return null
+    //   const chatMessages = messages['bob'] || [];
+    //   return (
+    //     <div className="space-y-4">
+    //       {chatMessages.map((msg) => (
+    //         <div key={msg.id} className="flex items-start gap-3 group">
+    //           <img
+    //             src={msg.sender.avatar}
+    //             alt={msg.sender.name}
+    //             className="w-8 h-8 rounded-full mt-1"
+    //           />
+    //           <div className="flex-1 min-w-0">
+    //             <div className="flex items-center gap-2 mb-1">
+    //               <span className="font-medium">{msg.sender.name}</span>
+    //               <span className="text-sm text-white/60">{msg.sender.ens}</span>
+    //               <span className="text-sm text-white/40">{msg.timestamp}</span>
+    //             </div>
+    //             <div className={`rounded-lg p-3 ${msg.sender.id === 'me' ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
+    //               }`}>
+    //               {msg.content}
+    //             </div>
+    //           </div>
+    //         </div>
+    //       ))}
+    //     </div>
+    //   );
     // }
 
     // Empty state for other chats
@@ -586,8 +687,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
             <div className="p-2 space-y-1">
               {
-                searchedOne && <div className={`flex border-b-2 hover:bg-white/5 ${searchedOne == selectedUser && 'bg-white/10'}`}>
-                  <button className={`flex-1 py-2 flex gap-8 items-center`} onClick={() => setSelectedUser(searchedOne)}>
+                searchedOne && <div className={`flex border-b-2 hover:bg-white/5 ${searchedOne == selectedUser?.address && 'bg-white/10'}`}>
+                  <button className={`flex-1 py-2 flex gap-8 items-center`}
+                    onClick={() => setSelectedUser({
+                      name: "",
+                      address: searchedOne,
+                      profilePicture: "",
+                      chatId: ""
+                    })}>
                     <User />
                     <div className='flex flex-col'>
                       <span>{shrinkAddress(searchedOne)}</span>
@@ -688,22 +795,18 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 //   </button>
                 // ))
                 connectedUsers.map((user: any) => <button key={user?.chatId}
-                  onClick={() => setSelectedUser({
-                    name: user.name,
-                    profilePicture: user.profilePicture,
-                    address: user.wallets,
-                    chatId: user.chatId
-                  })}
+                  onClick={() => handleSelectUser(user)}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser?.address === user?.wallets
                     ? 'bg-white/10'
                     : 'hover:bg-white/5'
                     }`}
                 >
                   {
-                    user?.profilePicture ? <img src={user?.profilePicture} className='w-10 h-10 rounded-full'/> : <User className='w-10 h-10'/>
+                    user?.profilePicture ? <img src={user?.profilePicture} className='w-10 h-10 rounded-full' /> : <User className='w-10 h-10' />
                   }
                   <div className='flex flex-col'>
-                    <span>{user?.name || shrinkAddress(extractAddress(user?.wallets))}</span>
+                    <span className='text-left'>{user?.name || shrinkAddress(extractAddress(user?.wallets))}</span>
+                    <span className='text-left text-sm text-gray-400'>{user?.msg?.messageContent ? user?.msg?.messageContent.slice(0, 30) : ""}</span>
                   </div>
                 </button>)
               )}
@@ -726,9 +829,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0a0c] ${selectedUser.isOnline ? 'bg-green-500' : 'bg-gray-500'
                         }`} /> */}
                       {
-                        selectedUser?.profilePicture ? <img src={selectedUser?.profilePicture} className='w-10 h-10 mr-4 rounded-full'/>: <User className='w-10 h-10 mr-4' />
+                        selectedUser?.profilePicture ? <img src={selectedUser?.profilePicture} className='w-10 h-10 mr-4 rounded-full' /> : <User className='w-10 h-10 mr-4' />
                       }
-                      {selectedUser?.name || extractAddress(selectedUser?.address)}
+                      {selectedUser?.name ?
+                        <div className='flex flex-col'>
+                          <div>{selectedUser?.name}</div>
+                          <div className='text-sm text-gray-400'>{extractAddress(selectedUser?.address)}</div>
+                        </div>
+                        : extractAddress(selectedUser?.address)}
                     </div>
                     {/* <div>
                       <div className="font-medium">{selectedUser.name}</div>
@@ -739,7 +847,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   </>
                 ) : selectedGroup ? (
                   <>
-                    <img src={selectedGroup?.groupImage} className='w-10 h-10 mr-2 rounded-lg'/>
+                    <img src={selectedGroup?.groupImage} className='w-10 h-10 mr-2 rounded-lg' />
                     {selectedGroup?.groupName}
                     {/* {selectedGroup.id === 'wow' ? (
                       <img src={selectedGroup.icon} alt="WOW" className="w-10 h-10" />
