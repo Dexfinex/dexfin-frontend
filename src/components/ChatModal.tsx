@@ -12,6 +12,7 @@ import { CreateGroupModal } from './CreateGroupModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
+import { Spinner } from '@chakra-ui/react';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -98,80 +99,80 @@ const mockUsers: ChatUser[] = [
   }
 ];
 
-const mockGroups: ChatGroup[] = [
-  {
-    id: 'wow',
-    name: 'Wealth of Wisdom',
-    description: 'Exclusive community for financial wisdom and insights',
-    members: mockUsers.slice(0, 8),
-    type: 'public',
-    icon: 'https://wealthofwisdom.io/wp-content/uploads/2022/12/wow-logoi1.svg'
-  },
-  {
-    id: 'trading',
-    name: 'Trading Group',
-    description: 'Discuss trading strategies and market analysis',
-    members: mockUsers.slice(0, 5),
-    type: 'public',
-    icon: '📈'
-  },
-  {
-    id: 'defi',
-    name: 'DeFi Discussion',
-    description: 'All things DeFi - yields, protocols, and strategies',
-    members: mockUsers.slice(1, 6),
-    type: 'public',
-    icon: '🌾'
-  },
-  {
-    id: 'bayc-alpha',
-    name: 'BAYC Alpha',
-    description: 'Exclusive BAYC holders chat',
-    members: mockUsers.filter(user =>
-      user.nftAccess?.some(nft => nft.collection === 'Bored Ape Yacht Club')
-    ),
-    type: 'nft-gated',
-    icon: '🐵',
-    requiredNft: {
-      collection: 'Bored Ape Yacht Club',
-      image: 'https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR-M9He2PjILP0oOvxE89AyiPPGtrR3gysu1Zgy0hjd2xKIgjJJtWIc0ybj4Vd7wv8t3pxDGHoJBzDB?auto=format&dpr=1&w=256'
-    }
-  },
-  {
-    id: 'azuki-dao',
-    name: 'Azuki DAO',
-    description: 'Azuki holders governance chat',
-    members: mockUsers.filter(user =>
-      user.nftAccess?.some(nft => nft.collection === 'Azuki')
-    ),
-    type: 'nft-gated',
-    icon: '⛩️',
-    requiredNft: {
-      collection: 'Azuki',
-      image: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=256'
-    }
-  }
-];
+// const mockGroups: ChatGroup[] = [
+//   {
+//     id: 'wow',
+//     name: 'Wealth of Wisdom',
+//     description: 'Exclusive community for financial wisdom and insights',
+//     members: mockUsers.slice(0, 8),
+//     type: 'public',
+//     icon: 'https://wealthofwisdom.io/wp-content/uploads/2022/12/wow-logoi1.svg'
+//   },
+//   {
+//     id: 'trading',
+//     name: 'Trading Group',
+//     description: 'Discuss trading strategies and market analysis',
+//     members: mockUsers.slice(0, 5),
+//     type: 'public',
+//     icon: '📈'
+//   },
+//   {
+//     id: 'defi',
+//     name: 'DeFi Discussion',
+//     description: 'All things DeFi - yields, protocols, and strategies',
+//     members: mockUsers.slice(1, 6),
+//     type: 'public',
+//     icon: '🌾'
+//   },
+//   {
+//     id: 'bayc-alpha',
+//     name: 'BAYC Alpha',
+//     description: 'Exclusive BAYC holders chat',
+//     members: mockUsers.filter(user =>
+//       user.nftAccess?.some(nft => nft.collection === 'Bored Ape Yacht Club')
+//     ),
+//     type: 'nft-gated',
+//     icon: '🐵',
+//     requiredNft: {
+//       collection: 'Bored Ape Yacht Club',
+//       image: 'https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR-M9He2PjILP0oOvxE89AyiPPGtrR3gysu1Zgy0hjd2xKIgjJJtWIc0ybj4Vd7wv8t3pxDGHoJBzDB?auto=format&dpr=1&w=256'
+//     }
+//   },
+//   {
+//     id: 'azuki-dao',
+//     name: 'Azuki DAO',
+//     description: 'Azuki holders governance chat',
+//     members: mockUsers.filter(user =>
+//       user.nftAccess?.some(nft => nft.collection === 'Azuki')
+//     ),
+//     type: 'nft-gated',
+//     icon: '⛩️',
+//     requiredNft: {
+//       collection: 'Azuki',
+//       image: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=256'
+//     }
+//   }
+// ];
 
-const tradingGroupMessages = [
-  {
-    id: '1',
-    sender: {
-      id: '4',
-      name: 'CryptoWhale',
-      ens: 'whale.eth',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=whale',
-      isOnline: true,
-      status: 'Trading 24/7 🐋'
-    },
-    content: "BTC looking bullish on the 4h chart. Clear breakout above resistance. 📈",
-    timestamp: '10:30 AM',
-    reactions: [
-      { emoji: '🚀', count: 5, reacted: true },
-      { emoji: '👀', count: 3, reacted: false }
-    ]
-  }
-];
+// const tradingGroupMessages = [
+//   {
+//     id: '1',
+//     sender: {
+//       id: '4',
+//       name: 'CryptoWhale',
+//       ens: 'whale.eth',
+//       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=whale',
+//       isOnline: true,
+//       status: 'Trading 24/7 🐋'
+//     },
+//     content: "BTC looking bullish on the 4h chart. Clear breakout above resistance. 📈",
+//     timestamp: '10:30 AM',
+//     reactions: [
+//       { emoji: '🚀', count: 5, reacted: true },
+//       { emoji: '👀', count: 3, reacted: false }
+//     ]
+//   }
+// ];
 
 const bobDirectMessages = [
   {
@@ -186,20 +187,18 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [chatMode, setChatMode] = useState<'group' | 'p2p'>('group');
   const [selectedUser, setSelectedUser] = useState<ChatUser | null>(null);
-  const [selectedGroup, setSelectedGroup] = useState<ChatGroup | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [isCreateGroupActive, setIsCreateGroupActive] = useState(false);
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const { signer, isConnected } = useContext(Web3AuthContext);
+  // const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const { signer } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
 
-  const [newGroup, setNewGroup] = useState({
-    name: '',
-    description: '',
-    type: 'public' as const
-  });
+  const [loading, setLoading] = useState(false);
+  const [group, setGroup] = useState([]);
+
   const [messages, setMessages] = useState<Record<string, any[]>>({
     'bob': bobDirectMessages
   });
@@ -211,6 +210,27 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       verified: true
     }
   ]);
+
+  useEffect(() => {
+    if (isOpen && chatUser?.uid) {
+      console.log('get chat user')
+      getChatList()
+    }
+  }, [isOpen, chatUser])
+
+  const getChatList = async () => {
+    setLoading(true)
+    const aliceChats = await chatUser.chat.list('CHATS')
+    const groupInformation = aliceChats.reduce((prev: any, cur: any) => {
+      if (cur.groupInformation) {
+        return [...prev, cur.groupInformation]
+      }
+    }, [])
+
+    console.log('group information = ', groupInformation)
+    groupInformation.length > 0 && setGroup(groupInformation)
+    setLoading(false)
+  }
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -261,12 +281,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const canAccessChat = (user: ChatUser | null, group: ChatGroup | null) => {
     if (!user && !group) return true;
-    if (group?.type === 'public') return true;
-    if (group?.type === 'nft-gated') {
-      return currentUserNfts.some(nft =>
-        nft.collection === group.requiredNft?.collection
-      );
-    }
+    // if (group?.type === 'public') return true;
+    // if (group?.type === 'nft-gated') {
+    //   return currentUserNfts.some(nft =>
+    //     nft.collection === group.requiredNft?.collection
+    //   );
+    // }
     if (user?.nftAccess) {
       return currentUserNfts.some(userNft =>
         user.nftAccess?.some(requiredNft =>
@@ -320,7 +340,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       return (
         <div className="flex flex-col items-center justify-center h-full text-center p-6">
           <Shield className="w-16 h-16 text-red-400 mb-4" />
-          <h3 className="text-xl font-medium mb-2">NFT Required</h3>
+          {/* <h3 className="text-xl font-medium mb-2">NFT Required</h3>
           <p className="text-white/60 mb-4">
             This {selectedGroup ? 'group' : 'chat'} requires ownership of{' '}
             {selectedGroup?.requiredNft?.collection || selectedUser?.nftAccess?.[0].collection}
@@ -346,54 +366,54 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
-          </div>
+          </div> */}
         </div>
       );
     }
 
     // Show trading group messages
-    if (selectedGroup?.id === 'trading') {
-      return (
-        <div className="space-y-4">
-          {tradingGroupMessages.map((msg) => (
-            <div key={msg.id} className="flex items-start gap-3 group">
-              <img
-                src={msg.sender.avatar}
-                alt={msg.sender.name}
-                className="w-8 h-8 rounded-full mt-1"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium">{msg.sender.name}</span>
-                  <span className="text-sm text-white/60">{msg.sender.ens}</span>
-                  <span className="text-sm text-white/40">{msg.timestamp}</span>
-                </div>
-                <div className="bg-white/5 rounded-lg p-3">
-                  {msg.content}
-                </div>
-                {msg.reactions && (
-                  <div className="flex items-center gap-2 mt-2">
-                    {msg.reactions.map((reaction, index) => (
-                      <button
-                        key={index}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm ${reaction.reacted ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 hover:bg-white/10'
-                          } transition-colors`}
-                      >
-                        <span>{reaction.emoji}</span>
-                        <span>{reaction.count}</span>
-                      </button>
-                    ))}
-                    <button className="p-1 rounded-full bg-white/5 hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all">
-                      <Plus className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    }
+    // if (selectedGroup?.id === 'trading') {
+    //   return (
+    //     <div className="space-y-4">
+    //       {tradingGroupMessages.map((msg) => (
+    //         <div key={msg.id} className="flex items-start gap-3 group">
+    //           <img
+    //             src={msg.sender.avatar}
+    //             alt={msg.sender.name}
+    //             className="w-8 h-8 rounded-full mt-1"
+    //           />
+    //           <div className="flex-1 min-w-0">
+    //             <div className="flex items-center gap-2 mb-1">
+    //               <span className="font-medium">{msg.sender.name}</span>
+    //               <span className="text-sm text-white/60">{msg.sender.ens}</span>
+    //               <span className="text-sm text-white/40">{msg.timestamp}</span>
+    //             </div>
+    //             <div className="bg-white/5 rounded-lg p-3">
+    //               {msg.content}
+    //             </div>
+    //             {msg.reactions && (
+    //               <div className="flex items-center gap-2 mt-2">
+    //                 {msg.reactions.map((reaction, index) => (
+    //                   <button
+    //                     key={index}
+    //                     className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm ${reaction.reacted ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 hover:bg-white/10'
+    //                       } transition-colors`}
+    //                   >
+    //                     <span>{reaction.emoji}</span>
+    //                     <span>{reaction.count}</span>
+    //                   </button>
+    //                 ))}
+    //                 <button className="p-1 rounded-full bg-white/5 hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all">
+    //                   <Plus className="w-3 h-3" />
+    //                 </button>
+    //               </div>
+    //             )}
+    //           </div>
+    //         </div>
+    //       ))}
+    //     </div>
+    //   );
+    // }
 
     // Show Bob's direct messages
     if (selectedUser?.id === '2') { // Bob's ID
@@ -451,6 +471,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               Unlock Profile
             </button>
           </div>}
+
+          {loading && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center'>
+            <Spinner />
+          </div>}
+
           {/* Left Sidebar */}
           <div className="w-80 border-r border-white/10">
             <div className="p-4 border-b border-white/10">
@@ -497,41 +522,61 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
             <div className="p-2 space-y-1">
               {chatMode === 'group' ? (
-                mockGroups.map((group) => (
-                  <button
-                    key={group.id}
-                    onClick={() => {
-                      setSelectedGroup(group);
-                      setSelectedUser(null);
-                    }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.id === group.id
-                      ? 'bg-white/10'
-                      : 'hover:bg-white/5'
-                      }`}
-                  >
-                    {group.id === 'wow' ? (
-                      <img src={group.icon} alt="WOW" className="w-10 h-10" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg">
-                        {group.icon}
-                      </div>
-                    )}
-                    <div className="flex-1 text-left">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{group.name}</span>
-                        {group.type === 'private' && (
-                          <Lock className="w-3 h-3 text-white/40" />
-                        )}
-                        {group.type === 'nft-gated' && (
-                          <Shield className="w-3 h-3 text-white/40" />
-                        )}
-                      </div>
-                      <div className="text-sm text-white/60 truncate">
-                        {group.members.length} members
-                      </div>
+                // mockGroups.map((group) => (
+                //   <button
+                //     key={group.id}
+                //     onClick={() => {
+                //       setSelectedGroup(group);
+                //       setSelectedUser(null);
+                //     }}
+                //     className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.id === group.id
+                //       ? 'bg-white/10'
+                //       : 'hover:bg-white/5'
+                //       }`}
+                //   >
+                //     {group.id === 'wow' ? (
+                //       <img src={group.icon} alt="WOW" className="w-10 h-10" />
+                //     ) : (
+                //       <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg">
+                //         {group.icon}
+                //       </div>
+                //     )}
+                //     <div className="flex-1 text-left">
+                //       <div className="flex items-center gap-2">
+                //         <span className="font-medium">{group.name}</span>
+                //         {group.type === 'private' && (
+                //           <Lock className="w-3 h-3 text-white/40" />
+                //         )}
+                //         {group.type === 'nft-gated' && (
+                //           <Shield className="w-3 h-3 text-white/40" />
+                //         )}
+                //       </div>
+                //       <div className="text-sm text-white/60 truncate">
+                //         {group.members.length} members
+                //       </div>
+                //     </div>
+                //   </button>
+                // ))
+                group.length > 0 && group.map((e: any) => <button
+                  key={e?.chatId}
+                  onClick={() => {
+                    setSelectedGroup(e);
+                    setSelectedUser(null);
+                  }}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.chatId === e?.chatId
+                          ? 'bg-white/10'
+                          : 'hover:bg-white/5'
+                          }`}>
+                  <img src={e?.groupImage} alt="WOW" className="w-16 h-16 rounded-lg" />
+                  <div className="flex-1 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{e.groupName}</span>
                     </div>
-                  </button>
-                ))
+                    <div className="text-sm text-white/60 truncate">
+                      {e.members.length} members
+                    </div>
+                  </div>
+                </button>)
               ) : (
                 mockUsers.map((user) => (
                   <button
@@ -596,7 +641,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   </>
                 ) : selectedGroup ? (
                   <>
-                    {selectedGroup.id === 'wow' ? (
+                    {/* {selectedGroup.id === 'wow' ? (
                       <img src={selectedGroup.icon} alt="WOW" className="w-10 h-10" />
                     ) : (
                       <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg">
@@ -616,7 +661,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       <div className="text-sm text-white/60">
                         {selectedGroup.members.length} members
                       </div>
-                    </div>
+                    </div> */}
                   </>
                 ) : (
                   <div className="text-white/40">Select a chat to start messaging</div>
