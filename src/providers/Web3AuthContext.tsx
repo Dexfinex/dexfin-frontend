@@ -208,7 +208,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             pkpWallet.request = async (payload: any) => {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                 
                 if (payload?.method === 'eth_accounts') {
                     return [pkpWallet.address]
                 } else {

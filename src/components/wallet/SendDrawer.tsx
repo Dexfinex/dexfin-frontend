@@ -1,6 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useContext, useEffect } from 'react';
+import { Skeleton } from '@chakra-ui/react';
 import { Search, ArrowRight, ChevronDown } from 'lucide-react';
+import { FieldValues, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { ethers } from "ethers";
+
+import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
+import useGasEstimation from "../../hooks/useGasEstimation.ts";
+import useTokenStore from "../../store/useTokenStore.ts";
+import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import { Drawer } from '../common/Drawer';
+import { formatNumberByFrac } from '../../utils/common.util';
+import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
+import { mapChainId2NativeAddress } from "../../config/networks.ts";
+import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
+import { TransactionError } from '../../types';
+import { mapChainId2ExplorerUrl } from '../../config/networks.ts';
 
 interface SendDrawerProps {
   isOpen: boolean;
@@ -8,23 +24,109 @@ interface SendDrawerProps {
   assets: {
     id: string;
     name: string;
+    address: string;
     symbol: string;
     amount: number;
     logo: string;
   }[];
 }
 
-export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets }) => {
-  const [selectedAsset, setSelectedAsset] = useState(assets[0]);
-  const [amount, setAmount] = useState('');
-  const [address, setAddress] = useState('');
-  const [showAssetSelector, setShowAssetSelector] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+interface FormValues extends FieldValues {
+  amount: number | "";
+  address: string;
+  searchQuery: string;
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle send transaction
-    onClose();
+export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets }) => {
+  const [showAssetSelector, setShowAssetSelector] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState(assets[0])
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [hash, setHash] = useState("")
+  const [txModalOpen, setTxModalOpen] = useState(false);
+
+  const { mutate: sendTransactionMutate } = useSendTransactionMutation();
+  const { signer } = useContext(Web3AuthContext);
+
+  const { chainId } = useContext(Web3AuthContext);
+
+  const schema = z.object({
+    amount: z.number({
+      required_error: "Amount is required",
+      invalid_type_error: "Amount must be a number"
+    }).gt(0).lte(selectedAsset.amount),
+    address: z.string()
+      .refine((value) => ethers.utils.isAddress(value), {
+        message: "Provided address is invalid.",
+      }),
+  });
+
+  const {
+    isLoading: isGasEstimationLoading,
+    data: gasData
+  } = useGasEstimation()
+
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
+    mode: 'onChange',
+    resolver: zodResolver(schema),
+    defaultValues: {
+      amount: "",
+      address: "",
+      searchQuery: ""
+    }
+  });
+
+  const searchQuery = watch("searchQuery")
+  const amount = watch("amount")
+  const address = watch("address")
+
+  const { getTokenPrice, tokenPrices } = useTokenStore()
+
+  const tokenChainId = Number(chainId);
+  const nativeTokenAddress = mapChainId2NativeAddress[tokenChainId]
+
+  const { refetch: refetchNativeTokenPrice } = useGetTokenPrices({
+    tokenAddresses: [nativeTokenAddress],
+    chainId: tokenChainId,
+  })
+
+
+  const nativeTokenPrice = useMemo(() => {
+    return getTokenPrice(nativeTokenAddress, tokenChainId)
+  }, [getTokenPrice, nativeTokenAddress, tokenChainId, tokenPrices])
+
+  useEffect(() => {
+    if (tokenChainId && nativeTokenAddress && nativeTokenPrice === 0) {
+      refetchNativeTokenPrice()
+    }
+  }, [tokenChainId, nativeTokenAddress, nativeTokenPrice])
+
+  const onSubmit = () => {
+    setIsConfirming(true);
+    sendTransactionMutate(
+      {
+        tokenAddress: selectedAsset.address,
+        sendAddress: address,
+        sendAmount: Number(amount),
+        signer,
+        gasLimit: gasData.gasLimit,
+        gasPrice: gasData.gasPrice,
+      },
+      {
+        onSuccess: (receipt) => {
+          setIsConfirming(false);
+          setHash(receipt.blockHash)
+          setTxModalOpen(true)
+          setValue("amount", "")
+          setValue("address", "")
+          onClose();
+          console.log('success', receipt);
+        },
+        onError: (error: TransactionError) => {
+          setIsConfirming(false);
+          console.log(error)
+        },
+      },
+    );
   };
 
   const filteredAssets = assets.filter(asset =>
@@ -34,7 +136,10 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
 
   return (
     <Drawer isOpen={isOpen} onClose={onClose} title="Send Assets">
-      <form onSubmit={handleSubmit} className="space-y-6 p-4">
+      {
+        hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[chainId!]}/tx/${hash}`} />
+      }
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-4">
         {/* Asset Selector */}
         <div>
           <label className="block text-sm text-white/60 mb-2">Asset</label>
@@ -66,7 +171,9 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
                     <input
                       type="text"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => setValue("searchQuery", e.target.value, {
+                        shouldValidate: true,
+                      })}
                       placeholder="Search assets..."
                       className="bg-transparent outline-none flex-1 text-sm"
                     />
@@ -78,7 +185,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
                         key={asset.id}
                         type="button"
                         onClick={() => {
-                          setSelectedAsset(asset);
+                          setSelectedAsset(asset)
                           setShowAssetSelector(false);
                         }}
                         className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
@@ -103,16 +210,20 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
         <div>
           <label className="block text-sm text-white/60 mb-2">Amount</label>
           <div className="relative">
+            {errors.amount?.message && <p className='text-red-500 text-xs italic'>{errors.amount?.message}</p>}
             <input
-              type="text"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              type="number"
               placeholder="0.00"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-white/20"
+              className={`w-full bg-white/5 border ${errors.amount ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:border-white/20`}
+              {...register("amount", { valueAsNumber: true })}
             />
             <button
               type="button"
-              onClick={() => setAmount(selectedAsset.amount.toString())}
+              onClick={() =>
+                setValue("amount", selectedAsset.amount, {
+                  shouldValidate: true,
+                })
+              }
               className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-sm text-blue-400 hover:text-blue-300"
             >
               MAX
@@ -126,17 +237,17 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
         {/* Address Input */}
         <div>
           <label className="block text-sm text-white/60 mb-2">Send To</label>
+          {errors.address?.message && <p className='text-red-500 text-xs italic'>{errors.address?.message}</p>}
           <input
             type="text"
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
             placeholder="Enter wallet address or ENS name"
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-white/20"
+            className={`w-full bg-white/5 border ${errors.address ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:border-white/20`}
+            {...register("address")}
           />
         </div>
-
         {/* Preview */}
-        {amount && address && (
+        {(amount && address && !errors.amount && !errors.address) ? (
           <div className="p-4 bg-white/5 rounded-lg">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -157,14 +268,14 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
               </div>
             </div>
             <div className="text-sm text-white/60">
-              Network Fee: ~$2.50
+              Network Fee: {isGasEstimationLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton> : `$${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}
             </div>
           </div>
-        )}
+        ) : null}
 
         <button
           type="submit"
-          disabled={!amount || !address}
+          disabled={!amount || !address || isConfirming}
           className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
         >
           Send {selectedAsset.symbol}

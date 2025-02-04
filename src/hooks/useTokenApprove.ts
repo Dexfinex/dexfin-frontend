@@ -42,7 +42,7 @@ async function getAllowance({
 	try {
 		const provider = providers[chain];
 		const tokenContract = new ethers.Contract(token, erc20Abi, provider);
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+		 
 		return (await tokenContract.allowance(address, spender)) as ethers.BigNumber;
 	} catch (error) {
 		throw new Error(error instanceof Error ? `[Allowance]:${error.message}` : '[Allowance]: Failed to fetch allowance');
@@ -135,7 +135,7 @@ export const useTokenApprove = ({
 				signer
 			);
 
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+			 
 			(await erc20.approve(spender, approveAmount)).wait();
 			// success?
 			setIsConfirmingApproval(false);

@@ -26,11 +26,11 @@ const createProviderAndGetBalance = async (rpcUrl: string, address: string, toke
 
 		const contract = new ethers.Contract(getAddress(token), erc20Abi, provider);
 
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-argument
+		 
 		const [balance, decimals] = await Promise.all<[string, number]>([contract.balanceOf(getAddress(address)), contract.decimals()]);
 
 		return { value: balance, formatted: ethers.utils.formatUnits(balance, decimals), decimals };
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		 
 	} catch (error) {
 		return null;
 	}
@@ -42,18 +42,18 @@ export const getBalance = async ({ address, chainId, token }: IGetBalance) => {
 			return null;
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/ban-ts-comment
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 		// @ts-expect-error
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+		 
 		const urls = Object.values(rpcUrls[chainId] || {});
 
 		if (urls.length === 0) {
 			return null;
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/ban-ts-comment
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 		// @ts-expect-error
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-return
+		 
 		return await Promise.any(urls.map((rpcUrl) => createProviderAndGetBalance(rpcUrl, address, token)));
 	} catch (error) {
 		console.log(error);

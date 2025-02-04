@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { X, Maximize2, Minimize2, ArrowDown, CreditCard, Send, Wallet, TrendingUp, LayoutGrid, History, Landmark, ExternalLink, Clock } from 'lucide-react';
 import { SendDrawer } from './wallet/SendDrawer';
 import { ReceiveDrawer } from './wallet/ReceiveDrawer';
 import { BuyDrawer } from './wallet/BuyDrawer';
 import { mockTransactions, mockDeFiPositions, mockDeFiStats, formatTransactionAmount, formatUsdValue, formatApy, getHealthFactorColor, getTransactionStatusColor } from '../lib/wallet';
 import { TransactionType } from '../types/wallet';
+import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -17,6 +18,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const [showSendDrawer, setShowSendDrawer] = useState(false);
   const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
   const [showBuyDrawer, setShowBuyDrawer] = useState(false);
+
+  const { address } = useContext(Web3AuthContext);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -36,21 +39,21 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
       {/* Quick Actions */}
       <div className="grid grid-cols-3 gap-3">
-        <button 
+        <button
           onClick={() => setShowSendDrawer(true)}
           className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
         >
           <Send className="w-5 h-5" />
           <span>Send</span>
         </button>
-        <button 
+        <button
           onClick={() => setShowReceiveDrawer(true)}
           className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
         >
           <ArrowDown className="w-5 h-5" />
           <span>Receive</span>
         </button>
-        <button 
+        <button
           onClick={() => setShowBuyDrawer(true)}
           className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
         >
@@ -96,11 +99,10 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
         >
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                tx.type === TransactionType.RECEIVE ? 'bg-green-500/20 text-green-400' :
-                tx.type === TransactionType.SEND ? 'bg-red-500/20 text-red-400' :
-                'bg-blue-500/20 text-blue-400'
-              }`}>
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tx.type === TransactionType.RECEIVE ? 'bg-green-500/20 text-green-400' :
+                  tx.type === TransactionType.SEND ? 'bg-red-500/20 text-red-400' :
+                    'bg-blue-500/20 text-blue-400'
+                }`}>
                 {tx.type}
               </span>
               <span className="text-sm text-white/60">
@@ -261,11 +263,10 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
         <div
-          className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${
-            isFullscreen
+          className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
               ? 'w-full h-full rounded-none'
               : 'w-[90%] h-[90%] rounded-xl'
-          }`}
+            }`}
         >
           <div className="flex flex-col h-full">
             {/* Header */}
@@ -305,27 +306,24 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
             <div className="flex items-center justify-around p-2 border-t border-white/10">
               <button
                 onClick={() => setSelectedTab('assets')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-                  selectedTab === 'assets' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                }`}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'assets' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                  }`}
               >
                 <LayoutGrid className="w-5 h-5" />
                 <span className="text-xs">Assets</span>
               </button>
               <button
                 onClick={() => setSelectedTab('activity')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-                  selectedTab === 'activity' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                }`}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'activity' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                  }`}
               >
                 <History className="w-5 h-5" />
                 <span className="text-xs">Activity</span>
               </button>
               <button
                 onClick={() => setSelectedTab('defi')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-                  selectedTab === 'defi' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                }`}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'defi' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                  }`}
               >
                 <Landmark className="w-5 h-5" />
                 <span className="text-xs">DeFi</span>
@@ -342,6 +340,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
         assets={mockDeFiPositions.map(p => ({
           id: p.id,
           name: p.token.symbol,
+          address: p.address,
           symbol: p.token.symbol,
           amount: p.amount,
           logo: p.token.logo
@@ -357,7 +356,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
           symbol: p.token.symbol,
           logo: p.token.logo
         }))}
-        walletAddress="0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+        walletAddress={address}
       />
 
       <BuyDrawer
