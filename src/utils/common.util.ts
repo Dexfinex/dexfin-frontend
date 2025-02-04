@@ -1,10 +1,34 @@
 import moment from 'moment/moment';
+import { ethers } from 'ethers';
 
 const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
 
 export const isValidWalletAddress = (address: string): boolean => {
     return ethAddressRegex.test(address);
 };
+
+export const checkIfAddressExists = async (address: string): Promise<boolean> => {
+    try {
+        // Connect to an EVM chain (e.g., Ethereum mainnet, or any other network)
+        const provider = new ethers.providers.JsonRpcProvider("https://mainnet.base.org	");
+
+        // Check if the address has a non-zero balance
+        const balance = await provider.getBalance(address);
+
+        // If the balance is greater than 0, the address exists (has funds)
+        if (balance.isZero()) {
+            // console.log("Address exists but has no balance.");
+            return true;
+        } else {
+            // console.log("Address exists and has a balance.");
+            return true;
+        }
+    } catch (error) {
+        console.error("Error checking address:", error);
+        // return 0;
+        return false;
+    }
+}
 
 /**
  * Compares two wallet addresses in uppercase.
