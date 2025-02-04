@@ -19,6 +19,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
   const [showBuyDrawer, setShowBuyDrawer] = useState(false);
 
+  const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
+
   const { address } = useContext(Web3AuthContext);
 
   const toggleFullscreen = () => {
@@ -64,7 +66,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
       {/* Assets List */}
       <div className="space-y-2">
-        {mockDeFiPositions.map((position) => (
+        {sortedMockDeFiPositions.map((position) => (
           <div
             key={position.id}
             className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
@@ -100,8 +102,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tx.type === TransactionType.RECEIVE ? 'bg-green-500/20 text-green-400' :
-                  tx.type === TransactionType.SEND ? 'bg-red-500/20 text-red-400' :
-                    'bg-blue-500/20 text-blue-400'
+                tx.type === TransactionType.SEND ? 'bg-red-500/20 text-red-400' :
+                  'bg-blue-500/20 text-blue-400'
                 }`}>
                 {tx.type}
               </span>
@@ -197,7 +199,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
       {/* DeFi Positions */}
       <div className="space-y-3">
-        {mockDeFiPositions.map((position) => (
+        {sortedMockDeFiPositions.map((position) => (
           <div
             key={position.id}
             className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
@@ -264,8 +266,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
         <div
           className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
-              ? 'w-full h-full rounded-none'
-              : 'w-[90%] h-[90%] rounded-xl'
+            ? 'w-full h-full rounded-none'
+            : 'w-[90%] h-[90%] rounded-xl'
             }`}
         >
           <div className="flex flex-col h-full">
@@ -337,7 +339,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       <SendDrawer
         isOpen={showSendDrawer}
         onClose={() => setShowSendDrawer(false)}
-        assets={mockDeFiPositions.map(p => ({
+        assets={sortedMockDeFiPositions.map(p => ({
           id: p.id,
           name: p.token.symbol,
           address: p.address,
@@ -350,7 +352,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       <ReceiveDrawer
         isOpen={showReceiveDrawer}
         onClose={() => setShowReceiveDrawer(false)}
-        assets={mockDeFiPositions.map(p => ({
+        assets={sortedMockDeFiPositions.map(p => ({
           id: p.id,
           name: p.token.symbol,
           symbol: p.token.symbol,
@@ -362,7 +364,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       <BuyDrawer
         isOpen={showBuyDrawer}
         onClose={() => setShowBuyDrawer(false)}
-        assets={mockDeFiPositions.map(p => ({
+        assets={sortedMockDeFiPositions.map(p => ({
           id: p.id,
           name: p.token.symbol,
           symbol: p.token.symbol,

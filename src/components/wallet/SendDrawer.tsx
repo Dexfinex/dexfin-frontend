@@ -17,7 +17,6 @@ import { mapChainId2NativeAddress } from "../../config/networks.ts";
 import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
 import { TransactionError } from '../../types';
 import { mapChainId2ExplorerUrl } from '../../config/networks.ts';
-import { useStore } from '../../store/useStore';
 
 interface SendDrawerProps {
   isOpen: boolean;
@@ -47,7 +46,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
 
   const { mutate: sendTransactionMutate } = useSendTransactionMutation();
   const { signer, isConnected, login } = useContext(Web3AuthContext);
-  const { setIsSigninModalOpen } = useStore();
 
   const { chainId } = useContext(Web3AuthContext);
 
