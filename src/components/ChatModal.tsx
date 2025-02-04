@@ -37,6 +37,13 @@ interface ChatModalProps {
 //   }[];
 // }
 
+interface IUser {
+  name: string;
+  profilePicture: string;
+  address: string;
+  chatId: string;
+}
+
 // interface ChatGroup {
 //   id: string;
 //   name: string;
@@ -188,7 +195,7 @@ interface ChatModalProps {
 export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [chatMode, setChatMode] = useState<'group' | 'p2p'>('group');
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -465,7 +472,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     // }
 
     // Show Bob's direct messages
-    if (selectedUser?.id === '2') { // Bob's ID
+    // if (selectedUser?.id === '2') { // Bob's ID
       // const chatMessages = messages['bob'] || [];
       // return (
       //   <div className="space-y-4">
@@ -491,8 +498,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       //     ))}
       //   </div>
       // );
-      return null
-    }
+      // return null
+    // }
 
     // Empty state for other chats
     return (
@@ -681,8 +688,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 //   </button>
                 // ))
                 connectedUsers.map((user: any) => <button key={user?.chatId}
-                  onClick={() => setSelectedUser(user?.wallets)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser === user?.wallets
+                  onClick={() => setSelectedUser({
+                    name: user.name,
+                    profilePicture: user.profilePicture,
+                    address: user.wallets,
+                    chatId: user.chatId
+                  })}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser?.address === user?.wallets
                     ? 'bg-white/10'
                     : 'hover:bg-white/5'
                     }`}
@@ -691,7 +703,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     user?.profilePicture ? <img src={user?.profilePicture} className='w-10 h-10 rounded-full'/> : <User className='w-10 h-10'/>
                   }
                   <div className='flex flex-col'>
-                    <span>{shrinkAddress(extractAddress(user?.wallets))}</span>
+                    <span>{user?.name || shrinkAddress(extractAddress(user?.wallets))}</span>
                   </div>
                 </button>)
               )}
@@ -705,7 +717,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <div className="flex items-center gap-3">
                 {selectedUser ? (
                   <>
-                    <div className="relative flex">
+                    <div className="relative flex items-center">
                       {/* <img
                         src={selectedUser.avatar}
                         alt={selectedUser.name}
@@ -713,7 +725,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       />
                       <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0a0c] ${selectedUser.isOnline ? 'bg-green-500' : 'bg-gray-500'
                         }`} /> */}
-                      <User className='mr-4' /> {selectedUser}
+                      {
+                        selectedUser?.profilePicture ? <img src={selectedUser?.profilePicture} className='w-10 h-10 mr-4 rounded-full'/>: <User className='w-10 h-10 mr-4' />
+                      }
+                      {selectedUser?.name || extractAddress(selectedUser?.address)}
                     </div>
                     {/* <div>
                       <div className="font-medium">{selectedUser.name}</div>
@@ -724,6 +739,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   </>
                 ) : selectedGroup ? (
                   <>
+                    <img src={selectedGroup?.groupImage} className='w-10 h-10 mr-2 rounded-lg'/>
+                    {selectedGroup?.groupName}
                     {/* {selectedGroup.id === 'wow' ? (
                       <img src={selectedGroup.icon} alt="WOW" className="w-10 h-10" />
                     ) : (
@@ -753,7 +770,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
               <div className="flex items-center gap-2">
                 {renderAccessBadge(selectedUser, selectedGroup)}
-                {selectedUser?.isOnline && (
+                {/* {selectedUser?.isOnline && (
                   <>
                     <button
                       onClick={() => setIsVideoCallActive(true)}
@@ -762,7 +779,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       <Video className="w-4 h-4" />
                     </button>
                   </>
-                )}
+                )} */}
                 {selectedGroup && (
                   <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                     <Settings className="w-4 h-4" />
@@ -832,7 +849,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       <VideoCallModal
         isOpen={isVideoCallActive}
         onClose={() => setIsVideoCallActive(false)}
-        user={selectedUser}
+        user={null}
       />
     </>
   );
