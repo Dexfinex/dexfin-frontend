@@ -95,6 +95,8 @@ export function SwapBox({
     const {
         address: walletAddress,
         chainId: walletChainId,
+        isConnected,
+        login,
         switchChain,
     } = useContext(Web3AuthContext);
 
@@ -234,9 +236,9 @@ export function SwapBox({
         error,
         sendTransaction,
     } = useSendTransaction();
-    const { signTypedDataAsync } = useSignTypedData();
+    const {signTypedDataAsync} = useSignTypedData();
 
-    const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    const {isLoading: isConfirming, isSuccess: isConfirmed} =
         useWaitForTransactionReceipt({
             hash,
         });
@@ -459,64 +461,82 @@ export function SwapBox({
             {
                 error && (
                     <Alert status="error" variant="subtle" bg={'#511414'} borderRadius="md">
-                        <AlertIcon />
+                        <AlertIcon/>
                         <Text>Error: {(error as BaseError).shortMessage || error.message}</Text>
                     </Alert>
                 )
             }
 
             {
-                isRequireSwitchChain ? (
+                !isConnected ? (
                     <Button
                         isLoading={false}
-                        loadingText={'Changing Network...'}
+                        loadingText={'Connecting Wallet...'}
                         width="full"
                         colorScheme="blue"
                         onClick={() => {
-                            switchChain(tokenChainId)
+                            login()
                             // if (approveReset) approveReset();
                         }}
                         isDisabled={false}
                     >
-                        {textSwitchChain}
+                        Connect Wallet
                     </Button>
                 ) : (
-                    quoteData?.isNeedApproving ? (
+                    isRequireSwitchChain ? (
                         <Button
-                            isLoading={isApproveLoading}
-                            loadingText={'Approving...'}
+                            isLoading={false}
+                            loadingText={'Changing Network...'}
                             width="full"
                             colorScheme="blue"
                             onClick={() => {
-                                approve?.()
+                                switchChain(tokenChainId)
+                                // if (approveReset) approveReset();
                             }}
                             isDisabled={false}
                         >
-                            Approve {fromToken?.symbol}
+                            {textSwitchChain}
                         </Button>
                     ) : (
-                        insufficientBalance ? (
-                            <Button
-                                width="full"
-                                colorScheme="blue"
-                                isDisabled={true}
-                            >
-                                Insufficient Balance
-                            </Button>
+                        quoteData?.isNeedApproving ? (
+                                <Button
+                                    isLoading={isApproveLoading}
+                                    loadingText={'Approving...'}
+                                    width="full"
+                                    colorScheme="blue"
+                                    onClick={() => {
+                                        approve?.()
+                                    }}
+                                    isDisabled={false}
+                                >
+                                    Approve {fromToken?.symbol}
+                                </Button>
+                            )
+                            :
+                            (
+                                insufficientBalance ? (
+                                    <Button
+                                        width="full"
+                                        colorScheme="blue"
+                                        isDisabled={true}
+                                    >
+                                        Insufficient Balance
+                                    </Button>
 
-                        ) : (
-                            <Button
-                                isLoading={isPending || isConfirming}
-                                loadingText={isPending ? 'Confirming...' : isConfirming ? 'Waiting for confirmation...' : ''}
-                                width="full"
-                                colorScheme="blue"
-                                onClick={handleSwap}
-                                isDisabled={!(Number(fromAmount) > 0) || isPending || isConfirming}
-                            >
-                                Swap
-                            </Button>
+                                ) : (
+                                    <Button
+                                        isLoading={isPending || isConfirming}
+                                        loadingText={isPending ? 'Confirming...' : isConfirming ? 'Waiting for confirmation...' : ''}
+                                        width="full"
+                                        colorScheme="blue"
+                                        onClick={handleSwap}
+                                        isDisabled={!(Number(fromAmount) > 0) || isPending || isConfirming}
+                                    >
+                                        Swap
+                                    </Button>
 
-                        )
+                                )
+                            )
                     )
                 )
             }
@@ -529,12 +549,15 @@ export function SwapBox({
             >
                 Swap
             </button>
-*/}
+*/
+            }
             {
                 isConfirmed && (
-                    <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${hash}`}/>
+                    <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
+                                      link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${hash}`}/>
                 )
             }
         </div>
-    );
+    )
+        ;
 }
