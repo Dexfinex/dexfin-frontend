@@ -17,11 +17,10 @@ export const MainMenu: React.FC = () => {
     setIsCartOpen,
     setIsSocialFeedOpen,
     setIsGamesOpen,
-    setIsSigninModalOpen,
     isTopbarBottom
   } = useStore();
 
-  const { isConnected } = useContext(Web3AuthContext);
+  const { isConnected, login } = useContext(Web3AuthContext);
 
   const handleMenuItemClick = (itemId: string) => {
     // Close menu first
@@ -49,7 +48,7 @@ export const MainMenu: React.FC = () => {
           if (isConnected) {
             setIsChatOpen(true);
           } else {
-            setIsSigninModalOpen(true);
+            login()
           }
           break;
         case 'cart':
