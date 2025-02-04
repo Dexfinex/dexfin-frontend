@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useContext, useEffect } from 'react';
 import { Skeleton } from '@chakra-ui/react';
-import { Search, ArrowRight, ChevronDown } from 'lucide-react';
+import { Search, ArrowRight, ChevronDown, Wallet } from 'lucide-react';
 import { FieldValues, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -17,6 +17,7 @@ import { mapChainId2NativeAddress } from "../../config/networks.ts";
 import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
 import { TransactionError } from '../../types';
 import { mapChainId2ExplorerUrl } from '../../config/networks.ts';
+import { useStore } from '../../store/useStore';
 
 interface SendDrawerProps {
   isOpen: boolean;
@@ -45,7 +46,8 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
   const [txModalOpen, setTxModalOpen] = useState(false);
 
   const { mutate: sendTransactionMutate } = useSendTransactionMutation();
-  const { signer } = useContext(Web3AuthContext);
+  const { signer, isConnected, login } = useContext(Web3AuthContext);
+  const { setIsSigninModalOpen } = useStore();
 
   const { chainId } = useContext(Web3AuthContext);
 
@@ -79,6 +81,10 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
   const amount = watch("amount")
   const address = watch("address")
 
+  const submitDisabled = useMemo(() => {
+    return !amount || !address || isConfirming
+  }, [amount, address, isConfirming])
+
   const { getTokenPrice, tokenPrices } = useTokenStore()
 
   const tokenChainId = Number(chainId);
@@ -91,7 +97,10 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
 
 
   const nativeTokenPrice = useMemo(() => {
-    return getTokenPrice(nativeTokenAddress, tokenChainId)
+    if (tokenChainId) {
+      return getTokenPrice(nativeTokenAddress, tokenChainId)
+    }
+    return 0;
   }, [getTokenPrice, nativeTokenAddress, tokenChainId, tokenPrices])
 
   useEffect(() => {
@@ -273,13 +282,25 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
           </div>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={!amount || !address || isConfirming}
-          className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
-        >
-          Send {selectedAsset.symbol}
-        </button>
+        {
+          isConnected ?
+            <button
+              type="submit"
+              disabled={submitDisabled}
+              className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
+            >
+              Send {selectedAsset.symbol}
+            </button>
+            :
+            <button
+              type="button"
+              className="w-full flex items-center justify-center py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
+              onClick={() => login()}
+            >
+              <Wallet className="w-5 h-5 mr-2" /> Connect
+            </button>
+        }
+
       </form>
     </Drawer>
   );
