@@ -221,6 +221,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
+  const [isFailedSent, setIsFailedSent] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
   // const [messages, setMessages] = useState<Record<string, any[]>>();
@@ -317,7 +318,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     // }
 
     // setMessage('');
-
+    if (isFailedSent) {
+      setIsFailedSent(false)
+    }
 
     if (chatMode === "p2p" && selectedUser) {
       setChatHistory([...chatHistory, {
@@ -347,6 +350,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         }
         console.log('sent msg = ', sentMsg)
       } catch (err) {
+        setIsFailedSent(true)
+        setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
         console.log('sent msg err: ', err)
       }
     }
@@ -398,7 +403,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery) return
+    if (!searchQuery || searchQuery == address) return
     setIsSearching(true)
     const profile = await getWalletProfile(searchQuery)
     // const isValidAddress = await checkIfAddressExists(searchQuery)
@@ -487,7 +492,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         </div>
       )
     }
-
     if (chatHistory && chatHistory.length > 0) {
       return (
         <div className="space-y-4">
@@ -516,7 +520,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         </div>
       )
     }
-
+    if (isFailedSent) {
+      return <div className='text-red-500 text-sm absolute bottom-[76px] right-[8px]'>Can't send message. Please try again.</div>
+    }
+     
     // // Check access before showing messages
     // if (!canAccessChat(selectedUser, selectedGroup)) {
     //   return (
