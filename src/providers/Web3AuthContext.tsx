@@ -27,7 +27,7 @@ import {SavedWalletInfo, type SolanaWalletInfoType} from "../types/auth";
 import {generatePrivateKey, signTransactionWithEncryptedKey} from "@lit-protocol/wrapped-keys/src/lib/api";
 import {Transaction} from "@solana/web3.js";
 import {SerializedTransaction} from "@lit-protocol/wrapped-keys";
-import {createPublicClient, createWalletClient, type WalletClient} from "viem";
+import {createPublicClient, createWalletClient, custom, publicActions, type WalletClient} from "viem";
 import {http} from "@wagmi/core";
 import {signerToEcdsaValidator} from "@zerodev/ecdsa-validator";
 import {getEntryPoint, KERNEL_V3_1} from "@zerodev/sdk/constants";
@@ -301,7 +301,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 // Use your own RPC provider (e.g. Infura/Alchemy).
                 transport: http(mapRpcUrls[currentChainId]),
                 chain: mapChainId2ViemChain[currentChainId],
-            })
+            }).extend(publicActions) // extend wallet client with publicActions for public client
             setWalletClient(walletClient)
 
 
@@ -376,6 +376,14 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 const provider = new Web3Provider(rawProvider as ExternalProvider);
                 setProvider(provider)
                 setSigner(provider.getSigner())
+
+                const walletClient = createWalletClient({
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-expect-error
+                    transport: custom(rawProvider), // Use rawProvider (window.ethereum)
+                    chain: mapChainId2ViemChain[wagmiChainId as number],
+                }).extend(publicActions); // Extend with public actions
+                setWalletClient(walletClient)
             })
         } else {
             setIsConnected(isWagmiWalletConnected)
@@ -460,6 +468,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         setAuthMethod(undefined)
         setIsConnected(false)
         setChainId(undefined)
+        setWalletClient(undefined)
         setIsLoadingStoredWallet(false)
     }
 
@@ -520,6 +529,13 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
             if (isWagmiWalletConnected) {
                 await switchChainWagmi({chainId})
+                const walletClient = createWalletClient({
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-expect-error
+                    transport: custom(provider!.provider), // Use rawProvider (window.ethereum)
+                    chain: mapChainId2ViemChain[wagmiChainId as number],
+                }).extend(publicActions); // Extend with public actions
+                setWalletClient(walletClient)
             } else {
                 await setProviderByPKPWallet(chainId)
             }
