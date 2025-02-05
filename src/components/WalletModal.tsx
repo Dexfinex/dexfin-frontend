@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { X, Maximize2, Minimize2, ArrowDown, CreditCard, Send, Wallet, TrendingUp, LayoutGrid, History, Landmark, ExternalLink, Clock } from 'lucide-react';
 import { SendDrawer } from './wallet/SendDrawer';
 import { ReceiveDrawer } from './wallet/ReceiveDrawer';
@@ -6,6 +6,7 @@ import { BuyDrawer } from './wallet/BuyDrawer';
 import { mockTransactions, mockDeFiPositions, mockDeFiStats, formatTransactionAmount, formatUsdValue, formatApy, getHealthFactorColor, getTransactionStatusColor } from '../lib/wallet';
 import { TransactionType } from '../types/wallet';
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
+import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const [showSendDrawer, setShowSendDrawer] = useState(false);
   const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
   const [showBuyDrawer, setShowBuyDrawer] = useState(false);
+
+  const { totalUsdValue } = useTokenBalanceStore();
 
   const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
 
@@ -32,7 +35,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       {/* Total Balance */}
       <div className="bg-white/5 rounded-xl p-4">
         <div className="text-sm text-white/60">Total Balance</div>
-        <div className="text-3xl font-bold mt-1">{formatUsdValue(mockDeFiStats.netWorth)}</div>
+        <div className="text-3xl font-bold mt-1">{formatUsdValue(totalUsdValue)}</div>
         <div className="flex items-center gap-1 mt-1 text-green-400">
           <TrendingUp className="w-4 h-4" />
           <span>+1.57% TODAY</span>

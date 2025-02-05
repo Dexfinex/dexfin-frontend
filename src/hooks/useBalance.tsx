@@ -21,7 +21,7 @@ interface IGetBalance {
 
 interface IEvmWallet {
 	address: string;
-	chainId: string;
+	chainId: number;
 }
 
 const createProviderAndGetBalance = async (rpcUrl: string, address: string, token: string) => {
@@ -145,18 +145,16 @@ export const useEvmWalletBalance = (params?: IEvmWallet) => {
 	const activeWalletAddress = params?.address || connectedAddress;
 
 	const enabled = !!activeChainId && !!activeWalletAddress;
-
 	const fetchBalances = useCallback(async () => {
-		const data = await dexfinv3Service.getEvmWalletBalance({ chainId: activeChainId, address: activeWalletAddress });
+		if (!activeChainId || !activeWalletAddress) {
+			return []
+		}
+		const data = await dexfinv3Service.getEvmWalletBalance({ chainId: Number(activeChainId), address: activeWalletAddress });
 		if (data) {
 			return data;
 		}
 		return []
 	}, [activeChainId, activeWalletAddress]);
-
-	if (!activeChainId || !activeWalletAddress) {
-		return [] as unknown as UseQueryResult<[]>;
-	}
 
 	const { isLoading, refetch, data } = useQuery<EvmWalletBalanceResponseType[]>(
 		{

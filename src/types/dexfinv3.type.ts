@@ -1,5 +1,5 @@
 export interface EvmWalletBalanceRequestType {
-  chainId: string;
+  chainId: number;
   address: string;
 }
 
