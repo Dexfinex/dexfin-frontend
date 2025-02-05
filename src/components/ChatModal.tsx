@@ -227,6 +227,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isScrollTop, setIsScrollTop] = useState(false);
   const [loadingPrevChat, setLoadingPrevChat] = useState(false);
   const [toBottom, setToBottom] = useState(false);
+  const [receivedMessage, setReceivedMessage] = useState<any>([]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // const [messages, setMessages] = useState<Record<string, any[]>>();
@@ -296,6 +297,25 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setChatHistory([])
   }, [selectedUser, selectedGroup])
 
+  useEffect(() => {
+    if (selectedUser?.address) {
+      console.log(address, extractAddress(receivedMessage?.to[0] || ""))
+      if (address == extractAddress(receivedMessage?.to[0] || "")) {
+        setChatHistory(
+          [...chatHistory, {
+            timestamp: Number(receivedMessage.timestamp),
+            type: receivedMessage.message.type,
+            content: receivedMessage.message.content,
+            fromAddress: extractAddress(receivedMessage.from),
+            toAddress: extractAddress(receivedMessage.to[0]),
+            chatId: receivedMessage.chatId,
+            link: null
+          }]
+        )
+      }
+    }
+  }, [receivedMessage])
+
   const getPrevChatHistory = async (address: string, chatId: string) => {
     setLoadingPrevChat(true)
     const prevHistory = await chatUser.chat.history(address, { reference: chatId })
@@ -348,7 +368,72 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         env: CONSTANTS.ENV.PROD,
       });
       setChatUser(user)
+      initStream(user)
     }
+  }
+
+  const initStream = async (user: any) => {
+    const stream = await user.initStream(
+      [
+        CONSTANTS.STREAM.CHAT, // Listen for chat messages
+        CONSTANTS.STREAM.NOTIF, // Listen for notifications
+        CONSTANTS.STREAM.CONNECT, // Listen for connection events
+        CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
+      ],
+      {
+        // Filter options:
+        filter: {
+          // Listen to all channels and chats (default):
+          channels: ['*'],
+          chats: ['*'],
+
+          // Listen to specific channels and chats:
+          // channels: ['channel-id-1', 'channel-id-2'],
+          // chats: ['chat-id-1', 'chat-id-2'],
+
+          // Listen to events with a specific recipient:
+          // recipient: '0x...' (replace with recipient wallet address)
+        },
+        // Connection options:
+        connection: {
+          retries: 3, // Retry connection 3 times if it fails
+        },
+        raw: false, // Receive events in structured format
+      }
+    );
+
+    // Stream connection established:
+    stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
+      console.log('Stream Connected ', a);
+
+      // // Send initial message to PushAI Bot:
+      // console.log('Sending message to PushAI Bot');
+
+      // await userAlice.chat.send(pushAIWalletAddress, {
+      //   content: 'Hello, from Alice',
+      //   type: 'Text',
+      // });
+
+      // console.log('Message sent to PushAI Bot');
+    });
+
+    stream.on(CONSTANTS.STREAM.CHAT, (message: any) => {
+      console.log('Encrypted Message Received');
+      console.log(message); // Log the message payload
+      setReceivedMessage(message)
+    });
+
+    // Chat operation received:
+    stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
+      console.log('Chat operation received.');
+      console.log(data); // Log the chat operation data
+    });
+
+    await stream.connect(); // Establish the connection after setting up listeners
+    // Stream disconnection:
+    stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
+      console.log('Stream Disconnected');
+    });
   }
 
   const scrollBottom = () => {
