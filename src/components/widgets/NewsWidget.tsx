@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {AlertCircle, ExternalLink, RefreshCw} from 'lucide-react';
-import {getLatestNews} from '../../lib/cryptonews';
+import {cryptonewsService} from "../../services/cryptonews.service";
 import {NewsItem} from '../../types';
 
 interface NewsWidgetProps {
@@ -18,7 +18,7 @@ export const NewsWidget: React.FC<NewsWidgetProps> = ({news: defaultNews}) => {
       if (showRefreshState) {
         setRefreshing(true);
       }
-      const newsData = await getLatestNews();
+      const newsData = await cryptonewsService.getLatestNews();
       if (newsData && newsData.length > 0) {
         setNews(newsData);
         setError(null);

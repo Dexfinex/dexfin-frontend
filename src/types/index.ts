@@ -104,3 +104,94 @@ export interface ChartOptions {
     };
   };
 }
+
+export interface CoinGeckoToken {
+  name: string,
+  address: string,
+  chainId: number,
+  decimals: number,
+  logoURI: string,
+  price: number,
+  priceChange24h: number,
+  marketCap: number,
+  marketCapRank: number,
+  volume24h: number,
+  sparkline: number[];
+  category: string;
+}
+
+export interface DeFiStats {
+  totalTvl: number;
+  totalChange24h: number;
+  defiMarketCap: number;
+  categories: {
+    name: string;
+    tvl: number;
+    change24h: number;
+  }[];
+  protocols: {
+    name: string;
+    tvl: number;
+    change24h: number;
+    category: string;
+    logo: string;
+  }[];
+}
+
+export interface YieldData {
+  protocol: string;
+  symbol: string;
+  chain: string;
+  apy: number;
+  tvlUsd: number;
+  logo: string;
+}
+
+export interface TokenPool {
+    id: string;
+    type: string;
+    attributes: {
+        name: string;
+        pool_created_at: string;
+        price_change_percentage: {
+            h24?: string;
+            h1?: string;
+        };
+        base_token_price_usd?: string;
+        transactions?: {
+            h24?: number;
+        };
+        volume_usd?: {
+            h24?: string;
+        };
+        reserve_in_usd?: string;
+        fdv_usd?: string;
+    };
+    relationships: {
+        base_token: {
+            data: {
+                id: string;
+            };
+        };
+        quote_token: {
+            data: {
+                id: string;
+            };
+        };
+    };
+    included?: {
+        tokens: Token[];
+        dexes?: any[];
+        networks?: any[];
+    };
+}
+
+export interface Token {
+  id: string;
+  type: string;
+  attributes: {
+      name: string;
+      symbol: string;
+      logo_url?: string;
+  };
+}
