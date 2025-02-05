@@ -1,17 +1,27 @@
-import {useQuery, UseQueryResult} from '@tanstack/react-query';
-import {ethers} from 'ethers';
-import {getAddress} from 'ethers/lib/utils';
-import {erc20Abi} from 'viem'
-import {useBalance as useWagmiBalance} from 'wagmi';
-import {nativeAddress} from '../constants';
-import {useContext} from "react";
-import {Web3AuthContext} from "../providers/Web3AuthContext.tsx";
-import {rpcUrls} from "../config/rpcs.ts";
+import { useCallback, useEffect } from 'react';
+import { useQuery, UseQueryResult } from '@tanstack/react-query';
+import { ethers } from 'ethers';
+import { getAddress } from 'ethers/lib/utils';
+import { erc20Abi } from 'viem'
+import { useBalance as useWagmiBalance } from 'wagmi';
+import { nativeAddress } from '../constants';
+import { useContext } from "react";
+import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
+import { rpcUrls } from "../config/rpcs.ts";
+import { dexfinv3Service } from '../services/dexfin.service.ts';
+import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
+import { EvmWalletBalanceResponseType } from '../types/dexfinv3.type.ts';
+import { TokenBalance } from '../store/useTokenBalanceStore.ts';
 
 interface IGetBalance {
 	address?: string;
 	chainId?: number;
 	token?: string;
+}
+
+interface IEvmWallet {
+	address: string;
+	chainId: string;
 }
 
 const createProviderAndGetBalance = async (rpcUrl: string, address: string, token: string) => {
@@ -26,11 +36,11 @@ const createProviderAndGetBalance = async (rpcUrl: string, address: string, toke
 
 		const contract = new ethers.Contract(getAddress(token), erc20Abi, provider);
 
-		 
+
 		const [balance, decimals] = await Promise.all<[string, number]>([contract.balanceOf(getAddress(address)), contract.decimals()]);
 
 		return { value: balance, formatted: ethers.utils.formatUnits(balance, decimals), decimals };
-		 
+
 	} catch (error) {
 		return null;
 	}
@@ -44,7 +54,7 @@ export const getBalance = async ({ address, chainId, token }: IGetBalance) => {
 
 		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 		// @ts-expect-error
-		 
+
 		const urls = Object.values(rpcUrls[chainId] || {});
 
 		if (urls.length === 0) {
@@ -53,7 +63,7 @@ export const getBalance = async ({ address, chainId, token }: IGetBalance) => {
 
 		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 		// @ts-expect-error
-		 
+
 		return await Promise.any(urls.map((rpcUrl) => createProviderAndGetBalance(rpcUrl, address, token)));
 	} catch (error) {
 		console.log(error);
@@ -73,17 +83,17 @@ export const useBalance = ({
 	decimals?: undefined;
 }> => {
 
-/*
-	if (chainId === undefined || token === undefined)
-		return {
-			isLoading: false,
-			isSuccess: false,
-			data: {
-				value:  ethers.BigNumber.from(0),
-				formatted: '0',
+	/*
+		if (chainId === undefined || token === undefined)
+			return {
+				isLoading: false,
+				isSuccess: false,
+				data: {
+					value:  ethers.BigNumber.from(0),
+					formatted: '0',
+				}
 			}
-		}
-*/
+	*/
 
 	const { isConnected, address } = useContext(Web3AuthContext);
 	const tokenAddress = [ethers.constants.AddressZero, nativeAddress.toLowerCase()].includes(token ? token?.toLowerCase() : '')
@@ -118,11 +128,64 @@ export const useBalance = ({
 		!isEnabled
 			? { isLoading: false, isSuccess: false, data: null }
 			: wagmiData.isLoading || wagmiData.data
-			? wagmiData
-			: queryData
+				? wagmiData
+				: queryData
 	) as UseQueryResult<{
 		value: ethers.BigNumber;
 		formatted: string;
 		decimals?: undefined;
 	}>;
+};
+
+export const useEvmWalletBalance = (params?: IEvmWallet) => {
+
+	const { chainId: connectedChainId, address: connectedAddress } = useContext(Web3AuthContext);
+
+	const activeChainId = params?.chainId || connectedChainId + "";
+	const activeWalletAddress = params?.address || connectedAddress;
+
+	const enabled = !!activeChainId && !!activeWalletAddress;
+
+	const fetchBalances = useCallback(async () => {
+		const data = await dexfinv3Service.getEvmWalletBalance({ chainId: activeChainId, address: activeWalletAddress });
+		if (data) {
+			return data;
+		}
+		return []
+	}, [activeChainId, activeWalletAddress]);
+
+	if (!activeChainId || !activeWalletAddress) {
+		return [] as unknown as UseQueryResult<[]>;
+	}
+
+	const { isLoading, refetch, data } = useQuery<EvmWalletBalanceResponseType[]>(
+		{
+			queryKey: ['balance', activeWalletAddress, activeChainId,],
+			queryFn: fetchBalances,
+			refetchInterval: 10_000,
+			enabled
+		}
+	);
+
+	useEffect(() => {
+		if (data) {
+			useTokenBalanceStore.getState().setTokenBalances(data.map((item) => ({
+				chain: item.chain,
+				address: item.tokenAddress as string,
+				symbol: item.symbol,
+				name: item.name,
+				logo: item.logo,
+				balance: item.balance,
+				decimals: item.decimals,
+				usdPrice: item.usdPrice,
+				usdValue: item.usdValue,
+			} as unknown as TokenBalance)));
+		}
+	}, [data]);
+
+	return {
+		isLoading,
+		refetch,
+		data,
+	};
 };
