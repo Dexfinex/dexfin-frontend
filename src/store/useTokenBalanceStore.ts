@@ -6,7 +6,7 @@ export interface TokenBalance {
   symbol: string;
   name: string;
   logo: string;
-  balance: string;
+  balance: number;
   decimals: number;
   usdPrice: number;
   usdValue: number;
@@ -37,6 +37,7 @@ const useTokenBalanceStore = create<TokenBalanceStoreState>((set) => ({
     return state.chainUsdValue[chainId] || 0;
   },
   setTokenBalances: (balances: TokenBalance[]) => {
+    const sortedBalances =  balances.sort((a, b) => a.usdValue >= b.usdValue ? -1 : 1)
     const totalUsdValue = balances.reduce(
       (acc, b) => acc + Number(b.usdValue) || 0,
       0
@@ -54,7 +55,7 @@ const useTokenBalanceStore = create<TokenBalanceStoreState>((set) => ({
     );
 
     set({
-      tokenBalances: balances,
+      tokenBalances: sortedBalances,
       totalUsdValue: totalUsdValue,
       chainUsdValue,
     });

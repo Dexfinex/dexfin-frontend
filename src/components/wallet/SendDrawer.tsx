@@ -22,7 +22,6 @@ interface SendDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   assets: {
-    id: string;
     name: string;
     address: string;
     symbol: string;

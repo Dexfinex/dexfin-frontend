@@ -10,7 +10,6 @@ export const dexfinv3Service = {
     address,
   }: EvmWalletBalanceRequestType): Promise<EvmWalletBalanceResponseType[]> => {
     try {
-      debugger
       const { data } = await dexfinv3Api.get<EvmWalletBalanceResponseType[]>(
         `/evm/wallet/${chainId}/${address}/balances`
       );

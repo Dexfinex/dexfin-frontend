@@ -7,7 +7,6 @@ interface ReceiveDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   assets: {
-    id: string;
     name: string;
     symbol: string;
     logo: string;
@@ -88,7 +87,7 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
                   <div className="max-h-48 overflow-y-auto">
                     {filteredAssets.map((asset) => (
                       <button
-                        key={asset.id}
+                        key={asset.name}
                         onClick={() => {
                           setSelectedAsset(asset);
                           setShowAssetSelector(false);

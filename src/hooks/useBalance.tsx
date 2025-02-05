@@ -173,7 +173,7 @@ export const useEvmWalletBalance = (params?: IEvmWallet) => {
 				symbol: item.symbol,
 				name: item.name,
 				logo: item.logo,
-				balance: item.balance,
+				balance: item.balanceDecimal,
 				decimals: item.decimals,
 				usdPrice: item.usdPrice,
 				usdValue: item.usdValue,

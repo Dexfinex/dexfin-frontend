@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { X, Maximize2, Minimize2, ArrowDown, CreditCard, Send, Wallet, TrendingUp, LayoutGrid, History, Landmark, ExternalLink, Clock } from 'lucide-react';
 import { SendDrawer } from './wallet/SendDrawer';
 import { ReceiveDrawer } from './wallet/ReceiveDrawer';
@@ -20,7 +20,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
   const [showBuyDrawer, setShowBuyDrawer] = useState(false);
 
-  const { totalUsdValue } = useTokenBalanceStore();
+  const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
 
   const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
 
@@ -69,25 +69,25 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
       {/* Assets List */}
       <div className="space-y-2">
-        {sortedMockDeFiPositions.map((position) => (
+        {tokenBalances.map((position) => (
           <div
-            key={position.id}
+            key={position.chain + position.symbol}
             className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
           >
             <div className="flex items-center gap-3">
-              <img src={position.token.logo} alt={position.token.symbol} className="w-8 h-8" />
+              <img src={position.logo} alt={position.symbol} className="w-8 h-8" />
               <div>
-                <div className="font-medium">{position.token.symbol}</div>
+                <div className="font-medium">{position.symbol}</div>
                 <div className="text-sm text-white/60">
-                  {formatTransactionAmount(position.amount, position.token.symbol)}
+                  {formatTransactionAmount(position.balance, position.symbol)}
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <div>{formatUsdValue(position.value)}</div>
-              <div className="text-sm text-green-400">
-                {formatApy(position.apy)} APY
-              </div>
+              <div>{formatUsdValue(position.usdValue)}</div>
+              {/* <div className="text-sm text-green-400">
+                {formatApy(0)} APY
+              </div> */}
             </div>
           </div>
         ))}
@@ -342,24 +342,22 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       <SendDrawer
         isOpen={showSendDrawer}
         onClose={() => setShowSendDrawer(false)}
-        assets={sortedMockDeFiPositions.map(p => ({
-          id: p.id,
-          name: p.token.symbol,
+        assets={tokenBalances.map(p => ({
+          name: p.name,
           address: p.address,
-          symbol: p.token.symbol,
-          amount: p.amount,
-          logo: p.token.logo
+          symbol: p.symbol,
+          amount: Number(p.balance),
+          logo: p.logo
         }))}
       />
 
       <ReceiveDrawer
         isOpen={showReceiveDrawer}
         onClose={() => setShowReceiveDrawer(false)}
-        assets={sortedMockDeFiPositions.map(p => ({
-          id: p.id,
-          name: p.token.symbol,
-          symbol: p.token.symbol,
-          logo: p.token.logo
+        assets={tokenBalances.map(p => ({
+          name: p.name,
+          symbol: p.symbol,
+          logo: p.logo
         }))}
         walletAddress={address}
       />
