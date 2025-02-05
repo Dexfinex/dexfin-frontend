@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import {
   X, Maximize2, Minimize2, Search, Filter,
   MessageSquare, Share2, Heart, Play, Pause,
@@ -15,6 +15,7 @@ import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
 import { Spinner } from '@chakra-ui/react';
 import { checkIfAddressExists, extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
+import { getWalletProfile } from '../utils/chatApi';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -210,16 +211,17 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [isCreateGroupActive, setIsCreateGroupActive] = useState(false);
   // const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const { signer } = useContext(Web3AuthContext);
+  const { signer, address } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
 
   const [loading, setLoading] = useState(false);
   const [group, setGroup] = useState<Array<any>>([]);
   const [connectedUsers, setConnectedUsers] = useState<Array<any>>([]);
-  const [searchedOne, setSearchedOne] = useState<any>(null);
+  const [searchedOne, setSearchedOne] = useState<IUser | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
+  const chatRef = useRef<HTMLDivElement>(null);
 
   // const [messages, setMessages] = useState<Record<string, any[]>>();
   // const [currentUserNfts] = useState([
@@ -254,6 +256,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     setMessage("")
+    setChatHistory([])
   }, [selectedUser, selectedGroup])
 
   const getChatList = async () => {
@@ -315,22 +318,32 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
     // setMessage('');
 
+
     if (chatMode === "p2p" && selectedUser) {
+      setChatHistory([...chatHistory, {
+        timestamp: Math.floor(Date.now()),
+        type: "Text",
+        content: message.trim(),
+        fromAddress: address,
+        toAddress: selectedUser.address
+      }])
+
       try {
-        const sentMsg = await chatUser.chat.send("0x99A08ac6254dcf7ccc37CeC662aeba8eFA666666", {
+        console.log(selectedUser)
+        const sentMsg = await chatUser.chat.send(selectedUser.address, {
           type: 'Text',
           content: message.trim()
         })
 
         setMessage("")
-        if (searchedOne == selectedUser.address) {
-          setSearchedOne("")
-          setConnectedUsers([{
-            profilePicture: "",
-            name: "",
-            wallets: searchedOne,
-            chatId: ""
-          }, ...connectedUsers])
+        if (searchedOne?.address == selectedUser.address) {
+          setSearchedOne(null)
+          setConnectedUsers([searchedOne, ...connectedUsers])
+
+          // setTimeout(async () => {
+          //   const data = await chatUser.chat.history(searchedOne?.address)
+          //   console.log('searched one history', data)
+          // }, 1000)
         }
         console.log('sent msg = ', sentMsg)
       } catch (err) {
@@ -341,6 +354,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     console.log('chat history = ', chatHistory)
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
   }, [chatHistory])
 
   const handleSelectUser = async (user: any) => {
@@ -348,7 +364,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSelectedUser({
       name: user.name,
       profilePicture: user.profilePicture,
-      address: user.wallets,
+      address: extractAddress(user.wallets),
       chatId: user.chatId
     })
 
@@ -362,8 +378,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             timestamp: e.timestamp,
             type: e.messageType,
             content: e.messageContent,
-            fromAddress: e.fromDID,
-            toAddress: e.toDID
+            fromAddress: extractAddress(e.fromDID),
+            toAddress: extractAddress(e.toDID)
           }
         })
         setChatHistory(tmp.reverse())
@@ -384,8 +400,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const handleSearch = async () => {
     if (!searchQuery) return
     setIsSearching(true)
-    const isValidAddress = await checkIfAddressExists(searchQuery)
-    if (isValidAddress) {
+    const profile = await getWalletProfile(searchQuery)
+    // const isValidAddress = await checkIfAddressExists(searchQuery)
+    if (profile) {
       const found = connectedUsers.find((e: any) => extractAddress(e.wallets) == searchQuery)
       if (found) {
         setSelectedUser({
@@ -395,7 +412,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           chatId: found.chatId
         })
       } else {
-        setSearchedOne(searchQuery)
+        setSearchedOne({
+          name: profile.name,
+          profilePicture: profile.picture,
+          address: searchQuery,
+          chatId: ""
+        })
       }
     }
     setIsSearching(false)
@@ -471,14 +493,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         <div className="space-y-4">
           {chatHistory.map((msg) => (
             <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-              {/* <img
-              src={msg.sender.avatar}
-              alt={msg.sender.name}
-              className="w-8 h-8 rounded-full mt-1"
-            /> */}
+              {
+                msg.fromAddress === selectedUser?.address &&
+                < img
+                  src={selectedUser.profilePicture}
+                  className="w-8 h-8 rounded-full mt-1"
+                />
+              }
               <div className="flex-1 min-w-0">
                 <div className={`${msg.fromAddress != selectedUser?.address ? "justify-end" : ""} flex items-center gap-2 mb-1`}>
-                  <span className="font-medium">{msg.toAddress != selectedUser?.address ? shrinkAddress(extractAddress(msg.toAddress)) : ""}</span>
+                  <span className="font-medium">{msg.toAddress != selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
                   {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
                   <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
                 </div>
@@ -687,21 +711,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
             <div className="p-2 space-y-1">
               {
-                searchedOne && <div className={`flex border-b-2 hover:bg-white/5 ${searchedOne == selectedUser?.address && 'bg-white/10'}`}>
+                searchedOne && <div className={`flex border-b-2 hover:bg-white/5 ${searchedOne.address == selectedUser?.address && 'bg-white/10'}`}>
                   <button className={`flex-1 py-2 flex gap-8 items-center`}
-                    onClick={() => setSelectedUser({
-                      name: "",
-                      address: searchedOne,
-                      profilePicture: "",
-                      chatId: ""
-                    })}>
-                    <User />
+                    onClick={() => setSelectedUser(searchedOne)}>
+                    {searchedOne?.profilePicture ? <img src={searchedOne.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
                     <div className='flex flex-col'>
-                      <span>{shrinkAddress(searchedOne)}</span>
+                      <span>{searchedOne?.name || shrinkAddress(searchedOne.address)}</span>
                       <span className='text-sm text-gray-400'>Start Chat!</span>
                     </div>
                   </button>
-                  <button className='mx-2' onClick={() => { setSearchedOne(""); setSelectedUser(null); }}>
+                  <button className='mx-2' onClick={() => { setSearchedOne(null); setSelectedUser(null); }}>
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -796,7 +815,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 // ))
                 connectedUsers.map((user: any) => <button key={user?.chatId}
                   onClick={() => handleSelectUser(user)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser?.address === user?.wallets
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser?.address === extractAddress(user?.wallets)
                     ? 'bg-white/10'
                     : 'hover:bg-white/5'
                     }`}
@@ -913,7 +932,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 p-4 overflow-y-auto ai-chat-scrollbar">
+            <div ref={chatRef} className="flex-1 p-4 overflow-y-auto ai-chat-scrollbar">
               {renderMessages()}
             </div>
 

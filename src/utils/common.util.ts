@@ -45,7 +45,7 @@ export const getChatHistoryDate = (timestamp: number) => {
 
     const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    if (diffDays === 0) {
+    if (diffDays <= 0) {
         return timeString; // Show only hour and minutes if today
     } else {
         return `${diffDays} days ago, ${timeString}`; // Show x days ago + time
