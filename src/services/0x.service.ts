@@ -2,15 +2,22 @@ import {zeroxApi} from "./api.service.ts";
 import {QuoteResponse, ZeroxQuoteRequestType} from "../types/swap.type.ts";
 
 export const zeroxService = {
-    getQuote: async ({
-                         chainId,
-                         sellTokenAddress,
-                         buyTokenAddress,
-                         sellTokenAmount,
-                         takerAddress,
-                     }: ZeroxQuoteRequestType): Promise<QuoteResponse> => {
+    getQuote: async (request: ZeroxQuoteRequestType): Promise<QuoteResponse> => {
+        return zeroxService.getQuoteByType({...request, isGasLess: false})
+    },
+    getGaslessQuote: async (request: ZeroxQuoteRequestType): Promise<QuoteResponse> => {
+        return zeroxService.getQuoteByType({...request, isGasLess: true})
+    },
+    getQuoteByType: async ({
+                               chainId,
+                               sellTokenAddress,
+                               buyTokenAddress,
+                               sellTokenAmount,
+                               takerAddress,
+                               isGasLess,
+                           }: ZeroxQuoteRequestType): Promise<QuoteResponse> => {
         try {
-            const {data} = await zeroxApi.get<QuoteResponse>('/quote', {
+            const {data} = await zeroxApi.get<QuoteResponse>(isGasLess ? '/gasless/quote' : 'quote', {
                 params: {
                     chainId,
                     sellTokenAddress,

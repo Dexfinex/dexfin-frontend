@@ -184,6 +184,7 @@ export interface ZeroxQuoteRequestType {
     buyTokenAddress: string;
     sellTokenAmount: string;
     takerAddress: string;
+    isGasLess?: boolean;
 }
 
 export interface QuoteDataType {
