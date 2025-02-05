@@ -23,6 +23,8 @@ export const mapRpcUrls: Record<number, string> = {
 export const COINGECKO_API_KEY = import.meta.env.VITE_COINGECKO_API_KEY as string || 'CG-XQa2AKt6eiVgLFnK8Ch7xJV2';
 export const COINGECKO_BASE_URL = 'https://pro-api.coingecko.com/api/v3';
 
+export const CRYPTONEWS_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/crypto-news';
+
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 
 export const ZEROX_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/0x';
