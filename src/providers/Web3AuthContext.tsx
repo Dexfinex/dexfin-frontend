@@ -27,7 +27,7 @@ import {SavedWalletInfo, type SolanaWalletInfoType} from "../types/auth";
 import {generatePrivateKey, signTransactionWithEncryptedKey} from "@lit-protocol/wrapped-keys/src/lib/api";
 import {Transaction} from "@solana/web3.js";
 import {SerializedTransaction} from "@lit-protocol/wrapped-keys";
-import {createPublicClient} from "viem";
+import {createPublicClient, createWalletClient, type WalletClient} from "viem";
 import {http} from "@wagmi/core";
 import {signerToEcdsaValidator} from "@zerodev/ecdsa-validator";
 import {getEntryPoint, KERNEL_V3_1} from "@zerodev/sdk/constants";
@@ -73,6 +73,8 @@ interface Web3AuthContextType {
     provider: Web3Provider | undefined,
     signer: JsonRpcSigner | undefined,
     address: string,
+    walletClient: WalletClient | undefined,
+    setWalletClient: React.Dispatch<React.SetStateAction<WalletClient | undefined>>,
     isLoadingStoredWallet: boolean,
     solanaWalletInfo: SolanaWalletInfoType | undefined,
     signSolanaTransaction: (solanaTransaction: Transaction) => Promise<string | null>
@@ -92,6 +94,8 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     isChainSwitching: false,
     setAuthMethod: () => {
     },
+    walletClient: undefined,
+    setWalletClient: () => {},
     authWithEthWallet: async () => {
     },
     authWithWebAuthn: async () => {
@@ -141,6 +145,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
     const [isConnected, setIsConnected] = useState(false);
     const [isChainSwitching, setIsChainSwitching] = useState(false);
     const [chainId, setChainId] = useState<number | undefined>(undefined);
+    const [walletClient, setWalletClient] = useState<WalletClient | undefined>(undefined);
     const [provider, setProvider] = useState<Web3Provider | undefined>(undefined);
     const [signer, setSigner] = useState<JsonRpcSigner | undefined>(undefined);
     const [address, setAddress] = useState<string>('');
@@ -290,6 +295,15 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             const provider = new Web3Provider(kernelProvider);
             setProvider(provider)
             setSigner(provider.getSigner())
+
+
+            const walletClient = createWalletClient({
+                // Use your own RPC provider (e.g. Infura/Alchemy).
+                transport: http(mapRpcUrls[currentChainId]),
+                chain: mapChainId2ViemChain[currentChainId],
+            })
+            setWalletClient(walletClient)
+
 
             /*
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -557,6 +571,9 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
         solanaWalletInfo,
         signSolanaTransaction,
+
+        walletClient,
+        setWalletClient,
     }
 
     return (
