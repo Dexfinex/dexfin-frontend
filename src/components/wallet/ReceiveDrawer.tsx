@@ -15,7 +15,7 @@ interface ReceiveDrawerProps {
 }
 
 export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, assets, walletAddress }) => {
-  const [selectedAsset, setSelectedAsset] = useState(assets[0]);
+  const [selectedAsset, setSelectedAsset] = useState(assets[0] || {});
   const [showAssetSelector, setShowAssetSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [qrCode, setQrCode] = useState('');

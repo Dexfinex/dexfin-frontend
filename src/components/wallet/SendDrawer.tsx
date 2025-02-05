@@ -38,7 +38,7 @@ interface FormValues extends FieldValues {
 
 export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets }) => {
   const [showAssetSelector, setShowAssetSelector] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState(assets[0])
+  const [selectedAsset, setSelectedAsset] = useState(assets[0] || {})
   const [isConfirming, setIsConfirming] = useState(false);
   const [hash, setHash] = useState("")
   const [txModalOpen, setTxModalOpen] = useState(false);
@@ -188,7 +188,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
                   <div className="max-h-48 overflow-y-auto">
                     {filteredAssets.map((asset) => (
                       <button
-                        key={asset.id}
+                        key={asset.name}
                         type="button"
                         onClick={() => {
                           setSelectedAsset(asset)
