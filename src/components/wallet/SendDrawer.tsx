@@ -95,7 +95,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
 
 
   const nativeTokenPrice = useMemo(() => {
-    if (tokenChainId) {
+    if (tokenChainId && nativeTokenAddress) {
       return getTokenPrice(nativeTokenAddress, tokenChainId)
     }
     return 0;
@@ -125,7 +125,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
           setTxModalOpen(true)
           setValue("amount", "")
           setValue("address", "")
-          onClose();
+          // onClose();
           console.log('success', receipt);
         },
         onError: (error: TransactionError) => {

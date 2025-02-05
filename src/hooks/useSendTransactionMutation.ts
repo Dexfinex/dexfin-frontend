@@ -26,7 +26,7 @@ export const useSendTransactionMutation = () => {
         throw new Error("sendAddress, signer, sendAmount must be provided");
       }
 
-      const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
+      const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)] || "";
 
       if (compareWalletAddresses(data.tokenAddress, nativeTokenAddress)) {
         const amountValue = ethers.utils.parseEther(Number(data.sendAmount).toFixed(8).replace(/\.?0+$/,""));

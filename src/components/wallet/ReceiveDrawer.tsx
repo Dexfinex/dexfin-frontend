@@ -55,62 +55,65 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
     <Drawer isOpen={isOpen} onClose={onClose} title="Receive Assets">
       <div className="space-y-6 p-4">
         {/* Asset Selector */}
-        <div>
-          <label className="block text-sm text-white/60 mb-2">Asset</label>
-          <div className="relative">
-            <button
-              onClick={() => setShowAssetSelector(!showAssetSelector)}
-              className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
-              <div className="flex-1 text-left">
-                <div className="font-medium">{selectedAsset.name}</div>
-                <div className="text-sm text-white/60">{selectedAsset.symbol}</div>
-              </div>
-              <ChevronDown className="w-4 h-4 text-white/40" />
-            </button>
-
-            {showAssetSelector && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowAssetSelector(false)}
-                />
-                <div className="absolute top-full left-0 right-0 mt-2 p-2 glass rounded-lg z-20">
-                  <div className="flex items-center gap-2 p-2 bg-white/5 rounded-lg mb-2">
-                    <Search className="w-4 h-4 text-white/40" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search assets..."
-                      className="bg-transparent outline-none flex-1 text-sm"
-                    />
-                  </div>
-
-                  <div className="max-h-48 overflow-y-auto">
-                    {filteredAssets.map((asset) => (
-                      <button
-                        key={asset.name}
-                        onClick={() => {
-                          setSelectedAsset(asset);
-                          setShowAssetSelector(false);
-                        }}
-                        className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
-                      >
-                        <TokenChainIcon src={asset.logo} alt={asset.name} size={"md"} chainId={Number(chainId)} />
-                        <div className="flex-1 text-left">
-                          <div className="font-medium">{asset.name}</div>
-                          <div className="text-sm text-white/60">{asset.symbol}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+        {
+          assets.length > 0 &&
+          <div>
+            <label className="block text-sm text-white/60 mb-2">Asset</label>
+            <div className="relative">
+              <button
+                onClick={() => setShowAssetSelector(!showAssetSelector)}
+                className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
+                <div className="flex-1 text-left">
+                  <div className="font-medium">{selectedAsset.name}</div>
+                  <div className="text-sm text-white/60">{selectedAsset.symbol}</div>
                 </div>
-              </>
-            )}
+                <ChevronDown className="w-4 h-4 text-white/40" />
+              </button>
+
+              {showAssetSelector && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowAssetSelector(false)}
+                  />
+                  <div className="absolute top-full left-0 right-0 mt-2 p-2 glass rounded-lg z-20">
+                    <div className="flex items-center gap-2 p-2 bg-white/5 rounded-lg mb-2">
+                      <Search className="w-4 h-4 text-white/40" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search assets..."
+                        className="bg-transparent outline-none flex-1 text-sm"
+                      />
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredAssets.map((asset) => (
+                        <button
+                          key={asset.name}
+                          onClick={() => {
+                            setSelectedAsset(asset);
+                            setShowAssetSelector(false);
+                          }}
+                          className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
+                        >
+                          <TokenChainIcon src={asset.logo} alt={asset.name} size={"md"} chainId={Number(chainId)} />
+                          <div className="flex-1 text-left">
+                            <div className="font-medium">{asset.name}</div>
+                            <div className="text-sm text-white/60">{asset.symbol}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        }
 
         {/* QR Code */}
         <div className="flex flex-col items-center">
@@ -124,7 +127,7 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
             )}
           </div>
           <div className="text-sm text-white/60 mb-2">
-            Only send {selectedAsset.symbol} to this address
+            {selectedAsset.symbol ? `Only send ${selectedAsset.symbol} to this address` : "Address"}
           </div>
         </div>
 
@@ -150,7 +153,12 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
 
         {/* Network Info */}
         <div className="text-center text-sm text-white/60">
-          This address supports receiving {selectedAsset.symbol} on the Ethereum network.
+          {
+            selectedAsset.symbol ?
+              `This address supports receiving ${selectedAsset.symbol} on the Ethereum network.`
+              :
+              `This address supports receiving tokens on the Ethereum network.`
+          }
           <br />
           Sending assets from other networks may result in permanent loss.
         </div>
