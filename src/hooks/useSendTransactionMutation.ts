@@ -29,7 +29,7 @@ export const useSendTransactionMutation = () => {
       const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
 
       if (compareWalletAddresses(data.tokenAddress, nativeTokenAddress)) {
-        const amountValue = ethers.utils.parseEther(data.sendAmount.toString());
+        const amountValue = ethers.utils.parseEther(Number(data.sendAmount).toFixed(8).replace(/\.?0+$/,""));
 
         const tx = {
           to: data.tokenAddress,
@@ -51,7 +51,7 @@ export const useSendTransactionMutation = () => {
 
         const decimals = await tokenContract.decimals();
         const amountValue = ethers.utils.parseUnits(
-          data.sendAmount.toString(),
+          Number(data.sendAmount).toFixed(8).replace(/\.?0+$/,""),
           decimals
         );
 

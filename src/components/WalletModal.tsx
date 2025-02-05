@@ -4,9 +4,11 @@ import { SendDrawer } from './wallet/SendDrawer';
 import { ReceiveDrawer } from './wallet/ReceiveDrawer';
 import { BuyDrawer } from './wallet/BuyDrawer';
 import { mockTransactions, mockDeFiPositions, mockDeFiStats, formatTransactionAmount, formatUsdValue, formatApy, getHealthFactorColor, getTransactionStatusColor } from '../lib/wallet';
+import { formatNumberByFrac } from '../utils/common.util.ts';
 import { TransactionType } from '../types/wallet';
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
 import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
+import { TokenChainIcon } from './swap/components/TokenIcon.tsx';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -24,7 +26,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
   const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
 
-  const { address } = useContext(Web3AuthContext);
+  const { address, chainId } = useContext(Web3AuthContext);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -75,11 +77,11 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
             className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
           >
             <div className="flex items-center gap-3">
-              <img src={position.logo} alt={position.symbol} className="w-8 h-8" />
+              <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(chainId)} />
               <div>
                 <div className="font-medium">{position.symbol}</div>
                 <div className="text-sm text-white/60">
-                  {formatTransactionAmount(position.balance, position.symbol)}
+                  {`${formatNumberByFrac(position.balance)} ${position.symbol}`}
                 </div>
               </div>
             </div>
@@ -232,7 +234,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
             <div className="flex items-center gap-4 text-sm">
               <div>
                 <span className="text-white/60">Amount:</span>{' '}
-                {formatTransactionAmount(position.amount, position.token.symbol)}
+                {`${formatNumberByFrac(position.amount)} ${position.token.symbol}`}
               </div>
               {position.rewards && (
                 <div>

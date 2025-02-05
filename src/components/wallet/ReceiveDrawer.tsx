@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Search, ChevronDown, Copy, CheckCircle } from 'lucide-react';
 import * as QRCode from 'qrcode';
 import { Drawer } from '../common/Drawer';
+import { Web3AuthContext } from '../../providers/Web3AuthContext';
+import { TokenChainIcon } from '../swap/components/TokenIcon';
 
 interface ReceiveDrawerProps {
   isOpen: boolean;
@@ -20,6 +22,8 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
   const [searchQuery, setSearchQuery] = useState('');
   const [qrCode, setQrCode] = useState('');
   const [copied, setCopied] = useState(false);
+
+  const { chainId } = useContext(Web3AuthContext);
 
   useEffect(() => {
     if (isOpen && walletAddress) {
@@ -58,7 +62,7 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
               onClick={() => setShowAssetSelector(!showAssetSelector)}
               className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
             >
-              <img src={selectedAsset.logo} alt={selectedAsset.name} className="w-8 h-8" />
+              <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
               <div className="flex-1 text-left">
                 <div className="font-medium">{selectedAsset.name}</div>
                 <div className="text-sm text-white/60">{selectedAsset.symbol}</div>
@@ -94,7 +98,7 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
                         }}
                         className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
                       >
-                        <img src={asset.logo} alt={asset.name} className="w-6 h-6" />
+                        <TokenChainIcon src={asset.logo} alt={asset.name} size={"md"} chainId={Number(chainId)} />
                         <div className="flex-1 text-left">
                           <div className="font-medium">{asset.name}</div>
                           <div className="text-sm text-white/60">{asset.symbol}</div>

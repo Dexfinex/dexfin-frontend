@@ -12,12 +12,12 @@ import useTokenStore from "../../store/useTokenStore.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import { Drawer } from '../common/Drawer';
 import { formatNumberByFrac } from '../../utils/common.util';
-import { formatTransactionAmount } from '../../lib/wallet.ts';
 import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
 import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
 import { TransactionError } from '../../types';
 import { mapChainId2ExplorerUrl } from '../../config/networks.ts';
+import { TokenChainIcon } from '../swap/components/TokenIcon.tsx';
 
 interface SendDrawerProps {
   isOpen: boolean;
@@ -156,11 +156,11 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
               onClick={() => setShowAssetSelector(!showAssetSelector)}
               className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
             >
-              <img src={selectedAsset.logo} alt={selectedAsset.name} className="w-8 h-8" />
+              <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
               <div className="flex-1 text-left">
                 <div className="font-medium">{selectedAsset.name}</div>
                 <div className="text-sm text-white/60">
-                  Balance: {formatTransactionAmount(selectedAsset.amount, selectedAsset.symbol)}
+                  Balance: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
                 </div>
               </div>
               <ChevronDown className="w-4 h-4 text-white/40" />
@@ -197,11 +197,11 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
                         }}
                         className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
                       >
-                        <img src={asset.logo} alt={asset.name} className="w-6 h-6" />
+                        <TokenChainIcon src={asset.logo} alt={asset.name} size={"md"} chainId={Number(chainId)} />
                         <div className="flex-1 text-left">
                           <div className="font-medium">{asset.name}</div>
                           <div className="text-sm text-white/60">
-                            {formatTransactionAmount(asset.amount, asset.symbol)}
+                            {`${formatNumberByFrac(asset.amount)} ${asset.symbol}`}
                           </div>
                         </div>
                       </button>
@@ -219,10 +219,15 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
           <div className="relative">
             {errors.amount?.message && <p className='text-red-500 text-xs italic'>{errors.amount?.message}</p>}
             <input
-              type="text"
+              type="number"
+              step="any"
               placeholder="0.00"
               className={`w-full bg-white/5 border ${errors.amount ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:border-white/20`}
-              {...register("amount", { valueAsNumber: true })}
+              {...register("amount", {
+                valueAsNumber: true,
+                validate: (value) => Number(value) > 0,
+
+              })}
             />
             <button
               type="button"
@@ -237,7 +242,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
             </button>
           </div>
           <div className="mt-1 text-sm text-white/40">
-            Available: {formatTransactionAmount(selectedAsset.amount, selectedAsset.symbol)}
+            Available: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
           </div>
         </div>
 
@@ -258,11 +263,11 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
           <div className="p-4 bg-white/5 rounded-lg">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <img src={selectedAsset.logo} alt={selectedAsset.name} className="w-8 h-8" />
+                <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
                 <div>
                   <div className="text-sm text-white/60">You send</div>
                   <div className="font-medium">
-                    { formatTransactionAmount(amount, selectedAsset.symbol) }
+                    {`${formatNumberByFrac(amount)} ${selectedAsset.symbol}`}
                   </div>
                 </div>
               </div>
