@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {AlertCircle, RefreshCw, TrendingDown, TrendingUp} from 'lucide-react';
-import {FearGreedData, getFearGreedIndex} from '../../lib/fearGreed';
-
+import {FearGreedData} from '../../lib/fearGreed';
+import { feargeedService } from '../../services/feargreed.service';
 export const FearGreedWidget: React.FC = () => {
   const [data, setData] = useState<FearGreedData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -13,7 +13,8 @@ export const FearGreedWidget: React.FC = () => {
       if (showRefreshState) {
         setRefreshing(true);
       }
-      const result = await getFearGreedIndex();
+      const result = await feargeedService.getFearGreedIndex();
+      
       if (result) {
         setData(result);
         setError(null);

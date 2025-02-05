@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getCoinPrice, searchCoins } from '../../lib/coingecko';
+import { coingeckoService } from '../../services/coingecko.service';
 import { CoinData, SearchResult } from '../../types';
 import { PriceChart } from '../PriceChart';
 import { Clock, Search, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react';
@@ -32,7 +32,8 @@ export const MarketPulseWidget: React.FC = () => {
       if (showRefreshState) {
         setRefreshing(true);
       }
-      const coinData = await getCoinPrice(coinId);
+      const coinData = await coingeckoService.getCoinPrice(coinId);
+      
       setData(coinData);
       setError(null);
     } catch (err) {
@@ -48,7 +49,7 @@ export const MarketPulseWidget: React.FC = () => {
     setSearchQuery(query);
     if (query.length >= 2) {
       try {
-        const results = await searchCoins(query);
+        const results = await coingeckoService.searchCoins(query);
         setSearchResults(results);
       } catch (error) {
         console.error('Error searching coins:', error);

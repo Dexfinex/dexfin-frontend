@@ -88,7 +88,7 @@ export async function getCoinPrice(coinId: string): Promise<CoinData> {
     const data = await fetchWithRetry(
       `/simple/price?ids=${coinId}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true&include_last_updated_at=true`
     );
-
+    
     if (!data[coinId]) {
       throw new Error('Invalid response format');
     }
