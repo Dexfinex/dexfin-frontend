@@ -5,6 +5,7 @@ import {Web3AuthContext} from "../providers/Web3AuthContext.tsx";
 import {QuoteDataType, QuoteResponse, TokenType} from "../types/swap.type.ts";
 import {zeroxService} from "../services/0x.service.ts";
 import {formatUnits} from "ethers/lib/utils";
+import {isNativeTokenAddress} from "../utils/common.util.ts";
 
 interface quoteParam {
     sellToken: TokenType | null,
@@ -31,8 +32,9 @@ const use0xQuote = ({
             buyTokenAddress: buyToken!.address,
             sellTokenAmount: ethers.utils.parseUnits(sellAmount!, sellToken!.decimals).toString(),
             takerAddress: address,
+            isGasLess: !isNativeTokenAddress(sellToken!.address)
         })
-    }, [address, sellToken, provider, buyToken, sellAmount]);
+    }, [address, sellToken, buyToken, sellAmount]);
 
     const {isLoading, refetch, data} = useQuery<QuoteResponse>({
         queryKey: ['get-0x-quote', address, sellToken, buyToken, sellAmount],

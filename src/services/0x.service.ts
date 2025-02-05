@@ -2,13 +2,7 @@ import {zeroxApi} from "./api.service.ts";
 import {QuoteResponse, ZeroxQuoteRequestType} from "../types/swap.type.ts";
 
 export const zeroxService = {
-    getQuote: async (request: ZeroxQuoteRequestType): Promise<QuoteResponse> => {
-        return zeroxService.getQuoteByType({...request, isGasLess: false})
-    },
-    getGaslessQuote: async (request: ZeroxQuoteRequestType): Promise<QuoteResponse> => {
-        return zeroxService.getQuoteByType({...request, isGasLess: true})
-    },
-    getQuoteByType: async ({
+    getQuote: async ({
                                chainId,
                                sellTokenAddress,
                                buyTokenAddress,
