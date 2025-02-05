@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {AlertCircle, ChevronDown, Maximize2, Minimize2, RefreshCw, Search} from 'lucide-react';
 import {ColorType, createChart} from 'lightweight-charts';
-import {getOHLCV} from '../../lib/coingecko';
+import { coingeckoService } from '../../services/coingecko.service';
 
 interface CoinOption {
   id: string;
@@ -92,7 +92,7 @@ export const TechnicalAnalysis: React.FC = () => {
 
     try {
       setLoading(true);
-      const data = await getOHLCV(selectedCoin.id);
+      const data = await coingeckoService.getOHLCV(selectedCoin.id);
       
       if (candlestickSeriesRef.current) {
         // Format data for lightweight-charts

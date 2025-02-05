@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {AlertCircle, Clock, ExternalLink, RefreshCw} from 'lucide-react';
-import {getLatestNews} from '../../lib/cryptonews';
+import {cryptonewsService} from "../../services/cryptonews.service";
 import {NewsItem} from "../../types";
 
 export const MarketNews: React.FC = () => {
@@ -12,7 +12,7 @@ export const MarketNews: React.FC = () => {
   const fetchNews = async () => {
     try {
       setLoading(true);
-      const newsData = await getLatestNews();
+      const newsData = await cryptonewsService.getLatestNews();
       setNews(newsData);
       setError(null);
     } catch (err) {
