@@ -196,8 +196,6 @@ export interface Token {
       logo_url?: string;
   };
 }
-=======
 export interface TransactionError extends Error {
   code?: string;
 }
->>>>>>> 13bb32e ([Feat]: transfer tokens in wallet screen)
