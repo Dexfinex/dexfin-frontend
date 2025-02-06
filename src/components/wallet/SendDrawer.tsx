@@ -49,6 +49,12 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
 
   const { chainId } = useContext(Web3AuthContext);
 
+  useEffect(() => {
+    if (assets.length > 0 && Object.keys(selectedAsset).length === 0) {
+      setSelectedAsset(assets[0])
+    }
+  }, [assets, selectedAsset])
+
   const schema = z.object({
     amount: z.number({
       required_error: "Amount is required",

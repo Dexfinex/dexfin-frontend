@@ -4,6 +4,7 @@ import * as QRCode from 'qrcode';
 import { Drawer } from '../common/Drawer';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
 import { TokenChainIcon } from '../swap/components/TokenIcon';
+import { Skeleton } from '@chakra-ui/react';
 
 interface ReceiveDrawerProps {
   isOpen: boolean;
@@ -39,6 +40,12 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
         .catch(err => console.error('Error generating QR code:', err));
     }
   }, [isOpen, walletAddress]);
+
+  useEffect(() => {
+    if (assets.length > 0 && Object.keys(selectedAsset).length === 0) {
+      setSelectedAsset(assets[0])
+    }
+  }, [assets, selectedAsset])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(walletAddress);
@@ -118,13 +125,13 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
         {/* QR Code */}
         <div className="flex flex-col items-center">
           <div className="w-48 h-48 bg-white/5 rounded-xl p-4 mb-4">
-            {qrCode && (
+            {qrCode ? (
               <img
                 src={qrCode}
                 alt="Wallet QR Code"
                 className="w-full h-full"
               />
-            )}
+            ) : <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'100%'}></Skeleton>}
           </div>
           <div className="text-sm text-white/60 mb-2">
             {selectedAsset.symbol ? `Only send ${selectedAsset.symbol} to this address` : "Address"}
@@ -134,30 +141,31 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
         {/* Address */}
         <div>
           <label className="block text-sm text-white/60 mb-2">Wallet Address</label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-mono text-sm">
-              {walletAddress}
-            </div>
-            <button
-              onClick={handleCopy}
-              className="p-3 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              {copied ? (
-                <CheckCircle className="w-5 h-5 text-green-400" />
-              ) : (
-                <Copy className="w-5 h-5" />
-              )}
-            </button>
-          </div>
+          {
+            walletAddress ?
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-mono text-sm">
+                  {walletAddress}
+                </div>
+                <button
+                  onClick={handleCopy}
+                  className="p-3 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  {copied ? (
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                  ) : (
+                    <Copy className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              : <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'3rem'}></Skeleton>
+          }
         </div>
 
         {/* Network Info */}
         <div className="text-center text-sm text-white/60">
           {
-            selectedAsset.symbol ?
-              `This address supports receiving ${selectedAsset.symbol} on the Ethereum network.`
-              :
-              `This address supports receiving tokens on the Ethereum network.`
+            selectedAsset.symbol && `This address supports receiving ${selectedAsset.symbol} on the Ethereum network.`
           }
           <br />
           Sending assets from other networks may result in permanent loss.

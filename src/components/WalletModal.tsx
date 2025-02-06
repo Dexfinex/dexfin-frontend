@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { Skeleton } from '@chakra-ui/react';
 import { X, Maximize2, Minimize2, ArrowDown, CreditCard, Send, Wallet, TrendingUp, LayoutGrid, History, Landmark, ExternalLink, Clock } from 'lucide-react';
 import { SendDrawer } from './wallet/SendDrawer';
 import { ReceiveDrawer } from './wallet/ReceiveDrawer';
@@ -9,6 +10,7 @@ import { TransactionType } from '../types/wallet';
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
 import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
 import { TokenChainIcon } from './swap/components/TokenIcon.tsx';
+import { useEvmWalletBalance } from '../hooks/useBalance.tsx';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -22,6 +24,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
   const [showBuyDrawer, setShowBuyDrawer] = useState(false);
 
+  const { isLoading: isLoadingBalance } = useEvmWalletBalance();
   const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
 
   const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
@@ -37,7 +40,11 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       {/* Total Balance */}
       <div className="bg-white/5 rounded-xl p-4">
         <div className="text-sm text-white/60">Total Balance</div>
-        <div className="text-3xl font-bold mt-1">{formatUsdValue(totalUsdValue)}</div>
+        <div className="text-3xl font-bold mt-1">
+          {
+            isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)
+          }
+        </div>
         <div className="flex items-center gap-1 mt-1 text-green-400">
           <TrendingUp className="w-4 h-4" />
           <span>+1.57% TODAY</span>
@@ -72,28 +79,32 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
       {/* Assets List */}
       <div className="space-y-2">
-        {tokenBalances.map((position) => (
-          <div
-            key={position.chain + position.symbol}
-            className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(chainId)} />
-              <div>
-                <div className="font-medium">{position.symbol}</div>
-                <div className="text-sm text-white/60">
-                  {`${formatNumberByFrac(position.balance)} ${position.symbol}`}
+        {
+          isLoadingBalance ?
+            <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
+            : tokenBalances.map((position) => (
+              <div
+                key={position.chain + position.symbol}
+                className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(chainId)} />
+                  <div>
+                    <div className="font-medium">{position.symbol}</div>
+                    <div className="text-sm text-white/60">
+                      {`${formatNumberByFrac(position.balance)} ${position.symbol}`}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div>{formatUsdValue(position.usdValue)}</div>
+                  {/* <div className="text-sm text-green-400">
+                  {formatApy(0)} APY
+                </div> */}
                 </div>
               </div>
-            </div>
-            <div className="text-right">
-              <div>{formatUsdValue(position.usdValue)}</div>
-              {/* <div className="text-sm text-green-400">
-                {formatApy(0)} APY
-              </div> */}
-            </div>
-          </div>
-        ))}
+            ))
+        }
       </div>
     </div>
   );
