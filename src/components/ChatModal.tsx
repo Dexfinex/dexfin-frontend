@@ -1,12 +1,8 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import {
-  X, Maximize2, Minimize2, Search, Filter,
-  MessageSquare, Share2, Heart, Play, Pause,
-  Video, BarChart2, RefreshCw, Users, Bell,
-  ChevronDown, ArrowRight, Plus, Lock, Globe,
-  Settings, ExternalLink, TrendingUp, TrendingDown,
-  DollarSign, LineChart, Shield, ShieldCheck, ShieldAlert,
-  User
+  X, Maximize2, Minimize2, Search, 
+  MessageSquare, Share2, Users, ArrowRight, Plus,
+  Settings,   User
 } from 'lucide-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
@@ -14,7 +10,7 @@ import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
 import { Spinner } from '@chakra-ui/react';
-import { checkIfAddressExists, extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
+import { extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
 import { getWalletProfile } from '../utils/chatApi';
 
 interface ChatModalProps {
@@ -333,7 +329,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         }
       })
       tmp.shift()
-      tmp.length > 0 && setChatHistory([...tmp.reverse(), ...chatHistory])
+      if (tmp.length > 0) {
+        setChatHistory([...tmp.reverse(), ...chatHistory])
+      }
     }
     setLoadingPrevChat(false)
   }
@@ -353,8 +351,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       }
     });
 
-    groupInformation.length > 0 && setGroup(groupInformation)
-    userInformation.length > 0 && setConnectedUsers(userInformation)
+    if (groupInformation.length > 0) {
+      setGroup(groupInformation)
+    }
+    if (userInformation.length > 0) {
+      setConnectedUsers(userInformation)
+    }
     setLoading(false)
   }
 
@@ -585,7 +587,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }
 
   const canAccessChat = (user: any, group: any) => {
-    // if (!user && !group) return true;
+    if (!user && !group) return true;
     // if (group?.type === 'public') return true;
     // if (group?.type === 'nft-gated') {
     //   return currentUserNfts.some(nft =>
@@ -603,7 +605,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   };
 
   const renderAccessBadge = (user: any, group: any) => {
-    // if (!user && !group) return null;
+    if (!user && !group) return null;
 
     // const hasAccess = canAccessChat(user, group);
     // const requiredNft = group?.type === 'nft-gated' ? group.requiredNft :
