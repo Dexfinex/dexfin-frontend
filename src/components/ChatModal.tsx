@@ -1,12 +1,8 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import {
-  X, Maximize2, Minimize2, Search, Filter,
-  MessageSquare, Share2, Heart, Play, Pause,
-  Video, BarChart2, RefreshCw, Users, Bell,
-  ChevronDown, ArrowRight, Plus, Lock, Globe,
-  Settings, ExternalLink, TrendingUp, TrendingDown,
-  DollarSign, LineChart, Shield, ShieldCheck, ShieldAlert,
-  User
+  X, Maximize2, Minimize2, Search, 
+  MessageSquare, Share2, Users, ArrowRight, Plus,
+  Settings,   User
 } from 'lucide-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
@@ -14,7 +10,7 @@ import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
 import { Spinner } from '@chakra-ui/react';
-import { checkIfAddressExists, extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
+import { extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
 import { getWalletProfile } from '../utils/chatApi';
 
 interface ChatModalProps {
@@ -35,6 +31,8 @@ interface IChat {
   content: string;
   fromAddress: string;
   toAddress: string;
+  chatId: string;
+  link: string | null;
 }
 
 // interface ChatUser {
@@ -222,7 +220,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
   const [isFailedSent, setIsFailedSent] = useState(false);
-  const chatRef = useRef<HTMLDivElement>(null);
+  const [isScrollTop, setIsScrollTop] = useState(false);
+  const [loadingPrevChat, setLoadingPrevChat] = useState(false);
+  const [toBottom, setToBottom] = useState(false);
+  const [receivedMessage, setReceivedMessage] = useState<any>([]);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // const [messages, setMessages] = useState<Record<string, any[]>>();
   // const [currentUserNfts] = useState([
@@ -235,6 +237,26 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   // ]);
 
   useEffect(() => {
+    const handleScroll = () => {
+      if (chatScrollRef.current) {
+        setIsScrollTop(chatScrollRef.current.scrollTop === 0);
+      }
+    };
+
+    const scrollElement = chatScrollRef.current;
+    if (scrollElement) {
+      scrollElement.addEventListener("scroll", handleScroll);
+    }
+
+    // return () => {
+    //   if (scrollElement) {
+    //     scrollElement.removeEventListener("scroll", handleScroll);
+    //   }
+    // };
+  }, []);
+
+
+  useEffect(() => {
     if (isOpen && chatUser?.uid) {
       console.log('get chat user')
       getChatList()
@@ -243,10 +265,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, chatUser])
 
-
   useEffect(() => {
     clearValues()
   }, [chatMode])
+
+  useEffect(() => {
+    console.log('isScrollTop')
+    if (isScrollTop) {
+      console.log('selected user = ', selectedUser)
+      console.log('chat history = ', chatHistory)
+
+      if (selectedUser && chatHistory.length > 0 && chatHistory[0].link) {
+        getPrevChatHistory(selectedUser.address, chatHistory[0].chatId)
+      }
+    }
+  }, [isScrollTop])
 
   const clearValues = () => {
     setSearchQuery("")
@@ -259,6 +292,49 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setMessage("")
     setChatHistory([])
   }, [selectedUser, selectedGroup])
+
+  useEffect(() => {
+    if (selectedUser?.address) {
+      console.log(address, extractAddress(receivedMessage?.to[0] || ""))
+      if (address == extractAddress(receivedMessage?.to[0] || "")) {
+        setChatHistory(
+          [...chatHistory, {
+            timestamp: Number(receivedMessage.timestamp),
+            type: receivedMessage.message.type,
+            content: receivedMessage.message.content,
+            fromAddress: extractAddress(receivedMessage.from),
+            toAddress: extractAddress(receivedMessage.to[0]),
+            chatId: receivedMessage.chatId,
+            link: null
+          }]
+        )
+      }
+    }
+  }, [receivedMessage])
+
+  const getPrevChatHistory = async (address: string, chatId: string) => {
+    setLoadingPrevChat(true)
+    const prevHistory = await chatUser.chat.history(address, { reference: chatId })
+    console.log('prev history = ', prevHistory)
+    if (prevHistory.length > 0) {
+      const tmp: IChat[] = prevHistory.map((e: any) => {
+        return {
+          timestamp: e.timestamp,
+          type: e.messageType,
+          content: e.messageContent,
+          fromAddress: extractAddress(e.fromDID),
+          toAddress: extractAddress(e.toDID),
+          chatId: e.cid,
+          link: e.link
+        }
+      })
+      tmp.shift()
+      if (tmp.length > 0) {
+        setChatHistory([...tmp.reverse(), ...chatHistory])
+      }
+    }
+    setLoadingPrevChat(false)
+  }
 
   const getChatList = async () => {
     setLoading(true)
@@ -275,8 +351,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       }
     });
 
-    groupInformation.length > 0 && setGroup(groupInformation)
-    userInformation.length > 0 && setConnectedUsers(userInformation)
+    if (groupInformation.length > 0) {
+      setGroup(groupInformation)
+    }
+    if (userInformation.length > 0) {
+      setConnectedUsers(userInformation)
+    }
     setLoading(false)
   }
 
@@ -290,6 +370,77 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         env: CONSTANTS.ENV.PROD,
       });
       setChatUser(user)
+      initStream(user)
+    }
+  }
+
+  const initStream = async (user: any) => {
+    const stream = await user.initStream(
+      [
+        CONSTANTS.STREAM.CHAT, // Listen for chat messages
+        CONSTANTS.STREAM.NOTIF, // Listen for notifications
+        CONSTANTS.STREAM.CONNECT, // Listen for connection events
+        CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
+      ],
+      {
+        // Filter options:
+        filter: {
+          // Listen to all channels and chats (default):
+          channels: ['*'],
+          chats: ['*'],
+
+          // Listen to specific channels and chats:
+          // channels: ['channel-id-1', 'channel-id-2'],
+          // chats: ['chat-id-1', 'chat-id-2'],
+
+          // Listen to events with a specific recipient:
+          // recipient: '0x...' (replace with recipient wallet address)
+        },
+        // Connection options:
+        connection: {
+          retries: 3, // Retry connection 3 times if it fails
+        },
+        raw: false, // Receive events in structured format
+      }
+    );
+
+    // Stream connection established:
+    stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
+      console.log('Stream Connected ', a);
+
+      // // Send initial message to PushAI Bot:
+      // console.log('Sending message to PushAI Bot');
+
+      // await userAlice.chat.send(pushAIWalletAddress, {
+      //   content: 'Hello, from Alice',
+      //   type: 'Text',
+      // });
+
+      // console.log('Message sent to PushAI Bot');
+    });
+
+    stream.on(CONSTANTS.STREAM.CHAT, (message: any) => {
+      console.log('Encrypted Message Received');
+      console.log(message); // Log the message payload
+      setReceivedMessage(message)
+    });
+
+    // Chat operation received:
+    stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
+      console.log('Chat operation received.');
+      console.log(data); // Log the chat operation data
+    });
+
+    await stream.connect(); // Establish the connection after setting up listeners
+    // Stream disconnection:
+    stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
+      console.log('Stream Disconnected');
+    });
+  }
+
+  const scrollBottom = () => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }
 
@@ -323,12 +474,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
 
     if (chatMode === "p2p" && selectedUser) {
+      setToBottom(true)
       setChatHistory([...chatHistory, {
         timestamp: Math.floor(Date.now()),
         type: "Text",
         content: message.trim(),
         fromAddress: address,
-        toAddress: selectedUser.address
+        toAddress: selectedUser.address,
+        chatId: "",
+        link: null,
       }])
 
       try {
@@ -359,8 +513,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     console.log('chat history = ', chatHistory)
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    if (toBottom) {
+      scrollBottom()
+      setToBottom(false)
     }
   }, [chatHistory])
 
@@ -384,9 +539,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             type: e.messageType,
             content: e.messageContent,
             fromAddress: extractAddress(e.fromDID),
-            toAddress: extractAddress(e.toDID)
+            toAddress: extractAddress(e.toDID),
+            chatId: e.cid,
+            link: e.link
           }
         })
+        setToBottom(true)
         setChatHistory(tmp.reverse())
       }
     } catch (err) {
@@ -429,7 +587,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }
 
   const canAccessChat = (user: any, group: any) => {
-    // if (!user && !group) return true;
+    if (!user && !group) return true;
     // if (group?.type === 'public') return true;
     // if (group?.type === 'nft-gated') {
     //   return currentUserNfts.some(nft =>
@@ -447,7 +605,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   };
 
   const renderAccessBadge = (user: any, group: any) => {
-    // if (!user && !group) return null;
+    if (!user && !group) return null;
 
     // const hasAccess = canAccessChat(user, group);
     // const requiredNft = group?.type === 'nft-gated' ? group.requiredNft :
@@ -492,9 +650,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         </div>
       )
     }
+
     if (chatHistory && chatHistory.length > 0) {
       return (
         <div className="space-y-4">
+          {
+            loadingPrevChat && <div className='w-full flex justify-center'>
+              <Spinner />
+            </div>
+          }
           {chatHistory.map((msg) => (
             <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
               {
@@ -510,7 +674,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
                   <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
                 </div>
-                <div className={`rounded-lg p-3 ${msg.fromAddress != selectedUser?.address ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
+                <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress != selectedUser?.address ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
                   }`}>
                   {msg.content}
                 </div>
@@ -523,7 +687,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     if (isFailedSent) {
       return <div className='text-red-500 text-sm absolute bottom-[76px] right-[8px]'>Can't send message. Please try again.</div>
     }
-     
+
     // // Check access before showing messages
     // if (!canAccessChat(selectedUser, selectedGroup)) {
     //   return (
@@ -939,7 +1103,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Chat Messages */}
-            <div ref={chatRef} className="flex-1 p-4 overflow-y-auto ai-chat-scrollbar">
+            <div ref={chatScrollRef} className="flex-1 p-4 overflow-y-auto ai-chat-scrollbar">
               {renderMessages()}
             </div>
 

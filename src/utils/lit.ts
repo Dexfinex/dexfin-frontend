@@ -132,7 +132,7 @@ export async function registerWebAuthn(): Promise<IRelayPKP> {
     ProviderType.WebAuthn
   );
   // Register new WebAuthn credential
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+   
   const options = await provider.register();
 
   // Verify registration and mint PKP through relay server
@@ -265,7 +265,7 @@ export async function mintPKP(authMethod: AuthMethod): Promise<IRelayPKP> {
 
   if (authMethod.authMethodType === AuthMethodType.WebAuthn) {
     // Register new WebAuthn credential
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+     
     const webAuthnInfo = await (provider as WebAuthnProvider).register();
 
     // Verify registration and mint PKP through relay server

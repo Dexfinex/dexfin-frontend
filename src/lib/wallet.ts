@@ -57,40 +57,28 @@ export const mockTransactions: Transaction[] = [
 
 // DeFi positions mock data - Adjusted to match total of $15,650.32
 export const mockDeFiPositions: DeFiPosition[] = [
-  // Layer 1s
-  {
-    id: 'eth-holding',
-    protocol: 'Ethereum',
-    type: 'STAKING',
-    token: {
-      symbol: 'ETH',
-      logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
-    },
-    amount: 2.5,
-    value: 8125.50,
-    apy: 3.8,
-    protocolLogo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
-    startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) // 90 days ago
-  },
-  {
-    id: 'sol-holding',
-    protocol: 'Solana',
-    type: 'STAKING',
-    token: {
-      symbol: 'SOL',
-      logo: 'https://cryptologos.cc/logos/solana-sol-logo.png'
-    },
-    amount: 25,
-    value: 2762.50,
-    apy: 5.2,
-    protocolLogo: 'https://cryptologos.cc/logos/solana-sol-logo.png',
-    startDate: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000) // 45 days ago
-  },
+  // // Layer 1s
+  // {
+  //   id: 'eth-holding',
+  //   protocol: 'Ethereum',
+  //   type: 'STAKING',
+  //   address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+  //   token: {
+  //     symbol: 'ETH',
+  //     logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
+  //   },
+  //   amount: 2.5,
+  //   value: 8125.50,
+  //   apy: 3.8,
+  //   protocolLogo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+  //   startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) // 90 days ago
+  // },
 
   // Stablecoins
   {
     id: 'usdc-lending',
     protocol: 'Aave V3',
+    address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
     type: 'LENDING',
     token: {
       symbol: 'USDC',
@@ -111,6 +99,7 @@ export const mockDeFiPositions: DeFiPosition[] = [
   {
     id: 'usdt-holding',
     protocol: 'Tether',
+    address: '0xdac17f958d2ee523a2206206994597c13d831ec7',
     type: 'STAKING',
     token: {
       symbol: 'USDT',

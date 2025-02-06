@@ -1,12 +1,12 @@
 import axios from "axios";
-import { COINGECKO_API_KEY, COINGECKO_BASE_URL, COINGECKO_BASE_URL_2, ZEROX_BASE_URL, CRYPTONEWS_BASE_URL, DEFILLAMA_BASE_URL, FEARGREED_BASE_URL, GECKOTERMINAL_BASE_URL } from "../constants";
+import { COINGECKO_API_KEY, COINGECKO_BASE_URL, COINGECKO_BASE_URL_2, ZEROX_BASE_URL, CRYPTONEWS_BASE_URL, DEFILLAMA_BASE_URL, FEARGREED_BASE_URL, GECKOTERMINAL_BASE_URL, DEXFIN_BACKEND_BASE_URL } from "../constants";
 
 export const coinGeckoApi = axios.create({
-  baseURL: COINGECKO_BASE_URL,
-  headers: {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    'x-cg-pro-api-key': COINGECKO_API_KEY,
-  },
+    baseURL: COINGECKO_BASE_URL,
+    headers: {
+         
+        'x-cg-pro-api-key': COINGECKO_API_KEY,
+    },
 });
 
 export const zeroxApi = axios.create({
@@ -31,4 +31,8 @@ export const fearGreedApi = axios.create({
 
 export const geckoTerminalApi = axios.create({
   baseURL: GECKOTERMINAL_BASE_URL,
+});
+
+export const dexfinv3Api = axios.create({
+    baseURL: DEXFIN_BACKEND_BASE_URL,
 });

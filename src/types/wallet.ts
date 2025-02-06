@@ -52,6 +52,7 @@ export interface DeFiReward {
 export interface DeFiPosition {
   id: string;
   protocol: string;
+  address: string;
   type: DeFiPositionType;
   token: Token;
   amount: number;
