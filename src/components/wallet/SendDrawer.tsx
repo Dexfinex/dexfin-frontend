@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useContext, useEffect } from 'react';
-import { Skeleton } from '@chakra-ui/react';
+import { Skeleton, Spinner } from '@chakra-ui/react';
 import { Search, ArrowRight, ChevronDown, Wallet } from 'lucide-react';
 import { FieldValues, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -293,13 +293,21 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
 
         {
           isConnected ?
-            <button
-              type="submit"
-              disabled={submitDisabled}
-              className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
-            >
-              Send {selectedAsset.symbol}
-            </button>
+            isConfirming ?
+              <button
+                type="button"
+                disabled={submitDisabled}
+                className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium flex align-center justify-center"
+              >
+                <Spinner size="md" className='mr-2' /> Loading...
+              </button>
+              : <button
+                type="submit"
+                disabled={submitDisabled}
+                className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium flex align-center justify-center"
+              >
+                Send {selectedAsset.symbol}
+              </button>
             :
             <button
               type="button"
