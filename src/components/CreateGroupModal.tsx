@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { X, Mic, MicOff, Video, VideoOff, MonitorUp, Settings, User, Camera, MoveLeft, Plus, Search } from 'lucide-react';
+import React, { useState, useContext } from 'react';
+import { X, User, Camera, MoveLeft, Plus, Search } from 'lucide-react';
 import { Button, Switch, Spinner } from "@chakra-ui/react"
 import { checkIfAddressExists, shrinkAddress } from '../utils/common.util';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
-import { PushAPI } from '@pushprotocol/restapi';
+// import { PushAPI } from '@pushprotocol/restapi';
 import { useStore } from '../store/useStore';
 
 interface CreateGroupModalProps {
@@ -232,7 +232,6 @@ const ThirdStep = ({ members, addMember, removeMember, createGroup }: ThirdStepP
 }
 
 export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
   const [step, setStep] = useState(1);
   const [isPrivate, setIsPrivate] = useState(true);
   const [preview, setPreview] = useState<any>(null);
@@ -279,6 +278,8 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onCl
       return false
     }
   }
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
