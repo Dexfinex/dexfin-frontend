@@ -104,6 +104,7 @@ export function SwapBox({
     const {
         isLoading: isQuoteLoading,
         quoteResponse,
+        isGasLess: isGasLessSwap,
         // refetch,
         data: quoteData,
     } = use0xQuote({
@@ -251,7 +252,7 @@ export function SwapBox({
             refetchFromBalance()
             refetchToBalance()
         }
-    }, [isConfirmed])
+    }, [isConfirmed, refetchFromBalance, refetchToBalance])
 
     const handleSwap = async () => {
         console.log("submitting quote to blockchain");
@@ -498,7 +499,7 @@ export function SwapBox({
                             {textSwitchChain}
                         </Button>
                     ) : (
-                        quoteData?.isNeedApproving ? (
+                        quoteData?.tokenApprovalRequired ? (
                                 <Button
                                     isLoading={isApproveLoading}
                                     loadingText={'Approving...'}

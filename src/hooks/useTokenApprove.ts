@@ -12,7 +12,7 @@ const oldErc = [
 	'0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'.toLowerCase() // LDO
 ];
 
-const myABI = [  {
+export const myABI = [  {
 	"constant": false,
 	"inputs": [
 		{ "name": "_spender", "type": "address" },
@@ -25,7 +25,7 @@ const myABI = [  {
 	"type": "function"
 }];
 
-async function getAllowance({
+export async function getAllowance({
 	token,
 	chain,
 	address,
@@ -49,7 +49,7 @@ async function getAllowance({
 	}
 }
 
-const useGetAllowance = ({
+export const useGetAllowance = ({
 	token,
 	spender,
 	amount,
@@ -121,7 +121,6 @@ export const useTokenApprove = ({
 	});
 
 	const normalizedAmount = !Number.isNaN(Number(amount)) ? amount : '0';
-	const isLoading = false;
 
 	const mainApproveFunc = async (approveAmount: BigNumber) => {
 		try {
@@ -199,7 +198,7 @@ export const useTokenApprove = ({
 		approve: approve,
 		approveInfinite: approveInfinite,
 		approveReset: approveReset,
-		isLoading: isLoading || isConfirmingApproval,
+		isLoading: isConfirmingApproval,
 		isConfirmingApproval,
 		isInfiniteLoading: isInfiniteLoading || isConfirmingInfiniteApproval,
 		isConfirmingInfiniteApproval,

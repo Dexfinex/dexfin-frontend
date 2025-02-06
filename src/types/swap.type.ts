@@ -170,6 +170,81 @@ export interface QuoteResponse {
     };
 }
 
+export interface GaslessQuoteResponse {
+    approval: {
+        type: string;
+        hash: string;
+        eip712: EIP712TypedData;
+    } | null;
+    blockNumber: string;
+    buyAmount: string;
+    buyToken: Address;
+    fees: {
+        integratorFee: {
+            amount: string;
+            token: string;
+            type: "volume" | "gas";
+        } | null;
+        zeroExFee: {
+            amount: string;
+            token: string;
+            type: string;
+        };
+        gasFee: {
+            amount: string;
+            token: string;
+            type: string;
+        };
+    };
+    issues: {
+        allowance: {
+            actual: string;
+            spender: string;
+        } | null;
+        balance: {
+            token: string;
+            actual: string;
+            expected: string;
+        };
+        simulationIncomplete: boolean;
+        invalidSourcesPassed: unknown;
+    } | null;
+    liquidityAvailable: boolean;
+    minBuyAmount: string;
+    route: {
+        fills: {
+            from: string;
+            to: string;
+            source: string;
+            proportionBps: string;
+        }[];
+        tokens: {
+            address: string;
+            symbol: string;
+        }[];
+    };
+    sellAmount: string;
+    sellToken: Address;
+    target: string;
+    tokenMetadata: {
+        buyToken: {
+            buyTaxBps: string | null;
+            sellTaxBps: string | null;
+        };
+        sellToken: {
+            buyTaxBps: string | null;
+            sellTaxBps: string | null;
+        };
+    };
+    trade: {
+        type: string;
+        hash: string;
+        eip712: EIP712TypedData;
+    } | null;
+    zid: string;
+}
+
+
 export interface V2QuoteTransaction {
     data: Hex;
     gas: string | null;
@@ -193,6 +268,7 @@ export interface QuoteDataType {
     affiliateFee: number | null;
     buyTax: number | null;
     sellTax: number | null;
-    isNeedApproving: boolean;
+    tokenApprovalRequired: boolean;
+    gaslessApprovalAvailable: boolean;
     spenderAddress: string;
 }
