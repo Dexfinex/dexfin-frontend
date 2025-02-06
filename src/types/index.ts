@@ -52,7 +52,7 @@ export interface NewsItem {
   title: string;
   source: string;
   time: string;
-  impact: 'HIGH' | 'MEDIUM' | 'LOW';
+  impact: "HIGH" | "MEDIUM" | "LOW";
   link: string;
 }
 
@@ -76,7 +76,7 @@ export interface ChartOptions {
       display: boolean;
     };
     tooltip?: {
-      mode: 'index';
+      mode: "index";
       intersect: boolean;
     };
   };
@@ -105,6 +105,7 @@ export interface ChartOptions {
   };
 }
 
+<<<<<<< HEAD
 export interface CoinGeckoToken {
   name: string,
   address: string,
@@ -195,3 +196,8 @@ export interface Token {
       logo_url?: string;
   };
 }
+=======
+export interface TransactionError extends Error {
+  code?: string;
+}
+>>>>>>> 13bb32e ([Feat]: transfer tokens in wallet screen)

@@ -59,7 +59,7 @@ export const AskAnythingWidget: React.FC = () => {
       try {
         setIsManualStop(true);
         recognitionInstance.abort();
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
       } catch (error) {
         // Ignore errors during cleanup
       }
