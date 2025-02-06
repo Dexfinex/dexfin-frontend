@@ -2,8 +2,7 @@ import React, { useContext, useEffect, useState, useRef } from 'react';
 import {
   X, Maximize2, Minimize2, Search,
   MessageSquare, Share2, Users, ArrowRight, Plus,
-  Settings, User, Info, CheckCircle, XCircle,
-  Check
+  Settings, User, Info, CheckCircle, XCircle, Copy
 } from 'lucide-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
@@ -1254,12 +1253,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       {
                         selectedUser?.profilePicture ? <img src={selectedUser?.profilePicture} className='w-10 h-10 mr-4 rounded-full' /> : <User className='w-10 h-10 mr-4' />
                       }
-                      {selectedUser?.name ?
-                        <div className='flex flex-col'>
-                          <div>{selectedUser?.name}</div>
-                          <div className='text-sm text-white/40'>{extractAddress(selectedUser?.address)}</div>
-                        </div>
-                        : extractAddress(selectedUser?.address)}
+                      {
+                        selectedUser?.name ?
+                          <div className='flex flex-col'>
+                            <div>{selectedUser?.name}</div>
+                            <div className='text-sm text-white/40 flex items-center gap-1'>{extractAddress(selectedUser?.address)}
+                              <button onClick={() => navigator.clipboard.writeText(extractAddress(selectedUser?.address))}>
+                                <Copy className='text-white/40 w-4 h-4' />
+                              </button>
+                            </div>
+                          </div>
+                          : <div className='flex gap-1'>{extractAddress(selectedUser?.address)}
+                            <button onClick={() => navigator.clipboard.writeText(extractAddress(selectedUser?.address))}>
+                              <Copy className='text-white/40 w-4 h-4' />
+                            </button>
+                          </div>
+                      }
                     </div>
                     {/* <div>
                       <div className="font-medium">{selectedUser.name}</div>
