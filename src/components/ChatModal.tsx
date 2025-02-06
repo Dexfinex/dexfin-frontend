@@ -2,7 +2,8 @@ import React, { useContext, useEffect, useState, useRef } from 'react';
 import {
   X, Maximize2, Minimize2, Search,
   MessageSquare, Share2, Users, ArrowRight, Plus,
-  Settings, User, Info, CheckCircle, XCircle
+  Settings, User, Info, CheckCircle, XCircle,
+  Check
 } from 'lucide-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
@@ -24,6 +25,9 @@ interface IUser {
   address: string;
   chatId: string;
   type: "Request" | "Connected" | "Searched";
+  lastTimestamp?: number;
+  lastMessage?: string;
+  unreadMessages: number;
 }
 
 interface IChat {
@@ -215,7 +219,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const [loading, setLoading] = useState(false);
   const [group, setGroup] = useState<Array<any>>([]);
-  const [connectedUsers, setConnectedUsers] = useState<Array<any>>([]);
+  const [connectedUsers, setConnectedUsers] = useState<Array<IUser>>([]);
   const [searchedOne, setSearchedOne] = useState<IUser | null>(null);
   const [requestUsers, setRequestUsers] = useState<Array<IUser>>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -300,25 +304,28 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     handleReceiveMsg()
   }, [receivedMessage])
 
-  useEffect(() => {
-    console.log('request users = ', requestUsers)
-  }, [requestUsers])
+  // useEffect(() => {
+  //   console.log('request users = ', requestUsers)
+  // }, [requestUsers])
 
   const handleReceiveMsg = async () => {
-    if (selectedUser?.address && address && receivedMessage && receivedMessage?.to) {
-      if (address == extractAddress(receivedMessage?.to[0] || "")) {
-        if (receivedMessage.event == "chat.request") {
-          const profile = await getWalletProfile(chatUser, receivedMessage.from)
-          if (profile) {
-            setRequestUsers([...requestUsers, {
-              name: profile.name,
-              profilePicture: profile.picture,
-              address: extractAddress(receivedMessage.from),
-              chatId: receivedMessage.chatId,
-              type: "Request"
-            }])
-          }
-        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
+    if (receivedMessage.origin == "other") {
+      console.log('receive other')
+      if (receivedMessage.event == "chat.request") {
+        const profile = await getWalletProfile(chatUser, receivedMessage.from)
+        if (profile) {
+          setRequestUsers([...requestUsers, {
+            name: profile.name,
+            profilePicture: profile.picture,
+            address: extractAddress(receivedMessage.from),
+            chatId: receivedMessage.chatId,
+            type: "Request",
+            unreadMessages: 0
+          }])
+        }
+      } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
+        console.log('chat.message')
+        if (extractAddress(receivedMessage.from) == selectedUser?.address) {
           setToBottom(true)
           setChatHistory(
             [...chatHistory, {
@@ -331,7 +338,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               link: null
             }]
           )
+          updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp))
+        } else {
+          addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp))
         }
+      }
+    } else if (receivedMessage.origin == "self") {
+      if (receivedMessage.event == "chat.message") {
+        updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.content, Number(receivedMessage.timestamp))
       }
     }
   }
@@ -372,7 +386,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       if (e.groupInformation) {
         groupInformation = [...groupInformation, e.groupInformation]
       } else {
-        userInformation = [...userInformation, e]
+        userInformation = [...userInformation, {
+          name: e.name,
+          profilePicture: e.profilePicture,
+          address: extractAddress(e.wallets),
+          chatId: e.chatId,
+          type: "Connected",
+          lastTimestamp: e.msg.timestamp,
+          lastMessage: e.msg.messageContent,
+          unreadMessages: 0
+        }]
       }
     });
 
@@ -395,7 +418,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             profilePicture: e.profilePicture,
             address: extractAddress(e.wallets),
             chatId: e.chatId,
-            type: "Request"
+            type: "Request",
+            unreadMessages: 0
           }]
         }
       })
@@ -426,10 +450,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       setHandlingRequest(true)
       const acceptRequest = await chatUser.chat.accept(selectedUser?.address)
       setRequestUsers(requestUsers.filter((item) => item.chatId !== selectedUser?.chatId))
-      setConnectedUsers([{
-        ...selectedUser,
-        wallets: selectedUser?.address
-      }, ...connectedUsers])
+      if (selectedUser) {
+        setConnectedUsers([{ ...selectedUser, unreadMessages: 0 }, ...connectedUsers])
+      }
       setSelectedUser({
         ...selectedUser,
         type: "Connected"
@@ -581,10 +604,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setMessage("")
         if (searchedOne?.address == selectedUser.address) {
           setSearchedOne(null)
-          setConnectedUsers([{
-            ...searchedOne,
-            wallets: searchedOne.address
-          }, ...connectedUsers])
+          setConnectedUsers([{ ...searchedOne, unreadMessages: 0 }, ...connectedUsers])
         }
         console.log('sent msg = ', sentMsg)
       } catch (err) {
@@ -604,22 +624,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }, [chatHistory])
 
-  const handleSelectUser = async (user: any) => {
+  const handleSelectUser = async (user: IUser) => {
     setLoadingChatHistory(true)
     setChatHistory([])
-    setSelectedUser({
-      name: user.name,
-      profilePicture: user.profilePicture,
-      address: extractAddress(user.wallets),
-      chatId: user.chatId,
-      type: "Connected"
-    })
+    setSelectedUser(user)
 
     try {
-      const history = await chatUser.chat.history(user.wallets)
+      const history = await chatUser.chat.history(user.address)
       if (history.length > 0) {
         console.log('history = ', history)
-        console.log('selected = ', user.wallets)
+        console.log('selected = ', user.address)
         const tmp: IChat[] = history.map((e: any) => {
           return {
             timestamp: e.timestamp,
@@ -633,6 +647,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         })
         setToBottom(true)
         setChatHistory(tmp.reverse())
+        clearUnreadMessages(user.address)
       }
     } catch (err) {
       console.log('load chat history err: ', err)
@@ -658,10 +673,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       if (found) {
         setSelectedUser({
           name: found.name,
-          address: found.wallets,
+          address: found.address,
           profilePicture: found.profilePicture,
           chatId: found.chatId,
-          type: "Connected"
+          type: "Connected",
+          unreadMessages: 0
         })
       } else {
         setSearchedOne({
@@ -669,7 +685,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           profilePicture: profile.picture,
           address: searchQuery,
           chatId: "",
-          type: "Searched"
+          type: "Searched",
+          unreadMessages: 0
         })
       }
     }
@@ -704,6 +721,47 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const handleSelectGroup = (group: any) => {
     setChatHistory([])
     setSelectedGroup(group)
+  }
+
+  const updateLastMessageInfo = (address: string, msg: string, timestamp: number) => {
+    if (connectedUsers.length > 0) {
+      setConnectedUsers((prevUsers) => {
+        const updatedUsers = prevUsers.map((user) =>
+          user.address === address
+            ? { ...user, lastMessage: msg, lastTimestamp: timestamp }
+            : user
+        );
+        console.log("Previous Users: ", prevUsers);
+        console.log("Updated Users: ", updatedUsers);
+        return updatedUsers;
+      });
+    }
+  }
+
+  const addUnreadMessagesCount = (address: string, msg: string, timestamp: number) => {
+    if (connectedUsers.length > 0) {
+      setConnectedUsers((prevUsers) => {
+        const updatedUsers = prevUsers.map((user) =>
+          user.address === address
+            ? { ...user, lastMessage: msg, lastTimestamp: timestamp, unreadMessages: ++user.unreadMessages }
+            : user
+        );
+        return updatedUsers;
+      });
+    }
+  }
+
+  const clearUnreadMessages = (address: string) => {
+    if (connectedUsers.length > 0) {
+      setConnectedUsers((prevUsers) => {
+        const updatedUsers = prevUsers.map((user) =>
+          user.address === address && user.unreadMessages > 0
+            ? { ...user, unreadMessages: 0 }
+            : user
+        );
+        return updatedUsers;
+      });
+    }
   }
 
   const canAccessChat = (user: any, group: any) => {
@@ -810,7 +868,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         </div>}
         {connectedUsers.length > 0 && connectedUsers.map((user: any) => <button key={user?.chatId}
           onClick={() => handleSelectUser(user)}
-          className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser?.address === extractAddress(user?.wallets)
+          className={`w-full flex items-center justify-between gap-3 p-3 rounded-lg transition-colors ${selectedUser?.address === extractAddress(user?.address)
             ? 'bg-white/10'
             : 'hover:bg-white/5'
             }`}
@@ -818,10 +876,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           {
             user?.profilePicture ? <img src={user?.profilePicture} className='w-10 h-10 rounded-full' /> : <User className='w-10 h-10' />
           }
-          <div className='flex flex-col'>
-            <span className='text-left'>{user?.name || shrinkAddress(extractAddress(user?.wallets))}</span>
-            <span className='text-left text-sm text-white/40'>{user?.msg?.messageContent ? user?.msg?.messageContent.slice(0, 30) : ""}</span>
+          <div className='flex flex-col flex-1'>
+            <span className='text-left'>{user?.name || shrinkAddress(extractAddress(user?.address))}</span>
+            <span className='text-left text-sm text-white/40'>{user?.lastMessage ? user?.lastMessage.slice(0, 30) : ""}</span>
           </div>
+          {user?.lastTimestamp && <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(user?.lastTimestamp)}</span>}
+          {/* {user?.unreadMessages > 0 ? <span className='text-red-500 text-xs'>{user?.unreadMessages}</span> : <></>} */}
+          {user?.unreadMessages > 0 ? <CheckCircle className='text-red-500 w-4 h-4' /> : <></>}
         </button>)}
       </>
     }
@@ -1293,7 +1354,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     onKeyDown={handleKeyPress}
                     placeholder="Type a message..."
                     className="flex-1 bg-white/5 px-4 py-2 rounded-lg outline-none"
-                    disabled={selectedUser?.type === "Request"}
+                    disabled={selectedUser?.type === "Request" || !selectedUser}
                   />
                   <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                     <Share2 className="w-5 h-5" />
