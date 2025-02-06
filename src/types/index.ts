@@ -196,3 +196,6 @@ export interface Token {
   };
 }
 
+export interface TransactionError extends Error {
+    code?: string;
+}

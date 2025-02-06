@@ -1,7 +1,7 @@
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {ArrowDownUp, Info} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
-import {SlippageOption, TokenType} from '../../../types/swap.type';
+import {GaslessQuoteResponse, QuoteResponse, SlippageOption, TokenType} from '../../../types/swap.type';
 import {formatNumberByFrac} from '../../../utils/common.util';
 import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
 import {ZEROX_AFFILIATE_FEE} from "../../../constants";
@@ -12,11 +12,11 @@ import useGasEstimation from "../../../hooks/useGasEstimation.ts";
 import {mapChainId2ChainName, mapChainId2ExplorerUrl, mapChainId2NativeAddress} from "../../../config/networks.ts";
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
 import {useBalance} from "../../../hooks/useBalance.tsx";
-import {useTokenApprove} from "../../../hooks/useTokenApprove.ts";
 import {ethers} from "ethers";
 import {useSendTransaction, useSignTypedData, useWaitForTransactionReceipt} from "wagmi";
 import {BaseError, concat, Hex, numberToHex, size} from "viem";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
+import {use0xTokenApprove} from "../../../hooks/use0xTokenApprove.ts";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -147,12 +147,18 @@ export function SwapBox({
 
     const {
         approve,
+        approvalDataToSubmit,
+        tradeDataToSubmit,
+        isReadyToSubmit,
         isLoading: isApproveLoading,
-    } = useTokenApprove({
+    } = use0xTokenApprove({
         token: fromToken?.address as `0x${string}`,
         spender: quoteData?.spenderAddress as `0x${string}`,
         amount: amountToApprove,
-        chainId: tokenChainId
+        chainId: tokenChainId,
+        gaslessQuote: quoteResponse as GaslessQuoteResponse,
+        isGaslessApprove: isGasLessSwap,
+        gaslessApprovalAvailable: quoteData?.gaslessApprovalAvailable ?? false
     });
 
     const insufficientBalance =
@@ -255,15 +261,18 @@ export function SwapBox({
     }, [isConfirmed, refetchFromBalance, refetchToBalance])
 
     const handleSwap = async () => {
+/*
         console.log("submitting quote to blockchain");
         console.log("to", quoteResponse.transaction.to);
         console.log("value", quoteResponse.transaction.value);
+*/
+        const normalSwapQuoteResponse = quoteResponse as QuoteResponse
 
         // On click, (1) Sign the Permit2 EIP-712 message returned from quote
-        if (quoteResponse.permit2?.eip712) {
+        if (normalSwapQuoteResponse.permit2?.eip712) {
             let signature: Hex | undefined;
             try {
-                signature = await signTypedDataAsync(quoteResponse.permit2.eip712);
+                signature = await signTypedDataAsync(normalSwapQuoteResponse.permit2.eip712);
                 console.log("Signed permit2 message from quote response");
             } catch (error) {
                 console.error("Error signing permit2 coupon:", error);
@@ -271,17 +280,17 @@ export function SwapBox({
 
             // (2) Append signature length and signature data to calldata
 
-            if (signature && quoteResponse?.transaction?.data) {
+            if (signature && normalSwapQuoteResponse?.transaction?.data) {
                 const signatureLengthInHex = numberToHex(size(signature), {
                     signed: false,
                     size: 32,
                 });
 
-                const transactionData = quoteResponse.transaction.data as Hex;
+                const transactionData = normalSwapQuoteResponse.transaction.data as Hex;
                 const sigLengthHex = signatureLengthInHex as Hex;
                 const sig = signature as Hex;
 
-                quoteResponse.transaction.data = concat([
+                normalSwapQuoteResponse.transaction.data = concat([
                     transactionData,
                     sigLengthHex,
                     sig,
@@ -295,13 +304,13 @@ export function SwapBox({
 
         sendTransaction({
             account: walletAddress as `0x${string}`,
-            gas: quoteResponse?.transaction.gas
-                ? BigInt(quoteResponse?.transaction.gas)
+            gas: normalSwapQuoteResponse?.transaction.gas
+                ? BigInt(normalSwapQuoteResponse?.transaction.gas)
                 : undefined,
-            to: quoteResponse?.transaction.to,
-            data: quoteResponse.transaction.data, // submit
-            value: quoteResponse?.transaction.value
-                ? BigInt(quoteResponse.transaction.value)
+            to: normalSwapQuoteResponse?.transaction.to,
+            data: normalSwapQuoteResponse.transaction.data, // submit
+            value: normalSwapQuoteResponse?.transaction.value
+                ? BigInt(normalSwapQuoteResponse.transaction.value)
                 : undefined, // value is used for native tokens
             chainId: walletChainId,
         });

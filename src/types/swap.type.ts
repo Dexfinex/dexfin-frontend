@@ -1,5 +1,15 @@
 import {Address, type Hex, TypedData, TypedDataDomain} from "viem";
 
+/**
+ * Valid signature types on 0x
+ */
+export enum SignatureType {
+    Illegal = 0,
+    Invalid = 1,
+    EIP712 = 2,
+    EthSign = 3,
+}
+
 export interface EIP712TypedData {
     types: TypedData;
     domain: TypedDataDomain;
