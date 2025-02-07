@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useContext, useEffect } from 'react';
-import { Skeleton, Spinner } from '@chakra-ui/react';
+import { Skeleton, Spinner, SkeletonCircle } from '@chakra-ui/react';
 import { Search, ArrowRight, ChevronDown, Wallet, XCircle } from 'lucide-react';
 import { FieldValues, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -207,7 +207,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
               <div className="flex-1 text-left">
                 <div className="font-medium">
                   {selectedAsset.name}
-                  {!compareWalletAddresses(selectedAsset.address, nativeTokenAddress) && <span className='ml-1 text-sm font-light'>({cropString(selectedAsset.address, 4)})</span>}
+                  {!compareWalletAddresses(selectedAsset.address, nativeTokenAddress) && <span className='ml-1 text-sm font-light'>({cropString(selectedAsset.address || "", 4)})</span>}
                 </div>
                 <div className="text-sm text-white/60">
                   Balance: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
@@ -320,7 +320,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
               :
               <div className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">
                 {
-                  ensAvatarLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'}></Skeleton> :
+                  (ensAvatarLoading || !ensAvatar) ? <SkeletonCircle startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'}></SkeletonCircle> :
                     <img
                       src={ensAvatar || ""}
                       alt={address}
@@ -358,7 +358,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
                     className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
                   >
                     {
-                      ensAvatarLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'}></Skeleton> :
+                      (ensAvatarLoading || !ensAvatar) ? <SkeletonCircle startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'}></SkeletonCircle> :
                         <TokenIcon src={ensAvatar as string} alt={address} size='lg' />
                     }
                     <div className="flex-1 text-left">
@@ -393,7 +393,10 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
                   {
                     showSelectedEnsInfo ?
                       <div className='flex flex-row justify-items-center items-center'>
-                        <TokenIcon src={ensAvatar as string} alt={address} size='lg' className='mr-2' />
+                        {
+                          (ensAvatarLoading || !ensAvatar) ? <SkeletonCircle startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'} className='mr-1'></SkeletonCircle> :
+                            <TokenIcon src={ensAvatar as string} alt={address} size='lg' />
+                        }
                         <div className='flex flex-col'>
                           <div>{address}</div>
                           <div>{cropString(ensAddress || "", 3)}</div>
