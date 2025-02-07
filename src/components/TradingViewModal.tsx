@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { X, Maximize2, Minimize2, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
-import TradeChart from './trade/tradingview';
-import { Orion } from "./trade/orionprotocol";
+import TradeChart from './trade/TradingView';
+import { Orion } from "./trade/OrionProtocol";
 import { DEFAULT_PAIRS, CURRENCY_ICONS_URL, DEFAULT_ICON_URL, ORION_TRADE_CONFIG } from '../constants/mock/tradepairs';
 import { TokenPairSelectModal } from "../components/trade/TokenPairSelection"
 import { useOrionHook } from "../hooks/useOrionHook";
 import { useOrionOrderbookHook } from "../hooks/useOrionOrderbookHook";
 import { convertNumberIntoFormat, toFixedFloat } from "../utils/trade.util";
 import { simpleFetch } from "simple-typed-fetch";
-import Orderbook from "../components/trade/OrderBook/orderboox";
+import Orderbook from "./trade/OrderBook/OrderBook";
 
 export let unit = new Orion().getUnit("eth");
 

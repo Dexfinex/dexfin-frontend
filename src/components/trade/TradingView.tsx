@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import Datafeeds from "./datafeed";
+import Datafeeds from "./DataFeed";
 
 declare global {
     interface Window {

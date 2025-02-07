@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import { Orion } from "./orionprotocol";
+import { Orion } from "./OrionProtocol";
 import { simpleFetch } from "simple-typed-fetch";
 
 interface ConfigurationData {

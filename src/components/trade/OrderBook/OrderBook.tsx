@@ -6,7 +6,7 @@ import PriceLevelRow from "./PriceLevelRow";
 import { MOBILE_WIDTH } from "../../../constants/mock/tradepairs";
 import { ThreeDots } from "react-loader-spinner";
 import DepthVisualizer from "./component/DepthVisualizer";
-import { PriceLevelRowContainer } from "./styles/pricelevel_styles";
+import { PriceLevelRowContainer } from "./styles/PricelevelStyles";
 import Spread from "./component/Spread";
 import { convertNumberIntoFormat, toFixedFloat } from "../../../utils/trade.util";
 

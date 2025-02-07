@@ -1,5 +1,5 @@
 import { FunctionComponent } from 'react';
-import { OrderType } from "../../orderboox";
+import { OrderType } from "../../OrderBook";
 
 interface DepthVisualizerProps {
   depth: number;
