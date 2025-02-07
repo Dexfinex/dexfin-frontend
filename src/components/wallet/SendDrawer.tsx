@@ -21,6 +21,7 @@ import { TransactionError } from '../../types';
 import { mapChainId2ExplorerUrl } from '../../config/networks.ts';
 import { TokenChainIcon, TokenIcon } from '../swap/components/TokenIcon.tsx';
 import { cropString } from '../../utils/index.ts';
+import { compareWalletAddresses } from '../../utils/common.util';
 
 interface SendDrawerProps {
   isOpen: boolean;
@@ -64,7 +65,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
   const schema = z.object({
     amount: z.number({
       required_error: "Amount is required",
-      invalid_type_error: "Amount must be a number"
+      invalid_type_error: "Incorrect balance"
     }).gt(0).lte(selectedAsset.amount),
     address: z.string(),
   });
@@ -117,8 +118,15 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
   }, [amount, address, isConfirming, showSelectedEnsInfo])
 
   const showPreview = useMemo(() => {
-    return (amount && address && (ethers.utils.isAddress(address) || ethers.utils.isAddress(ensAddress || "")))
+    return (amount && address && (ethers.utils.isAddress(address) || showSelectedEnsInfo))
   }, [amount, address, showSelectedEnsInfo])
+
+  const errorAddress = useMemo(() => {
+    if (address.startsWith("0x")) {
+      return !ethers.utils.isAddress(address);
+    }
+    return false;
+  }, [address])
 
   const { getTokenPrice, tokenPrices } = useTokenStore()
 
@@ -176,7 +184,8 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
 
   const filteredAssets = assets.filter(asset =>
     asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    asset.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+    asset.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    asset.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -196,7 +205,10 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
             >
               <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
               <div className="flex-1 text-left">
-                <div className="font-medium">{selectedAsset.name}</div>
+                <div className="font-medium">
+                  {selectedAsset.name}
+                  {!compareWalletAddresses(selectedAsset.address, nativeTokenAddress) && <span className='ml-1 text-sm font-light'>({cropString(selectedAsset.address, 4)})</span>}
+                </div>
                 <div className="text-sm text-white/60">
                   Balance: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
                 </div>
@@ -237,7 +249,10 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
                       >
                         <TokenChainIcon src={asset.logo} alt={asset.name} size={"md"} chainId={Number(chainId)} />
                         <div className="flex-1 text-left">
-                          <div className="font-medium">{asset.name}</div>
+                          <div className="font-medium">
+                            {asset.name}
+                            {!compareWalletAddresses(asset.address, nativeTokenAddress) && <span className='ml-1 text-sm font-light'>({cropString(asset.address, 4)})</span>}
+                          </div>
                           <div className="text-sm text-white/60">
                             {`${formatNumberByFrac(asset.amount)} ${asset.symbol}`}
                           </div>
@@ -254,30 +269,33 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
         {/* Amount Input */}
         <div>
           <label className="block text-sm text-white/60 mb-2">Amount</label>
+          {errors.amount?.message && <p className='text-red-500 text-xs italic mb-1'>{errors.amount?.message}</p>}
           <div className="relative">
-            {errors.amount?.message && <p className='text-red-500 text-xs italic'>{errors.amount?.message}</p>}
             <input
               type="number"
               step="any"
               placeholder="0.00"
-              className={`w-full bg-white/5 border ${errors.amount ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:border-white/20`}
+              className={`w-full bg-white/5 border ${errors.amount ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
               {...register("amount", {
                 valueAsNumber: true,
                 validate: (value) => Number(value) > 0,
 
               })}
             />
-            <button
-              type="button"
-              onClick={() =>
-                setValue("amount", selectedAsset.amount, {
-                  shouldValidate: true,
-                })
-              }
-              className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-sm text-blue-400 hover:text-blue-300"
-            >
-              MAX
-            </button>
+            {
+              amount !== selectedAsset.amount &&
+              < button
+                type="button"
+                onClick={() =>
+                  setValue("amount", selectedAsset.amount, {
+                    shouldValidate: true,
+                  })
+                }
+                className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-sm text-blue-400 hover:text-blue-300"
+              >
+                MAX
+              </button>
+            }
           </div>
           <div className="mt-1 text-sm text-white/40">
             Available: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
@@ -285,16 +303,16 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
         </div>
 
         {/* Address Input */}
-        <div>
+        <div className='relative'>
           <label className="block text-sm text-white/60 mb-2">Send To</label>
-          {errors.address?.message && <p className='text-red-500 text-xs italic'>{errors.address?.message}</p>}
+          {errorAddress && <p className='text-red-500 text-xs italic mb-1'>Incorrect address</p>}
           {
             !showSelectedEnsInfo ?
               <input
                 type="text"
                 value={address}
                 placeholder="Enter wallet address or ENS name"
-                className={`w-full bg-white/5 border ${errors.address ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:border-white/20`}
+                className={`w-full bg-white/5 border ${errorAddress ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
                 onChange={(e) => {
                   setAddress(e.target.value)
                 }}
@@ -324,7 +342,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
           }
           {
             showEnsList && ensAddress &&
-            <div className='relative' onClick={() => setShowEnsList(false)}>
+            <div onClick={() => setShowEnsList(false)}>
               <div
                 className="fixed inset-0 z-10"
               />
