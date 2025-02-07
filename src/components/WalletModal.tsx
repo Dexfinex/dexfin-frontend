@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react';
-import { Skeleton } from '@chakra-ui/react';
+import React, { useState, useContext, useMemo } from 'react';
+import { Skeleton, useMediaQuery } from '@chakra-ui/react';
 import { X, Maximize2, Minimize2, ArrowDown, CreditCard, Send, Wallet, TrendingUp, LayoutGrid, History, Landmark, ExternalLink, Clock } from 'lucide-react';
 import { SendDrawer } from './wallet/SendDrawer';
 import { ReceiveDrawer } from './wallet/ReceiveDrawer';
@@ -36,6 +36,16 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
 
   const { address, chainId } = useContext(Web3AuthContext);
+
+  const [isLargerThan800] = useMediaQuery('(min-width: 800px)');
+
+  const walletContainerWidth = useMemo(() => {
+    if (isFullscreen) return 'w-full h-full rounded-none';
+    if (isLargerThan800) return 'w-[50%] h-[50%] rounded-xl';
+
+    return 'w-full h-full rounded-none';
+
+  }, [isLargerThan800, isFullscreen])
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -332,10 +342,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
         <div
-          className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
-            ? 'w-full h-full rounded-none'
-            : 'w-[90%] h-[90%] rounded-xl'
-            }`}
+          className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${walletContainerWidth}`}
         >
           <div className="flex flex-col h-full">
             {/* Header */}
@@ -345,16 +352,19 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                 <h2 className="text-xl font-semibold">Wallet</h2>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  {isFullscreen ? (
-                    <Minimize2 className="w-4 h-4" />
-                  ) : (
-                    <Maximize2 className="w-4 h-4" />
-                  )}
-                </button>
+                {
+                  isLargerThan800 &&
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    {isFullscreen ? (
+                      <Minimize2 className="w-4 h-4" />
+                    ) : (
+                      <Maximize2 className="w-4 h-4" />
+                    )}
+                  </button>
+                }
                 <button
                   onClick={onClose}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
