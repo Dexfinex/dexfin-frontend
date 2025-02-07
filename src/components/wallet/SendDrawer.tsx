@@ -68,6 +68,10 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
   }, [isLargerThan1200, isLargerThan800])
 
   useEffect(() => {
+    setSelectedAsset(assets[selectedAssetIndex] || {})
+  }, [selectedAssetIndex])
+
+  useEffect(() => {
     if (assets.length > 0 && Object.keys(selectedAsset).length === 0) {
       setSelectedAsset(assets[0])
     }
@@ -361,7 +365,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
                   <div className="flex-1 text-left">
                     <div className="font-medium">{address}</div>
                     <div className="text-sm text-white/60">
-                      {ensAddress}
+                      {cropString(ensAddress || "")}
                     </div>
                   </div>
                   <XCircle onClick={() => {
@@ -393,7 +397,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
                       <div className="flex-1 text-left">
                         <div className="font-medium">{address}</div>
                         <div className="text-sm text-white/60">
-                          {ensAddress}
+                          {cropString(ensAddress || "")}
                         </div>
                       </div>
                     </button>
@@ -406,9 +410,9 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
           {showPreview ? (
             <div className="p-4 bg-white/5 rounded-lg">
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center">
                   <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
-                  <div>
+                  <div className='ml-3'>
                     <div className="text-sm text-white/60">You send</div>
                     <div className="font-medium">
                       {`${formatNumberByFrac(Number(amount))} ${selectedAsset.symbol}`}

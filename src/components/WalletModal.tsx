@@ -14,6 +14,7 @@ import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
 import useTokenTransferStore from '../store/useTokenTransferStore.ts';
 import { useEvmWalletBalance } from '../hooks/useBalance.tsx';
 import { useEvmWalletTransfer } from '../hooks/useTransfer.tsx';
+import { formatDate } from '../utils/common.util.ts';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
   const walletContainerWidth = useMemo(() => {
     if (isFullscreen) return 'w-full h-full rounded-none';
-    if (isLargerThan1200) return 'w-[50%] h-[50%] rounded-xl';
+    if (isLargerThan1200) return 'w-[50%] h-[80%] rounded-xl';
     if (isLargerThan800) return 'w-[80%] h-[80%] rounded-xl';
 
     return 'w-full h-full rounded-none';
@@ -87,8 +88,9 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
           <span>Receive</span>
         </button>
         <button
+          disabled={true}
           onClick={() => setShowBuyDrawer(true)}
-          className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
+          className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors opacity-[0.7]"
         >
           <CreditCard className="w-5 h-5" />
           <span>Buy</span>
@@ -148,7 +150,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                   {tx.transactionType}
                 </span>
                 <span className="text-sm text-white/60">
-                  {tx.time.toLocaleString()}
+                  {formatDate(tx.time)}
                 </span>
               </div>
               <a
