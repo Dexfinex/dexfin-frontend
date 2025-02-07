@@ -13,6 +13,7 @@ export const MarketNews: React.FC = () => {
     try {
       setLoading(true);
       const newsData = await cryptonewsService.getLatestNews();
+      console.log(newsData);
       setNews(newsData);
       setError(null);
     } catch (err) {
