@@ -63,6 +63,9 @@ export const compareWalletAddresses = (
     address1: string,
     address2: string,
 ): boolean => {
+    if(!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
+        return false;
+    }
     // Convert both addresses to uppercase.
     const normalizedAddress1 = address1.toUpperCase();
     const normalizedAddress2 = address2.toUpperCase();

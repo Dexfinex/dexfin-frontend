@@ -43,6 +43,7 @@ import { ethers } from "ethers";
 import { mapChainId2ViemChain } from "../config/networks.ts";
 import { useStore } from "../store/useStore.ts";
 import { useEvmWalletBalance } from "../hooks/useBalance.tsx";
+import { useEvmWalletTransfer } from "../hooks/useTransfer.tsx";
 
 interface Web3AuthContextType {
     login: () => void;
@@ -154,6 +155,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log("provider", provider, address, chainId, solanaWalletInfo)
 
     const { refetch: refetchEvmWalletBalance } = useEvmWalletBalance({ address, chainId: Number(chainId) });
+    const { refetch: refetchEvmWalletTransfer } = useEvmWalletTransfer();
 
     const {
         isConnected: isWagmiWalletConnected,
@@ -362,6 +364,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setAddress(connectedWalletAddress as string)
             setChainId(wagmiChainId)
             refetchEvmWalletBalance()
+            refetchEvmWalletTransfer()
             connector!.getProvider().then((rawProvider) => {
                 const provider = new Web3Provider(rawProvider as ExternalProvider);
                 setProvider(provider)
@@ -399,6 +402,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setIsConnected(true)
             setAddress(currentAccount!.ethAddress)
             refetchEvmWalletBalance()
+            refetchEvmWalletTransfer()
             // store variables to localstorage
             setStoredWalletInfo({
                 authMethod: authMethod!,
