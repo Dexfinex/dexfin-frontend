@@ -8,8 +8,8 @@ export const isValidWalletAddress = (address: string): boolean => {
     return ethAddressRegex.test(address);
 };
 
-export const isNativeTokenAddress = (address: string): boolean => {
-    return Object.values(mapChainId2NativeAddress).indexOf(address) !== 1
+export const isNativeTokenAddress = (chainId: number, address: string): boolean => {
+    return mapChainId2NativeAddress[chainId]?.toLowerCase() === address?.toLowerCase()
 }
 
 export const checkIfAddressExists = async (address: string): Promise<boolean> => {

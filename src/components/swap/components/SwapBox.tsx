@@ -3,7 +3,7 @@ import {ArrowDownUp, Info} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
 import {GaslessQuoteResponse, QuoteResponse, SlippageOption, TokenType} from '../../../types/swap.type';
 import {formatNumberByFrac} from '../../../utils/common.util';
-import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
+import {Alert, AlertIcon, Button, Flex, Skeleton, Text} from '@chakra-ui/react';
 import {ZEROX_AFFILIATE_FEE} from "../../../constants";
 import useTokenStore from "../../../store/useTokenStore.ts";
 import use0xQuote from "../../../hooks/use0xQuote.ts";
@@ -38,6 +38,7 @@ interface PreviewDetailItemProps {
     info: string;
     value: string;
     valueClassName?: string;
+    isFree?: boolean;
     isLoading: boolean;
 }
 
@@ -54,6 +55,7 @@ const PreviewDetailItem = ({
                                info,
                                value,
                                valueClassName,
+                               isFree,
                                isLoading,
                            }: PreviewDetailItemProps) => {
     return (
@@ -71,6 +73,11 @@ const PreviewDetailItem = ({
             {
                 isLoading ? (
                     <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                ) : isFree ? (
+                    <Flex gap={2}>
+                        <span className={'text-green-500'}>Free!</span>
+                        <span className={(valueClassName ? valueClassName : "text-white") + ' line-through'}>{value}</span>
+                    </Flex>
                 ) : (
                     <span className={valueClassName ? valueClassName : "text-white"}>{value}</span>
                 )
@@ -252,20 +259,23 @@ export function SwapBox({
         status: gaslessTransactionStatus
     } = use0xGaslessSwapStatus(gaslessTradeHash)
 
-    console.log("isGaslessTransactionPending", isGaslessTransactionPending, gaslessTransactionStatus)
+    // console.log("isGaslessTransactionPending", isGaslessTransactionPending, gaslessTransactionStatus)
 
     const {signTypedDataAsync} = useSignTypedData();
 
-    const {isLoading: isConfirming, isSuccess: isConfirmed} =
+    const {isLoading: isConfirming, isSuccess: isSuccessNormalSwapAction} =
         useWaitForTransactionReceipt({
             hash,
         });
+
+    const isConfirmed = isSuccessNormalSwapAction || gaslessTransactionStatus === 'confirmed'
 
     // console.log("isPending", isPending, hash, isConfirming, isConfirmed)
 
     useEffect(() => {
         if (isConfirmed) {
             setTxModalOpen(true)
+            setGaslessTradeHash(undefined)
             refetchFromBalance()
             refetchToBalance()
         }
@@ -449,6 +459,7 @@ export function SwapBox({
                             info={'Estimated network fees for processing the transaction'}
                             value={`$${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}
                             isLoading={isGasEstimationLoading}
+                            isFree={isGasLessSwap}
                         />
 
                         {/* slippage */}
@@ -556,8 +567,8 @@ export function SwapBox({
 
                                 ) : (
                                     <Button
-                                        isLoading={isPending || isConfirming}
-                                        loadingText={isPending ? 'Confirming...' : isConfirming ? 'Waiting for confirmation...' : ''}
+                                        isLoading={isPending || isConfirming || isGaslessTransactionPending}
+                                        loadingText={isPending ? 'Confirming...' : (isConfirming || isGaslessTransactionPending) ? 'Waiting for confirmation...' : ''}
                                         width="full"
                                         colorScheme="blue"
                                         onClick={handleSwap}
@@ -585,7 +596,7 @@ export function SwapBox({
             {
                 isConfirmed && (
                     <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                                      link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${hash}`}/>
+                                      link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${(hash ?? gaslessTradeHash)}`}/>
                 )
             }
         </div>
