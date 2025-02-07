@@ -283,6 +283,15 @@ export interface QuoteDataType {
     spenderAddress: string;
 }
 
+export interface ZeroxGaslessStatusRequestType {
+    chainId: number;
+    tradeHash: string
+}
+
+export interface ZeroxGaslessStatusResponseType {
+    status: string
+}
+
 export interface gaslessSubmitResponse {
     tradeHash: string
     type: string

@@ -17,6 +17,8 @@ import {useSendTransaction, useSignTypedData, useWaitForTransactionReceipt} from
 import {BaseError, concat, Hex, numberToHex, size} from "viem";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {use0xTokenApprove} from "../../../hooks/use0xTokenApprove.ts";
+import {zeroxService} from "../../../services/0x.service.ts";
+import use0xGaslessSwapStatus from "../../../hooks/use0xGaslessSwapStatus.ts";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -91,6 +93,7 @@ export function SwapBox({
                         }: SwapBoxProps) {
 
     const [txModalOpen, setTxModalOpen] = useState(false);
+    const [gaslessTradeHash, setGaslessTradeHash] = useState<string | undefined>(undefined);
 
     const {
         address: walletAddress,
@@ -243,6 +246,14 @@ export function SwapBox({
         error,
         sendTransaction,
     } = useSendTransaction();
+
+    const {
+        isLoading: isGaslessTransactionPending,
+        status: gaslessTransactionStatus
+    } = use0xGaslessSwapStatus(gaslessTradeHash)
+
+    console.log("isGaslessTransactionPending", isGaslessTransactionPending, gaslessTransactionStatus)
+
     const {signTypedDataAsync} = useSignTypedData();
 
     const {isLoading: isConfirming, isSuccess: isConfirmed} =
@@ -321,7 +332,7 @@ export function SwapBox({
     }
 
     const handleGaslessSwap = async () => {
-
+        zeroxService.submitTrade(walletChainId, tradeDataToSubmit, approvalDataToSubmit).then(tradeHash => setGaslessTradeHash(tradeHash))
     }
 
     const approvalRequired = quoteData?.tokenApprovalRequired || (isGasLessSwap && !isReadyToSubmit)
