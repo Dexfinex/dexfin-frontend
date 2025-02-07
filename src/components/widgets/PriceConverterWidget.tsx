@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, RefreshCw, Search, X } from 'lucide-react';
 import { coingeckoService } from '../../services/coingecko.service';
-
+import {TokenSelectorModal} from '../swap/components/TokenSelectorModal';
 interface Currency {
   id: string;
   symbol: string;
@@ -60,7 +60,7 @@ const CurrencySelector: React.FC<CurrencySelectorProps> = ({
         className="fixed inset-0 z-50"
         onClick={onClose}
       />
-      <div className="absolute top-full left-0 mt-1 w-full p-1.5 glass rounded-lg z-50">
+      <div className="absolute top-full left-0 mt-1 p-1.5 glass rounded-lg z-50">
         <div className="flex items-center gap-1.5 p-1.5 bg-white/5 rounded-lg mb-1.5">
           <Search className="w-3 h-3 text-white/40" />
           <input
@@ -156,7 +156,7 @@ export const PriceConverterWidget: React.FC = () => {
       ]);
       
       if (fromData && toData) {
-        const newRate = toData.price / fromData.price;
+        const newRate = fromData.price / toData.price;
         setRate(newRate);
         setLastUpdated(new Date().toLocaleTimeString());
 
@@ -217,11 +217,23 @@ export const PriceConverterWidget: React.FC = () => {
                 <span className="text-xs">{fromCurrency.symbol}</span>
                 <ChevronDown className="w-3 h-3 text-white/60" />
               </button>
-              <CurrencySelector
+              <TokenSelectorModal
                 isOpen={showFromSelector}
                 onClose={() => setShowFromSelector(false)}
-                onSelect={setFromCurrency}
-                selectedCurrency={fromCurrency}
+                onSelect={(token) => setFromCurrency({
+                  id: token.address,
+                  symbol: token.symbol,
+                  name: token.name,
+                  logo: token.logoURI
+                })}
+                selectedToken={{
+                  symbol: fromCurrency.symbol,
+                  name: fromCurrency.name,
+                  logoURI: fromCurrency.logo,
+                  address: fromCurrency.id, // Add appropriate address
+                  chainId: 0, // Add appropriate chainId
+                  decimals: 0 // Add appropriate decimals
+                }}
               />
             </div>
             <input
@@ -267,6 +279,24 @@ export const PriceConverterWidget: React.FC = () => {
                 onClose={() => setShowToSelector(false)}
                 onSelect={setToCurrency}
                 selectedCurrency={toCurrency}
+              />
+              <TokenSelectorModal
+                isOpen={showToSelector}
+                onClose={() => setShowToSelector(false)}
+                onSelect={(token) => setToCurrency({
+                  id: token.address,
+                  symbol: token.symbol,
+                  name: token.name,
+                  logo: token.logoURI
+                })}
+                selectedToken={{
+                  symbol: toCurrency.symbol,
+                  name: toCurrency.name,
+                  logoURI: toCurrency.logo,
+                  address: toCurrency.id, // Add appropriate address
+                  chainId: 0, // Add appropriate chainId
+                  decimals: 0 // Add appropriate decimals
+                }}
               />
             </div>
             <input
