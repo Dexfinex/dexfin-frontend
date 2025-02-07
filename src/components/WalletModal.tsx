@@ -42,8 +42,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
   const walletContainerWidth = useMemo(() => {
     if (isFullscreen) return 'w-full h-full rounded-none';
-    if (isLargerThan1200) return 'w-[50%] rounded-xl';
-    if (isLargerThan800) return 'w-[80%] rounded-xl';
+    if (isLargerThan1200) return 'w-[50%] h-[50%] rounded-xl';
+    if (isLargerThan800) return 'w-[80%] h-[80%] rounded-xl';
 
     return 'w-full h-full rounded-none';
 

@@ -12,7 +12,6 @@ import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
-import { Drawer } from '../common/Drawer';
 import { formatNumberByFrac } from '../../utils/common.util';
 import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
@@ -202,7 +201,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
   if (!isOpen) return null;
 
   return (
-    // <Drawer isOpen={isOpen} onClose={onClose} title="Send Assets">
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
