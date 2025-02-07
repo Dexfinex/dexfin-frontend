@@ -47,6 +47,8 @@ interface IGroup {
   members: IMember[];
   pendingMembers: IMember[];
   type: "Request" | "Connected" | "Searched";
+  lastTimestamp?: number;
+  lastMessage?: string;
 }
 
 interface IChat {
@@ -233,7 +235,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [isCreateGroupActive, setIsCreateGroupActive] = useState(false);
-  // const [showCreateGroup, setShowCreateGroup] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
 
@@ -256,7 +257,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [receivedMessage, setReceivedMessage] = useState<any>([]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
-  // const [messages, setMessages] = useState<Record<string, any[]>>();
   // const [currentUserNfts] = useState([
   //   {
   //     collection: 'Bored Ape Yacht Club',
@@ -333,43 +333,66 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   // }, [requestUsers])
 
   const handleReceiveMsg = async () => {
-    if (receivedMessage.origin == "other") {
-      console.log('receive other')
-      if (receivedMessage.event == "chat.request") {
-        const profile = await getWalletProfile(chatUser, receivedMessage.from)
-        if (profile) {
-          setRequestUsers([...requestUsers, {
-            name: profile.name,
-            profilePicture: profile.picture,
-            address: extractAddress(receivedMessage.from),
-            chatId: receivedMessage.chatId,
-            type: "Request",
-            unreadMessages: 0
-          }])
-        }
-      } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
-        console.log('chat.message')
-        if (extractAddress(receivedMessage.from) == selectedUser?.address) {
+    if (receivedMessage.meta.group == true && chatMode === "group") {
+      if (receivedMessage.origin == "other") {
+        if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
           setToBottom(true)
+          const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == extractAddress(receivedMessage.from))
           setChatHistory(
             [...chatHistory, {
               timestamp: Number(receivedMessage.timestamp),
               type: receivedMessage.message.type,
               content: receivedMessage.message.content,
               fromAddress: extractAddress(receivedMessage.from),
-              toAddress: extractAddress(receivedMessage.to[0]),
+              toAddress: "",
               chatId: receivedMessage.chatId,
-              link: null
+              link: null,
+              image: found?.image || ""
             }]
           )
-          updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp))
-        } else {
-          addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp))
         }
       }
-    } else if (receivedMessage.origin == "self") {
-      if (receivedMessage.event == "chat.message") {
-        updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.content, Number(receivedMessage.timestamp))
+
+      updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true)
+    } else if (receivedMessage.meta.group == false && chatMode === "p2p") {
+      if (receivedMessage.origin == "other") {
+        console.log('receive other')
+        if (receivedMessage.event == "chat.request") {
+          const profile = await getWalletProfile(chatUser, receivedMessage.from)
+          if (profile) {
+            setRequestUsers([...requestUsers, {
+              name: profile.name,
+              profilePicture: profile.picture,
+              address: extractAddress(receivedMessage.from),
+              chatId: receivedMessage.chatId,
+              type: "Request",
+              unreadMessages: 0
+            }])
+          }
+        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
+          console.log('chat.message')
+          if (extractAddress(receivedMessage.from) == selectedUser?.address) {
+            setToBottom(true)
+            setChatHistory(
+              [...chatHistory, {
+                timestamp: Number(receivedMessage.timestamp),
+                type: receivedMessage.message.type,
+                content: receivedMessage.message.content,
+                fromAddress: extractAddress(receivedMessage.from),
+                toAddress: extractAddress(receivedMessage.to[0]),
+                chatId: receivedMessage.chatId,
+                link: null
+              }]
+            )
+            updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp), false)
+          } else {
+            addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp))
+          }
+        }
+      } else if (receivedMessage.origin == "self") {
+        if (receivedMessage.event == "chat.message") {
+          updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.content, Number(receivedMessage.timestamp), false)
+        }
       }
     }
   }
@@ -379,15 +402,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     const prevHistory = await chatUser.chat.history(address, { reference: chatId })
     console.log('prev history = ', prevHistory)
     if (prevHistory.length > 0) {
-      const tmp: IChat[] = prevHistory.map((e: any) => {
+      const tmp: IChat[] = prevHistory.map((data: any) => {
         return {
-          timestamp: e.timestamp,
-          type: e.messageType,
-          content: e.messageContent,
-          fromAddress: extractAddress(e.fromDID),
-          toAddress: extractAddress(e.toDID),
-          chatId: e.cid,
-          link: e.link
+          timestamp: data.timestamp,
+          type: data.messageType,
+          content: data.messageContent,
+          fromAddress: extractAddress(data.fromDID),
+          toAddress: extractAddress(data.toDID),
+          chatId: data.cid,
+          link: data.link
         }
       })
       tmp.shift()
@@ -406,29 +429,31 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
     let groupInformation: IGroup[] = []
     let userInformation: IUser[] = []
-    chatData.forEach((e: any) => {
-      if (e.groupInformation) {
+    chatData.forEach((data: any) => {
+      if (data.groupInformation) {
         groupInformation = [...groupInformation, {
-          groupId: e.groupInformation.chatId,
-          name: e.groupInformation.groupName,
-          description: e.groupInformation.groupDescription,
-          public: e.groupInformation.isPublic,
-          image: e.groupInformation.groupImage,
-          erc20: e.groupInformation.contractAddressERC20,
-          nft: e.groupInformation.contractAddressNFT,
-          members: e.groupInformation.members,
-          pendingMembers: e.groupInformation.pendingMembers,
-          type: "Connected"
+          groupId: data.groupInformation.chatId,
+          name: data.groupInformation.groupName,
+          description: data.groupInformation.groupDescription,
+          public: data.groupInformation.isPublic,
+          image: data.groupInformation.groupImage,
+          erc20: data.groupInformation.contractAddressERC20,
+          nft: data.groupInformation.contractAddressNFT,
+          members: data.groupInformation.members,
+          pendingMembers: data.groupInformation.pendingMembers,
+          type: "Connected",
+          lastTimestamp: Number(data.msg.timestamp),
+          lastMessage: data.msg.messageContent
         }]
       } else {
         userInformation = [...userInformation, {
-          name: e.name,
-          profilePicture: e.profilePicture,
-          address: extractAddress(e.wallets),
-          chatId: e.chatId,
+          name: data.name,
+          profilePicture: data.profilePicture,
+          address: extractAddress(data.wallets),
+          chatId: data.chatId,
           type: "Connected",
-          lastTimestamp: e.msg.timestamp,
-          lastMessage: e.msg.messageContent,
+          lastTimestamp: data.msg.timestamp,
+          lastMessage: data.msg.messageContent,
           unreadMessages: 0
         }]
       }
@@ -443,17 +468,17 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
 
     //get chat request
-    const request = await chatUser.chat.list('REQUESTS')
-    console.log('request = ', request)
-    if (request.length > 0) {
+    const requests = await chatUser.chat.list('REQUESTS')
+    console.log('requests = ', requests)
+    if (requests.length > 0) {
       let directRequests: IUser[] = []
-      request.forEach((e: any) => {
-        if (!e.groupInformation) {
+      requests.forEach((request: any) => {
+        if (!request.groupInformation) {
           directRequests = [...directRequests, {
-            name: e.name,
-            profilePicture: e.profilePicture,
-            address: extractAddress(e.wallets),
-            chatId: e.chatId,
+            name: request.name,
+            profilePicture: request.profilePicture,
+            address: extractAddress(request.wallets),
+            chatId: request.chatId,
             type: "Request",
             unreadMessages: 0
           }]
@@ -590,36 +615,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
-    if (selectedUser?.type === "Request") return
 
-    // const newMessage = {
-    //   id: Date.now().toString(),
-    //   sender: {
-    //     id: 'me',
-    //     name: 'You',
-    //     ens: 'you.eth',
-    //     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
-    //     isOnline: true,
-    //     status: 'Online'
-    //   },
-    //   content: message.trim(),
-    //   timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-    // };
-
-    // if (selectedUser?.id === '2') { // Bob's chat
-    //   setMessages(prev => ({
-    //     ...prev,
-    //     'bob': [...(prev['bob'] || []), newMessage]
-    //   }));
-    // }
-
-    // setMessage('');
     if (isFailedSent) {
       setIsFailedSent(false)
     }
+
+    setSendingMessage(true)
+    setToBottom(true)
+
     if (chatMode === "p2p" && selectedUser) {
-      setSendingMessage(true)
-      setToBottom(true)
       setChatHistory([...chatHistory, {
         timestamp: Math.floor(Date.now()),
         type: "Text",
@@ -648,8 +652,36 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
         console.log('sent msg err: ', err)
       }
-      setSendingMessage(false)
+    } else if (chatMode === "group") {
+      const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == address)
+      setChatHistory([...chatHistory, {
+        timestamp: Math.floor(Date.now()),
+        type: "Text",
+        content: message.trim(),
+        fromAddress: address,
+        toAddress: "",
+        chatId: "",
+        link: null,
+        image: found?.image || ""
+      }])
+
+      try {
+        const sentMsg = await chatUser.chat.send(selectedGroup?.groupId, {
+          type: 'Text',
+          content: message.trim()
+        })
+
+        setMessage("")
+
+        console.log('sent msg = ', sentMsg)
+      } catch (err) {
+        setIsFailedSent(true)
+        setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
+        console.log('sent msg err: ', err)
+      }
     }
+
+    setSendingMessage(false)
   };
 
   useEffect(() => {
@@ -670,15 +702,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       if (history.length > 0) {
         console.log('history = ', history)
         console.log('selected = ', user.address)
-        const tmp: IChat[] = history.map((e: any) => {
+        const tmp: IChat[] = history.map((data: any) => {
           return {
-            timestamp: e.timestamp,
-            type: e.messageType,
-            content: e.messageContent,
-            fromAddress: extractAddress(e.fromDID),
-            toAddress: extractAddress(e.toDID),
-            chatId: e.cid,
-            link: e.link
+            timestamp: data.timestamp,
+            type: data.messageType,
+            content: data.messageContent,
+            fromAddress: extractAddress(data.fromDID),
+            toAddress: extractAddress(data.toDID),
+            chatId: data.cid,
+            link: data.link
           }
         })
         setToBottom(true)
@@ -728,23 +760,23 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         }
       }
     } else if (chatMode == "group") {
-      const gropuProfie = await chatUser.chat.group.info(searchQuery)
-      console.log('gropuProfile = ', gropuProfie)
-      if (gropuProfie) {
+      const profile = await chatUser.chat.group.info(searchQuery)
+      console.log('gropuProfile = ', profile)
+      if (profile) {
         const found = groupList.find((group: IGroup) => group.groupId == searchQuery)
         if (found) {
           setSelectedGroup(found)
         } else {
           setSearchedGroup({
-            groupId: gropuProfie.chatId,
-            name: gropuProfie.groupName,
-            description: gropuProfie.groupDescription,
-            public: gropuProfie.isPublic,
-            image: gropuProfie.groupImage,
-            erc20: gropuProfie.contractAddressERC20,
-            nft: gropuProfie.contractAddressNFT,
-            members: gropuProfie.members,
-            pendingMembers: gropuProfie.pendingMembers,
+            groupId: profile.chatId,
+            name: profile.groupName,
+            description: profile.groupDescription,
+            public: profile.isPublic,
+            image: profile.groupImage,
+            erc20: profile.contractAddressERC20,
+            nft: profile.contractAddressNFT,
+            members: profile.members,
+            pendingMembers: profile.pendingMembers,
             type: "Searched"
           })
         }
@@ -761,15 +793,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
     const history = await chatUser.chat.history(user.address)
     if (history.length > 0) {
-      const tmp: IChat[] = history.map((e: any) => {
+      const tmp: IChat[] = history.map((data: any) => {
         return {
-          timestamp: e.timestamp,
-          type: e.messageType,
-          content: e.messageContent,
-          fromAddress: extractAddress(e.fromDID),
-          toAddress: extractAddress(e.toDID),
-          chatId: e.cid,
-          link: e.link
+          timestamp: data.timestamp,
+          type: data.messageType,
+          content: data.messageContent,
+          fromAddress: extractAddress(data.fromDID),
+          toAddress: extractAddress(data.toDID),
+          chatId: data.cid,
+          link: data.link
         }
       })
       setToBottom(true)
@@ -787,18 +819,18 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     console.log('history = ', history)
 
     if (history.length > 0) {
-      const tmp: IChat[] = history.map((e: any) => {
-        const found = group?.members.find(member => extractAddress(member.wallet) == extractAddress(e.fromDID))
-        console.log('found ', group, e.fromDID)
+      const tmp: IChat[] = history.map((data: any) => {
+        const found = group?.members.find(member => extractAddress(member.wallet) == extractAddress(data.fromDID))
+        // console.log('found ', group, data.fromDID)
 
         return {
-          timestamp: e.timestamp,
-          type: e.messageType,
-          content: e.messageContent,
-          fromAddress: extractAddress(e.fromDID),
-          toAddress: extractAddress(e.toDID),
-          chatId: e.cid,
-          link: e.link,
+          timestamp: data.timestamp,
+          type: data.messageType,
+          content: data.messageContent,
+          fromAddress: extractAddress(data.fromDID),
+          toAddress: extractAddress(data.toDID),
+          chatId: data.cid,
+          link: data.link,
           image: found?.image || ""
         }
       })
@@ -829,9 +861,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsJoiningGroup(false)
   }
 
-  const updateLastMessageInfo = (address: string, msg: string, timestamp: number) => {
-    if (connectedUsers.length > 0) {
-      setConnectedUsers((prevUsers) => {
+  const updateLastMessageInfo = (address: string, msg: string, timestamp: number, isGroup: boolean) => {
+    console.log('updateLastMessageInfo')
+    if (!isGroup) {
+      connectedUsers.length > 0 && setConnectedUsers((prevUsers) => {
         const updatedUsers = prevUsers.map((user) =>
           user.address === address
             ? { ...user, lastMessage: msg, lastTimestamp: timestamp }
@@ -840,6 +873,17 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         // console.log("Previous Users: ", prevUsers);
         // console.log("Updated Users: ", updatedUsers);
         return updatedUsers;
+      });
+    } else {
+      groupList.length > 0 && setGroupList((prevGroups) => {
+        const updatedGroups = prevGroups.map((group) =>
+          group.groupId === address
+            ? { ...group, lastMessage: msg, lastTimestamp: timestamp }
+            : group
+        );
+        console.log("Previous Groups: ", prevGroups);
+        console.log("Updated Groups: ", updatedGroups);
+        return updatedGroups;
       });
     }
   }
@@ -960,7 +1004,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         {groupList.length > 0 && groupList.map((group: IGroup) => <button
           key={group.groupId}
           onClick={() => handleSelectGroup(group)}
-          className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.groupId === group.groupId
+          className={`w-full flex items-center justify-between gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.groupId === group.groupId
             ? 'bg-white/10'
             : 'hover:bg-white/5'
             }`}>
@@ -969,10 +1013,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center gap-2">
               <span className="font-medium">{group.name}</span>
             </div>
-            {group.type == "Searched" && <div className="text-sm text-white/60 truncate">
-              {group?.members.length} members
-            </div>}
+            {group.lastMessage ? <div className="text-sm text-white/60 truncate">{group.lastMessage}</div> : <></>}
           </div>
+          {group?.lastTimestamp ? <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(group?.lastTimestamp)}</span> : <></>}
+          {/* {group?.unreadMessages > 0 ? <span className='text-red-500 text-xs'>{group?.unreadMessages}</span> : <></>} */}
+          {/* {group?.unreadMessages > 0 ? <CheckCircle className='text-red-500 w-4 h-4' /> : <></>} */}
         </button>)}
       </>
     } else if (chatMode === 'p2p') {
