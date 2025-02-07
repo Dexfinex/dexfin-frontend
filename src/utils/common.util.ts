@@ -31,6 +31,7 @@ export const checkIfAddressExists = async (address: string): Promise<boolean> =>
 }
 
 export const extractAddress = (fullAddress: string): string => {
+    if (!fullAddress) return ""
     const match = fullAddress.match(/0x[a-fA-F0-9]{40}/);
     const address = match ? match[0] : "";
     return address;

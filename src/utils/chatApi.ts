@@ -1,11 +1,11 @@
 import axios from "axios";
 
-export const getWalletProfile = async (address: string) => {
+export const getWalletProfile = async (chatUser:any, address: string) => {
     try {
-        const info: any = await axios.get(`https://backend.epns.io/apis/v2/users/?caip10=eip155:${address}`)
-        return info?.data?.profile || null
+        const response = await chatUser.profile.info({overrideAccount: address});
+        return response
     } catch(err) {
-        console.log('err')
+        console.log('err no user', err)
     }
     return null
 }
