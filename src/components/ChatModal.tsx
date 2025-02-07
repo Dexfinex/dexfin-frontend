@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState, useRef } from 'react';
 import {
   X, Maximize2, Minimize2, Search,
   MessageSquare, Share2, Users, ArrowRight, Plus,
-  Settings, User, Info, CheckCircle, XCircle, Copy
+  Settings, User, Info, CheckCircle, XCircle
 } from 'lucide-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
@@ -10,6 +10,7 @@ import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
 import { Spinner } from '@chakra-ui/react';
+import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
 import { getWalletProfile } from '../utils/chatApi';
 
@@ -27,6 +28,24 @@ interface IUser {
   lastTimestamp?: number;
   lastMessage?: string;
   unreadMessages: number;
+}
+
+interface IMember {
+  image: string;
+  isAdmin: boolean;
+  wallet: string;
+}
+
+interface IGroup {
+  groupId: string;
+  name: string;
+  description: string;
+  public: boolean;
+  image: string;
+  erc20: string;
+  nft: string;
+  members: IMember[];
+  pendingMembers: IMember[];
 }
 
 interface IChat {
@@ -207,7 +226,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [chatMode, setChatMode] = useState<'group' | 'p2p'>('group');
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
-  const [selectedGroup, setSelectedGroup] = useState<any>(null);
+  const [selectedGroup, setSelectedGroup] = useState<IGroup | null>(null);
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
@@ -217,7 +236,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const { setChatUser, chatUser } = useStore();
 
   const [loading, setLoading] = useState(false);
-  const [group, setGroup] = useState<Array<any>>([]);
+  const [group, setGroup] = useState<Array<IGroup>>([]);
   const [connectedUsers, setConnectedUsers] = useState<Array<IUser>>([]);
   const [searchedOne, setSearchedOne] = useState<IUser | null>(null);
   const [requestUsers, setRequestUsers] = useState<Array<IUser>>([]);
@@ -379,11 +398,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     const chatData = await chatUser.chat.list('CHATS')
     console.log('chatdata = ', chatData)
 
-    let groupInformation: any[] = []
-    let userInformation: any[] = []
+    let groupInformation: IGroup[] = []
+    let userInformation: IUser[] = []
     chatData.forEach((e: any) => {
       if (e.groupInformation) {
-        groupInformation = [...groupInformation, e.groupInformation]
+        groupInformation = [...groupInformation, {
+          groupId: e.groupInformation.chatId,
+          name: e.groupInformation.groupName,
+          description: e.groupInformation.groupDescription,
+          public: e.groupInformation.isPublic,
+          image: e.groupInformation.groupImage,
+          erc20: e.groupInformation.contractAddressERC20,
+          nft: e.groupInformation.contractAddressNFT,
+          members: e.groupInformation.members,
+          pendingMembers: e.groupInformation.pendingMembers
+        }]
       } else {
         userInformation = [...userInformation, {
           name: e.name,
@@ -397,6 +426,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         }]
       }
     });
+    console.log('groupInformation = ', groupInformation)
 
     if (groupInformation.length > 0) {
       setGroup(groupInformation)
@@ -720,6 +750,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const handleSelectGroup = (group: any) => {
     setChatHistory([])
     setSelectedGroup(group)
+    console.log('group = ', group)
   }
 
   const updateLastMessageInfo = (address: string, msg: string, timestamp: number) => {
@@ -730,8 +761,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             ? { ...user, lastMessage: msg, lastTimestamp: timestamp }
             : user
         );
-        console.log("Previous Users: ", prevUsers);
-        console.log("Updated Users: ", updatedUsers);
+        // console.log("Previous Users: ", prevUsers);
+        // console.log("Updated Users: ", updatedUsers);
         return updatedUsers;
       });
     }
@@ -831,20 +862,20 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const renderGroupsAndUsers = () => {
     if (chatMode === 'group') {
       return <>
-        {group.length > 0 && group.map((e: any) => <button
-          key={e?.chatId}
+        {group.length > 0 && group.map((e: IGroup) => <button
+          key={e.groupId}
           onClick={() => handleSelectGroup(e)}
-          className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.chatId === e?.chatId
+          className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.groupId === e.groupId
             ? 'bg-white/10'
             : 'hover:bg-white/5'
             }`}>
-          <img src={e?.groupImage} alt="WOW" className="w-16 h-16 rounded-lg" />
+          <img src={e.image} alt="WOW" className="w-16 h-16 rounded-lg" />
           <div className="flex-1 text-left">
             <div className="flex items-center gap-2">
-              <span className="font-medium">{e.groupName}</span>
+              <span className="font-medium">{e.name}</span>
             </div>
             <div className="text-sm text-white/60 truncate">
-              {e.members.length} members
+              {e?.members.length} members
             </div>
           </div>
         </button>)}
@@ -865,7 +896,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             <X className="w-4 h-4" />
           </button>
         </div>}
-        {connectedUsers.length > 0 && connectedUsers.map((user: any) => <button key={user?.chatId}
+        {connectedUsers.length > 0 && connectedUsers.map((user: IUser) => <button key={user.chatId}
           onClick={() => handleSelectUser(user)}
           className={`w-full flex items-center justify-between gap-3 p-3 rounded-lg transition-colors ${selectedUser?.address === extractAddress(user?.address)
             ? 'bg-white/10'
@@ -1257,17 +1288,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                         selectedUser?.name ?
                           <div className='flex flex-col'>
                             <div>{selectedUser?.name}</div>
-                            <div className='text-sm text-white/40 flex items-center gap-1'>{extractAddress(selectedUser?.address)}
-                              <button onClick={() => navigator.clipboard.writeText(extractAddress(selectedUser?.address))}>
-                                <Copy className='text-white/40 w-4 h-4' />
-                              </button>
-                            </div>
+                            <Clipboard address={selectedUser.address} />
                           </div>
-                          : <div className='flex gap-1'>{extractAddress(selectedUser?.address)}
-                            <button onClick={() => navigator.clipboard.writeText(extractAddress(selectedUser?.address))}>
-                              <Copy className='text-white/40 w-4 h-4' />
-                            </button>
-                          </div>
+                          :
+                          <Clipboard address={selectedUser.address} />
                       }
                     </div>
                     {/* <div>
@@ -1278,9 +1302,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     </div> */}
                   </>
                 ) : selectedGroup ? (
-                  <>
-                    <img src={selectedGroup?.groupImage} className='w-10 h-10 mr-2 rounded-lg' />
-                    {selectedGroup?.groupName}
+                  <div className='flex items-center'>
+                    <img src={selectedGroup?.image} className='w-10 h-10 mr-2 rounded-lg' />
+                    <div className='flex flex-col'>
+                      {selectedGroup?.name}
+                      <Clipboard address={selectedGroup.groupId} />
+                    </div>
                     {/* {selectedGroup.id === 'wow' ? (
                       <img src={selectedGroup.icon} alt="WOW" className="w-10 h-10" />
                     ) : (
@@ -1302,7 +1329,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                         {selectedGroup.members.length} members
                       </div>
                     </div> */}
-                  </>
+                  </div>
                 ) : (
                   <div className="text-white/40">Select a chat to start messaging</div>
                 )}
@@ -1320,11 +1347,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     </button>
                   </>
                 )} */}
-                {selectedGroup && (
+                {/* {selectedGroup && (
                   <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                     <Settings className="w-4 h-4" />
                   </button>
-                )}
+                )} */}
                 <button
                   onClick={toggleFullscreen}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
