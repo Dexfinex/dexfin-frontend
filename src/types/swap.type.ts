@@ -282,3 +282,9 @@ export interface QuoteDataType {
     gaslessApprovalAvailable: boolean;
     spenderAddress: string;
 }
+
+export interface gaslessSubmitResponse {
+    tradeHash: string
+    type: string
+    zid: string
+}

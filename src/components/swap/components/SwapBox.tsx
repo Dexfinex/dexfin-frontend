@@ -261,13 +261,19 @@ export function SwapBox({
     }, [isConfirmed, refetchFromBalance, refetchToBalance])
 
     const handleSwap = async () => {
-/*
+        if (isGasLessSwap)
+            await handleGaslessSwap()
+        else
+            await handleNormalSwap()
+    }
+
+    const handleNormalSwap = async () => {
+        /*
         console.log("submitting quote to blockchain");
         console.log("to", quoteResponse.transaction.to);
         console.log("value", quoteResponse.transaction.value);
 */
         const normalSwapQuoteResponse = quoteResponse as QuoteResponse
-
         // On click, (1) Sign the Permit2 EIP-712 message returned from quote
         if (normalSwapQuoteResponse.permit2?.eip712) {
             let signature: Hex | undefined;
@@ -299,9 +305,7 @@ export function SwapBox({
                 throw new Error("Failed to obtain signature or transaction data");
             }
         }
-
         // (3) Submit the transaction with Permit2 signature
-
         sendTransaction({
             account: walletAddress as `0x${string}`,
             gas: normalSwapQuoteResponse?.transaction.gas
@@ -315,6 +319,12 @@ export function SwapBox({
             chainId: walletChainId,
         });
     }
+
+    const handleGaslessSwap = async () => {
+
+    }
+
+    const approvalRequired = quoteData?.tokenApprovalRequired || (isGasLessSwap && !isReadyToSubmit)
 
     return (
         <div className="space-y-2.5">
@@ -508,7 +518,7 @@ export function SwapBox({
                             {textSwitchChain}
                         </Button>
                     ) : (
-                        quoteData?.tokenApprovalRequired ? (
+                        approvalRequired ? (
                                 <Button
                                     isLoading={isApproveLoading}
                                     loadingText={'Approving...'}
