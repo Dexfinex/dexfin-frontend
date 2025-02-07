@@ -1,162 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, RefreshCw, Search, X } from 'lucide-react';
-import { coingeckoService } from '../../services/coingecko.service';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ChevronDown, RefreshCw} from 'lucide-react';
 import {TokenSelectorModal} from '../swap/components/TokenSelectorModal';
-interface Currency {
-  id: string;
-  symbol: string;
-  name: string;
-  logo: string;
-}
-
-interface CurrencySelectorProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (currency: Currency) => void;
-  selectedCurrency: Currency;
-}
-
-const CurrencySelector: React.FC<CurrencySelectorProps> = ({
-  isOpen,
-  onClose,
-  onSelect,
-  selectedCurrency
-}) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Currency[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const handleSearch = async () => {
-      if (searchQuery.length < 2) {
-        setSearchResults([]);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const results = await coingeckoService.searchCoins(searchQuery);
-        setSearchResults(results.map(coin => ({
-          id: coin.id,
-          symbol: coin.symbol.toUpperCase(),
-          name: coin.name,
-          logo: coin.thumb
-        })));
-      } catch (error) {
-        console.error('Error searching coins:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    handleSearch();
-  }, [searchQuery]);
-
-  if (!isOpen) return null;
-
-  return (
-    <>
-      <div
-        className="fixed inset-0 z-50"
-        onClick={onClose}
-      />
-      <div className="absolute top-full left-0 mt-1 p-1.5 glass rounded-lg z-50">
-        <div className="flex items-center gap-1.5 p-1.5 bg-white/5 rounded-lg mb-1.5">
-          <Search className="w-3 h-3 text-white/40" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search coins..."
-            className="bg-transparent outline-none flex-1 text-xs"
-            autoFocus
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="p-0.5 rounded-md hover:bg-white/10"
-            >
-              <X className="w-3 h-3 text-white/60" />
-            </button>
-          )}
-        </div>
-        <div className="max-h-48 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-3">
-              <div className="animate-spin">
-                <RefreshCw className="w-3 h-3 text-white/40" />
-              </div>
-            </div>
-          ) : searchResults.length > 0 ? (
-            searchResults.map((currency) => (
-              <button
-                key={currency.id}
-                onClick={() => {
-                  onSelect(currency);
-                  onClose();
-                }}
-                className="w-full flex items-center gap-2 p-1.5 hover:bg-white/5 rounded-lg transition-colors"
-              >
-                <img
-                  src={currency.logo}
-                  alt={currency.name}
-                  className="w-5 h-5"
-                />
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-xs">{currency.name}</div>
-                  <div className="text-[10px] text-white/60">{currency.symbol}</div>
-                </div>
-                {selectedCurrency.id === currency.id && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                )}
-              </button>
-            ))
-          ) : searchQuery.length >= 2 ? (
-            <div className="text-center py-3 text-xs text-white/40">
-              No results found
-            </div>
-          ) : (
-            <div className="text-center py-3 text-xs text-white/40">
-              Type to search coins
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
-};
+import {TokenType} from '../../types/swap.type';
+import useTokenStore from '../../store/useTokenStore';
+import useGetTokenPrices from '../../hooks/useGetTokenPrices';
+import {NULL_ADDRESS} from "../../constants";
+import {mapChainId2NativeAddress} from "../../config/networks.ts";
 
 export const PriceConverterWidget: React.FC = () => {
   const [fromAmount, setFromAmount] = useState('0');
   const [toAmount, setToAmount] = useState('0');
-  const [fromCurrency, setFromCurrency] = useState<Currency>({
-    id: 'bitcoin',
-    symbol: 'BTC',
-    name: 'Bitcoin',
-    logo: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png'
-  });
-  const [toCurrency, setToCurrency] = useState<Currency>({
-    id: 'ethereum',
+ 
+  const [toRealCurrency, setToRealCurrency] = useState<TokenType | null> ({
     symbol: 'ETH',
     name: 'Ethereum',
-    logo: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png'
+    address: NULL_ADDRESS,
+    chainId: 1,
+    decimals: 18,
+    logoURI: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
   });
+  const [fromRealCurrency, setFromRealCurrency] = useState<TokenType | null> ({
+    symbol: 'USDT',
+    name: 'Tether USD',
+    address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+    chainId: 1,
+    decimals: 6,
+    logoURI: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
+});
+
   const [rate, setRate] = useState<number | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const {getTokenPrice} = useTokenStore();
+  const tokenChainId = fromRealCurrency ? fromRealCurrency.chainId : toRealCurrency!.chainId
+  
+  const nativeTokenAddress = mapChainId2NativeAddress[tokenChainId];
+
+  useGetTokenPrices({
+      tokenAddresses: [fromRealCurrency?.address ?? null, toRealCurrency?.address ?? null, nativeTokenAddress],
+      chainId: tokenChainId,
+  })
+
   const updateRate = async () => {
     try {
-      setLoading(true);
-      const [fromData, toData] = await Promise.all([
-        coingeckoService.getCoinPrice(fromCurrency.id),
-        coingeckoService.getCoinPrice(toCurrency.id)
-      ]);
       
-      if (fromData && toData) {
-        const newRate = fromData.price / toData.price;
+      const fromTokenPrice = fromRealCurrency ? getTokenPrice(fromRealCurrency?.address, fromRealCurrency?.chainId) : 0
+      console.log(fromTokenPrice)
+
+      const toTokenPrice = toRealCurrency ? getTokenPrice(toRealCurrency?.address, toRealCurrency?.chainId) : 0
+      console.log(toTokenPrice);
+
+      setLoading(true);
+      
+      if (fromTokenPrice && toTokenPrice) {
+        const newRate = fromTokenPrice/ toTokenPrice;
         setRate(newRate);
         setLastUpdated(new Date().toLocaleTimeString());
 
@@ -192,12 +92,20 @@ export const PriceConverterWidget: React.FC = () => {
       setFromAmount('0');
     }
   };
+  const {fromTokenPrice, toTokenPrice} = useMemo(() => {
+    const fromTokenPrice = fromRealCurrency ? getTokenPrice(fromRealCurrency?.address, fromRealCurrency?.chainId) : 0
+    const toTokenPrice = toRealCurrency ? getTokenPrice(toRealCurrency?.address, toRealCurrency?.chainId) : 0
+    return {
+      fromTokenPrice,
+      toTokenPrice
+    }
+  }, [fromRealCurrency, getTokenPrice, toRealCurrency, tokenChainId])
 
   useEffect(() => {
     updateRate();
     const interval = setInterval(updateRate, 10000); // Update every 10 seconds
     return () => clearInterval(interval);
-  }, [fromCurrency.id, toCurrency.id]);
+  }, [fromRealCurrency, toRealCurrency, fromTokenPrice, toTokenPrice]);
 
   return (
     <div className="p-2 h-full flex flex-col">
@@ -213,27 +121,15 @@ export const PriceConverterWidget: React.FC = () => {
                 }}
                 className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
               >
-                <img src={fromCurrency.logo} alt={fromCurrency.symbol} className="w-4 h-4" />
-                <span className="text-xs">{fromCurrency.symbol}</span>
+                <img src={fromRealCurrency?.logoURI} alt={fromRealCurrency?.symbol} className="w-4 h-4" />
+                <span className="text-xs">{fromRealCurrency?.symbol}</span>
                 <ChevronDown className="w-3 h-3 text-white/60" />
               </button>
               <TokenSelectorModal
                 isOpen={showFromSelector}
                 onClose={() => setShowFromSelector(false)}
-                onSelect={(token) => setFromCurrency({
-                  id: token.address,
-                  symbol: token.symbol,
-                  name: token.name,
-                  logo: token.logoURI
-                })}
-                selectedToken={{
-                  symbol: fromCurrency.symbol,
-                  name: fromCurrency.name,
-                  logoURI: fromCurrency.logo,
-                  address: fromCurrency.id, // Add appropriate address
-                  chainId: 0, // Add appropriate chainId
-                  decimals: 0 // Add appropriate decimals
-                }}
+                onSelect={setFromRealCurrency}
+                selectedToken={fromRealCurrency}
               />
             </div>
             <input
@@ -270,33 +166,15 @@ export const PriceConverterWidget: React.FC = () => {
                 }}
                 className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
               >
-                <img src={toCurrency.logo} alt={toCurrency.symbol} className="w-4 h-4" />
-                <span className="text-xs">{toCurrency.symbol}</span>
+                <img src={toRealCurrency?.logoURI} alt={toRealCurrency?.symbol} className="w-4 h-4" />
+                <span className="text-xs">{toRealCurrency?.symbol}</span>
                 <ChevronDown className="w-3 h-3 text-white/60" />
               </button>
-              <CurrencySelector
-                isOpen={showToSelector}
-                onClose={() => setShowToSelector(false)}
-                onSelect={setToCurrency}
-                selectedCurrency={toCurrency}
-              />
               <TokenSelectorModal
                 isOpen={showToSelector}
                 onClose={() => setShowToSelector(false)}
-                onSelect={(token) => setToCurrency({
-                  id: token.address,
-                  symbol: token.symbol,
-                  name: token.name,
-                  logo: token.logoURI
-                })}
-                selectedToken={{
-                  symbol: toCurrency.symbol,
-                  name: toCurrency.name,
-                  logoURI: toCurrency.logo,
-                  address: toCurrency.id, // Add appropriate address
-                  chainId: 0, // Add appropriate chainId
-                  decimals: 0 // Add appropriate decimals
-                }}
+                onSelect={setToRealCurrency}
+                selectedToken={toRealCurrency}
               />
             </div>
             <input
@@ -315,7 +193,7 @@ export const PriceConverterWidget: React.FC = () => {
             Last updated: {lastUpdated} • Rate refreshes every 10 seconds
           </div>
           <div className="text-[10px] text-white/60 mt-0.5">
-            1 {fromCurrency.symbol} = {rate?.toFixed(8)} {toCurrency.symbol}
+            1 {fromRealCurrency?.symbol} = {rate?.toFixed(8)} {toRealCurrency?.symbol}
           </div>
         </div>
       </div>
