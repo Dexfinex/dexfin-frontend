@@ -8,9 +8,12 @@ import { mockTransactions, mockDeFiPositions, mockDeFiStats, formatTransactionAm
 import { formatNumberByFrac } from '../utils/common.util.ts';
 import { TransactionType } from '../types/wallet';
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
-import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
 import { TokenChainIcon } from './swap/components/TokenIcon.tsx';
+import { mapChainId2ExplorerUrl } from '../config/networks.ts';
+import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
+import useTokenTransferStore from '../store/useTokenTransferStore.ts';
 import { useEvmWalletBalance } from '../hooks/useBalance.tsx';
+import { useEvmWalletTransfer } from '../hooks/useTransfer.tsx';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -26,6 +29,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
   const { isLoading: isLoadingBalance } = useEvmWalletBalance();
   const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
+  const { isLoading } = useEvmWalletTransfer();
+  const { transfers } = useTokenTransferStore();
 
   const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
 
@@ -111,7 +116,47 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
   const renderActivity = () => (
     <div className="space-y-3">
-      {mockTransactions.map((tx) => (
+      {
+        transfers.map((tx) => (
+          <div
+            key={tx.txHash}
+            className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tx.transactionType === TransactionType.Received ? 'bg-green-500/20 text-green-400' :
+                  tx.transactionType === TransactionType.Sent ? 'bg-red-500/20 text-red-400' :
+                    'bg-blue-500/20 text-blue-400'
+                  }`}>
+                  {tx.transactionType}
+                </span>
+                <span className="text-sm text-white/60">
+                  {tx.time.toLocaleString()}
+                </span>
+              </div>
+              <a
+                href={`${mapChainId2ExplorerUrl[chainId!]}/tx/${tx.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1 hover:bg-white/10 rounded-md transition-colors"
+              >
+                <ExternalLink className="w-4 h-4 text-white/40" />
+              </a>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-sm">
+                    {formatTransactionAmount(tx.transferAmount, tx.tokenSymbol || '')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))
+      }
+      {/* {mockTransactions.map((tx) => (
         <div
           key={tx.id}
           className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
@@ -177,7 +222,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
             </div>
           </div>
         </div>
-      ))}
+      ))} */}
     </div>
   );
 
