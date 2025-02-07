@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useContext, useEffect } from 'react';
-import { Skeleton, Spinner, SkeletonCircle } from '@chakra-ui/react';
-import { Search, ArrowRight, ChevronDown, Wallet, XCircle } from 'lucide-react';
+import { Skeleton, Spinner, SkeletonCircle, useMediaQuery } from '@chakra-ui/react';
+import { X, Search, ArrowRight, ChevronDown, Wallet, XCircle, Send } from 'lucide-react';
 import { FieldValues, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -56,6 +56,17 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
   const { signer, isConnected, login } = useContext(Web3AuthContext);
 
   const { chainId } = useContext(Web3AuthContext);
+
+  const [isLargerThan1200] = useMediaQuery('(min-width: 1200px)');
+  const [isLargerThan800] = useMediaQuery('(min-width: 800px)');
+
+  const walletContainerWidth = useMemo(() => {
+    if (isLargerThan1200) return 'w-[50%] rounded-xl';
+    if (isLargerThan800) return 'w-[80%] rounded-xl';
+
+    return 'w-full h-full rounded-none';
+
+  }, [isLargerThan1200, isLargerThan800])
 
   useEffect(() => {
     if (assets.length > 0 && Object.keys(selectedAsset).length === 0) {
@@ -139,7 +150,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
     chainId: tokenChainId,
   })
 
-
   const nativeTokenPrice = useMemo(() => {
     if (tokenChainId && nativeTokenAddress) {
       return getTokenPrice(nativeTokenAddress, tokenChainId)
@@ -189,255 +199,277 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
     asset.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  if (!isOpen) return null;
+
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} title="Send Assets">
-      {
-        hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[chainId!]}/tx/${hash}`} />
-      }
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-4">
-        {/* Asset Selector */}
-        <div>
-          <label className="block text-sm text-white/60 mb-2">Asset</label>
-          <div className="relative">
+    // <Drawer isOpen={isOpen} onClose={onClose} title="Send Assets">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${walletContainerWidth}`}
+      >
+        {
+          hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[chainId!]}/tx/${hash}`} />
+        }
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <Send className="w-5 h-5" />
+            <h2 className="text-xl font-semibold">Send</h2>
+          </div>
+          <div className="flex items-center gap-2">
             <button
-              type="button"
-              onClick={() => setShowAssetSelector(!showAssetSelector)}
-              className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+              onClick={onClose}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
-              <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
-              <div className="flex-1 text-left">
-                <div className="font-medium">
-                  {selectedAsset.name}
-                  {!compareWalletAddresses(selectedAsset.address, nativeTokenAddress) && <span className='ml-1 text-sm font-light'>({cropString(selectedAsset.address || "", 4)})</span>}
-                </div>
-                <div className="text-sm text-white/60">
-                  Balance: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
-                </div>
-              </div>
-              <ChevronDown className="w-4 h-4 text-white/40" />
+              <X className="w-4 h-4" />
             </button>
-
-            {showAssetSelector && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowAssetSelector(false)}
-                />
-                <div className="absolute top-full left-0 right-0 mt-2 p-2 glass rounded-lg z-20">
-                  <div className="flex items-center gap-2 p-2 bg-white/5 rounded-lg mb-2">
-                    <Search className="w-4 h-4 text-white/40" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setValue("searchQuery", e.target.value, {
-                        shouldValidate: true,
-                      })}
-                      placeholder="Search assets..."
-                      className="bg-transparent outline-none flex-1 text-sm"
-                    />
-                  </div>
-
-                  <div className="max-h-48 overflow-y-auto">
-                    {filteredAssets.map((asset) => (
-                      <button
-                        key={asset.name}
-                        type="button"
-                        onClick={() => {
-                          setSelectedAsset(asset)
-                          setShowAssetSelector(false);
-                        }}
-                        className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
-                      >
-                        <TokenChainIcon src={asset.logo} alt={asset.name} size={"md"} chainId={Number(chainId)} />
-                        <div className="flex-1 text-left">
-                          <div className="font-medium">
-                            {asset.name}
-                            {!compareWalletAddresses(asset.address, nativeTokenAddress) && <span className='ml-1 text-sm font-light'>({cropString(asset.address, 4)})</span>}
-                          </div>
-                          <div className="text-sm text-white/60">
-                            {`${formatNumberByFrac(asset.amount)} ${asset.symbol}`}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
           </div>
         </div>
-
-        {/* Amount Input */}
-        <div>
-          <label className="block text-sm text-white/60 mb-2">Amount</label>
-          {errors.amount?.message && <p className='text-red-500 text-xs italic mb-1'>{errors.amount?.message}</p>}
-          <div className="relative">
-            <input
-              type="number"
-              step="any"
-              placeholder="0.00"
-              className={`w-full bg-white/5 border ${errors.amount ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
-              {...register("amount", {
-                valueAsNumber: true,
-                validate: (value) => Number(value) > 0,
-
-              })}
-            />
-            {
-              amount !== selectedAsset.amount &&
-              < button
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-4">
+          {/* Asset Selector */}
+          <div>
+            <label className="block text-sm text-white/60 mb-2">Asset</label>
+            <div className="relative">
+              <button
                 type="button"
-                onClick={() =>
-                  setValue("amount", selectedAsset.amount, {
-                    shouldValidate: true,
-                  })
-                }
-                className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-sm text-blue-400 hover:text-blue-300"
+                onClick={() => setShowAssetSelector(!showAssetSelector)}
+                className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
               >
-                MAX
+                <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
+                <div className="flex-1 text-left">
+                  <div className="font-medium">
+                    {selectedAsset.name}
+                    {!compareWalletAddresses(selectedAsset.address, nativeTokenAddress) && <span className='ml-1 text-sm font-light'>({cropString(selectedAsset.address || "", 4)})</span>}
+                  </div>
+                  <div className="text-sm text-white/60">
+                    Balance: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
+                  </div>
+                </div>
+                <ChevronDown className="w-4 h-4 text-white/40" />
               </button>
+
+              {showAssetSelector && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowAssetSelector(false)}
+                  />
+                  <div className="absolute top-full left-0 right-0 mt-2 p-2 glass rounded-lg z-20">
+                    <div className="flex items-center gap-2 p-2 bg-white/5 rounded-lg mb-2">
+                      <Search className="w-4 h-4 text-white/40" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setValue("searchQuery", e.target.value, {
+                          shouldValidate: true,
+                        })}
+                        placeholder="Search assets..."
+                        className="bg-transparent outline-none flex-1 text-sm"
+                      />
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredAssets.map((asset) => (
+                        <button
+                          key={asset.name}
+                          type="button"
+                          onClick={() => {
+                            setSelectedAsset(asset)
+                            setShowAssetSelector(false);
+                          }}
+                          className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
+                        >
+                          <TokenChainIcon src={asset.logo} alt={asset.name} size={"md"} chainId={Number(chainId)} />
+                          <div className="flex-1 text-left">
+                            <div className="font-medium">
+                              {asset.name}
+                              {!compareWalletAddresses(asset.address, nativeTokenAddress) && <span className='ml-1 text-sm font-light'>({cropString(asset.address, 4)})</span>}
+                            </div>
+                            <div className="text-sm text-white/60">
+                              {`${formatNumberByFrac(asset.amount)} ${asset.symbol}`}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Amount Input */}
+          <div>
+            <label className="block text-sm text-white/60 mb-2">Amount</label>
+            {errors.amount?.message && <p className='text-red-500 text-xs italic mb-1'>{errors.amount?.message}</p>}
+            <div className="relative">
+              <input
+                type="number"
+                step="any"
+                placeholder="0.00"
+                className={`w-full bg-white/5 border ${errors.amount ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
+                {...register("amount", {
+                  valueAsNumber: true,
+                  validate: (value) => Number(value) > 0,
+
+                })}
+              />
+              {
+                amount !== selectedAsset.amount &&
+                < button
+                  type="button"
+                  onClick={() =>
+                    setValue("amount", selectedAsset.amount, {
+                      shouldValidate: true,
+                    })
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-sm text-blue-400 hover:text-blue-300"
+                >
+                  MAX
+                </button>
+              }
+            </div>
+            <div className="mt-1 text-sm text-white/40">
+              Available: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
+            </div>
+          </div>
+
+          {/* Address Input */}
+          <div className='relative'>
+            <label className="block text-sm text-white/60 mb-2">Send To</label>
+            {errorAddress && <p className='text-red-500 text-xs italic mb-1'>Incorrect address</p>}
+            {
+              !showSelectedEnsInfo ?
+                <input
+                  type="text"
+                  value={address}
+                  placeholder="Enter wallet address or ENS name"
+                  className={`w-full bg-white/5 border ${errorAddress ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
+                  onChange={(e) => {
+                    setAddress(e.target.value)
+                  }}
+                />
+                :
+                <div className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">
+                  {
+                    (ensAvatarLoading || !ensAvatar) ? <SkeletonCircle startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'}></SkeletonCircle> :
+                      <img
+                        src={ensAvatar || ""}
+                        alt={address}
+                        className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 w-8 h-8`}
+                      />
+                  }
+                  <div className="flex-1 text-left">
+                    <div className="font-medium">{address}</div>
+                    <div className="text-sm text-white/60">
+                      {ensAddress}
+                    </div>
+                  </div>
+                  <XCircle onClick={() => {
+                    setShowSelectedEnsInfo(false);
+                    setAddress("");
+                    setShowEnsList(true);
+                  }} />
+                </div>
+            }
+            {
+              showEnsList && ensAddress &&
+              <div onClick={() => setShowEnsList(false)}>
+                <div className="fixed inset-0 z-10" />
+                <div className="absolute top-full left-0 right-0 mt-2 p-2 glass rounded-lg z-20">
+                  <div className="max-h-48 overflow-y-auto">
+                    <button
+                      key={ensAddress}
+                      type="button"
+                      onClick={() => {
+                        setShowEnsList(false) // close modal
+                        setShowSelectedEnsInfo(true) // render item
+                      }}
+                      className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                      {
+                        (ensAvatarLoading || !ensAvatar) ? <SkeletonCircle startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'}></SkeletonCircle> :
+                          <TokenIcon src={ensAvatar as string} alt={address} size='lg' />
+                      }
+                      <div className="flex-1 text-left">
+                        <div className="font-medium">{address}</div>
+                        <div className="text-sm text-white/60">
+                          {ensAddress}
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
             }
           </div>
-          <div className="mt-1 text-sm text-white/40">
-            Available: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
-          </div>
-        </div>
-
-        {/* Address Input */}
-        <div className='relative'>
-          <label className="block text-sm text-white/60 mb-2">Send To</label>
-          {errorAddress && <p className='text-red-500 text-xs italic mb-1'>Incorrect address</p>}
-          {
-            !showSelectedEnsInfo ?
-              <input
-                type="text"
-                value={address}
-                placeholder="Enter wallet address or ENS name"
-                className={`w-full bg-white/5 border ${errorAddress ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
-                onChange={(e) => {
-                  setAddress(e.target.value)
-                }}
-              />
-              :
-              <div className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">
-                {
-                  (ensAvatarLoading || !ensAvatar) ? <SkeletonCircle startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'}></SkeletonCircle> :
-                    <img
-                      src={ensAvatar || ""}
-                      alt={address}
-                      className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 w-8 h-8`}
-                    />
-                }
-                <div className="flex-1 text-left">
-                  <div className="font-medium">{address}</div>
-                  <div className="text-sm text-white/60">
-                    {ensAddress}
-                  </div>
-                </div>
-                <XCircle onClick={() => {
-                  setShowSelectedEnsInfo(false);
-                  setAddress("");
-                  setShowEnsList(true);
-                }} />
-              </div>
-          }
-          {
-            showEnsList && ensAddress &&
-            <div onClick={() => setShowEnsList(false)}>
-              <div
-                className="fixed inset-0 z-10"
-              />
-              <div className="absolute top-full left-0 right-0 mt-2 p-2 glass rounded-lg z-20">
-                <div className="max-h-48 overflow-y-auto">
-                  <button
-                    key={ensAddress}
-                    type="button"
-                    onClick={() => {
-                      setShowEnsList(false) // close modal
-                      setShowSelectedEnsInfo(true) // render item
-                    }}
-                    className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
-                  >
-                    {
-                      (ensAvatarLoading || !ensAvatar) ? <SkeletonCircle startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'}></SkeletonCircle> :
-                        <TokenIcon src={ensAvatar as string} alt={address} size='lg' />
-                    }
-                    <div className="flex-1 text-left">
-                      <div className="font-medium">{address}</div>
-                      <div className="text-sm text-white/60">
-                        {ensAddress}
-                      </div>
+          {/* Preview */}
+          {showPreview ? (
+            <div className="p-4 bg-white/5 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
+                  <div>
+                    <div className="text-sm text-white/60">You send</div>
+                    <div className="font-medium">
+                      {`${formatNumberByFrac(Number(amount))} ${selectedAsset.symbol}`}
                     </div>
-                  </button>
+                  </div>
                 </div>
-              </div>
-            </div>
-          }
-        </div>
-        {/* Preview */}
-        {showPreview ? (
-          <div className="p-4 bg-white/5 rounded-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
+                <ArrowRight className="w-5 h-5 text-white/40" />
                 <div>
-                  <div className="text-sm text-white/60">You send</div>
-                  <div className="font-medium">
-                    {`${formatNumberByFrac(Number(amount))} ${selectedAsset.symbol}`}
+                  <div className="text-sm text-white/60">To</div>
+                  <div className="font-medium font-mono">
+                    {
+                      showSelectedEnsInfo ?
+                        <div className='flex flex-row justify-items-center items-center'>
+                          {
+                            (ensAvatarLoading || !ensAvatar) ? <SkeletonCircle startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'}></SkeletonCircle> :
+                              <TokenIcon src={ensAvatar as string} alt={address} size='lg' />
+                          }
+                          <div className='flex flex-col ml-2'>
+                            <div>{address}</div>
+                            <div>{cropString(ensAddress || "", 4)}</div>
+                          </div>
+                        </div> : `${cropString(address)}`
+                    }
                   </div>
                 </div>
               </div>
-              <ArrowRight className="w-5 h-5 text-white/40" />
-              <div>
-                <div className="text-sm text-white/60">To</div>
-                <div className="font-medium font-mono">
-                  {
-                    showSelectedEnsInfo ?
-                      <div className='flex flex-row justify-items-center items-center'>
-                        {
-                          (ensAvatarLoading || !ensAvatar) ? <SkeletonCircle startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'} className='mr-1'></SkeletonCircle> :
-                            <TokenIcon src={ensAvatar as string} alt={address} size='lg' />
-                        }
-                        <div className='flex flex-col'>
-                          <div>{address}</div>
-                          <div>{cropString(ensAddress || "", 3)}</div>
-                        </div>
-                      </div> : `${cropString(address)}`
-                  }
-                </div>
+              <div className="text-sm text-white/60">
+                Network Fee: {isGasEstimationLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton> : `$${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}
               </div>
             </div>
-            <div className="text-sm text-white/60">
-              Network Fee: {isGasEstimationLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton> : `$${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}
-            </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        {
-          isConnected ?
-            <button
-              type={`${isConfirming ? "button" : "submit"}`}
-              disabled={submitDisabled}
-              className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium flex align-center justify-center"
-            >
-              {
-                isConfirming ?
-                  <div><Spinner size="md" className='mr-2' /> Loading...</div>
-                  : <div>Send {selectedAsset.symbol}</div>
-              }
+          {
+            isConnected ?
+              <button
+                type={`${isConfirming ? "button" : "submit"}`}
+                disabled={submitDisabled}
+                className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium flex align-center justify-center"
+              >
+                {
+                  isConfirming ?
+                    <div><Spinner size="md" className='mr-2' /> Loading...</div>
+                    : <div>Send {selectedAsset.symbol}</div>
+                }
 
-            </button>
-            :
-            <button
-              type="button"
-              className="w-full flex items-center justify-center py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
-              onClick={() => login()}
-            >
-              <Wallet className="w-5 h-5 mr-2" /> Connect
-            </button>
-        }
+              </button>
+              :
+              <button
+                type="button"
+                className="w-full flex items-center justify-center py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
+                onClick={() => login()}
+              >
+                <Wallet className="w-5 h-5 mr-2" /> Connect
+              </button>
+          }
 
-      </form>
-    </Drawer>
+        </form>
+      </div>
+    </div>
+    // </Drawer>
   );
 };

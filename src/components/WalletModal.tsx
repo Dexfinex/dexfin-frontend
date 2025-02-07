@@ -37,15 +37,17 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
   const { address, chainId } = useContext(Web3AuthContext);
 
+  const [isLargerThan1200] = useMediaQuery('(min-width: 1200px)');
   const [isLargerThan800] = useMediaQuery('(min-width: 800px)');
 
   const walletContainerWidth = useMemo(() => {
     if (isFullscreen) return 'w-full h-full rounded-none';
-    if (isLargerThan800) return 'w-[50%] h-[50%] rounded-xl';
+    if (isLargerThan1200) return 'w-[50%] rounded-xl';
+    if (isLargerThan800) return 'w-[80%] rounded-xl';
 
     return 'w-full h-full rounded-none';
 
-  }, [isLargerThan800, isFullscreen])
+  }, [isLargerThan800, isLargerThan1200, isFullscreen])
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
