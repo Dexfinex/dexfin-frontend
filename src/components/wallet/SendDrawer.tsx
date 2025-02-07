@@ -1,10 +1,12 @@
 import React, { useState, useMemo, useContext, useEffect } from 'react';
 import { Skeleton, Spinner } from '@chakra-ui/react';
-import { Search, ArrowRight, ChevronDown, Wallet } from 'lucide-react';
+import { Search, ArrowRight, ChevronDown, Wallet, XCircle } from 'lucide-react';
 import { FieldValues, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ethers } from "ethers";
+import { useEnsAddress, useEnsAvatar } from 'wagmi';
+import { normalize } from 'viem/ens';
+import { ethers } from 'ethers';
 
 import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
@@ -17,7 +19,8 @@ import { mapChainId2NativeAddress } from "../../config/networks.ts";
 import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
 import { TransactionError } from '../../types';
 import { mapChainId2ExplorerUrl } from '../../config/networks.ts';
-import { TokenChainIcon } from '../swap/components/TokenIcon.tsx';
+import { TokenChainIcon, TokenIcon } from '../swap/components/TokenIcon.tsx';
+import { cropString } from '../../utils/index.ts';
 
 interface SendDrawerProps {
   isOpen: boolean;
@@ -43,6 +46,9 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
   const [isConfirming, setIsConfirming] = useState(false);
   const [hash, setHash] = useState("")
   const [txModalOpen, setTxModalOpen] = useState(false);
+  const [showEnsList, setShowEnsList] = useState(true);
+  const [address, setAddress] = useState("");
+  const [showSelectedEnsInfo, setShowSelectedEnsInfo] = useState(false);
 
   const { mutate: sendTransactionMutate } = useSendTransactionMutation();
   const { signer, isConnected, login } = useContext(Web3AuthContext);
@@ -60,10 +66,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
       required_error: "Amount is required",
       invalid_type_error: "Amount must be a number"
     }).gt(0).lte(selectedAsset.amount),
-    address: z.string()
-      .refine((value) => ethers.utils.isAddress(value), {
-        message: "Provided address is invalid.",
-      }),
+    address: z.string(),
   });
 
   const {
@@ -83,11 +86,39 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
 
   const searchQuery = watch("searchQuery")
   const amount = watch("amount")
-  const address = watch("address")
+
+  const normalizedAddress = useMemo(() => {
+    try {
+      return normalize(address)
+    } catch (e) {
+      return ""
+    }
+  }, [address])
+
+  useEffect(() => {
+    setShowEnsList(true)
+    setShowSelectedEnsInfo(false)
+  }, [address])
+
+  const ensAddressDataResponse = useEnsAddress({
+    name: normalizedAddress,
+  });
+
+  const { data: ensAddress } = ensAddressDataResponse
+
+  const ensAvatarDataResponse = useEnsAvatar({
+    name: normalizedAddress,
+  });
+
+  const { isLoading: ensAvatarLoading, data: ensAvatar } = ensAvatarDataResponse
 
   const submitDisabled = useMemo(() => {
-    return !amount || !address || isConfirming
-  }, [amount, address, isConfirming])
+    return !amount || !!errors.amount || isConfirming || !(ethers.utils.isAddress(address) || showSelectedEnsInfo)
+  }, [amount, address, isConfirming, showSelectedEnsInfo])
+
+  const showPreview = useMemo(() => {
+    return (amount && address && (ethers.utils.isAddress(address) || ethers.utils.isAddress(ensAddress || "")))
+  }, [amount, address, showSelectedEnsInfo])
 
   const { getTokenPrice, tokenPrices } = useTokenStore()
 
@@ -115,10 +146,11 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
 
   const onSubmit = () => {
     setIsConfirming(true);
+    const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
     sendTransactionMutate(
       {
         tokenAddress: selectedAsset.address,
-        sendAddress: address,
+        sendAddress: _address,
         sendAmount: Number(amount),
         signer,
         gasLimit: gasData.gasLimit,
@@ -256,16 +288,75 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
         <div>
           <label className="block text-sm text-white/60 mb-2">Send To</label>
           {errors.address?.message && <p className='text-red-500 text-xs italic'>{errors.address?.message}</p>}
-          <input
-            type="text"
-            value={address}
-            placeholder="Enter wallet address or ENS name"
-            className={`w-full bg-white/5 border ${errors.address ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:border-white/20`}
-            {...register("address")}
-          />
+          {
+            !showSelectedEnsInfo ?
+              <input
+                type="text"
+                value={address}
+                placeholder="Enter wallet address or ENS name"
+                className={`w-full bg-white/5 border ${errors.address ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:border-white/20`}
+                onChange={(e) => {
+                  setAddress(e.target.value)
+                }}
+              />
+              :
+              <div className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">
+                {
+                  ensAvatarLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'}></Skeleton> :
+                    <img
+                      src={ensAvatar || ""}
+                      alt={address}
+                      className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 w-8 h-8`}
+                    />
+                }
+                <div className="flex-1 text-left">
+                  <div className="font-medium">{address}</div>
+                  <div className="text-sm text-white/60">
+                    {ensAddress}
+                  </div>
+                </div>
+                <XCircle onClick={() => {
+                  setShowSelectedEnsInfo(false);
+                  setAddress("");
+                  setShowEnsList(true);
+                }} />
+              </div>
+          }
+          {
+            showEnsList && ensAddress &&
+            <div className='relative' onClick={() => setShowEnsList(false)}>
+              <div
+                className="fixed inset-0 z-10"
+              />
+              <div className="absolute top-full left-0 right-0 mt-2 p-2 glass rounded-lg z-20">
+                <div className="max-h-48 overflow-y-auto">
+                  <button
+                    key={ensAddress}
+                    type="button"
+                    onClick={() => {
+                      setShowEnsList(false) // close modal
+                      setShowSelectedEnsInfo(true) // render item
+                    }}
+                    className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
+                  >
+                    {
+                      ensAvatarLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'2rem'} h={'2rem'}></Skeleton> :
+                        <TokenIcon src={ensAvatar as string} alt={address} size='lg' />
+                    }
+                    <div className="flex-1 text-left">
+                      <div className="font-medium">{address}</div>
+                      <div className="text-sm text-white/60">
+                        {ensAddress}
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
         </div>
         {/* Preview */}
-        {(amount && address && !errors.amount && !errors.address) ? (
+        {showPreview ? (
           <div className="p-4 bg-white/5 rounded-lg">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -273,7 +364,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
                 <div>
                   <div className="text-sm text-white/60">You send</div>
                   <div className="font-medium">
-                    {`${formatNumberByFrac(amount)} ${selectedAsset.symbol}`}
+                    {`${formatNumberByFrac(Number(amount))} ${selectedAsset.symbol}`}
                   </div>
                 </div>
               </div>
@@ -281,7 +372,16 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
               <div>
                 <div className="text-sm text-white/60">To</div>
                 <div className="font-medium font-mono">
-                  {address.slice(0, 6)}...{address.slice(-4)}
+                  {
+                    showSelectedEnsInfo ?
+                      <div className='flex flex-row justify-items-center items-center'>
+                        <TokenIcon src={ensAvatar as string} alt={address} size='lg' className='mr-2' />
+                        <div className='flex flex-col'>
+                          <div>{address}</div>
+                          <div>{cropString(ensAddress || "", 3)}</div>
+                        </div>
+                      </div> : `${cropString(address)}`
+                  }
                 </div>
               </div>
             </div>
@@ -293,21 +393,18 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets 
 
         {
           isConnected ?
-            isConfirming ?
-              <button
-                type="button"
-                disabled={submitDisabled}
-                className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium flex align-center justify-center"
-              >
-                <Spinner size="md" className='mr-2' /> Loading...
-              </button>
-              : <button
-                type="submit"
-                disabled={submitDisabled}
-                className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium flex align-center justify-center"
-              >
-                Send {selectedAsset.symbol}
-              </button>
+            <button
+              type={`${isConfirming ? "button" : "submit"}`}
+              disabled={submitDisabled}
+              className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium flex align-center justify-center"
+            >
+              {
+                isConfirming ?
+                  <div><Spinner size="md" className='mr-2' /> Loading...</div>
+                  : <div>Send {selectedAsset.symbol}</div>
+              }
+
+            </button>
             :
             <button
               type="button"
