@@ -26,6 +26,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const [showSendDrawer, setShowSendDrawer] = useState(false);
   const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
   const [showBuyDrawer, setShowBuyDrawer] = useState(false);
+  const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
 
   const { isLoading: isLoadingBalance } = useEvmWalletBalance();
   const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
@@ -87,14 +88,18 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
         {
           isLoadingBalance ?
             <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
-            : tokenBalances.map((position) => (
-              <div
+            : tokenBalances.map((position, index) => (
+              <button
                 key={position.chain + position.symbol}
-                className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                onClick={() => {
+                  setSelectedBalanceIndex(index);
+                  setShowSendDrawer(true);
+                }}
               >
                 <div className="flex items-center gap-3">
                   <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(chainId)} />
-                  <div>
+                  <div className='flex flex-col justify-start items-start'>
                     <div className="font-medium">{position.symbol}</div>
                     <div className="text-sm text-white/60">
                       {`${formatNumberByFrac(position.balance)} ${position.symbol}`}
@@ -107,7 +112,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                   {formatApy(0)} APY
                 </div> */}
                 </div>
-              </div>
+              </button>
             ))
         }
       </div>
@@ -400,6 +405,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       {/* Drawers */}
       <SendDrawer
         isOpen={showSendDrawer}
+        selectedAssetIndex={selectedBalanceIndex}
         onClose={() => setShowSendDrawer(false)}
         assets={tokenBalances.map(p => ({
           name: p.name,

@@ -25,6 +25,7 @@ import { compareWalletAddresses } from '../../utils/common.util';
 
 interface SendDrawerProps {
   isOpen: boolean;
+  selectedAssetIndex: number;
   onClose: () => void;
   assets: {
     name: string;
@@ -41,9 +42,9 @@ interface FormValues extends FieldValues {
   searchQuery: string;
 }
 
-export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets }) => {
+export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets, selectedAssetIndex = 0 }) => {
   const [showAssetSelector, setShowAssetSelector] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState(assets[0] || {})
+  const [selectedAsset, setSelectedAsset] = useState(assets[selectedAssetIndex] || {})
   const [isConfirming, setIsConfirming] = useState(false);
   const [hash, setHash] = useState("")
   const [txModalOpen, setTxModalOpen] = useState(false);
