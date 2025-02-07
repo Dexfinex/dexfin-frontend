@@ -105,7 +105,6 @@ export interface ChartOptions {
   };
 }
 
-<<<<<<< HEAD
 export interface CoinGeckoToken {
   name: string,
   address: string,
