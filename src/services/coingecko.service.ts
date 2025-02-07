@@ -5,6 +5,21 @@ import axios from "axios";
 import { mapCoingeckoAssetPlatforms } from "../constants/mock/coingeckoAssetPlatforms.ts";
 import { NULL_ADDRESS } from "../constants";
 import { mapCoingeckoNetworks } from "../constants/mock/coingeckoNetworks.ts";
+import { MarketCapToken } from "../components/market/MarketCap.tsx";
+
+function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp * 1000;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days}d ago`;
+  if (hours > 0) return `${hours}h ago`;
+  if (minutes > 0) return `${minutes}m ago`;
+  return 'just now';
+}
+
 
 export const coingeckoService = {
   getMemecoins: async () => {
@@ -137,6 +152,15 @@ export const coingeckoService = {
         message: error instanceof Error ? error.message : 'Unknown error'
       });
       throw error;
+    }
+  },
+  getMarketCap: async (page: number): Promise<MarketCapToken[]> => {
+    try {
+      const { data } = await coinGeckoApi2.get<MarketCapToken[]>(`/tokens/marketcap?page=${page}`);
+      return data;
+    } catch (error) {
+      console.error('Error searching coins:', error);
+      return [];
     }
   },
 }

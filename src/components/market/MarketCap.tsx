@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, RefreshCw, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { SparklineChart } from './SparklineChart';
+import { coingeckoService } from '../../services/coingecko.service';
 
-interface Token {
+export interface MarketCapToken {
   id: string;
   rank: number;
   name: string;
@@ -19,7 +20,7 @@ interface Token {
 }
 
 // Mock data for initial state and fallback
-const mockTokens: Token[] = [
+const mockTokens: MarketCapToken[] = [
   {
     id: 'bitcoin',
     rank: 1,
@@ -53,7 +54,7 @@ const mockTokens: Token[] = [
 ];
 
 export const MarketCap: React.FC = () => {
-  const [tokens, setTokens] = useState<Token[]>(mockTokens);
+  const [tokens, setTokens] = useState<MarketCapToken[]>(mockTokens);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,34 +66,23 @@ export const MarketCap: React.FC = () => {
       if (showRefreshState) {
         setRefreshing(true);
       }
-      // TODO: Replace with actual API call
-      const response = await fetch(`https://pro-api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=${page}&sparkline=true`, {
-        headers: {
-          'x-cg-pro-api-key': import.meta.env.VITE_COINGECKO_API_KEY
-        }
-      });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch market data');
-      }
-
-      const data = await response.json();
-      
+      const data = await coingeckoService.getMarketCap(page);
       // Transform API data to match our Token interface
-      const transformedData: Token[] = data.map((item: any) => ({
+      const transformedData: MarketCapToken[] = data.map((item: any) => ({
         id: item.id,
-        rank: item.market_cap_rank,
+        rank: item.marketCapRank,
         name: item.name,
         symbol: item.symbol,
-        price: item.current_price,
-        priceChange24h: item.price_change_percentage_24h,
-        marketCap: item.market_cap,
-        volume24h: item.total_volume,
-        circulatingSupply: item.circulating_supply,
+        price: item.price,
+        priceChange24h: item.priceChange24h,
+        marketCap: item.marketCap,
+        volume24h: item.volume24h,
+        circulatingSupply: item.circulatingSupply,
         sparkline_in_7d: {
-          price: item.sparkline_in_7d?.price || Array(24).fill(0).map(() => item.current_price + (Math.random() * 2 - 1) * item.current_price * 0.02)
+          price: item.sparkline
         },
-        logo: item.image
+        logo: item.logoURI
       }));
 
       setTokens(transformedData);
@@ -262,7 +252,7 @@ export const MarketCap: React.FC = () => {
                     <div className="h-[40px] w-[120px] ml-auto">
                       <SparklineChart 
                         data={token.sparkline_in_7d.price}
-                        color={token.priceChange24h >= 0 ? '#10B981' : '#EF4444'}
+                        color={token.sparkline_in_7d.price[token.sparkline_in_7d.price.length - 1] - token.sparkline_in_7d.price[0] >= 0 ? '#10B981' : '#EF4444'}
                       />
                     </div>
                   </td>
