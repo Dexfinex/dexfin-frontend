@@ -48,10 +48,8 @@ export const PriceConverterWidget: React.FC = () => {
     try {
       
       const fromTokenPrice = fromRealCurrency ? getTokenPrice(fromRealCurrency?.address, fromRealCurrency?.chainId) : 0
-      console.log(fromTokenPrice)
 
       const toTokenPrice = toRealCurrency ? getTokenPrice(toRealCurrency?.address, toRealCurrency?.chainId) : 0
-      console.log(toTokenPrice);
 
       setLoading(true);
       
