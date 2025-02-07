@@ -46,6 +46,7 @@ interface IGroup {
   nft: string;
   members: IMember[];
   pendingMembers: IMember[];
+  type: "Request" | "Connected" | "Searched";
 }
 
 interface IChat {
@@ -56,6 +57,7 @@ interface IChat {
   toAddress: string;
   chatId: string;
   link: string | null;
+  image?: string;
 }
 
 // interface ChatUser {
@@ -236,9 +238,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const { setChatUser, chatUser } = useStore();
 
   const [loading, setLoading] = useState(false);
-  const [group, setGroup] = useState<Array<IGroup>>([]);
+  const [groupList, setGroupList] = useState<Array<IGroup>>([]);
   const [connectedUsers, setConnectedUsers] = useState<Array<IUser>>([]);
-  const [searchedOne, setSearchedOne] = useState<IUser | null>(null);
+  const [searchedUser, setSearchedUser] = useState<IUser | null>(null);
+  const [searchedGroup, setSearchedGroup] = useState<IGroup | null>(null);
   const [requestUsers, setRequestUsers] = useState<Array<IUser>>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
@@ -248,7 +251,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [loadingPrevChat, setLoadingPrevChat] = useState(false);
   const [toBottom, setToBottom] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [handlingRequest, setHandlingRequest] = useState(false);
+  const [isHandlingRequest, setIsHandlingRequest] = useState(false);
+  const [isJoiningGroup, setIsJoiningGroup] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState<any>([]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
@@ -309,9 +313,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const clearValues = () => {
     setSearchQuery("")
+    setChatHistory([])
     setSelectedUser(null)
-    setSearchedOne(null)
+    setSearchedUser(null)
     setSelectedGroup(null)
+    setSearchedGroup(null)
   }
 
   useEffect(() => {
@@ -411,7 +417,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           erc20: e.groupInformation.contractAddressERC20,
           nft: e.groupInformation.contractAddressNFT,
           members: e.groupInformation.members,
-          pendingMembers: e.groupInformation.pendingMembers
+          pendingMembers: e.groupInformation.pendingMembers,
+          type: "Connected"
         }]
       } else {
         userInformation = [...userInformation, {
@@ -429,7 +436,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     console.log('groupInformation = ', groupInformation)
 
     if (groupInformation.length > 0) {
-      setGroup(groupInformation)
+      setGroupList(groupInformation)
     }
     if (userInformation.length > 0) {
       setConnectedUsers(userInformation)
@@ -476,7 +483,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const handleAcceptRequest = async () => {
     try {
-      setHandlingRequest(true)
+      setIsHandlingRequest(true)
       const acceptRequest = await chatUser.chat.accept(selectedUser?.address)
       setRequestUsers(requestUsers.filter((item) => item.chatId !== selectedUser?.chatId))
       if (selectedUser) {
@@ -490,12 +497,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     } catch (err) {
       console.log('request accept error: ', err)
     }
-    setHandlingRequest(false)
+    setIsHandlingRequest(false)
   }
 
   const handleRejectRequest = async () => {
     try {
-      setHandlingRequest(true)
+      setIsHandlingRequest(true)
       const rejectRequest = await chatUser.chat.reject(selectedUser?.address)
       setRequestUsers(requestUsers.filter((item) => item.chatId !== selectedUser?.chatId))
       setSelectedUser(null)
@@ -503,7 +510,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     } catch (err) {
       console.log('request reject error: ', err)
     }
-    setHandlingRequest(false)
+    setIsHandlingRequest(false)
   }
 
   const initStream = async (user: any) => {
@@ -631,9 +638,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         })
 
         setMessage("")
-        if (searchedOne?.address == selectedUser.address) {
-          setSearchedOne(null)
-          setConnectedUsers([{ ...searchedOne, unreadMessages: 0 }, ...connectedUsers])
+        if (searchedUser?.address == selectedUser.address) {
+          setSearchedUser(null)
+          setConnectedUsers([{ ...searchedUser, unreadMessages: 0 }, ...connectedUsers])
         }
         console.log('sent msg = ', sentMsg)
       } catch (err) {
@@ -696,27 +703,51 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsSearching(true)
     setChatHistory([])
 
-    const profile = await getWalletProfile(chatUser, searchQuery)
-    if (profile) {
-      const found = connectedUsers.find((e: any) => extractAddress(e.wallets) == searchQuery)
-      if (found) {
-        setSelectedUser({
-          name: found.name,
-          address: found.address,
-          profilePicture: found.profilePicture,
-          chatId: found.chatId,
-          type: "Connected",
-          unreadMessages: 0
-        })
-      } else {
-        setSearchedOne({
-          name: profile.name,
-          profilePicture: profile.picture,
-          address: searchQuery,
-          chatId: "",
-          type: "Searched",
-          unreadMessages: 0
-        })
+    if (chatMode == "p2p") {
+      const profile = await getWalletProfile(chatUser, searchQuery)
+      if (profile) {
+        const found = connectedUsers.find((user: IUser) => extractAddress(user.address) == searchQuery)
+        if (found) {
+          setSelectedUser({
+            name: found.name,
+            address: found.address,
+            profilePicture: found.profilePicture,
+            chatId: found.chatId,
+            type: "Connected",
+            unreadMessages: 0
+          })
+        } else {
+          setSearchedUser({
+            name: profile.name,
+            profilePicture: profile.picture,
+            address: searchQuery,
+            chatId: "",
+            type: "Searched",
+            unreadMessages: 0
+          })
+        }
+      }
+    } else if (chatMode == "group") {
+      const gropuProfie = await chatUser.chat.group.info(searchQuery)
+      console.log('gropuProfile = ', gropuProfie)
+      if (gropuProfie) {
+        const found = groupList.find((group: IGroup) => group.groupId == searchQuery)
+        if (found) {
+          setSelectedGroup(found)
+        } else {
+          setSearchedGroup({
+            groupId: gropuProfie.chatId,
+            name: gropuProfie.groupName,
+            description: gropuProfie.groupDescription,
+            public: gropuProfie.isPublic,
+            image: gropuProfie.groupImage,
+            erc20: gropuProfie.contractAddressERC20,
+            nft: gropuProfie.contractAddressNFT,
+            members: gropuProfie.members,
+            pendingMembers: gropuProfie.pendingMembers,
+            type: "Searched"
+          })
+        }
       }
     }
 
@@ -743,14 +774,59 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       })
       setToBottom(true)
       setChatHistory(tmp.reverse())
-      setLoadingChatHistory(false)
     }
+    setLoadingChatHistory(false)
   }
 
-  const handleSelectGroup = (group: any) => {
-    setChatHistory([])
+  const handleSelectGroup = async (group: IGroup) => {
+    setLoadingChatHistory(true)
     setSelectedGroup(group)
     console.log('group = ', group)
+
+    const history = await chatUser.chat.history(group.groupId)
+    console.log('history = ', history)
+
+    if (history.length > 0) {
+      const tmp: IChat[] = history.map((e: any) => {
+        const found = group?.members.find(member => extractAddress(member.wallet) == extractAddress(e.fromDID))
+        console.log('found ', group, e.fromDID)
+
+        return {
+          timestamp: e.timestamp,
+          type: e.messageType,
+          content: e.messageContent,
+          fromAddress: extractAddress(e.fromDID),
+          toAddress: extractAddress(e.toDID),
+          chatId: e.cid,
+          link: e.link,
+          image: found?.image || ""
+        }
+      })
+
+      setToBottom(true)
+      setChatHistory(tmp.reverse())
+      setLoadingChatHistory(false)
+    }
+
+    setLoadingChatHistory(false)
+  }
+
+  const handleJoinGroup = async () => {
+    setIsJoiningGroup(true)
+
+    try {
+      const joinGroup = await chatUser.chat.group.join(selectedGroup?.groupId);
+      console.log('joingroup = ', joinGroup)
+      if (searchedGroup) {
+        setGroupList([searchedGroup, ...groupList])
+        setSelectedGroup({ ...searchedGroup, type: "Connected" })
+      }
+      setSearchedGroup(null)
+    } catch (err) {
+      console.log('join group err: ', err)
+    }
+
+    setIsJoiningGroup(false)
   }
 
   const updateLastMessageInfo = (address: string, msg: string, timestamp: number) => {
@@ -794,8 +870,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }
 
-  const canAccessChat = (user: any, group: any) => {
-    if (!user && !group) return true;
+  const canAccessChat = (user: IUser | null, group: IGroup | null) => {
+    if (!user && !group) return false;
+
+    if (user?.type === "Request") return false;
+
+    if (group?.type === "Searched") return false;
+
     // if (group?.type === 'public') return true;
     // if (group?.type === 'nft-gated') {
     //   return currentUserNfts.some(nft =>
@@ -812,7 +893,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     return true;
   };
 
-  const renderAccessBadge = (user: any, group: any) => {
+  const renderAccessBadge = (user: IUser | null, group: IGroup | null) => {
     if (!user && !group) return null;
 
     // const hasAccess = canAccessChat(user, group);
@@ -843,13 +924,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const renderDirectRequests = () => {
     return <>
       {
-        requestUsers.length > 0 && requestUsers.map(e => <div key={e.chatId} className={`flex hover:bg-white/5 ${e.address == selectedUser?.address && 'bg-white/10'}`}>
+        requestUsers.length > 0 && requestUsers.map(user => <div key={user.chatId} className={`flex p-3 hover:bg-white/5 ${user.address == selectedUser?.address && 'bg-white/10'}`}>
           <button className={`flex-1 py-2 flex gap-8 items-center`}
-            onClick={() => handleSelectReuestUser(e)}>
-            {e?.profilePicture ? <img src={e.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
+            onClick={() => handleSelectReuestUser(user)}>
+            {user?.profilePicture ? <img src={user.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
             <div className='flex flex-col'>
-              <span>{e?.name || shrinkAddress(e.address)}</span>
-              {/* <span className='text-sm text-gray-400'>Start Chat!</span> */}
+              <span>{user?.name || shrinkAddress(user.address)}</span>
+              {/* <span className='text-sm text-gray-400'>Join Group!</span> */}
             </div>
             <Info className='text-red-500' />
           </button>
@@ -862,40 +943,56 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const renderGroupsAndUsers = () => {
     if (chatMode === 'group') {
       return <>
-        {group.length > 0 && group.map((e: IGroup) => <button
-          key={e.groupId}
-          onClick={() => handleSelectGroup(e)}
-          className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.groupId === e.groupId
+        {searchedGroup && <div className={`flex border-b-2 hover:bg-white/5 ${searchedGroup.groupId == selectedGroup?.groupId && 'bg-white/10'}`}>
+          <button className={`flex-1 py-2 flex gap-8 items-center`}
+            onClick={() => handleSelectGroup(searchedGroup)}>
+            <img src={searchedGroup.image} className='w-14 h-14 rounded-lg' />
+            <div className='flex flex-col'>
+              <span>{searchedGroup.name}</span>
+              <span className='text-sm text-gray-400'>Join Group!</span>
+            </div>
+          </button>
+          <button className='mx-2' onClick={() => { setSearchedGroup(null); setSelectedGroup(null); }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>}
+
+        {groupList.length > 0 && groupList.map((group: IGroup) => <button
+          key={group.groupId}
+          onClick={() => handleSelectGroup(group)}
+          className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.groupId === group.groupId
             ? 'bg-white/10'
             : 'hover:bg-white/5'
             }`}>
-          <img src={e.image} alt="WOW" className="w-16 h-16 rounded-lg" />
+          <img src={group.image} alt="WOW" className="w-14 h-14 rounded-lg" />
           <div className="flex-1 text-left">
             <div className="flex items-center gap-2">
-              <span className="font-medium">{e.name}</span>
+              <span className="font-medium">{group.name}</span>
             </div>
-            <div className="text-sm text-white/60 truncate">
-              {e?.members.length} members
-            </div>
+            {group.type == "Searched" && <div className="text-sm text-white/60 truncate">
+              {group?.members.length} members
+            </div>}
           </div>
         </button>)}
       </>
     } else if (chatMode === 'p2p') {
       return <>
         {renderDirectRequests()}
-        {searchedOne && <div className={`flex border-b-2 hover:bg-white/5 ${searchedOne.address == selectedUser?.address && 'bg-white/10'}`}>
+
+        {searchedUser && <div className={`flex border-b-2 hover:bg-white/5 ${searchedUser.address == selectedUser?.address && 'bg-white/10'}`}>
           <button className={`flex-1 py-2 flex gap-8 items-center`}
-            onClick={() => setSelectedUser(searchedOne)}>
-            {searchedOne?.profilePicture ? <img src={searchedOne.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
+            onClick={() => setSelectedUser(searchedUser)}>
+            {searchedUser?.profilePicture ? <img src={searchedUser.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
             <div className='flex flex-col'>
-              <span>{searchedOne?.name || shrinkAddress(searchedOne.address)}</span>
+              <span>{searchedUser?.name || shrinkAddress(searchedUser.address)}</span>
               <span className='text-sm text-white/40'>Start Chat!</span>
             </div>
           </button>
-          <button className='mx-2' onClick={() => { setSearchedOne(null); setSelectedUser(null); }}>
+          <button className='mx-2' onClick={() => { setSearchedUser(null); setSelectedUser(null); }}>
             <X className="w-4 h-4" />
           </button>
         </div>}
+
         {connectedUsers.length > 0 && connectedUsers.map((user: IUser) => <button key={user.chatId}
           onClick={() => handleSelectUser(user)}
           className={`w-full flex items-center justify-between gap-3 p-3 rounded-lg transition-colors ${selectedUser?.address === extractAddress(user?.address)
@@ -993,6 +1090,61 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     // }
   }
 
+  const renderChatHistory = () => {
+    if (chatMode === "p2p") {
+      return chatHistory.map((msg) => (
+        <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
+          {
+            msg.fromAddress == selectedUser?.address &&
+            < img
+              src={selectedUser.profilePicture}
+              className="w-8 h-8 rounded-full mt-1"
+            />
+          }
+          <div className="flex-1 min-w-0">
+            <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+              {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+              <span className="font-medium">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+              <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
+            </div>
+            <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress == selectedUser?.address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+              {msg.content}
+            </div>
+          </div>
+        </div>
+      ))
+    } else if (chatMode === "group") {
+      return chatHistory.map((msg) => (
+        <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
+          {
+            msg.fromAddress != address &&
+            < img
+              src={msg.image}
+              className="w-8 h-8 rounded-full mt-1"
+            />
+          }
+          <div className="flex-1 min-w-0">
+            <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+              {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+              <span className="font-medium">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+              <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
+            </div>
+            <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress != address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+              {msg.content}
+            </div>
+          </div>
+          {
+            msg.fromAddress == address &&
+            < img
+              src={msg.image}
+              className="w-8 h-8 rounded-full mt-1"
+            />
+          }
+        </div>
+      ))
+    }
+  }
+
   const renderMessages = () => {
     if (!selectedGroup && !selectedUser) {
       return (
@@ -1020,35 +1172,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <Spinner />
             </div>
           }
-          {chatHistory.map((msg) => (
-            <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-              {
-                msg.fromAddress === selectedUser?.address &&
-                < img
-                  src={selectedUser.profilePicture}
-                  className="w-8 h-8 rounded-full mt-1"
-                />
-              }
-              <div className="flex-1 min-w-0">
-                <div className={`${msg.fromAddress != selectedUser?.address ? "justify-end" : ""} flex items-center gap-2 mb-1`}>
-                  <span className="font-medium">{msg.toAddress != selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
-                  {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                  <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
-                </div>
-                <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress != selectedUser?.address ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
-                  }`}>
-                  {msg.content}
-                </div>
-              </div>
-            </div>
-          ))}
+          {
+            renderChatHistory()
+          }
           {
             selectedUser?.type === "Request" && <div className='w-full flex justify-center'>
               <div className='w-[320px] rounded-lg p-3 bg-white/5'>
                 <span className='text-white/40'>This wallet wants to chat with you! Please accept to continue or reject to decline.</span>
                 <div className='mt-2 flex gap-4 justify-center'>
                   {
-                    handlingRequest ? <Spinner className='w-10 h-10' /> : <>
+                    isHandlingRequest ? <Spinner className='w-10 h-10' /> : <>
                       <button onClick={handleAcceptRequest}>
                         <CheckCircle className='text-blue-500 w-10 h-10' />
                       </button>
@@ -1056,6 +1189,24 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                         <XCircle className='text-white/40 w-10 h-10' />
                       </button>
                     </>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+          {
+            selectedGroup?.type === "Searched" && <div className='w-full flex justify-center'>
+              <div className='w-[320px] rounded-lg py-5 px-3 bg-white/5'>
+                <div className='text-white/40 text-center'>Click on the button to join the group.</div>
+                <div className='mt-2 flex gap-4 justify-center'>
+                  {
+                    !isJoiningGroup ?
+                      <button
+                        className='py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg'
+                        onClick={handleJoinGroup}>
+                        Join Group
+                      </button> :
+                      <Spinner />
                   }
                 </div>
               </div>
@@ -1390,7 +1541,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     onKeyDown={handleKeyPress}
                     placeholder="Type a message..."
                     className="flex-1 bg-white/5 px-4 py-2 rounded-lg outline-none"
-                    disabled={selectedUser?.type === "Request" || !selectedUser}
                   />
                   <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                     <Share2 className="w-5 h-5" />
@@ -1398,7 +1548,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   {
                     !sendingMessage ? <button
                       onClick={handleSendMessage}
-                      disabled={!message.trim() || selectedUser?.type === "Request"}
+                      disabled={!message.trim()}
                       className={`p-2 rounded-lg transition-colors ${message.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
                         }`}
                     >
