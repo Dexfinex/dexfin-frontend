@@ -10,6 +10,7 @@ import { useOrionOrderbookHook } from "../hooks/useOrionOrderbookHook";
 import { convertNumberIntoFormat, toFixedFloat } from "../utils/trade.util";
 import { simpleFetch } from "simple-typed-fetch";
 import Orderbook from "./trade/OrderBook/OrderBook";
+import BuySell from  "./trade/BuySell/BuySell";
 
 export let unit = new Orion().getUnit("eth");
 
@@ -608,7 +609,7 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
           </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-5 gap-6 mb-6">
             <div className="col-span-3 bg-white/5 rounded-xl p-1">
               <div className="flex items-center justify-between mb-4">
               </div>
@@ -632,6 +633,15 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
                 lastPrice={lastPrice}
                 pairConfig={pairConfig}
                 pairSymbol={currentPairSymbol}
+              />
+            </div>
+           <div className="bg-white/5 rounded-xl p-4">
+           <BuySell
+                currentPair={currentPairSymbol}
+                onPlaceOrder={(type, price, amount) => {
+                  // Handle order placement
+                  console.log('Placing order:', { type, price, amount });
+                }}
               />
             </div>
           </div>
