@@ -36,6 +36,7 @@ export const CRYPTONEWS_BASE_URL = 'https://dexfinv3-backend-production.up.railw
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 
 export const ZEROX_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/0x';
+// export const ZEROX_BASE_URL = 'http://localhost:3000/0x';
 export const DEXFIN_BACKEND_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app';
 export const ZEROX_AFFILIATE_FEE = 50; // 0.5% affiliate fee. Denoted in Bps.
 

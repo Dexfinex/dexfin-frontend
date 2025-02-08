@@ -22,11 +22,15 @@ const use0xGaslessSwapStatus = (tradeHash: string | undefined) => {
         refetchInterval: 3000,
     });
 
+    const gaslessStatusResponse = (data as ZeroxGaslessStatusResponseType)
+    const status = gaslessStatusResponse?.status
+    const hash = gaslessStatusResponse?.transactions?.[0].hash
 
     return {
-        isLoading,
+        isLoading: isLoading || (!!status && status !== 'confirmed'),
+        hash,
         refetch,
-        status: (data as ZeroxGaslessStatusResponseType)?.status,
+        status,
     };
 };
 export default use0xGaslessSwapStatus;
