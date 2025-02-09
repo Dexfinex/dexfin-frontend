@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from "react";
+import {createContext, useEffect, useState} from "react";
 import {
     getSolanaWrappedKeyMetaDataByPkpEthAddress,
     getWrappedKeyMetaDatas,
@@ -11,10 +11,10 @@ import {
 import useAuthenticate from "../hooks/auth/useAuthenticate";
 import useAccounts from "../hooks/auth/useAccounts";
 import useSession from "../hooks/auth/useSession";
-import { AuthMethod, ILitNodeClient, IRelayPKP, SessionSigs } from "@lit-protocol/types";
-import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
-import { ExternalProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers";
-import { Connector, useAccount, useSwitchChain } from "wagmi";
+import {AuthMethod, ILitNodeClient, IRelayPKP, SessionSigs} from "@lit-protocol/types";
+import {PKPEthersWallet} from "@lit-protocol/pkp-ethers";
+import {ExternalProvider, JsonRpcSigner, Web3Provider} from "@ethersproject/providers";
+import {Connector, useAccount, useSwitchChain} from "wagmi";
 import useLocalStorage from "../hooks/useLocalStorage";
 import {
     LOCAL_STORAGE_AUTH_REDIRECT_TYPE,
@@ -23,14 +23,14 @@ import {
     mapPaymasterUrls,
     mapRpcUrls,
 } from "../constants";
-import { SavedWalletInfo, type SolanaWalletInfoType } from "../types/auth";
-import { generatePrivateKey, signTransactionWithEncryptedKey } from "@lit-protocol/wrapped-keys/src/lib/api";
-import { Transaction } from "@solana/web3.js";
-import { SerializedTransaction } from "@lit-protocol/wrapped-keys";
-import { createPublicClient } from "viem";
-import { http } from "@wagmi/core";
-import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
-import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
+import {SavedWalletInfo, type SolanaWalletInfoType} from "../types/auth";
+import {generatePrivateKey, signTransactionWithEncryptedKey} from "@lit-protocol/wrapped-keys/src/lib/api";
+import {Transaction} from "@solana/web3.js";
+import {SerializedTransaction} from "@lit-protocol/wrapped-keys";
+import {createPublicClient, createWalletClient, custom, publicActions, type WalletClient} from "viem";
+import {http} from "@wagmi/core";
+import {signerToEcdsaValidator} from "@zerodev/ecdsa-validator";
+import {getEntryPoint, KERNEL_V3_1} from "@zerodev/sdk/constants";
 import {
     createKernelAccount,
     createKernelAccountClient,
@@ -75,6 +75,8 @@ interface Web3AuthContextType {
     provider: Web3Provider | undefined,
     signer: JsonRpcSigner | undefined,
     address: string,
+    walletClient: WalletClient | undefined,
+    setWalletClient: React.Dispatch<React.SetStateAction<WalletClient | undefined>>,
     isLoadingStoredWallet: boolean,
     solanaWalletInfo: SolanaWalletInfoType | undefined,
     signSolanaTransaction: (solanaTransaction: Transaction) => Promise<string | null>
@@ -94,6 +96,8 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     isChainSwitching: false,
     setAuthMethod: () => {
     },
+    walletClient: undefined,
+    setWalletClient: () => {},
     authWithEthWallet: async () => {
     },
     authWithWebAuthn: async () => {
@@ -137,12 +141,13 @@ export const Web3AuthContext = createContext<Web3AuthContextType>(defaultWeb3Aut
 const entryPoint = getEntryPoint("0.7");
 const kernelVersion = KERNEL_V3_1;
 
-const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
+const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
     const redirectUri = ORIGIN;
     const [isConnected, setIsConnected] = useState(false);
     const [isChainSwitching, setIsChainSwitching] = useState(false);
     const [chainId, setChainId] = useState<number | undefined>(undefined);
+    const [walletClient, setWalletClient] = useState<WalletClient | undefined>(undefined);
     const [provider, setProvider] = useState<Web3Provider | undefined>(undefined);
     const [signer, setSigner] = useState<JsonRpcSigner | undefined>(undefined);
     const [address, setAddress] = useState<string>('');
@@ -156,7 +161,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { refetch: refetchEvmWalletBalance } = useEvmWalletBalance({ address, chainId: Number(chainId) });
     const { refetch: refetchEvmWalletTransfer } = useEvmWalletTransfer();
-
     const {
         isConnected: isWagmiWalletConnected,
         address: connectedWalletAddress,
@@ -164,7 +168,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         chainId: wagmiChainId,
     } = useAccount()
 
-    const { switchChain: switchChainWagmi } = useSwitchChain()
+    const {switchChain: switchChainWagmi} = useSwitchChain()
 
     const {
         authMethod,
@@ -213,7 +217,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             pkpWallet.request = async (payload: any) => {
-
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (payload?.method === 'eth_accounts') {
                     return [pkpWallet.address]
                 } else {
@@ -281,11 +285,11 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 client: publicClient,
                 paymaster: {
                     getPaymasterData(userOperation) {
-                        return zerodevPaymaster.sponsorUserOperation({ userOperation })
+                        return zerodevPaymaster.sponsorUserOperation({userOperation})
                     }
                 },
                 userOperation: {
-                    estimateFeesPerGas: async ({ bundlerClient }) => {
+                    estimateFeesPerGas: async ({bundlerClient}) => {
                         return getUserOperationGasPrice(bundlerClient)
                     }
                 }
@@ -295,6 +299,15 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const provider = new Web3Provider(kernelProvider);
             setProvider(provider)
             setSigner(provider.getSigner())
+
+
+            const walletClient = createWalletClient({
+                // Use your own RPC provider (e.g. Infura/Alchemy).
+                transport: http(mapRpcUrls[currentChainId]),
+                chain: mapChainId2ViemChain[currentChainId],
+            }).extend(publicActions) // extend wallet client with publicActions for public client
+            setWalletClient(walletClient)
+
 
             /*
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -322,34 +335,34 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             */
 
             // ---- test code -------
-            /*
-                                    try {
-                                        const txnHash = await kernelClient.sendTransaction({
-                                            to: '0x87590744785D6CffCE10688331BA669ac5f69b39',  // recipient's address
-                                            value: BigInt(1000000000000000),  // 0.1 Sepolia ETH in wei (1 ETH = 10^18 wei)
-                                        });
-                                        console.log(`Transaction sent with hash: ${txnHash}`);
-            
-            /!*
-                                        const tx = {
-                                            to: '0x2c7711f2282cA337f0efcB1B0D5E9A1eB56c3084',
-                                            value: BigInt(1000000000000000),
-                                        };
-            
-                                        // Send the transaction
-                                        const transactionResponse = await provider.getSigner().sendTransaction(tx);
-            
-                                        console.log(`Transaction sent with hash: ${transactionResponse.hash}`);
-            
-                                        // Wait for transaction to be mined
-                                        await transactionResponse.wait();
-            
-                                        console.log('Transaction confirmed');
-            *!/
-                                    } catch (error) {
-                                        console.error('Error sending transaction:', error);
-                                    }
-            */
+/*
+                        try {
+                            const txnHash = await kernelClient.sendTransaction({
+                                to: '0x87590744785D6CffCE10688331BA669ac5f69b39',  // recipient's address
+                                value: BigInt(1000000000000000),  // 0.1 Sepolia ETH in wei (1 ETH = 10^18 wei)
+                            });
+                            console.log(`Transaction sent with hash: ${txnHash}`);
+
+/!*
+                            const tx = {
+                                to: '0x2c7711f2282cA337f0efcB1B0D5E9A1eB56c3084',
+                                value: BigInt(1000000000000000),
+                            };
+
+                            // Send the transaction
+                            const transactionResponse = await provider.getSigner().sendTransaction(tx);
+
+                            console.log(`Transaction sent with hash: ${transactionResponse.hash}`);
+
+                            // Wait for transaction to be mined
+                            await transactionResponse.wait();
+
+                            console.log('Transaction confirmed');
+*!/
+                        } catch (error) {
+                            console.error('Error sending transaction:', error);
+                        }
+*/
 
         } catch (err) {
             console.error(err);
@@ -369,6 +382,14 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const provider = new Web3Provider(rawProvider as ExternalProvider);
                 setProvider(provider)
                 setSigner(provider.getSigner())
+
+                const walletClient = createWalletClient({
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-expect-error
+                    transport: custom(rawProvider), // Use rawProvider (window.ethereum)
+                    chain: mapChainId2ViemChain[wagmiChainId as number],
+                }).extend(publicActions); // Extend with public actions
+                setWalletClient(walletClient)
             })
         } else {
             setIsConnected(isWagmiWalletConnected)
@@ -410,39 +431,39 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 chainId: chainId ?? 1,
             })
 
-                ; (async () => {
-                    let solanaWalletData: SolanaWalletInfoType | undefined = undefined
-                    try {
-                        const wrappedKeyMetaDataList = await getWrappedKeyMetaDatas(sessionSigs)
-                        const targetMetaData = getSolanaWrappedKeyMetaDataByPkpEthAddress(wrappedKeyMetaDataList, currentAccount.ethAddress)
-                        if (!targetMetaData) {
-                            const { id, pkpAddress, generatedPublicKey } = await generatePrivateKey({
-                                pkpSessionSigs: sessionSigs,
-                                network: 'solana',
-                                memo: "solana address",
-                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                                // @ts-expect-error
-                                litNodeClient: litNodeClient as ILitNodeClient,
-                            });
-                            console.log("generated", pkpAddress, generatedPublicKey)
-                            solanaWalletData = {
-                                publicKey: generatedPublicKey,
-                                pkpAddress: pkpAddress,
-                                wrappedKeyId: id,
-                            }
-                        } else {
-                            solanaWalletData = {
-                                publicKey: targetMetaData.publicKey,
-                                pkpAddress: targetMetaData.pkpAddress,
-                                wrappedKeyId: targetMetaData.id,
-                            }
+            ;(async () => {
+                let solanaWalletData: SolanaWalletInfoType | undefined = undefined
+                try {
+                    const wrappedKeyMetaDataList = await getWrappedKeyMetaDatas(sessionSigs)
+                    const targetMetaData = getSolanaWrappedKeyMetaDataByPkpEthAddress(wrappedKeyMetaDataList, currentAccount.ethAddress)
+                    if (!targetMetaData) {
+                        const {id, pkpAddress, generatedPublicKey} = await generatePrivateKey({
+                            pkpSessionSigs: sessionSigs,
+                            network: 'solana',
+                            memo: "solana address",
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                            // @ts-expect-error
+                            litNodeClient: litNodeClient as ILitNodeClient,
+                        });
+                        console.log("generated", pkpAddress, generatedPublicKey)
+                        solanaWalletData = {
+                            publicKey: generatedPublicKey,
+                            pkpAddress: pkpAddress,
+                            wrappedKeyId: id,
                         }
-
-                        setSolanaWalletInfo(solanaWalletData)
-                    } catch (err) {
-                        console.log("error during initialize solana address", err)
+                    } else {
+                        solanaWalletData = {
+                            publicKey: targetMetaData.publicKey,
+                            pkpAddress: targetMetaData.pkpAddress,
+                            wrappedKeyId: targetMetaData.id,
+                        }
                     }
-                })()
+
+                    setSolanaWalletInfo(solanaWalletData)
+                } catch (err) {
+                    console.log("error during initialize solana address", err)
+                }
+            })()
 
         }
     }, [currentAccount, sessionSigs, solanaWalletInfo])
@@ -455,6 +476,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setAuthMethod(undefined)
         setIsConnected(false)
         setChainId(undefined)
+        setWalletClient(undefined)
         setIsLoadingStoredWallet(false)
     }
 
@@ -514,7 +536,14 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
 
             if (isWagmiWalletConnected) {
-                await switchChainWagmi({ chainId })
+                await switchChainWagmi({chainId})
+                const walletClient = createWalletClient({
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-expect-error
+                    transport: custom(provider!.provider), // Use rawProvider (window.ethereum)
+                    chain: mapChainId2ViemChain[wagmiChainId as number],
+                }).extend(publicActions); // Extend with public actions
+                setWalletClient(walletClient)
             } else {
                 await setProviderByPKPWallet(chainId)
             }
@@ -566,6 +595,9 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         solanaWalletInfo,
         signSolanaTransaction,
+
+        walletClient,
+        setWalletClient,
     }
 
     return (

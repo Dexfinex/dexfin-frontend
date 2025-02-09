@@ -2,9 +2,10 @@ import {useQuery} from '@tanstack/react-query';
 import {ethers} from 'ethers';
 import {useCallback, useContext} from 'react';
 import {Web3AuthContext} from "../providers/Web3AuthContext.tsx";
-import {QuoteDataType, QuoteResponse, TokenType} from "../types/swap.type.ts";
+import {GaslessQuoteResponse, QuoteDataType, QuoteResponse, TokenType} from "../types/swap.type.ts";
 import {zeroxService} from "../services/0x.service.ts";
 import {formatUnits} from "ethers/lib/utils";
+import {isNativeTokenAddress} from "../utils/common.util.ts";
 
 interface quoteParam {
     sellToken: TokenType | null,
@@ -18,9 +19,10 @@ const use0xQuote = ({
                         sellAmount,
                     }: quoteParam
 ) => {
-    const {address, provider} = useContext(Web3AuthContext);
+    const {chainId, address, provider} = useContext(Web3AuthContext);
     const enabled =
         !!sellToken && !!buyToken && !!address && !!provider && !!sellAmount && Number(sellAmount) > 0;
+    const isGasLess = !isNativeTokenAddress(chainId!, sellToken!.address)
 
     const formatTax = (taxBps: string) => (parseFloat(taxBps) / 100).toFixed(2)
 
@@ -31,10 +33,11 @@ const use0xQuote = ({
             buyTokenAddress: buyToken!.address,
             sellTokenAmount: ethers.utils.parseUnits(sellAmount!, sellToken!.decimals).toString(),
             takerAddress: address,
+            isGasLess
         })
-    }, [address, sellToken, provider, buyToken, sellAmount]);
+    }, [sellToken, buyToken, sellAmount, address, isGasLess]);
 
-    const {isLoading, refetch, data} = useQuery<QuoteResponse>({
+    const {isLoading, refetch, data} = useQuery<QuoteResponse | GaslessQuoteResponse>({
         queryKey: ['get-0x-quote', address, sellToken, buyToken, sellAmount],
         queryFn: fetch0xQuote,
         enabled,
@@ -45,8 +48,9 @@ const use0xQuote = ({
 
     return {
         isLoading,
+        isGasLess,
         refetch,
-        quoteResponse: data as QuoteResponse,
+        quoteResponse: data as (QuoteResponse | GaslessQuoteResponse),
         data:(data ? {
             buyAmount,
             exchangeRate: Number(sellAmount) > 0 ? buyAmount / Number(sellAmount) : 0,
@@ -65,7 +69,8 @@ const use0xQuote = ({
                 ? formatTax(
                     data.tokenMetadata?.sellToken?.sellTaxBps
                 ) : null,
-            isNeedApproving: data.issues?.allowance != null,
+            tokenApprovalRequired: data.issues?.allowance != null,
+            gaslessApprovalAvailable :  (data as GaslessQuoteResponse)?.approval != null,
             spenderAddress: data.issues?.allowance?.spender ?? '',
         } as QuoteDataType : null),
     };

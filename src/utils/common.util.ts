@@ -1,11 +1,16 @@
 import moment from 'moment/moment';
-import { ethers } from 'ethers';
+import {ethers} from 'ethers';
+import {mapChainId2NativeAddress} from "../config/networks.ts";
 
 const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
 
 export const isValidWalletAddress = (address: string): boolean => {
     return ethAddressRegex.test(address);
 };
+
+export const isNativeTokenAddress = (chainId: number, address: string): boolean => {
+    return mapChainId2NativeAddress[chainId]?.toLowerCase() === address?.toLowerCase()
+}
 
 export const checkIfAddressExists = async (address: string): Promise<boolean> => {
     try {
