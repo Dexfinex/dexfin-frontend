@@ -497,6 +497,7 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
         </div>
 
         <div className="p-6 h-[calc(100%-73px)] overflow-y-auto ai-chat-scrollbar">
+          {/* Header */}
           <div className="flex items-center bg-white/5 rounded-xl p-1 pl-2 mb-6" >
             <div className="flex items-center gap-2 h-full border-r border-white/10 pr-5 cursor-pointer duration-200" onClick={() => setIsPairSelectModalVisible(true)}>
               <img src={
@@ -609,42 +610,53 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
           </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-5 gap-6 mb-6">
-            <div className="col-span-3 bg-white/5 rounded-xl p-1">
-              <div className="flex items-center justify-between mb-4">
-              </div>
-              <div className="h-[600px]">
-                <TradeChart
-                  pairSymbol={currentPairSymbol}
-                />
-              </div>
-            </div>
-
-            <div className="bg-white/5 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium">Order Book</h3>
-              </div>
-              <Orderbook
-                pricePrecision={pairConfig.pricePrecision}
-                asks={asks}
-                bids={bids}
-                symbolAssetIn={symbolAssetIn}
-                symbolAssetOut={symbolAssetOut}
-                lastPrice={lastPrice}
-                pairConfig={pairConfig}
-                pairSymbol={currentPairSymbol}
-              />
-            </div>
-           <div className="bg-white/5 rounded-xl p-4">
-           <BuySell
-                currentPair={currentPairSymbol}
-                onPlaceOrder={(type, price, amount) => {
-                  // Handle order placement
-                  console.log('Placing order:', { type, price, amount });
-                }}
-              />
-            </div>
+          <div className="p-2 sm:p-4 w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+        {/* Trade chart section*/}
+        <div className="col-span-1 lg:col-span-3 bg-white/5 rounded-xl p-2 sm:p-4">
+          <div className="flex items-center justify-between mb-2 sm:mb-4">
+            <h3 className="font-medium text-sm sm:text-base">Trade Chart</h3>
           </div>
+          <div className="h-[300px] sm:h-[400px] lg:h-[600px]">
+            <TradeChart 
+              pairSymbol={currentPairSymbol}
+            />
+          </div>
+        </div>
+
+        {/* Order book section */}
+        <div className="col-span-1 bg-white/5 rounded-xl p-2 sm:p-4">
+          <div className="flex items-center justify-between mb-2 sm:mb-4">
+            <h3 className="font-medium text-sm sm:text-base">Order Book</h3>
+          </div>
+          <div className="overflow-auto max-h-[300px] sm:max-h-[400px] lg:max-h-[600px]">
+            <Orderbook
+              pricePrecision={pairConfig.pricePrecision}
+              asks={asks}
+              bids={bids}
+              symbolAssetIn={symbolAssetIn}
+              symbolAssetOut={symbolAssetOut}
+              lastPrice={lastPrice}
+              pairConfig={pairConfig}
+              pairSymbol={currentPairSymbol}
+            />
+          </div>
+        </div>
+
+        {/* Buy/Sell section */}
+        <div className="col-span-1 bg-white/5 rounded-xl p-2 sm:p-4">
+          <div className="flex items-center justify-between mb-2 sm:mb-4">
+            <h3 className="font-medium text-sm sm:text-base">Buy Sell</h3>
+          </div>
+          <BuySell
+            currentPair={currentPairSymbol}
+            onPlaceOrder={(type, price, amount) => {
+              console.log('Placing order:', { type, price, amount });
+            }}
+          />
+        </div>
+      </div>
+    </div>
 
           {/* Tabs Section */}
           <div className="bg-white/5 rounded-xl">
