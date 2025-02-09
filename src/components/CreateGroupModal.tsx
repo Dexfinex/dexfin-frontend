@@ -185,6 +185,7 @@ const ThirdStep = ({ members, addMember, removeMember, createGroup }: ThirdStepP
   }
 
   const handleSearch = async () => {
+    if (!searchAddress) return
     setIsSearch(true)
     if (address != searchAddress && !subMembers.find(member => member.address === searchAddress)) {
       const profile = await getWalletProfile(chatUser, searchAddress)
@@ -240,7 +241,7 @@ const ThirdStep = ({ members, addMember, removeMember, createGroup }: ThirdStepP
       }
 
       {
-        creating ? <Spinner /> :
+        creating ? <Spinner className='mt-4'/> :
           <Button className='mt-4' variant={'solid'} colorScheme='teal' onClick={handleCreateGroup}>Create Group</Button>
       }
     </div>

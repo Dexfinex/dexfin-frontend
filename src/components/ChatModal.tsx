@@ -244,6 +244,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [searchedUser, setSearchedUser] = useState<IUser | null>(null);
   const [searchedGroup, setSearchedGroup] = useState<IGroup | null>(null);
   const [requestUsers, setRequestUsers] = useState<Array<IUser>>([]);
+  const [requestGroups, setRequestGroups] = useState<Array<IGroup>>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
@@ -325,6 +326,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }, [selectedUser, selectedGroup])
 
   useEffect(() => {
+    console.log('chat history = ', chatHistory)
+    if (toBottom) {
+      scrollBottom()
+      setToBottom(false)
+    }
+  }, [chatHistory])
+
+  useEffect(() => {
     handleReceiveMsg()
   }, [receivedMessage])
 
@@ -333,28 +342,81 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   // }, [requestUsers])
 
   const handleReceiveMsg = async () => {
-    if (receivedMessage.meta.group == true && chatMode === "group") {
+    if (receivedMessage.meta?.group == true && chatMode === "group") {
       if (receivedMessage.origin == "other") {
-        if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
-          setToBottom(true)
-          const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == extractAddress(receivedMessage.from))
-          setChatHistory(
-            [...chatHistory, {
-              timestamp: Number(receivedMessage.timestamp),
-              type: receivedMessage.message.type,
-              content: receivedMessage.message.content,
-              fromAddress: extractAddress(receivedMessage.from),
-              toAddress: "",
-              chatId: receivedMessage.chatId,
-              link: null,
-              image: found?.image || ""
-            }]
-          )
+        if (receivedMessage.event == "chat.request") {
+          const found = requestGroups.find((group: IGroup) => group.groupId == receivedMessage.chatId)
+
+          if (!found) {
+            const profile = await chatUser.chat.group.info(receivedMessage.chatId)
+            console.log('group profile = ', profile)
+
+            setRequestGroups(
+              [...requestGroups, {
+                groupId: profile.chatId,
+                name: profile.groupName,
+                description: profile.groupDescription,
+                public: profile.isPublic,
+                image: profile.groupImage,
+                erc20: profile.contractAddressERC20,
+                nft: profile.contractAddressNFT,
+                members: profile.members,
+                pendingMembers: profile.pendingMembers,
+                type: "Request",
+                lastTimestamp: receivedMessage?.timestamp ? Number(receivedMessage.timestamp) : undefined,
+                lastMessage: receivedMessage.message?.content ? receivedMessage.message.content : undefined
+              }]
+            )
+          }
+
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, true)
+        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
+          if (selectedGroup?.groupId == receivedMessage.chatId) {
+            setToBottom(true)
+            const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == extractAddress(receivedMessage.from))
+            setChatHistory(
+              [...chatHistory, {
+                timestamp: Number(receivedMessage.timestamp),
+                type: receivedMessage.message.type,
+                content: receivedMessage.message.content,
+                fromAddress: extractAddress(receivedMessage.from),
+                toAddress: "",
+                chatId: receivedMessage.chatId,
+                link: null,
+                image: found?.image || ""
+              }]
+            )
+          }
+
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
+        } else if (receivedMessage.event == "chat.accept") {
+          // add a member
+          const profile = await getWalletProfile(chatUser, receivedMessage.from)
+          console.log('received message from = ', receivedMessage.from)
+          console.log('chat accept profile = ', profile)
+          const newMember = {
+            image: profile.picture,
+            isAdmin: false,
+            wallet: receivedMessage.from
+          }
+
+          if (selectedGroup && selectedGroup?.groupId == receivedMessage.chatId) {
+            setSelectedGroup({
+              ...selectedGroup,
+              members: [...selectedGroup.members, newMember]
+            });
+          } else if (groupList.find(group => group.groupId == receivedMessage.chatId)) {
+            setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
+          } else if (requestGroups.find(group => group.groupId == receivedMessage.chatId)) {
+            setRequestGroups(requestGroups.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
+          }
+        }
+      } else if (receivedMessage.origin == "self") {
+        if (receivedMessage.event == "chat.message") {
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
         }
       }
-
-      updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true)
-    } else if (receivedMessage.meta.group == false && chatMode === "p2p") {
+    } else if (receivedMessage.meta?.group == false && chatMode === "p2p") {
       if (receivedMessage.origin == "other") {
         console.log('receive other')
         if (receivedMessage.event == "chat.request") {
@@ -384,14 +446,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 link: null
               }]
             )
-            updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp), false)
+            updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
           } else {
             addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp))
           }
         }
       } else if (receivedMessage.origin == "self") {
         if (receivedMessage.event == "chat.message") {
-          updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.content, Number(receivedMessage.timestamp), false)
+          updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
         }
       }
     }
@@ -401,6 +463,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setLoadingPrevChat(true)
     const prevHistory = await chatUser.chat.history(address, { reference: chatId })
     console.log('prev history = ', prevHistory)
+
     if (prevHistory.length > 0) {
       const tmp: IChat[] = prevHistory.map((data: any) => {
         return {
@@ -418,6 +481,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setChatHistory([...tmp.reverse(), ...chatHistory])
       }
     }
+
     setLoadingPrevChat(false)
   }
 
@@ -429,6 +493,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
     let groupInformation: IGroup[] = []
     let userInformation: IUser[] = []
+
     chatData.forEach((data: any) => {
       if (data.groupInformation) {
         groupInformation = [...groupInformation, {
@@ -472,6 +537,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     console.log('requests = ', requests)
     if (requests.length > 0) {
       let directRequests: IUser[] = []
+      let groupRequests: IGroup[] = []
+
       requests.forEach((request: any) => {
         if (!request.groupInformation) {
           directRequests = [...directRequests, {
@@ -482,13 +549,32 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             type: "Request",
             unreadMessages: 0
           }]
+        } else if (request.groupInformation) {
+          groupRequests = [...groupRequests, {
+            groupId: request.groupInformation.chatId,
+            name: request.groupInformation.groupName,
+            description: request.groupInformation.groupDescription,
+            public: request.groupInformation.isPublic,
+            image: request.groupInformation.groupImage,
+            erc20: request.groupInformation.contractAddressERC20,
+            nft: request.groupInformation.contractAddressNFT,
+            members: request.groupInformation.members,
+            pendingMembers: request.groupInformation.pendingMembers,
+            type: "Request",
+            lastTimestamp: request.msg?.timestamp ? Number(request.msg?.timestamp) : undefined,
+            lastMessage: request.msg?.messageContent ? request.msg?.messageContent : undefined
+          }]
         }
       })
 
       if (directRequests.length > 0) {
         setRequestUsers(directRequests)
       }
+      if (groupRequests.length > 0) {
+        setRequestGroups(groupRequests)
+      }
     }
+
     setLoading(false)
   }
 
@@ -527,9 +613,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       setIsHandlingRequest(true)
       const acceptRequest = await chatUser.chat.accept(selectedUser?.address)
       setRequestUsers(requestUsers.filter((item) => item.chatId !== selectedUser?.chatId))
+
       if (selectedUser) {
         setConnectedUsers([{ ...selectedUser, unreadMessages: 0 }, ...connectedUsers])
       }
+
       setSelectedUser({
         ...selectedUser,
         type: "Connected"
@@ -538,19 +626,48 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     } catch (err) {
       console.log('request accept error: ', err)
     }
+
+    setIsHandlingRequest(false)
+  }
+
+  const handleAcceptGroupRequest = async () => {
+    try {
+      setIsHandlingRequest(true)
+
+      const acceptGroup = await chatUser.chat.group.join(selectedGroup?.groupId);
+      console.log('acceptGroup = ', acceptGroup)
+
+      if (selectedGroup) {
+        setRequestGroups(requestGroups.filter(group => group.groupId != selectedGroup.groupId))
+        setGroupList([{ ...selectedGroup, type: "Connected" }, ...groupList])
+        setSelectedGroup({
+          ...selectedGroup,
+          type: "Connected",
+          members: acceptGroup?.members
+        })
+      }
+    } catch (err) {
+      console.log('request accept error: ', err)
+    }
+
     setIsHandlingRequest(false)
   }
 
   const handleRejectRequest = async () => {
     try {
       setIsHandlingRequest(true)
-      const rejectRequest = await chatUser.chat.reject(selectedUser?.address)
-      setRequestUsers(requestUsers.filter((item) => item.chatId !== selectedUser?.chatId))
-      setSelectedUser(null)
-      console.log('reject request = ', rejectRequest)
+
+      const rejectGroup = await chatUser.chat.group.reject(selectedGroup?.groupId);
+      console.log('rejectGroup = ', rejectGroup)
+
+      if (selectedGroup) {
+        setRequestGroups(requestGroups.filter(group => group.groupId != selectedGroup.groupId))
+        setSelectedGroup(null)
+      }
     } catch (err) {
-      console.log('request reject error: ', err)
+      console.log('request accept error: ', err)
     }
+
     setIsHandlingRequest(false)
   }
 
@@ -700,14 +817,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSendingMessage(false)
   };
 
-  useEffect(() => {
-    console.log('chat history = ', chatHistory)
-    if (toBottom) {
-      scrollBottom()
-      setToBottom(false)
-    }
-  }, [chatHistory])
-
   const handleSelectUser = async (user: IUser) => {
     setLoadingChatHistory(true)
     setChatHistory([])
@@ -715,6 +824,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
     try {
       const history = await chatUser.chat.history(user.address)
+
       if (history.length > 0) {
         console.log('history = ', history)
         console.log('selected = ', user.address)
@@ -729,6 +839,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             link: data.link
           }
         })
+
         setToBottom(true)
         setChatHistory(tmp.reverse())
         clearUnreadMessages(user.address)
@@ -736,6 +847,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     } catch (err) {
       console.log('load chat history err: ', err)
     }
+
     setLoadingChatHistory(false)
   }
 
@@ -802,7 +914,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsSearching(false)
   }
 
-  const handleSelectReuestUser = async (user: IUser) => {
+  const handleSelectRequestUser = async (user: IUser) => {
     setLoadingChatHistory(true)
     setChatHistory([])
     setSelectedUser(user)
@@ -823,16 +935,17 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       setToBottom(true)
       setChatHistory(tmp.reverse())
     }
+
     setLoadingChatHistory(false)
   }
 
   const handleSelectGroup = async (group: IGroup) => {
     setLoadingChatHistory(true)
+    setChatHistory([])
     setSelectedGroup(group)
-    console.log('group = ', group)
 
+    console.log('group = ', group)
     const history = await chatUser.chat.history(group.groupId)
-    console.log('history = ', history)
 
     if (history.length > 0) {
       const tmp: IChat[] = history.map((data: any) => {
@@ -853,7 +966,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
       setToBottom(true)
       setChatHistory(tmp.reverse())
-      setLoadingChatHistory(false)
     }
 
     setLoadingChatHistory(false)
@@ -865,11 +977,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     try {
       const joinGroup = await chatUser.chat.group.join(selectedGroup?.groupId);
       console.log('joingroup = ', joinGroup)
+
       if (searchedGroup) {
-        setGroupList([searchedGroup, ...groupList])
-        setSelectedGroup({ ...searchedGroup, type: "Connected" })
+        setSearchedGroup(null)
       }
-      setSearchedGroup(null)
+
+      if (selectedGroup) {
+        setGroupList([selectedGroup, ...groupList])
+        setSelectedGroup({ ...selectedGroup, type: "Connected" })
+      }
     } catch (err) {
       console.log('join group err: ', err)
     }
@@ -877,8 +993,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsJoiningGroup(false)
   }
 
-  const updateLastMessageInfo = (address: string, msg: string, timestamp: number, isGroup: boolean) => {
-    console.log('updateLastMessageInfo')
+  const updateLastMessageInfo = (address: string, msg: string, timestamp: number, isGroup: boolean, isRequest: boolean) => {
+    console.log('updateLastMessageInfo ')
     if (!isGroup) {
       connectedUsers.length > 0 && setConnectedUsers((prevUsers) => {
         const updatedUsers = prevUsers.map((user) =>
@@ -891,16 +1007,29 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         return updatedUsers;
       });
     } else {
-      groupList.length > 0 && setGroupList((prevGroups) => {
-        const updatedGroups = prevGroups.map((group) =>
-          group.groupId === address
-            ? { ...group, lastMessage: msg, lastTimestamp: timestamp }
-            : group
-        );
-        console.log("Previous Groups: ", prevGroups);
-        console.log("Updated Groups: ", updatedGroups);
-        return updatedGroups;
-      });
+      if (isRequest) {
+        requestGroups.length > 0 && setRequestGroups((prevGroups) => {
+          const updatedGroups = prevGroups.map((group) =>
+            group.groupId === address
+              ? { ...group, lastMessage: msg, lastTimestamp: timestamp }
+              : group
+          );
+          // console.log("Previous Groups: ", prevGroups);
+          // console.log("Updated Groups: ", updatedGroups);
+          return updatedGroups;
+        });
+      } else {
+        groupList.length > 0 && setGroupList((prevGroups) => {
+          const updatedGroups = prevGroups.map((group) =>
+            group.groupId === address
+              ? { ...group, lastMessage: msg, lastTimestamp: timestamp }
+              : group
+          );
+          // console.log("Previous Groups: ", prevGroups);
+          // console.log("Updated Groups: ", updatedGroups);
+          return updatedGroups;
+        });
+      }
     }
   }
 
@@ -937,6 +1066,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
     if (group?.type === "Searched") return false;
 
+    if (group?.type === "Request") return false;
     // if (group?.type === 'public') return true;
     // if (group?.type === 'nft-gated') {
     //   return currentUserNfts.some(nft =>
@@ -986,7 +1116,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       {
         requestUsers.length > 0 && requestUsers.map(user => <div key={user.chatId} className={`flex p-3 hover:bg-white/5 ${user.address == selectedUser?.address && 'bg-white/10'}`}>
           <button className={`flex-1 py-2 flex gap-8 items-center`}
-            onClick={() => handleSelectReuestUser(user)}>
+            onClick={() => handleSelectRequestUser(user)}>
             {user?.profilePicture ? <img src={user.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
             <div className='flex flex-col'>
               <span>{user?.name || shrinkAddress(user.address)}</span>
@@ -1003,6 +1133,26 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const renderGroupsAndUsers = () => {
     if (chatMode === 'group') {
       return <>
+        {
+          requestGroups.length > 0 && requestGroups.map(group => <button
+            key={group.groupId}
+            onClick={() => handleSelectGroup(group)}
+            className={`w-full flex items-center justify-between gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.groupId === group.groupId
+              ? 'bg-white/10'
+              : 'hover:bg-white/5'
+              }`}>
+            <img src={group.image} alt="WOW" className="w-14 h-14 rounded-lg" />
+            <div className="flex-1 text-left">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{group.name}</span>
+              </div>
+              {group.lastMessage ? <div className="text-sm text-white/60 truncate">{group.lastMessage.slice(0, 20)}</div> : <></>}
+            </div>
+            {group?.lastTimestamp ? <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(group?.lastTimestamp)}</span> : <></>}
+            <Info className='text-red-500' />
+          </button>)
+        }
+
         {searchedGroup && <div className={`flex border-b-2 hover:bg-white/5 ${searchedGroup.groupId == selectedGroup?.groupId && 'bg-white/10'}`}>
           <button className={`flex-1 py-2 flex gap-8 items-center`}
             onClick={() => handleSelectGroup(searchedGroup)}>
@@ -1029,7 +1179,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center gap-2">
               <span className="font-medium">{group.name}</span>
             </div>
-            {group.lastMessage ? <div className="text-sm text-white/60 truncate">{group.lastMessage}</div> : <></>}
+            {group.lastMessage ? <div className="text-sm text-white/60 truncate">{group.lastMessage.slice(0, 20)}</div> : <></>}
           </div>
           {group?.lastTimestamp ? <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(group?.lastTimestamp)}</span> : <></>}
           {/* {group?.unreadMessages > 0 ? <span className='text-red-500 text-xs'>{group?.unreadMessages}</span> : <></>} */}
@@ -1066,7 +1216,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
           <div className='flex flex-col flex-1'>
             <span className='text-left'>{user?.name || shrinkAddress(extractAddress(user?.address))}</span>
-            <span className='text-left text-sm text-white/40'>{user?.lastMessage ? user?.lastMessage.slice(0, 30) : ""}</span>
+            <span className='text-left text-sm text-white/40'>{user?.lastMessage ? user?.lastMessage.slice(0, 20) : ""}</span>
           </div>
           {user?.lastTimestamp && <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(user?.lastTimestamp)}</span>}
           {/* {user?.unreadMessages > 0 ? <span className='text-red-500 text-xs'>{user?.unreadMessages}</span> : <></>} */}
@@ -1206,6 +1356,70 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }
 
+  const renderButtonsInHistory = () => {
+    if (selectedUser?.type === "Request") {
+      return <div className='w-full flex justify-center'>
+        <div className='w-[320px] rounded-lg p-3 bg-white/5'>
+          <span className='text-white/40'>This wallet wants to chat with you! Please accept to continue or reject to decline.</span>
+          <div className='mt-2 flex gap-4 justify-center'>
+            {
+              isHandlingRequest ? <Spinner className='w-10 h-10' /> : <>
+                <button onClick={handleAcceptRequest}>
+                  <CheckCircle className='text-blue-500 w-10 h-10' />
+                </button>
+                <button onClick={handleRejectRequest}>
+                  <XCircle className='text-white/40 w-10 h-10' />
+                </button>
+              </>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    if (selectedGroup?.type === "Request") {
+      console.log('group request')
+      return <div className='w-full flex justify-center'>
+        <div className='w-[320px] rounded-lg py-5 px-3 bg-white/5'>
+          <div className='text-white/40 text-center'>You were invited to this group. Please accept to continue messaging in this group.</div>
+          <div className='mt-2 flex gap-4 justify-center'>
+            {
+              isHandlingRequest ? <Spinner className='w-10 h-10' /> : <>
+                <button onClick={handleAcceptGroupRequest}>
+                  <CheckCircle className='text-blue-500 w-10 h-10' />
+                </button>
+                <button onClick={handleRejectRequest}>
+                  <XCircle className='text-white/40 w-10 h-10' />
+                </button>
+              </>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    if (selectedGroup?.type === "Searched") {
+      return <div className='w-full flex justify-center'>
+        <div className='w-[320px] rounded-lg py-5 px-3 bg-white/5'>
+          <div className='text-white/40 text-center'>Click on the button to join the group.</div>
+          <div className='mt-2 flex gap-4 justify-center'>
+            {
+              !isJoiningGroup ?
+                <button
+                  className='py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg'
+                  onClick={handleJoinGroup}>
+                  Join Group
+                </button> :
+                <Spinner />
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    return null
+  }
+
   const renderMessages = () => {
     if (!selectedGroup && !selectedUser) {
       return (
@@ -1237,49 +1451,24 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             renderChatHistory()
           }
           {
-            selectedUser?.type === "Request" && <div className='w-full flex justify-center'>
-              <div className='w-[320px] rounded-lg p-3 bg-white/5'>
-                <span className='text-white/40'>This wallet wants to chat with you! Please accept to continue or reject to decline.</span>
-                <div className='mt-2 flex gap-4 justify-center'>
-                  {
-                    isHandlingRequest ? <Spinner className='w-10 h-10' /> : <>
-                      <button onClick={handleAcceptRequest}>
-                        <CheckCircle className='text-blue-500 w-10 h-10' />
-                      </button>
-                      <button onClick={handleRejectRequest}>
-                        <XCircle className='text-white/40 w-10 h-10' />
-                      </button>
-                    </>
-                  }
-                </div>
-              </div>
-            </div>
+            renderButtonsInHistory()
           }
-          {
-            selectedGroup?.type === "Searched" && <div className='w-full flex justify-center'>
-              <div className='w-[320px] rounded-lg py-5 px-3 bg-white/5'>
-                <div className='text-white/40 text-center'>Click on the button to join the group.</div>
-                <div className='mt-2 flex gap-4 justify-center'>
-                  {
-                    !isJoiningGroup ?
-                      <button
-                        className='py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg'
-                        onClick={handleJoinGroup}>
-                        Join Group
-                      </button> :
-                      <Spinner />
-                  }
-                </div>
-              </div>
-            </div>
-          }
+        </div>
+      )
+    } else {
+      return (
+        renderButtonsInHistory() ||
+        <div className="flex flex-col items-center justify-center h-full text-white/40">
+          <MessageSquare className="w-12 h-12 mb-4" />
+          <p>No messages yet</p>
+          <p className="text-sm">Start a conversation!</p>
         </div>
       )
     }
 
-    if (isFailedSent) {
-      return <div className='text-red-500 text-sm absolute bottom-[76px] right-[8px]'>Can't send message. Please try again.</div>
-    }
+    // if (isFailedSent) {
+    //   return <div className='text-red-500 text-sm absolute bottom-[76px] right-[8px]'>Can't send message. Please try again.</div>
+    // }
 
     // // Check access before showing messages
     // if (!canAccessChat(selectedUser, selectedGroup)) {
@@ -1391,13 +1580,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     // }
 
     // Empty state for other chats
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-white/40">
-        <MessageSquare className="w-12 h-12 mb-4" />
-        <p>No messages yet</p>
-        <p className="text-sm">Start a conversation!</p>
-      </div>
-    );
   };
 
   if (!isOpen) return null;
