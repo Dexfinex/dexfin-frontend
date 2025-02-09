@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { getChainIcon } from "../../../utils/getChainIcon";
+import ErrorImg from "./assets/error.svg"
 
 interface TokenChainIconProps {
   src: string;
@@ -28,26 +30,34 @@ const chainSizeClasses = {
 };
 
 export function TokenIcon({ src, alt, size = 'md', className = '' }: TokenIconProps) {
+  const [loadError, setLoadError] = useState(false);
 
   return (
     <img
-      src={src}
+      src={loadError ? ErrorImg : src}
       alt={alt}
       className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 ${sizeClasses[size]} ${className}`}
+      onError={() => {
+        setLoadError(true)
+      }}
     />
   );
 }
 
 export function TokenChainIcon({ src, alt, size = 'md', chainId, className = '' }: TokenChainIconProps) {
+  const [loadError, setLoadError] = useState(false);
   return (
     <div className="relative">
       <img
-        src={src}
+        src={loadError ? ErrorImg : src}
         alt={alt}
         className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 ${sizeClasses[size]} ${className}`}
+        onError={() => {
+          setLoadError(true)
+        }}
       />
       <div className="border border-white-600 absolute right-[-5px] bottom-[-5px] rounded-full padding-1">
-        <img src={getChainIcon(chainId)} className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 ${chainSizeClasses[size]}`} />
+        <img src={getChainIcon(chainId) || ""} className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 ${chainSizeClasses[size]}`} />
       </div>
     </div>
   );

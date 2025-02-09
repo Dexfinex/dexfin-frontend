@@ -1,16 +1,37 @@
+export interface TokenMetadata {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: string;
+  logo: string;
+  thumbnail: string;
+}
+
+export interface Transfer {
+  transactionType: string;
+  transferAmount: number;
+  fromAddress: string;
+  toAddress: string;
+  tokenSymbol: string;
+  value: string;
+  valueDecimal: number;
+  time: string;
+  txHash: string;
+}
+
 // Transaction types
 export enum TransactionType {
-  SEND = 'SEND',
-  RECEIVE = 'RECEIVE',
-  SWAP = 'SWAP',
-  NFT_PURCHASE = 'NFT_PURCHASE',
-  NFT_SALE = 'NFT_SALE',
-  STAKE = 'STAKE',
-  UNSTAKE = 'UNSTAKE',
-  LEND = 'LEND',
-  BORROW = 'BORROW',
-  REPAY = 'REPAY',
-  CLAIM = 'CLAIM'
+  Sent = "Sent",
+  Received = "Received",
+  SWAP = "SWAP",
+  NFT_PURCHASE = "NFT_PURCHASE",
+  NFT_SALE = "NFT_SALE",
+  STAKE = "STAKE",
+  UNSTAKE = "UNSTAKE",
+  LEND = "LEND",
+  BORROW = "BORROW",
+  REPAY = "REPAY",
+  CLAIM = "CLAIM",
 }
 
 export interface Token {
@@ -35,13 +56,17 @@ export interface Transaction {
   tokenId?: string;
   protocol?: string;
   protocolLogo?: string;
-  status: 'confirmed' | 'pending' | 'failed';
+  status: "confirmed" | "pending" | "failed";
   hash: string;
   fee: number;
 }
 
 // DeFi position types
-export type DeFiPositionType = 'LENDING' | 'BORROWING' | 'STAKING' | 'LIQUIDITY';
+export type DeFiPositionType =
+  | "LENDING"
+  | "BORROWING"
+  | "STAKING"
+  | "LIQUIDITY";
 
 export interface DeFiReward {
   token: string;
@@ -72,7 +97,7 @@ export interface DeFiStats {
   netWorth: number;
   dailyYield: number;
   averageApy: number;
-  riskLevel: 'Low' | 'Medium' | 'High';
+  riskLevel: "Low" | "Medium" | "High";
   distribution: {
     lending: number;
     borrowing: number;
