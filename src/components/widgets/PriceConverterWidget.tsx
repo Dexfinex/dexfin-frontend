@@ -79,6 +79,7 @@ export const PriceConverterWidget: React.FC = () => {
 
   const refetchHandler = async () => {
     await refetchTokenPrices();
+    updateFetchedTime();
   }
 
   useEffect(() => {
@@ -183,7 +184,7 @@ export const PriceConverterWidget: React.FC = () => {
             Last updated: {lastUpdated} • Rate refreshes every 10 seconds
           </div>
           <div className="text-[10px] text-white/60 mt-0.5">
-            1 {fromRealCurrency?.symbol} = {rate?.toFixed(8)} {toRealCurrency?.symbol}
+            1 {fromRealCurrency?.symbol} = {formatNumberByFrac(rate)} {toRealCurrency?.symbol}
           </div>
         </div>
       </div>
