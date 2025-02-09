@@ -506,6 +506,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }
 
+  const onMakeGroup = (group: any) => {
+    console.log('on make group : ', group)
+    setGroupList([{
+      groupId: group.chatId,
+      name: group.groupName,
+      description: group.groupDescription,
+      public: group.isPublic,
+      image: group.groupImage,
+      erc20: group.contractAddressERC20,
+      nft: group.contractAddressNFT,
+      members: group.members,
+      pendingMembers: group.pendingMembers,
+      type: "Connected"
+    }, ...groupList])
+  }
+
   const handleAcceptRequest = async () => {
     try {
       setIsHandlingRequest(true)
@@ -1610,6 +1626,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       <CreateGroupModal
         isOpen={isCreateGroupActive}
         onClose={() => setIsCreateGroupActive(false)}
+        onMakeGroup={onMakeGroup}
       />
       <VideoCallModal
         isOpen={isVideoCallActive}
