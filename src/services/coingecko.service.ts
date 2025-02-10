@@ -7,6 +7,7 @@ import { NULL_ADDRESS } from "../constants";
 import { mapCoingeckoNetworks } from "../constants/mock/coingeckoNetworks.ts";
 import { MarketCapToken } from "../components/market/MarketCap.tsx";
 
+
 function formatRelativeTime(timestamp: number): string {
   const now = Date.now();
   const diff = now - timestamp * 1000;
