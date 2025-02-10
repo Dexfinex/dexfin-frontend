@@ -1,4 +1,6 @@
-import {useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
+import { Web3AuthContext } from '../providers/Web3AuthContext.tsx';
+
 import {
   Bot,
   Brain,
@@ -54,7 +56,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [projectName, setProjectName] = useState('');
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
   const [activeWalletTab, setActiveWalletTab] = useState<WalletTab>('assets');
-
+  const { address, chainId } = useContext(Web3AuthContext);
+  
   // Reset all process states
   const resetProcessStates = () => {
     setShowYieldProcess(false);
@@ -66,8 +69,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowProjectAnalysis(false);
   };
 
-  const processCommand = async (text: string) => {
+  const processCommand = async (text: string, address: string, chainId: number) => {
+
     try {
+      console.log('Wallet Address:', address);
+      console.log('Chain ID:', chainId);
       setIsProcessing(true);
       const normalizedText = text.toLowerCase().trim();
       let response: any = null;
@@ -79,56 +85,56 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         const normalizedCommand = command.trim();
 
         // Send USDC command
-        if (normalizedCommand.match(/send\s+(\d+)\s+usdc\s+to\s+vitalik/i)) {
-          resetProcessStates();
-          setShowSendProcess(true);
-          response = { text: 'Opening send interface to transfer USDC to vitalik.eth...' };
-        }
-        // Project evaluation command
-        else if (normalizedCommand.match(/(?:analyze|evaluate)\s+project\s+([^\s]+)/i)) {
-          const projectNameMatch = normalizedCommand.match(/project\s+([^\s]+)/i);
-          if (projectNameMatch) {
-            resetProcessStates();
-            setProjectName(projectNameMatch[1]);
-            setShowProjectAnalysis(true);
-            response = { text: `Analyzing project ${projectNameMatch[1]}...` };
-          }
-        }
-        // Find yield command
-        else if (normalizedCommand.includes('find best yield') || normalizedCommand.includes('best yield')) {
-          resetProcessStates();
-          setShowYieldProcess(true);
-          response = { text: 'Opening yield finder...' };
-        }
-        // Swap command
-        else if (normalizedCommand.includes('swap') || normalizedCommand.includes('exchange')) {
-          resetProcessStates();
-          setShowSwapProcess(true);
-          response = { text: 'Opening swap interface...' };
-        }
-        // Bridge command
-        else if (normalizedCommand.includes('bridge')) {
-          resetProcessStates();
-          setShowBridgeProcess(true);
-          response = { text: 'Opening bridge interface...' };
-        }
-        // Portfolio command
-        else if (normalizedCommand.includes('portfolio') || normalizedCommand.includes('build portfolio')) {
-          resetProcessStates();
-          setShowPortfolioProcess(true);
-          response = { text: 'Opening portfolio builder...' };
-        }
-        // Stake command
-        else if (normalizedCommand.includes('stake')) {
-          resetProcessStates();
-          setShowStakeProcess(true);
-          response = { text: 'Opening staking interface...' };
-        }
-        // Use OpenAI for other commands
-        else {
-          response = await generateResponse(command);
-        }
-        
+        // if (normalizedCommand.match(/send\s+(\d+)\s+usdc\s+to\s+vitalik/i)) {
+        //   resetProcessStates();
+        //   setShowSendProcess(true);
+        //   response = { text: 'Opening send interface to transfer USDC to vitalik.eth...' };
+        // }
+        // // Project evaluation command
+        // else if (normalizedCommand.match(/(?:analyze|evaluate)\s+project\s+([^\s]+)/i)) {
+        //   const projectNameMatch = normalizedCommand.match(/project\s+([^\s]+)/i);
+        //   if (projectNameMatch) {
+        //     resetProcessStates();
+        //     setProjectName(projectNameMatch[1]);
+        //     setShowProjectAnalysis(true);
+        //     response = { text: `Analyzing project ${projectNameMatch[1]}...` };
+        //   }
+        // }
+        // // Find yield command
+        // else if (normalizedCommand.includes('find best yield') || normalizedCommand.includes('best yield')) {
+        //   resetProcessStates();
+        //   setShowYieldProcess(true);
+        //   response = { text: 'Opening yield finder...' };
+        // }
+        // // Swap command
+        // else if (normalizedCommand.includes('swap') || normalizedCommand.includes('exchange')) {
+        //   resetProcessStates();
+        //   setShowSwapProcess(true);
+        //   response = { text: 'Opening swap interface...' };
+        // }
+        // // Bridge command
+        // else if (normalizedCommand.includes('bridge')) {
+        //   resetProcessStates();
+        //   setShowBridgeProcess(true);
+        //   response = { text: 'Opening bridge interface...' };
+        // }
+        // // Portfolio command
+        // else if (normalizedCommand.includes('portfolio') || normalizedCommand.includes('build portfolio')) {
+        //   resetProcessStates();
+        //   setShowPortfolioProcess(true);
+        //   response = { text: 'Opening portfolio builder...' };
+        // }
+        // // Stake command
+        // else if (normalizedCommand.includes('stake')) {
+        //   resetProcessStates();
+        //   setShowStakeProcess(true);
+        //   response = { text: 'Opening staking interface...' };
+        // }
+        // // Use OpenAI for other commands
+        // else {
+        //   response = await generateResponse(command);
+        // }
+        response = await generateResponse(command, address, chainId);
         // Add response to messages if we got one
         if (response) {
           setMessages(prev => [...prev, {
@@ -192,7 +198,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         if (event.results[i].isFinal) {
           finalTranscript = transcript;
           setTranscript(finalTranscript.trim());
-          processCommand(finalTranscript);
+          processCommand(finalTranscript, address, chainId);
           stopListening();
         } else {
           interimTranscript += transcript;
@@ -231,6 +237,14 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     }
   }, [isOpen]);
 
+  const chatContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, isProcessing]);
+
   const clearMessages = () => {
     setMessages([]);
   };
@@ -263,7 +277,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
               <button
                 key={cmd.command}
                 onClick={() => {
-                  processCommand(cmd.command);
+                  processCommand(cmd.command, address, chainId);
                   setInput('');
                 }}
                 className="w-full p-4 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-xl hover:from-white/15 hover:to-white/10 transition-all hover:scale-[1.02]"
@@ -285,16 +299,16 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           </h2>
           <div className="space-y-2">
             {[
-              { command: "Find the best yield for my USDC", description: "Search optimal yield opportunities" },
-              { command: "Bridge 2000 USDC to Solana", description: "Bridge assets to Solana" },
-              { command: "Stake ETH", description: "Stake ETH with Lido" },
-              { command: "Build my portfolio", description: "Create optimized portfolio" },
-              { command: "Send 100 USDC to vitalik", description: "Send USDC to vitalik.eth" }
+              { command: "Transfer 10 USDC to vitalik.eth", description: "Transfer USDC to vitalik.eth" },
+              { command: "I want to swap 10 USDC for ETH", description: "Swap USDC for ETH" },
+              { command: "Stake 1 ETH", description: "Stake ETH" },
+              { command: "Deposit 100 USDC on Aave", description: "Deposit USDC" },
+              // { command: "Send 100 USDC to vitalik", description: "Send USDC to vitalik.eth" }
             ].map((cmd) => (
               <button
                 key={cmd.command}
                 onClick={() => {
-                  processCommand(cmd.command);
+                  processCommand(cmd.command, address, chainId);
                   setInput('');
                 }}
                 className="w-full p-4 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-xl hover:from-white/15 hover:to-white/10 transition-all hover:scale-[1.02]"
@@ -317,7 +331,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     const defiPositions = mockDeFiPositions.filter(p => p.type === 'LENDING');
 
     return (
-      <div className={`absolute right-0 top-[73px] bottom-[89px] border-l border-white/10 transition-all duration-300 ${
+      <div className={`right-0 top-[73px] bottom-[89px] border-l border-white/10 transition-all duration-300 ${
         isWalletPanelOpen ? 'w-80' : 'w-0'
       } overflow-hidden`}>
         <div className="h-full w-80 flex flex-col glass">
@@ -507,116 +521,117 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                 </button>
               </div>
             </div>
-
+            <div className="flex h-full overflow-auto">      
             {/* Main Content */}
-            <div className="flex-1 flex flex-col relative">
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto ai-chat-scrollbar">
-                <div className="p-6 space-y-6">
-                  {messages.length === 0 ? (
-                    renderMenu()
-                  ) : (
-                    messages.map((message, index) => (
-                      <div
-                        key={index}
-                        className={`flex ${
-                          message.role === 'user' ? 'justify-end' : 'justify-start'
-                        }`}
-                      >
+              <div className="flex-1 flex flex-col relative overflow-auto">
+                {/* Messages Area */}
+                <div ref={chatContainerRef} className="flex-1 overflow-y-auto ai-chat-scrollbar">
+                  <div className="p-6 space-y-6">
+                    {messages.length === 0 ? (
+                      renderMenu()
+                    ) : (
+                      messages.map((message, index) => (
                         <div
-                          className={`max-w-[90%] p-4 rounded-xl ${
-                            message.role === 'user'
-                              ? 'bg-blue-500/20 ml-auto'
-                              : 'bg-white/10'
+                          key={index}
+                          className={`flex ${
+                            message.role === 'user' ? 'justify-end' : 'justify-start'
                           }`}
                         >
-                          <p className="whitespace-pre-wrap">{message.content}</p>
-                          {message.data && (
-                            <div className="w-[800px] mt-4">
-                              <PriceChart data={message.data} />
-                            </div>
-                          )}
-                          {message.trending && <TrendingCoins coins={message.trending} />}
-                          {message.news && <NewsWidget />}
+                          <div
+                            className={`max-w-[90%] p-4 rounded-xl ${
+                              message.role === 'user'
+                                ? 'bg-blue-500/20 ml-auto'
+                                : 'bg-white/10'
+                            }`}
+                          >
+                            <p className="whitespace-pre-wrap">{message.content}</p>
+                            {message.data && (
+                              <div className="w-[800px] mt-4">
+                                <PriceChart data={message.data} />
+                              </div>
+                            )}
+                            {message.trending && <TrendingCoins coins={message.trending} />}
+                            {message.news && <NewsWidget />}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                    {isProcessing && (
+                      <div className="flex justify-start">
+                        <div className="bg-white/10 p-3 rounded-lg flex gap-2">
+                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.2s]" />
+                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.4s]" />
                         </div>
                       </div>
-                    ))
-                  )}
-                  {isProcessing && (
-                    <div className="flex justify-start">
-                      <div className="bg-white/10 p-3 rounded-lg flex gap-2">
-                        <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.2s]" />
-                        <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.4s]" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Input Area */}
-              <div className="p-4 border-t border-white/10 bg-black/20 backdrop-blur-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 relative">
-                    <input
-                      type="text"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder='Try "What is the Bitcoin price?", "Show me trending tokens", or "Show me the latest news"'
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-white/20"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          if (input.trim()) {
-                            processCommand(input);
-                            setInput('');
-                          }
-                        }
-                      }}
-                    />
-                    {messages.length > 0 && (
-                      <button
-                        onClick={clearMessages}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg transition-colors text-red-400 hover:text-red-300"
-                        title="Clear conversation"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     )}
                   </div>
-                  <button
-                    className={`p-2 rounded-lg transition-colors ${
-                      isListening ? 'bg-red-500/50' : 'hover:bg-white/10'
-                    } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-                      isListening ? stopListening() : startListening();
-                    }}
-                    disabled={isProcessing}
-                  >
-                    <Mic className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (input.trim() && !isProcessing) {
-                        processCommand(input);
-                        setInput('');
-                      }
-                    }}
-                    disabled={isProcessing || !input.trim()}
-                    className={`p-2 rounded-lg transition-colors ${
-                      input.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
-                    }`}
-                  >
-                    <Send className="w-5 h-5" />
-                  </button>
+                </div>
+
+                {/* Input Area */}
+                <div className="p-4 border-t border-white/10 bg-black/20 backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder='Try "What is the Bitcoin price?"'
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-white/20"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (input.trim()) {
+                              processCommand(input, address, chainId);
+                              setInput('');
+                            }
+                          }
+                        }}
+                      />
+                      {messages.length > 0 && (
+                        <button
+                          onClick={clearMessages}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg transition-colors text-red-400 hover:text-red-300"
+                          title="Clear conversation"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      className={`p-2 rounded-lg transition-colors ${
+                        isListening ? 'bg-red-500/50' : 'hover:bg-white/10'
+                      } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+                        isListening ? stopListening() : startListening();
+                      }}
+                      disabled={isProcessing}
+                    >
+                      <Mic className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (input.trim() && !isProcessing) {
+                          processCommand(input, address, chainId);
+                          setInput('');
+                        }
+                      }}
+                      disabled={isProcessing || !input.trim()}
+                      className={`p-2 rounded-lg transition-colors ${
+                        input.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
+                      }`}
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Wallet Panel */}
-            {renderWalletPanel()}
+              {/* Wallet Panel */}
+              {renderWalletPanel()}
+            </div>
           </div>
         )}
       </div>

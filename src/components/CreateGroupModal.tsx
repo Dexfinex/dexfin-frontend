@@ -1,14 +1,15 @@
-import React, { useState, useContext } from 'react';
-import { X, User, Camera, MoveLeft, Plus, Search } from 'lucide-react';
+import React, { useState, useContext, useEffect } from 'react';
+import { X, Camera, MoveLeft, Plus, Search } from 'lucide-react';
 import { Button, Switch, Spinner } from "@chakra-ui/react"
-import { checkIfAddressExists, shrinkAddress } from '../utils/common.util';
+import { shrinkAddress } from '../utils/common.util';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
-// import { PushAPI } from '@pushprotocol/restapi';
 import { useStore } from '../store/useStore';
+import { getWalletProfile } from '../utils/chatApi';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onMakeGroup: (group: any) => void;
 }
 
 interface FirstStepProps {
@@ -33,6 +34,11 @@ interface ThirdStepProps {
   addMember: (member: string) => void;
   removeMember: (member: string) => void;
   createGroup: () => void;
+}
+
+interface ISubMembers {
+  address: string;
+  image: string;
 }
 
 const FirstStep = ({ setStep, setImage, setGroupDescription, setGroupName, setPreview, preview, groupDescription, groupName }: FirstStepProps) => {
@@ -165,10 +171,11 @@ const SecondStep = ({ setStep, isPrivate, setIsPrivate }: SecondStepProps) => {
 }
 
 const ThirdStep = ({ members, addMember, removeMember, createGroup }: ThirdStepProps) => {
-  const [subMembers, setSumbMembers] = useState<Array<string>>([]);
+  const [subMembers, setSumbMembers] = useState<Array<ISubMembers>>([]);
   const [isSearch, setIsSearch] = useState(false);
   const [searchAddress, setSearchAddress] = useState("");
   const [creating, setCreating] = useState(false);
+  const { chatUser } = useStore();
   const { address } = useContext(Web3AuthContext);
 
   const handleCreateGroup = async () => {
@@ -178,16 +185,24 @@ const ThirdStep = ({ members, addMember, removeMember, createGroup }: ThirdStepP
   }
 
   const handleSearch = async () => {
+    if (!searchAddress) return
     setIsSearch(true)
-    if (address != searchAddress && !subMembers.includes(searchAddress)) {
-      const isExist = await checkIfAddressExists(searchAddress)
-      if (isExist) {
-        setSumbMembers([...subMembers, searchAddress])
+    if (address != searchAddress && !subMembers.find(member => member.address === searchAddress)) {
+      const profile = await getWalletProfile(chatUser, searchAddress)
+      if (profile) {
+        setSumbMembers([...subMembers, { address: searchAddress, image: profile.picture }])
       }
     }
 
     setIsSearch(false)
   }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSearch()
+    }
+  };
 
   return (
     <div className='w-full p-4 text-center'>
@@ -200,6 +215,7 @@ const ThirdStep = ({ members, addMember, removeMember, createGroup }: ThirdStepP
           type="text"
           value={searchAddress}
           onChange={(e) => setSearchAddress(e.target.value)}
+          onKeyDown={(e) => handleKeyDown(e)}
           placeholder="Search Web3 domain or 0x123..."
           className={`w-full bg-white/5 px-4 py-2 rounded-lg outline-none placeholder:text-white/40`}
         />
@@ -214,24 +230,25 @@ const ThirdStep = ({ members, addMember, removeMember, createGroup }: ThirdStepP
         subMembers.map((e, i) =>
           <div key={i} className='flex items-center justify-between mt-1 bg-gray-800 px-4 py-3 rounded-lg outline-none'>
             <div className='flex items-center'>
-              <User className='mr-3' />
-              <span>{shrinkAddress(e)}</span>
+              {/* <User className='mr-3' /> */}
+              <img src={e.image} className='w-6 h-6 mr-3 rounded-full' />
+              <span>{shrinkAddress(e.address)}</span>
             </div>
             {
-              !members.includes(e) ? <button onClick={() => addMember(e)}>Add</button> : <button onClick={() => removeMember(e)}>Remove</button>
+              !members.includes(e.address) ? <button onClick={() => addMember(e.address)}>Add</button> : <button onClick={() => removeMember(e.address)}>Remove</button>
             }
           </div>)
       }
 
       {
-        creating ? <Spinner /> :
+        creating ? <Spinner className='mt-4'/> :
           <Button className='mt-4' variant={'solid'} colorScheme='teal' onClick={handleCreateGroup}>Create Group</Button>
       }
     </div>
   )
 }
 
-export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose }) => {
+export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, onMakeGroup }) => {
   const [step, setStep] = useState(1);
   const [isPrivate, setIsPrivate] = useState(true);
   const [preview, setPreview] = useState<any>(null);
@@ -241,12 +258,26 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onCl
   const [members, setMembers] = useState<Array<string>>([]);
   const { chatUser } = useStore();
 
+  useEffect(() => {
+    clearAll()
+  }, [])
+
   const addMember = (one: string) => {
     setMembers([...members, one])
   }
 
   const removeMember = (one: string) => {
     setMembers(members.filter(item => item !== one))
+  }
+
+  const clearAll = () => {
+    setStep(1)
+    setIsPrivate(true)
+    setImage("")
+    setGroupName("")
+    setGroupDescription("")
+    setMembers([])
+    setPreview(null)
   }
 
   const createGroup = async () => {
@@ -271,7 +302,8 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onCl
         },
       );
       console.log('create group = ', newGroup)
-
+      clearAll()
+      onMakeGroup(newGroup)
       return true;
     } catch (err) {
       console.log('create group error = ', err)
