@@ -5,7 +5,9 @@ import {
   Settings, User, Info, CheckCircle, XCircle
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
-import { Theme } from 'emoji-picker-react';
+import GifPicker from 'gif-picker-react';
+import { Theme, EmojiStyle } from 'emoji-picker-react';
+import { Theme as GifTheme } from 'gif-picker-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
@@ -54,9 +56,11 @@ interface IGroup {
   lastMessage?: string;
 }
 
+type ChatType = "Text" | "MediaEmbed" | "Image" | "File";
+
 interface IChat {
   timestamp: number;
-  type: string;
+  type: ChatType;
   content: string;
   fromAddress: string;
   toAddress: string;
@@ -64,6 +68,7 @@ interface IChat {
   link: string | null;
   image?: string;
 }
+
 
 // interface ChatUser {
 //   id: string;
@@ -259,10 +264,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isHandlingRequest, setIsHandlingRequest] = useState(false);
   const [isJoiningGroup, setIsJoiningGroup] = useState(false);
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
+  const [isGifOpen, setIsGifOpen] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState<any>([]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const emojiPickRef = useRef<HTMLDivElement>(null);
+  const gifPickRef = useRef<HTMLDivElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
+  const gifBtnRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // const [currentUserNfts] = useState([
@@ -339,6 +347,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSelectedGroup(null)
     setSearchedGroup(null)
     setIsEmojiOpen(false)
+    setIsGifOpen(false)
   }
 
   useEffect(() => {
@@ -464,8 +473,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             )
           }
 
-          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, true)
-        } else if (receivedMessage.event == "chat.message" && chatMode === "group" && receivedMessage.message.type) {
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, true)
+        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
           if (selectedGroup?.groupId == receivedMessage.chatId) {
             setToBottom(true)
             const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == extractAddress(receivedMessage.from))
@@ -483,7 +492,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             )
           }
 
-          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
         } else if (receivedMessage.event == "chat.accept" && chatMode === "group") {
           // add a member
           const profile = await getWalletProfile(chatUser, receivedMessage.from)
@@ -508,7 +517,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         }
       } else if (receivedMessage.origin == "self") {
         if (receivedMessage.event == "chat.message" && chatMode === "group") {
-          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
         }
       }
     } else if (receivedMessage.meta?.group == false) {
@@ -531,7 +540,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               }])
             }
           }
-        } else if (receivedMessage.event == "chat.message" && chatMode === "p2p" && receivedMessage.message.type) {
+        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
           console.log('chat.message')
           if (extractAddress(receivedMessage.from) == selectedUser?.address) {
             setToBottom(true)
@@ -546,14 +555,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 link: null
               }]
             )
-            updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
+
+            updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
           } else {
             addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp))
           }
         }
       } else if (receivedMessage.origin == "self") {
         if (receivedMessage.event == "chat.message" && chatMode === "p2p") {
-          updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
+          updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
         }
       }
     }
@@ -633,7 +643,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           pendingMembers: data.groupInformation.pendingMembers,
           type: "Connected",
           lastTimestamp: Number(data.msg.timestamp),
-          lastMessage: data.msg.messageContent
+          lastMessage: data.msg.messageType === "Text" ? data.msg.messageContent : "💻Media",
         }]
       } else {
         userInformation = [...userInformation, {
@@ -643,7 +653,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           chatId: data.chatId,
           type: "Connected",
           lastTimestamp: data.msg.timestamp,
-          lastMessage: data.msg.messageContent,
+          lastMessage: data.msg.messageType === "Text" ? data.msg.messageContent : "💻Media",
           unreadMessages: 0
         }]
       }
@@ -1087,7 +1097,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const handleClickModal = (e: any) => {
     if (emojiBtnRef.current && emojiBtnRef.current.contains(e.target as Node)) {
+      if (isGifOpen) {
+        setIsGifOpen(false)
+      }
       return
+    }
+
+    if (gifBtnRef.current && gifBtnRef.current.contains(e.target as Node)) {
+      if (isEmojiOpen) {
+        setIsEmojiOpen(false)
+      }
+      return
+    }
+
+    if (gifPickRef.current && !gifPickRef.current.contains(e.target as Node)) {
+      setIsGifOpen(false)
     }
 
     if (emojiPickRef.current && !emojiPickRef.current.contains(e.target as Node)) {
@@ -1101,13 +1125,69 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsEmojiOpen(false)
   }
 
-  const updateLastMessageInfo = (address: string, msg: string, timestamp: number, isGroup: boolean, isRequest: boolean) => {
+  const handleGifClick = async (gifData: any) => {
+    setIsGifOpen(false)
+    setToBottom(true)
+
+    try {
+      if (chatMode === "group" && selectedGroup) {
+        const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == address)
+        setChatHistory([...chatHistory, {
+          timestamp: Math.floor(Date.now()),
+          type: 'MediaEmbed',
+          content: gifData.url,
+          fromAddress: address,
+          toAddress: "",
+          chatId: "",
+          link: null,
+          image: found?.image || ""
+        }])
+
+        const sentGif = await chatUser.chat.send(selectedGroup?.groupId, {
+          type: 'MediaEmbed',
+          content: gifData.url
+        })
+
+        setMessage("")
+        console.log('sent gif: ', sentGif)
+      } else if (chatMode === "p2p" && selectedUser) {
+        setChatHistory([...chatHistory, {
+          timestamp: Math.floor(Date.now()),
+          type: "MediaEmbed",
+          content: gifData.url,
+          fromAddress: address,
+          toAddress: selectedUser?.address,
+          chatId: "",
+          link: null,
+        }])
+
+        const sentGif = await chatUser.chat.send(selectedUser?.address, {
+          type: 'MediaEmbed',
+          content: gifData.url
+        })
+
+        setMessage("")
+        if (searchedUser?.address == selectedUser.address) {
+          setSearchedUser(null)
+          setConnectedUsers([{ ...searchedUser, unreadMessages: 0 }, ...connectedUsers])
+        }
+        console.log('sent gif: ', sentGif)
+      }
+    } catch (err) {
+      console.log('send gif err: ', err)
+      setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
+    }
+  }
+
+  const updateLastMessageInfo = (address: string, type: ChatType, msg: string, timestamp: number, isGroup: boolean, isRequest: boolean) => {
     console.log('updateLastMessageInfo ')
+    const lastMessage = (type === "Text" ? msg : "💻Media")
+
     if (!isGroup) {
       connectedUsers.length > 0 && setConnectedUsers((prevUsers) => {
         const updatedUsers = prevUsers.map((user) =>
           user.address === address
-            ? { ...user, lastMessage: msg, lastTimestamp: timestamp }
+            ? { ...user, lastMessage, lastTimestamp: timestamp }
             : user
         );
         // console.log("Previous Users: ", prevUsers);
@@ -1119,7 +1199,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         requestGroups.length > 0 && setRequestGroups((prevGroups) => {
           const updatedGroups = prevGroups.map((group) =>
             group.groupId === address
-              ? { ...group, lastMessage: msg, lastTimestamp: timestamp }
+              ? { ...group, lastMessage, lastTimestamp: timestamp }
               : group
           );
           // console.log("Previous Groups: ", prevGroups);
@@ -1130,7 +1210,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         groupList.length > 0 && setGroupList((prevGroups) => {
           const updatedGroups = prevGroups.map((group) =>
             group.groupId === address
-              ? { ...group, lastMessage: msg, lastTimestamp: timestamp }
+              ? { ...group, lastMessage, lastTimestamp: timestamp }
               : group
           );
           // console.log("Previous Groups: ", prevGroups);
@@ -1426,9 +1506,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <span className="font-medium">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
-            <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress == selectedUser?.address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
-              {msg.content}
-            </div>
+            {
+              msg.type == "Text" ? <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress == selectedUser?.address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+                {msg.content}
+              </div> : msg.type == "MediaEmbed" ? <img className={`w-52 h-auto ${msg.fromAddress == selectedUser?.address ? '' : 'ml-auto'}`} src={msg.content} /> : <></>
+            }
           </div>
         </div>
       ))
@@ -1448,9 +1530,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <span className="font-medium">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
-            <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress != address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
-              {msg.content}
-            </div>
+            {
+              msg.type == "Text" ? <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress != address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+                {msg.content}
+              </div> : msg.type == "MediaEmbed" ? <img className={`w-52 h-auto ${msg.fromAddress != address ? '' : 'ml-auto'}`} src={msg.content} /> : <></>
+            }
           </div>
           {
             msg.fromAddress == address &&
@@ -1904,6 +1988,20 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     className="flex-1 bg-white/5 px-4 py-2 rounded-lg outline-none resize-none overflow-hidden"
                     rows={1} // Adjust rows dynamically
                   />
+
+                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" ref={gifBtnRef} onClick={() => setIsGifOpen(!isGifOpen)}>
+                    Gif
+                  </button>
+
+                  {isGifOpen && <div ref={gifPickRef}
+                    className='!absolute bottom-[62px] right-[16px]'>
+                    <GifPicker
+                      tenorApiKey={"AIzaSyBxr4hrP59kdbQV4xJ-t2CSQX0Y6q4gcbA"}
+                      theme={GifTheme.DARK}
+                      onGifClick={handleGifClick}
+                    />
+                  </div>}
+
                   <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                     <Share2 className="w-5 h-5" />
                   </button>
