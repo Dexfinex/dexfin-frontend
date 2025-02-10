@@ -1,5 +1,5 @@
 import moment from "moment/moment";
-
+import { EXCHANGE_ICONS_URL } from "../constants/mock/tradepairs";
 export function convertNumberIntoFormat(number : number) {
 
     number = Number(number);
@@ -45,4 +45,43 @@ export function toFixedFloat(number : any, precision : any) {
 
 export const formatDate = (date : any) => {
     return moment(date).format('M/D/YYYY h:mm:ss A');
+}
+export function getRealExchangeDescription(exchangeKey) {
+
+    if (!exchangeKey)
+        return '';
+
+    // Split the exchangeKey into its components.
+    const terms = exchangeKey.split('_');
+
+    // Reformat each part of the key for the final description.
+    let realExchange = terms[0].charAt(0).toUpperCase() + terms[0].slice(1).toLowerCase(); // Capitalize only the first letter
+
+    if (terms[1]) {
+        let realVersion = '';
+        realVersion = `v${terms[1].replace(/[V,v]/g, '')}`; // Replace underscores with dots and add 'v'
+        realExchange += ' ' + realVersion;
+    }
+
+    if (terms[2]) {
+        let realFee = '';
+        realFee = terms[2] + (terms[3] ? `.${terms[3]}` : '') + '%';
+        realExchange += ' ' + realFee;
+    }
+
+    return realExchange
+}
+
+export function getExchangeIconUrlFrom(exchangeKey) {
+
+    if (!exchangeKey)
+        return '';
+
+    // Split the exchangeKey into its components.
+    const terms = exchangeKey.split('_');
+
+    // Reformat each part of the key for the final description.
+    const realExchange = terms[0].toLowerCase(); // Capitalize only the first letter
+
+    return EXCHANGE_ICONS_URL + realExchange + '.svg';
 }

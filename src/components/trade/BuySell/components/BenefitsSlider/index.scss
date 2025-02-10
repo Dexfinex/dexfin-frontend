@@ -1,0 +1,87 @@
+.benefits-slider {
+  margin-top: 1rem;
+
+  .title {
+    text-align: left;
+    font-size: 14px;
+    padding-left: 10px;
+    color: #98c8ff;
+  }
+
+  .benefits-slider-wrapper {
+    position: relative;
+    display: flex;
+    overflow: hidden;
+    height: 75px;
+  }
+
+  .empty-container {
+    position: relative;
+    height: 75px;
+
+    .content {
+      font-size: 14px;
+      text-align: left;
+      position: absolute;
+      border-radius: 8px;
+      border: 1px solid rgba(163, 205, 253, .69);
+      top: 2px;
+      left: 8px;
+      width: calc(100% - 36px);
+      height: calc(100% - 29px);
+      padding: 6px 10px;
+      text-align: justify;
+    }
+  }
+
+  .slide-item {
+    border-radius: 8px;
+    border: 1px solid rgba(163, 205, 253, .69);
+    position: absolute;
+    top: 2px;
+    left: 8px;
+    width: calc(100% - 16px);
+    height: calc(100% - 16px);
+    opacity: 0;
+    transition: all 0.3s linear;
+
+
+    &.activeSlide {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    &.lastSlide {
+      transform: translateX(-100%);
+    }
+    &.nextSlide {
+      transform: translateX(100%);
+    }
+
+    .exchange-name {
+      margin-top: 6px;
+      font-size: 14px;
+      text-align: left;
+      padding-left: 16px;
+      color: #999;
+    }
+
+    .benefit-prices {
+      position: relative;
+      margin-top: 4px;
+      font-size: 14px;
+
+
+      span:nth-child(1) { // percentage
+        position: absolute;
+        left: 18px;
+      }
+
+      span:nth-child(2) { // price
+        position: absolute;
+        right: 16px;
+      }
+
+    }
+
+  }
+}

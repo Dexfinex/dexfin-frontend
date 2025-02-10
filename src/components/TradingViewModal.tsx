@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Maximize2, Minimize2, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
+import { Tabs, TabList, TabPanels, Tab, TabPanel, MenuButton, Button, MenuList, MenuItem, Menu } from '@chakra-ui/react'
 import TradeChart from './trade/TradingView';
 import { Orion } from "./trade/OrionProtocol";
 import { DEFAULT_PAIRS, CURRENCY_ICONS_URL, DEFAULT_ICON_URL, ORION_TRADE_CONFIG } from '../constants/mock/tradepairs';
@@ -10,7 +11,11 @@ import { useOrionOrderbookHook } from "../hooks/useOrionOrderbookHook";
 import { convertNumberIntoFormat, toFixedFloat } from "../utils/trade.util";
 import { simpleFetch } from "simple-typed-fetch";
 import Orderbook from "./trade/OrderBook/OrderBook";
-import BuySell from  "./trade/BuySell/BuySell";
+import MarketAndLimitPanel from "./trade/BuySell/components/MarketAndLimitPanel";
+import OrderHistorySection from "./trade/OrderHistorySection";
+
+
+
 
 export let unit = new Orion().getUnit("eth");
 
@@ -242,6 +247,7 @@ const ChainSelectRow = React.memo(({ network, hasIcon }) => {
 });
 
 export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClose }) => {
+  const [currentMLIndex, setCurrentMLIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [lastPrice, setLastPrice] = useState(0);
   const [change24, setChange24] = useState(0);
@@ -252,6 +258,9 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
     pricePrecision: 2,
     qtyPrecision: 5,
   });
+  const [feeAssets, setFeeAssets] = useState({});
+  const [networkGasFee, setNetworkGasFee] = useState(0);
+
   const [open, setIsOpen] = useState(false);
   const [chainServiceInfo, setChainServiceInfo] = useState(null);
   const [quotedPriceInfo, setQuotedPriceInfo] = useState(null);
@@ -261,6 +270,8 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
   const [currentPairSymbol, setCurrentPairSymbol] = useState(
     "ETH-USDT"
   );
+  // const [currentPairSymbol, setCurrentPairSymbol] = useLocalStorage('trade-default-pair-symbol', 'ETH-USDT');
+
 
   const { priceFeedAll, balances, orderHistories } = useOrionHook(unit);
   const { currentPriceFeed, asks, bids } = useOrionOrderbookHook(
@@ -283,7 +294,41 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
   const [selectableNetworks, setSelectableNetworks] = useState(
     Object.values(ORION_TRADE_CONFIG.networks)
   );
+  const [mobileTabClassName, setMobileTabClassName] = useState('exchange');
+  const [mobileTabIndex, setMobileTabIndex] = useState(0);
+  const [isClosed, setIsClosed] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [size, setSize] = useState({ width: 320, height: 200 });
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isMinimized, setIsMinimized] = useState(false);
+  const redColor = '#f03349', greenColor = '#179981';
+  const handleMinimize = () => setIsMinimized(!isMinimized);
 
+  const handleMaximize = () => {
+    setIsMaximized(!isMaximized);
+    if (!isMaximized) {
+      setSize({ width: "100%", height: "90%" });
+      setPosition({ x: 0, y: 0 });
+    } else {
+      setSize({ width: 1500, height: 800 });
+      setPosition({ x: 0, y: 0 });
+    }
+
+  };
+  const handleClose = () => {
+    setIsClosed(true);
+    onClose();
+
+  }
+
+  if (isClosed) return null;
+
+  useEffect(() => {
+
+    const classNames = ['exchange', 'chart'/*, 'history'*/, 'orderbook'];
+    setMobileTabClassName(classNames[mobileTabIndex]);
+
+  }, [mobileTabIndex])
   useEffect(() => {
     (async () => {
       try {
@@ -319,39 +364,43 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
     })();
   }, []);
 
+
   useEffect(() => {
+
     if (priceFeedAll) {
-      setSymbolToDataMap((prev: SymbolToDataMap) => {
+      setSymbolToDataMap(prev => {
         const keys = Object.keys(priceFeedAll);
-        const newData: SymbolToDataMap = {};
+        const newData = {};
+        keys.forEach(key => {
 
-        keys.forEach((key) => {
-          let value: Partial<SymbolData> = {};
+          let value = {};
 
-          if (prev[key]) value = { ...prev[key] };
+          if (prev[key])
+            value = { ...prev[key] };
 
           if (priceFeedAll[key]) {
-            const feed = priceFeedAll[key];
-            value.change24h = feed.change24h.toNumber() === Infinity ? 0 : feed.change24h.toNumber();
-            value.fromCurrency = feed.fromCurrency;
-            value.high = feed.high.toNumber();
-            value.lastPrice = feed.lastPrice.toNumber();
-            value.low = feed.low.toNumber();
-            value.name = feed.name;
-            value.openPrice = feed.openPrice.toNumber();
-            value.toCurrency = feed.toCurrency;
-            value.vol24h = feed.vol24h.toNumber();
-            newData[key] = value as SymbolData;
+            value.change24h = priceFeedAll[key].change24h.toNumber() === Infinity ? 0 : priceFeedAll[key].change24h.toNumber();
+            value.fromCurrency = priceFeedAll[key].fromCurrency;
+            value.high = priceFeedAll[key].high.toNumber();
+            value.lastPrice = priceFeedAll[key].lastPrice.toNumber();
+            value.low = priceFeedAll[key].low.toNumber();
+            value.name = priceFeedAll[key].name;
+            value.openPrice = priceFeedAll[key].openPrice.toNumber();
+            value.toCurrency = priceFeedAll[key].toCurrency;
+            value.vol24h = priceFeedAll[key].vol24h.toNumber();
+            newData[key] = value;
           }
-        });
+        })
 
         return {
           ...prev,
-          ...newData,
+          ...newData
         };
       });
+
     }
-  }, [priceFeedAll]);
+
+  }, [priceFeedAll])
 
   useEffect(() => {
     if (currentPriceFeed) {
@@ -454,7 +503,6 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
           const _quotedPriceInfo = await simpleFetch(
             unit.blockchainService.getPricesWithQuoteAsset
           )();
-          console.log("quotedPriceInfo", _quotedPriceInfo);
           setQuotedPriceInfo(_quotedPriceInfo);
         } catch (e) {
           console.error("------TRADE----", e);
@@ -611,126 +659,77 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
 
           {/* Charts Section */}
           <div className="p-2 sm:p-4 w-full">
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
-        {/* Trade chart section*/}
-        <div className="col-span-1 lg:col-span-3 bg-white/5 rounded-xl p-2 sm:p-4">
-          <div className="flex items-center justify-between mb-2 sm:mb-4">
-            <h3 className="font-medium text-sm sm:text-base">Trade Chart</h3>
-          </div>
-          <div className="h-[300px] sm:h-[400px] lg:h-[600px]">
-            <TradeChart 
-              pairSymbol={currentPairSymbol}
-            />
-          </div>
-        </div>
-
-        {/* Order book section */}
-        <div className="col-span-1 bg-white/5 rounded-xl p-2 sm:p-4">
-          <div className="flex items-center justify-between mb-2 sm:mb-4">
-            <h3 className="font-medium text-sm sm:text-base">Order Book</h3>
-          </div>
-          <div className="overflow-auto max-h-[300px] sm:max-h-[400px] lg:max-h-[600px]">
-            <Orderbook
-              pricePrecision={pairConfig.pricePrecision}
-              asks={asks}
-              bids={bids}
-              symbolAssetIn={symbolAssetIn}
-              symbolAssetOut={symbolAssetOut}
-              lastPrice={lastPrice}
-              pairConfig={pairConfig}
-              pairSymbol={currentPairSymbol}
-            />
-          </div>
-        </div>
-
-        {/* Buy/Sell section */}
-        <div className="col-span-1 bg-white/5 rounded-xl p-2 sm:p-4">
-          <div className="flex items-center justify-between mb-2 sm:mb-4">
-            <h3 className="font-medium text-sm sm:text-base">Buy Sell</h3>
-          </div>
-          <BuySell
-            currentPair={currentPairSymbol}
-            onPlaceOrder={(type, price, amount) => {
-              console.log('Placing order:', { type, price, amount });
-            }}
-          />
-        </div>
-      </div>
-    </div>
-
-          {/* Tabs Section */}
-          <div className="bg-white/5 rounded-xl">
-            <div className="flex items-center gap-2 p-2">
-              {['tokens', 'defi', 'nfts'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setSelectedTab(tab)}
-                  className={`px-4 py-2 rounded-lg transition-colors capitalize ${selectedTab === tab
-                    ? 'bg-white/10'
-                    : 'hover:bg-white/5'
-                    }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            <div className="p-4">
-              {selectedTab === 'tokens' && (
-                <div className="space-y-3 max-h-[400px] overflow-y-auto ai-chat-scrollbar">
-                  {tokens.map((token) => (
-                    <div
-                      key={token.symbol}
-                      className="flex items-center gap-4 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-                    >
-                      <img
-                        src={token.logo}
-                        alt={token.name}
-                        className="w-8 h-8"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{token.name}</span>
-                          <span className="text-white/60">{token.symbol}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <span>{token.amount} {token.symbol}</span>
-                          <span className="text-white/40">•</span>
-                          <span>${token.value.toLocaleString()}</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg">${token.value.toLocaleString()}</div>
-                        <div className={`flex items-center gap-1 justify-end text-sm ${token.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'
-                          }`}>
-                          {token.change24h >= 0 ? (
-                            <TrendingUp className="w-4 h-4" />
-                          ) : (
-                            <TrendingDown className="w-4 h-4" />
-                          )}
-                          <span>{Math.abs(token.change24h)}%</span>
-                        </div>
-                      </div>
-                      <div className="w-32">
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="text-white/60">Allocation</span>
-                          <span>{token.allocation}%</span>
-                        </div>
-                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-blue-500 rounded-full"
-                            style={{ width: `${token.allocation}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 lg:gap-6">
+              {/* Trade chart section - 6 columns */}
+              <div className="col-span-1 lg:col-span-6 bg-white/5 rounded-xl p-2 sm:p-4">
+                <div className="h-full min-h-[600px]">
+                  <TradeChart
+                    pairSymbol={currentPairSymbol}
+                  />
                 </div>
-              )}
+              </div>
+
+              {/* Order book section - 4 columns */}
+              <div className="col-span-1 lg:col-span-3 bg-white/5 rounded-xl p-2 sm:p-4">
+                <div className="h-full overflow-auto">
+                  <Orderbook
+                    pricePrecision={pairConfig.pricePrecision}
+                    asks={asks}
+                    bids={bids}
+                    symbolAssetIn={symbolAssetIn}
+                    symbolAssetOut={symbolAssetOut}
+                    lastPrice={lastPrice}
+                    pairConfig={pairConfig}
+                    pairSymbol={currentPairSymbol}
+                  />
+                </div>
+              </div>
+
+              {/* Buy sell section - 2 columns */}
+              <div className="col-span-1 lg:col-span-3 bg-white/5 rounded-xl p-2 sm:p-4">
+                <div className="h-full flex flex-col">
+                  <Tabs
+                    isFitted
+                    size='md'
+                    onChange={(index) => setCurrentMLIndex(index)}
+                    variant='enclosed'
+                    className="orderbook-tabs"
+                  >
+                    <TabList>
+                      <Tab>Market</Tab>
+                      <Tab>Limit</Tab>
+                    </TabList>
+                  </Tabs>
+                  <div className="flex-1 overflow-auto">
+                    <MarketAndLimitPanel
+                      balances={balances}
+                      feeAssets={feeAssets}
+                      chainServiceInfo={chainServiceInfo}
+                      quotedPriceInfo={quotedPriceInfo}
+                      pairConfig={pairConfig}
+                      currentTabIndex={currentMLIndex}
+                      currentPairSymbol={currentPairSymbol}
+                      symbolAssetIn={symbolAssetIn}
+                      symbolAssetOut={symbolAssetOut}
+                      defaultBuyPrice={(asks && asks.length > 0) ? asks[0].price : 0}
+                      defaultSellPrice={(bids && bids.length > 0) ? bids[0].price : 0}
+                      setGlobalNetworkGasFee={setNetworkGasFee}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+          <OrderHistorySection
+            balances={balances}
+            orderHistories={orderHistories}
+            chainServiceInfo={chainServiceInfo}
+            networkGasFee={networkGasFee}
+          />
+
         </div>
       </div>
     </div>
   );
+
 };
