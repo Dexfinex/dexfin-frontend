@@ -81,7 +81,7 @@ export const MarketNews: React.FC = () => {
             onClick={refetchHandler}
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
