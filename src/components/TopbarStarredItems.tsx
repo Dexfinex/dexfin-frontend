@@ -3,9 +3,9 @@ import * as Icons from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 export const TopbarStarredItems: React.FC = () => {
-  const { 
-    menuItems, 
-    setIsAIAgentOpen, 
+  const {
+    menuItems,
+    setIsAIAgentOpen,
     setIsSwapOpen,
     setIsDefiOpen,
     setIsDashboardOpen,
@@ -13,11 +13,13 @@ export const TopbarStarredItems: React.FC = () => {
     setIsChatOpen,
     setIsCartOpen,
     setIsSocialFeedOpen,
-    setIsGamesOpen
+    setIsGamesOpen,
+    setTradeOpen
   } = useStore();
   const starredItems = menuItems.filter((item) => item.isStarred);
 
   const handleItemClick = (itemId: string) => {
+    console.log(itemId)
     if (itemId === 'ai') {
       setIsAIAgentOpen(true);
     } else if (itemId === 'swap') {
@@ -37,6 +39,10 @@ export const TopbarStarredItems: React.FC = () => {
     } else if (itemId === 'games') {
       setIsGamesOpen(true);
     }
+    else if (itemId === 'trade') {
+      setTradeOpen(true);
+    }
+
   };
 
   if (starredItems.length === 0) return null;

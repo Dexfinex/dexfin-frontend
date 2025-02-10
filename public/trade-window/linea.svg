@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 52.71 52.71">
+    <defs>
+        <style>.linea-1{fill:none;}.linea-2{fill:#121212;}.linea-3{clip-path:url(#clip-path);}.linea-4{fill:#fff;}</style>
+        <clipPath id="clip-path">
+            <rect class="linea-1" x="13.9" y="9.96" width="29.06" height="30.69"/>
+        </clipPath>
+    </defs>
+    <g>
+        <g>
+            <circle class="linea-2" cx="26.35" cy="26.35" r="26.35"/>
+            <g class="linea-3">
+                <path class="linea-4" d="M38,40.65H13.9V14.94h5.52V35.67H38v5Z"/>
+                <path class="linea-4" d="M38,19.92a5,5,0,1,0-4.92-5A5,5,0,0,0,38,19.92Z"/>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -157,10 +157,8 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
     // const [chain, setChain] = useState(null);
 
-    console.log("provider", provider, address, chainId, solanaWalletInfo)
+    // console.log("provider", provider, address, chainId, solanaWalletInfo)
 
-    const { refetch: refetchEvmWalletBalance } = useEvmWalletBalance({ address, chainId: Number(chainId) });
-    const { refetch: refetchEvmWalletTransfer } = useEvmWalletTransfer();
     const {
         isConnected: isWagmiWalletConnected,
         address: connectedWalletAddress,
@@ -376,8 +374,6 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             setIsConnected(isWagmiWalletConnected)
             setAddress(connectedWalletAddress as string)
             setChainId(wagmiChainId)
-            refetchEvmWalletBalance()
-            refetchEvmWalletTransfer()
             connector!.getProvider().then((rawProvider) => {
                 const provider = new Web3Provider(rawProvider as ExternalProvider);
                 setProvider(provider)
@@ -422,8 +418,6 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             setProviderByPKPWallet(chainId ?? 1)
             setIsConnected(true)
             setAddress(currentAccount!.ethAddress)
-            refetchEvmWalletBalance()
-            refetchEvmWalletTransfer()
             // store variables to localstorage
             setStoredWalletInfo({
                 authMethod: authMethod!,
@@ -445,7 +439,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                             // @ts-expect-error
                             litNodeClient: litNodeClient as ILitNodeClient,
                         });
-                        console.log("generated", pkpAddress, generatedPublicKey)
+                        // console.log("generated", pkpAddress, generatedPublicKey)
                         solanaWalletData = {
                             publicKey: generatedPublicKey,
                             pkpAddress: pkpAddress,

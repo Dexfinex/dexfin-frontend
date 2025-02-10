@@ -138,6 +138,8 @@ interface StoreState {
   setIsSocialFeedOpen: (isOpen: boolean) => void;
   isGamesOpen: boolean;
   setIsGamesOpen: (isOpen: boolean) => void;
+  istrade: boolean;
+  setTradeOpen: (isOpen: boolean) => void;
 
   // Market Data View
   marketDataView: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed';
@@ -210,11 +212,12 @@ const useStore = create<StoreState>((set) => ({
     { id: 'defi', label: 'DeFi', icon: 'Wallet', isStarred: false },
     { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', isStarred: false },
     { id: 'market-data', label: 'Market Data', icon: 'LineChart', isStarred: false },
+    { id: 'trade', label: 'Trade', icon: 'LineChart', isStarred: false },
     { id: 'chat', label: 'Chat', icon: 'MessageSquare', isStarred: false },
     { id: 'cart', label: 'Cart', icon: 'ShoppingCart', isStarred: false },
     { id: 'social', label: 'Social Feed', icon: 'Users', isStarred: false },
     { id: 'games', label: 'Games', icon: 'Gamepad2', isStarred: false },
-    { id: 'rewards', label: 'Rewards', icon: 'Trophy', isStarred: false }
+    { id: 'rewards', label: 'Rewards', icon: 'Trophy', isStarred: false },
   ],
   toggleStarMenuItem: (id) => set((state) => ({
     menuItems: state.menuItems.map((item) =>
@@ -247,6 +250,8 @@ const useStore = create<StoreState>((set) => ({
   setIsSocialFeedOpen: (isOpen) => set({ isSocialFeedOpen: isOpen }),
   isGamesOpen: false,
   setIsGamesOpen: (isOpen) => set({ isGamesOpen: isOpen }),
+  istrade: false,
+  setTradeOpen: (isOpen) => set({ istrade: isOpen }),
 
   // Market Data View
   marketDataView: 'overview',
