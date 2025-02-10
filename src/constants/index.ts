@@ -31,6 +31,8 @@ export const FEARGREED_BASE_URL = "https://dexfinv3-backend-production.up.railwa
 
 export const GECKOTERMINAL_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/gecko-terminal";
 
+export const BRIAN_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/brian";
+
 export const CRYPTONEWS_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/crypto-news';
 
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
