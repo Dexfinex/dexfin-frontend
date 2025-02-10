@@ -39,3 +39,7 @@ export const dexfinv3Api = axios.create({
 export const brianApi = axios.create({
   baseURL: BRIAN_BASE_URL,
 });
+
+export const cryptoNewsApi = axios.create({
+    baseURL: CRYPTONEWS_BASE_URL,
+});
