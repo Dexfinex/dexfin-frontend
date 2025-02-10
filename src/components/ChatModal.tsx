@@ -263,6 +263,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const emojiPickRef = useRef<HTMLDivElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // const [currentUserNfts] = useState([
   //   {
@@ -321,6 +322,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isScrollTop])
 
+  useEffect(() => {
+    if (!message) {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.style.height = "40px";
+      }
+    }
+  }, [message])
+
   const clearValues = () => {
     setSearchQuery("")
     setChatHistory([])
@@ -333,7 +343,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     setMessage("")
-    setIsEmojiOpen(false)
   }, [selectedUser, selectedGroup])
 
   useEffect(() => {
@@ -885,8 +894,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       const history = await chatUser.chat.history(user.address, { limit: LIMIT })
 
       if (history.length > 0) {
-        console.log('history = ', history)
-        console.log('selected = ', user.address)
+        // console.log('history = ', history)
+        // console.log('selected = ', user.address)
         const tmp: IChat[] = history.map((data: any) => {
           return {
             timestamp: data.timestamp,
@@ -910,12 +919,26 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setLoadingChatHistory(false)
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleTextChange = (e: any) => {
+    setMessage(e.target.value)
+    adjustHeight()
+  }
+
+  const adjustHeight = () => {
+    const textarea = textareaRef.current;
+
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    }
+  };
+
+  const handleKeyDown = (e: any) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
-  };
+  }
 
   const handleSearch = async () => {
     if (!searchQuery || searchQuery == address) return
@@ -930,14 +953,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           const found = connectedUsers.find((user: IUser) => extractAddress(user.address) == searchQuery)
 
           if (found) {
-            setSelectedUser({
-              name: found.name,
-              address: found.address,
-              profilePicture: found.profilePicture,
-              chatId: found.chatId,
-              type: "Connected",
-              unreadMessages: 0
-            })
+            handleSelectUser(found)
           } else {
             setSearchedUser({
               name: profile.name,
@@ -961,7 +977,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           const found = groupList.find((group: IGroup) => group.groupId == searchQuery)
 
           if (found) {
-            setSelectedGroup(found)
+            handleSelectGroup(found)
           } else {
             setSearchedGroup({
               groupId: profile.chatId,
@@ -1073,7 +1089,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     if (emojiBtnRef.current && emojiBtnRef.current.contains(e.target as Node)) {
       return
     }
-    
+
     if (emojiPickRef.current && !emojiPickRef.current.contains(e.target as Node)) {
       setIsEmojiOpen(false)
     }
@@ -1879,13 +1895,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     />
                   </div>
 
-                  <input
-                    type="text"
+                  <textarea
+                    ref={textareaRef}
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={handleKeyPress}
+                    onChange={handleTextChange}
+                    onKeyDown={handleKeyDown}
                     placeholder="Type a message..."
-                    className="flex-1 bg-white/5 px-4 py-2 rounded-lg outline-none"
+                    className="flex-1 bg-white/5 px-4 py-2 rounded-lg outline-none resize-none overflow-hidden"
+                    rows={1} // Adjust rows dynamically
                   />
                   <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                     <Share2 className="w-5 h-5" />
