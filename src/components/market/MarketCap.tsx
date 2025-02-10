@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Search, Filter, RefreshCw, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { SparklineChart } from './SparklineChart';
-import { coingeckoService } from '../../services/coingecko.service';
 
+import { useGetMarketCapByPage } from '../../hooks/useMarketCap';
 export interface MarketCapToken {
   id: string;
-  rank: number;
+  marketCapRank: number;
   name: string;
   symbol: string;
   price: number;
@@ -13,114 +13,30 @@ export interface MarketCapToken {
   marketCap: number;
   volume24h: number;
   circulatingSupply: number;
-  sparkline_in_7d: {
-    price: number[];
-  };
-  logo: string;
+  sparkline: number[];
+  logoURI: string;
 }
 
-// Mock data for initial state and fallback
-const mockTokens: MarketCapToken[] = [
-  {
-    id: 'bitcoin',
-    rank: 1,
-    name: 'Bitcoin',
-    symbol: 'btc',
-    price: 67245.80,
-    priceChange24h: 2.5,
-    marketCap: 1320000000000,
-    volume24h: 28500000000,
-    circulatingSupply: 19584362,
-    sparkline_in_7d: {
-      price: Array(24).fill(0).map(() => 67000 + Math.random() * 1000)
-    },
-    logo: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png'
-  },
-  {
-    id: 'ethereum',
-    rank: 2,
-    name: 'Ethereum',
-    symbol: 'eth',
-    price: 3245.67,
-    priceChange24h: -1.2,
-    marketCap: 389000000000,
-    volume24h: 12800000000,
-    circulatingSupply: 120250417,
-    sparkline_in_7d: {
-      price: Array(24).fill(0).map(() => 3200 + Math.random() * 100)
-    },
-    logo: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png'
-  }
-];
-
 export const MarketCap: React.FC = () => {
-  const [tokens, setTokens] = useState<MarketCapToken[]>(mockTokens);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchData = async (showRefreshState = false) => {
-    try {
-      if (showRefreshState) {
-        setRefreshing(true);
-      }
-      
-      const data = await coingeckoService.getMarketCap(page);
-      // Transform API data to match our Token interface
-      const transformedData: MarketCapToken[] = data.map((item: any) => ({
-        id: item.id,
-        rank: item.marketCapRank,
-        name: item.name,
-        symbol: item.symbol,
-        price: item.price,
-        priceChange24h: item.priceChange24h,
-        marketCap: item.marketCap,
-        volume24h: item.volume24h,
-        circulatingSupply: item.circulatingSupply,
-        sparkline_in_7d: {
-          price: item.sparkline
-        },
-        logo: item.logoURI
-      }));
-
-      setTokens(transformedData);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching market data:', err);
-      setError('Failed to load market data');
-      // Use mock data as fallback
-      setTokens(mockTokens);
-    } finally {
-      setLoading(false);
-      if (showRefreshState) {
-        setRefreshing(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-    // Refresh every 2 minutes
-    const interval = setInterval(() => fetchData(), 120000);
-    return () => clearInterval(interval);
-  }, [page]);
+  const { data, isLoading, refetch, error } = useGetMarketCapByPage(page)
 
   const handleRefresh = () => {
-    fetchData(true);
+    refetch()
   };
 
-  const filteredTokens = tokens.filter(token =>
+  const filteredTokens = (data || []).filter(token =>
     token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (error && tokens.length === 0) {
+  if (error) {
     return (
       <div className="p-6 h-full flex flex-col items-center justify-center text-center">
         <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-        <p className="text-white/60 mb-4">{error}</p>
+        <p className="text-white/60 mb-4">{error.message}</p>
         <button
           onClick={handleRefresh}
           className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
@@ -149,13 +65,12 @@ export const MarketCap: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleRefresh}
-            disabled={refreshing}
-            className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${
-              refreshing ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            disabled={isLoading}
+            className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             title="Refresh data"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <Filter className="w-4 h-4" />
@@ -179,7 +94,7 @@ export const MarketCap: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {loading ? (
+            {isLoading ? (
               [...Array(10)].map((_, i) => (
                 <tr key={i} className="animate-pulse">
                   <td className="py-4 px-4">
@@ -211,10 +126,10 @@ export const MarketCap: React.FC = () => {
             ) : (
               filteredTokens.map((token) => (
                 <tr key={token.id} className="hover:bg-white/5 transition-colors">
-                  <td className="py-4 px-4 text-white/60">{token.rank}</td>
+                  <td className="py-4 px-4 text-white/60">{token.marketCapRank}</td>
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-3">
-                      <img src={token.logo} alt={token.name} className="w-8 h-8" />
+                      <img src={token.logoURI} alt={token.name} className="w-8 h-8" />
                       <div>
                         <div className="font-medium">{token.name}</div>
                         <div className="text-sm text-white/60">{token.symbol.toUpperCase()}</div>
@@ -228,9 +143,8 @@ export const MarketCap: React.FC = () => {
                     })}
                   </td>
                   <td className="py-4 px-4">
-                    <div className={`flex items-center gap-1 ${
-                      token.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
-                    }`}>
+                    <div className={`flex items-center gap-1 ${token.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
+                      }`}>
                       {token.priceChange24h >= 0 ? (
                         <TrendingUp className="w-4 h-4" />
                       ) : (
@@ -250,9 +164,9 @@ export const MarketCap: React.FC = () => {
                   </td>
                   <td className="py-4 px-4">
                     <div className="h-[40px] w-[120px] ml-auto">
-                      <SparklineChart 
-                        data={token.sparkline_in_7d.price}
-                        color={token.sparkline_in_7d.price[token.sparkline_in_7d.price.length - 1] - token.sparkline_in_7d.price[0] >= 0 ? '#10B981' : '#EF4444'}
+                      <SparklineChart
+                        data={token.sparkline || []}
+                        color={(token.sparkline || [])[token?.sparkline?.length || 0] - (token.sparkline || [])[0] >= 0 ? '#10B981' : '#EF4444'}
                       />
                     </div>
                   </td>
