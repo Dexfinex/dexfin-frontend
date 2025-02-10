@@ -179,7 +179,7 @@ export function LineChartView({ data, token }: LineChartViewProps) {
       animationEasing: 'cubicOut'
     };
 
-    // Set chart options
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     chartInstance.current.setOption(option);
 

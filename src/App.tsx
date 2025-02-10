@@ -14,9 +14,10 @@ import { GamesModal } from './components/GamesModal';
 import { RewardsModal } from './components/RewardsModal';
 import SignupModal from "./components/SignupModal.tsx";
 import SigninModal from "./components/SigninModal.tsx";
-import { AuthMethodType } from "@lit-protocol/constants";
-import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
-import { LOCAL_STORAGE_AUTH_REDIRECT_TYPE } from "./constants";
+import {AuthMethodType} from "@lit-protocol/constants";
+import {Web3AuthContext} from "./providers/Web3AuthContext.tsx";
+import {LOCAL_STORAGE_AUTH_REDIRECT_TYPE} from "./constants";
+import { TradingViewModal } from './components/TradingViewModal.tsx';
 
 export default function App() {
     const { theme } = useStore();
@@ -45,6 +46,8 @@ export default function App() {
         setIsSignupModalOpen,
         isSigninModalOpen,
         setIsSigninModalOpen,
+        istrade,
+        setTradeOpen,
         menuItems
     } = useStore();
 
@@ -168,6 +171,10 @@ export default function App() {
             <RewardsModal
                 isOpen={isRewardsOpen}
                 onClose={() => setIsRewardsOpen(false)}
+            />
+            <TradingViewModal
+                isOpen={istrade}
+                onClose={() => setTradeOpen(false)}
             />
         </div>
     );

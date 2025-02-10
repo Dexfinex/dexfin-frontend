@@ -15,7 +15,8 @@ import {
   Search,
   X as XIcon
 } from 'lucide-react';
-import { getCoinPrice, getOHLCV } from '../lib/coingecko';
+
+import { coingeckoService } from '../services/coingecko.service';
 
 interface SwapModalProps {
   isOpen: boolean;
@@ -199,8 +200,8 @@ export const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
         try {
           setLoading(true);
           const [price, ohlcv] = await Promise.all([
-            getCoinPrice(fromToken.id),
-            getOHLCV(fromToken.id)
+            coingeckoService.getCoinPrice(fromToken.id),
+            coingeckoService.getOHLCV(fromToken.id)
           ]);
           setPriceData(price);
           

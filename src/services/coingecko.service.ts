@@ -1,18 +1,11 @@
-import { coinGeckoApi } from "./api.service";
-import { CoinGeckoToken } from "../types/thirdparty.type";
-import { TokenType } from "../types/swap.type";
+import { coinGeckoApi, coinGeckoApi2 } from "./api.service.ts";
+import { CoinGeckoToken, TrendingCoin, SearchResult, CoinData } from "../types";
+import { ChartDataPoint, TokenType } from "../types/swap.type.ts";
 import axios from "axios";
-import { mapCoingeckoAssetPlatforms } from "../constants/mock/coingeckoAssetPlatforms";
-import { mapCoingeckoNetworks } from "../constants/mock/coingeckoNetworks";
+import { mapCoingeckoAssetPlatforms } from "../constants/mock/coingeckoAssetPlatforms.ts";
 import { NULL_ADDRESS } from "../constants";
+import { mapCoingeckoNetworks } from "../constants/mock/coingeckoNetworks.ts";
 
-interface ChartDataPoint {
-    time: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-}
 
 interface CoinGeckoTokenDetail {
     id: string;
@@ -224,5 +217,38 @@ export const coingeckoService = {
             console.log(e);
         }
         return {}
-    }
+    },
+    getTrendingCoins: async (): Promise<TrendingCoin[]> => {
+        try {
+            const { data } = await coinGeckoApi2.get<TrendingCoin[]>('/trending/');
+            return data;
+        } catch (error) {
+            console.error('Failed to fetch trending coins:', error);
+            throw error;
+        }
+    },
+
+    searchCoins: async (query: string): Promise<SearchResult[]> => {
+        try {
+            const { data } = await coinGeckoApi2.get<SearchResult[]>(`/search?query=${encodeURIComponent(query)}`);
+            return data;
+        } catch (error) {
+            console.error('Error searching coins:', error);
+            return [];
+        }
+    },
+
+    getCoinPrice: async (coinId: string): Promise<CoinData> => {
+        try {
+            const { data } = await coinGeckoApi2.get<CoinData>(`/price/${coinId}`);
+            return data;
+        } catch (error) {
+            console.error('CoinGecko API Error:', {
+                endpoint: '/simple/price',
+                coinId,
+                message: error instanceof Error ? error.message : 'Unknown error'
+            });
+            throw error;
+        }
+    },
 }

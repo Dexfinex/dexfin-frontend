@@ -1,6 +1,8 @@
 import OpenAI from 'openai';
-import {getCoinPrice, getTrendingCoins} from './coingecko';
-import {getLatestNews} from './cryptonews';
+import { coingeckoService } from '../services/coingecko.service';
+import {cryptonewsService} from "../services/cryptonews.service";
+import { brianService } from '../services/brian.services';
+
 import {wallpapers} from '../store/useStore';
 
 const openai = new OpenAI({
@@ -23,7 +25,7 @@ const fallbackResponses: Record<string, {
   'bitcoin price': {
     text: 'Let me fetch the current Bitcoin price for you.',
     action: async () => {
-      const data = await getCoinPrice('bitcoin');
+      const data = await coingeckoService.getCoinPrice('bitcoin');
       return {
         text: `The current Bitcoin price is $${data.price.toLocaleString()} (${data.priceChange24h.toFixed(2)}% 24h change)`,
         data
@@ -33,7 +35,7 @@ const fallbackResponses: Record<string, {
   'trending tokens': {
     text: 'Here are the currently trending tokens:',
     action: async () => {
-      const data = await getTrendingCoins();
+      const data = await coingeckoService.getTrendingCoins();
       return {
         text: 'Here are the currently trending tokens:',
         trending: data
@@ -43,20 +45,20 @@ const fallbackResponses: Record<string, {
   'latest news': {
     text: 'Here are the latest crypto news updates:',
     action: async () => {
-      const news = await getLatestNews();
+      const news = await cryptonewsService.getLatestNews();
       return {
         text: 'Here are the latest crypto news updates:',
         news
       };
     }
   },
-  'stake eth': {
-    text: 'Opening Lido staking interface...',
-    action: async () => ({
-      text: 'Opening Lido staking interface...',
-      command: 'STAKE_ETH'
-    })
-  },
+  // 'stake eth': {
+  //   text: 'Opening Lido staking interface...',
+  //   action: async () => ({
+  //     text: 'Opening Lido staking interface...',
+  //     command: 'STAKE_ETH'
+  //   })
+  // },
   'open settings': {
     text: 'Opening settings...',
     action: async () => ({
@@ -113,8 +115,20 @@ const findFallbackResponse = async (message: string) => {
   return null;
 };
 
+function convertToPlainText(text) {
+  return text
+      .replace(/"\n+/g, '')            // Remove unnecessary quote marks and new lines
+      .replace(/###?.*?\n/g, '')       // Remove headings (### Title)
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold (**bold** -> bold)
+      .replace(/-\s+/g, '')            // Remove bullet points (- item -> item)
+      .replace(/\d+\.\s+/g, '')        // Remove numbered list (1. item -> item)
+      .replace(/\n{2,}/g, ' ')         // Replace multiple new lines with space
+      .replace(/\n/g, ' ')             // Replace remaining new lines with space
+      .trim();                         // Remove leading and trailing spaces
+}
+
 // Process a single command
-const processCommand = async (command: string) => {
+const processCommand = async (command: string, address: string, chainId: number) => {
   // Try fallback response first
   const fallbackResponse = await findFallbackResponse(command);
   if (fallbackResponse) {
@@ -125,7 +139,7 @@ const processCommand = async (command: string) => {
   const lowerCommand = command.toLowerCase().trim();
 
   if (lowerCommand.includes('latest news') || lowerCommand.includes('show me the news')) {
-    const news = await getLatestNews();
+    const news = await cryptonewsService.getLatestNews();
     return {
       text: "Here are the latest crypto news updates:",
       news
@@ -133,7 +147,7 @@ const processCommand = async (command: string) => {
   }
 
   if (lowerCommand.includes('trending tokens')) {
-    const trendingCoins = await getTrendingCoins();
+    const trendingCoins = await coingeckoService.getTrendingCoins();
     return {
       text: "Here are the currently trending tokens:",
       trending: trendingCoins
@@ -141,7 +155,7 @@ const processCommand = async (command: string) => {
   }
 
   if (lowerCommand.includes('bitcoin price')) {
-    const bitcoinData = await getCoinPrice('bitcoin');
+    const bitcoinData = await coingeckoService.getCoinPrice('bitcoin');
     if (bitcoinData) {
       return {
         text: `The current Bitcoin price is $${bitcoinData.price.toLocaleString()} (${bitcoinData.priceChange24h.toFixed(2)}% 24h change)`,
@@ -149,9 +163,23 @@ const processCommand = async (command: string) => {
       };
     }
   }
-
+  
   // If no direct match, use OpenAI with fallback
   try {
+    if(address) {
+      const brianTransactionData = await brianService.getBrianTransactionData(command, address, chainId);
+      return {
+        text: brianTransactionData.message
+      }
+    } else {
+      const brianKnowledgeData = await brianService.getBrianKnowledgeData(command);
+      return {
+        text: convertToPlainText(brianKnowledgeData.message)
+      }
+    }
+    
+
+
     const completion = await Promise.race([
       openai.chat.completions.create({
         model: "gpt-3.5-turbo",
@@ -176,6 +204,7 @@ const processCommand = async (command: string) => {
     return {
       text: completion.choices[0].message.content || "I'm sorry, I couldn't process your request."
     };
+
   } catch (e) {
 
     const error = e as {
@@ -213,9 +242,10 @@ const processCommand = async (command: string) => {
   }
 };
 
-export async function generateResponse(userMessage: string) {
+export async function generateResponse(userMessage: string, address: string, chainId: number) {
   try {
     // Parse chained commands
+    console.log(address);
     const commands = parseChainedCommands(userMessage);
     
     // If there are multiple commands, process them sequentially
@@ -223,7 +253,7 @@ export async function generateResponse(userMessage: string) {
       const results = [];
       for (const command of commands) {
         try {
-          const result = await processCommand(command);
+          const result = await processCommand(command, address, chainId);
           results.push(result);
         } catch (error) {
           console.error(`Error processing command "${command}":`, error);
@@ -245,7 +275,7 @@ export async function generateResponse(userMessage: string) {
     }
     
     // Single command processing
-    return await processCommand(userMessage);
+    return await processCommand(userMessage, address, chainId);
   } catch (error) {
     console.error('Error generating response:', error);
 

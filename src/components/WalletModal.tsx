@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
+import { Skeleton, useMediaQuery } from '@chakra-ui/react';
 import { X, Maximize2, Minimize2, ArrowDown, CreditCard, Send, Wallet, TrendingUp, LayoutGrid, History, Landmark, ExternalLink, Clock } from 'lucide-react';
 import { SendDrawer } from './wallet/SendDrawer';
 import { ReceiveDrawer } from './wallet/ReceiveDrawer';
 import { BuyDrawer } from './wallet/BuyDrawer';
 import { mockTransactions, mockDeFiPositions, mockDeFiStats, formatTransactionAmount, formatUsdValue, formatApy, getHealthFactorColor, getTransactionStatusColor } from '../lib/wallet';
+import { formatNumberByFrac } from '../utils/common.util.ts';
 import { TransactionType } from '../types/wallet';
+import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
+import { TokenChainIcon } from './swap/components/TokenIcon.tsx';
+import { mapChainId2ExplorerUrl } from '../config/networks.ts';
+import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
+import useTokenTransferStore from '../store/useTokenTransferStore.ts';
+import { useEvmWalletBalance } from '../hooks/useBalance.tsx';
+import { useEvmWalletTransfer } from '../hooks/useTransfer.tsx';
+import { formatDate } from '../utils/common.util.ts';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -17,6 +27,28 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const [showSendDrawer, setShowSendDrawer] = useState(false);
   const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
   const [showBuyDrawer, setShowBuyDrawer] = useState(false);
+  const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
+
+  const { isLoading: isLoadingBalance } = useEvmWalletBalance();
+  const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
+  const { isLoading } = useEvmWalletTransfer();
+  const { transfers } = useTokenTransferStore();
+
+  const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
+
+  const { address, chainId } = useContext(Web3AuthContext);
+
+  const [isLargerThan1200] = useMediaQuery('(min-width: 1200px)');
+  const [isLargerThan800] = useMediaQuery('(min-width: 800px)');
+
+  const walletContainerWidth = useMemo(() => {
+    if (isFullscreen) return 'w-full h-full rounded-none';
+    if (isLargerThan1200) return 'w-[50%] h-[80%] rounded-xl';
+    if (isLargerThan800) return 'w-[80%] h-[80%] rounded-xl';
+
+    return 'w-full h-full rounded-none';
+
+  }, [isLargerThan800, isLargerThan1200, isFullscreen])
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -27,7 +59,11 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       {/* Total Balance */}
       <div className="bg-white/5 rounded-xl p-4">
         <div className="text-sm text-white/60">Total Balance</div>
-        <div className="text-3xl font-bold mt-1">{formatUsdValue(mockDeFiStats.netWorth)}</div>
+        <div className="text-3xl font-bold mt-1">
+          {
+            isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)
+          }
+        </div>
         <div className="flex items-center gap-1 mt-1 text-green-400">
           <TrendingUp className="w-4 h-4" />
           <span>+1.57% TODAY</span>
@@ -36,23 +72,25 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
       {/* Quick Actions */}
       <div className="grid grid-cols-3 gap-3">
-        <button 
+        <button
+          disabled={tokenBalances.length === 0}
           onClick={() => setShowSendDrawer(true)}
-          className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
+          className={`flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors ${tokenBalances.length === 0 ? "opacity-[0.6] disabled:pointer-events-none disabled:cursor-default" : ""}`}
         >
           <Send className="w-5 h-5" />
           <span>Send</span>
         </button>
-        <button 
+        <button
           onClick={() => setShowReceiveDrawer(true)}
           className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
         >
           <ArrowDown className="w-5 h-5" />
           <span>Receive</span>
         </button>
-        <button 
+        <button
+          disabled={true}
           onClick={() => setShowBuyDrawer(true)}
-          className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
+          className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors opacity-[0.7]"
         >
           <CreditCard className="w-5 h-5" />
           <span>Buy</span>
@@ -61,46 +99,93 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
       {/* Assets List */}
       <div className="space-y-2">
-        {mockDeFiPositions.map((position) => (
-          <div
-            key={position.id}
-            className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <img src={position.token.logo} alt={position.token.symbol} className="w-8 h-8" />
-              <div>
-                <div className="font-medium">{position.token.symbol}</div>
-                <div className="text-sm text-white/60">
-                  {formatTransactionAmount(position.amount, position.token.symbol)}
+        {
+          isLoadingBalance ?
+            <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
+            : tokenBalances.map((position, index) => (
+              <button
+                key={position.chain + position.symbol}
+                className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                onClick={() => {
+                  setSelectedBalanceIndex(index);
+                  setShowSendDrawer(true);
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(chainId)} />
+                  <div className='flex flex-col justify-start items-start'>
+                    <div className="font-medium">{position.symbol}</div>
+                    <div className="text-sm text-white/60">
+                      {`${formatNumberByFrac(position.balance)} ${position.symbol}`}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div>{formatUsdValue(position.value)}</div>
-              <div className="text-sm text-green-400">
-                {formatApy(position.apy)} APY
-              </div>
-            </div>
-          </div>
-        ))}
+                <div className="text-right">
+                  <div>{formatUsdValue(position.usdValue)}</div>
+                  {/* <div className="text-sm text-green-400">
+                  {formatApy(0)} APY
+                </div> */}
+                </div>
+              </button>
+            ))
+        }
       </div>
     </div>
   );
 
   const renderActivity = () => (
     <div className="space-y-3">
-      {mockTransactions.map((tx) => (
+      {
+        transfers.map((tx) => (
+          <div
+            key={tx.txHash}
+            className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tx.transactionType === TransactionType.Received ? 'bg-green-500/20 text-green-400' :
+                  tx.transactionType === TransactionType.Sent ? 'bg-red-500/20 text-red-400' :
+                    'bg-blue-500/20 text-blue-400'
+                  }`}>
+                  {tx.transactionType}
+                </span>
+                <span className="text-sm text-white/60">
+                  {formatDate(tx.time)}
+                </span>
+              </div>
+              <a
+                href={`${mapChainId2ExplorerUrl[chainId!]}/tx/${tx.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1 hover:bg-white/10 rounded-md transition-colors"
+              >
+                <ExternalLink className="w-4 h-4 text-white/40" />
+              </a>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-sm">
+                    {formatTransactionAmount(tx.transferAmount, tx.tokenSymbol || '')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))
+      }
+      {/* {mockTransactions.map((tx) => (
         <div
           key={tx.id}
           className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
         >
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                tx.type === TransactionType.RECEIVE ? 'bg-green-500/20 text-green-400' :
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tx.type === TransactionType.RECEIVE ? 'bg-green-500/20 text-green-400' :
                 tx.type === TransactionType.SEND ? 'bg-red-500/20 text-red-400' :
-                'bg-blue-500/20 text-blue-400'
-              }`}>
+                  'bg-blue-500/20 text-blue-400'
+                }`}>
                 {tx.type}
               </span>
               <span className="text-sm text-white/60">
@@ -156,7 +241,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
             </div>
           </div>
         </div>
-      ))}
+      ))} */}
     </div>
   );
 
@@ -195,7 +280,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
       {/* DeFi Positions */}
       <div className="space-y-3">
-        {mockDeFiPositions.map((position) => (
+        {sortedMockDeFiPositions.map((position) => (
           <div
             key={position.id}
             className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
@@ -225,7 +310,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
             <div className="flex items-center gap-4 text-sm">
               <div>
                 <span className="text-white/60">Amount:</span>{' '}
-                {formatTransactionAmount(position.amount, position.token.symbol)}
+                {`${formatNumberByFrac(position.amount)} ${position.token.symbol}`}
               </div>
               {position.rewards && (
                 <div>
@@ -261,11 +346,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
         <div
-          className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${
-            isFullscreen
-              ? 'w-full h-full rounded-none'
-              : 'w-[90%] h-[90%] rounded-xl'
-          }`}
+          className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${walletContainerWidth}`}
         >
           <div className="flex flex-col h-full">
             {/* Header */}
@@ -275,16 +356,19 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                 <h2 className="text-xl font-semibold">Wallet</h2>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  {isFullscreen ? (
-                    <Minimize2 className="w-4 h-4" />
-                  ) : (
-                    <Maximize2 className="w-4 h-4" />
-                  )}
-                </button>
+                {
+                  isLargerThan800 &&
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    {isFullscreen ? (
+                      <Minimize2 className="w-4 h-4" />
+                    ) : (
+                      <Maximize2 className="w-4 h-4" />
+                    )}
+                  </button>
+                }
                 <button
                   onClick={onClose}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -305,27 +389,24 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
             <div className="flex items-center justify-around p-2 border-t border-white/10">
               <button
                 onClick={() => setSelectedTab('assets')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-                  selectedTab === 'assets' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                }`}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'assets' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                  }`}
               >
                 <LayoutGrid className="w-5 h-5" />
                 <span className="text-xs">Assets</span>
               </button>
               <button
                 onClick={() => setSelectedTab('activity')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-                  selectedTab === 'activity' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                }`}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'activity' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                  }`}
               >
                 <History className="w-5 h-5" />
                 <span className="text-xs">Activity</span>
               </button>
               <button
                 onClick={() => setSelectedTab('defi')}
-                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-                  selectedTab === 'defi' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                }`}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'defi' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                  }`}
               >
                 <Landmark className="w-5 h-5" />
                 <span className="text-xs">DeFi</span>
@@ -338,32 +419,32 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       {/* Drawers */}
       <SendDrawer
         isOpen={showSendDrawer}
+        selectedAssetIndex={selectedBalanceIndex}
         onClose={() => setShowSendDrawer(false)}
-        assets={mockDeFiPositions.map(p => ({
-          id: p.id,
-          name: p.token.symbol,
-          symbol: p.token.symbol,
-          amount: p.amount,
-          logo: p.token.logo
+        assets={tokenBalances.map(p => ({
+          name: p.name,
+          address: p.address,
+          symbol: p.symbol,
+          amount: Number(p.balance),
+          logo: p.logo
         }))}
       />
 
       <ReceiveDrawer
         isOpen={showReceiveDrawer}
         onClose={() => setShowReceiveDrawer(false)}
-        assets={mockDeFiPositions.map(p => ({
-          id: p.id,
-          name: p.token.symbol,
-          symbol: p.token.symbol,
-          logo: p.token.logo
+        assets={tokenBalances.map(p => ({
+          name: p.name,
+          symbol: p.symbol,
+          logo: p.logo
         }))}
-        walletAddress="0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+        walletAddress={address}
       />
 
       <BuyDrawer
         isOpen={showBuyDrawer}
         onClose={() => setShowBuyDrawer(false)}
-        assets={mockDeFiPositions.map(p => ({
+        assets={sortedMockDeFiPositions.map(p => ({
           id: p.id,
           name: p.token.symbol,
           symbol: p.token.symbol,

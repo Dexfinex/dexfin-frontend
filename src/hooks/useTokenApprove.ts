@@ -12,7 +12,7 @@ const oldErc = [
 	'0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'.toLowerCase() // LDO
 ];
 
-const myABI = [  {
+export const myABI = [  {
 	"constant": false,
 	"inputs": [
 		{ "name": "_spender", "type": "address" },
@@ -25,7 +25,7 @@ const myABI = [  {
 	"type": "function"
 }];
 
-async function getAllowance({
+export async function getAllowance({
 	token,
 	chain,
 	address,
@@ -42,14 +42,14 @@ async function getAllowance({
 	try {
 		const provider = providers[chain];
 		const tokenContract = new ethers.Contract(token, erc20Abi, provider);
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+		 
 		return (await tokenContract.allowance(address, spender)) as ethers.BigNumber;
 	} catch (error) {
 		throw new Error(error instanceof Error ? `[Allowance]:${error.message}` : '[Allowance]: Failed to fetch allowance');
 	}
 }
 
-const useGetAllowance = ({
+export const useGetAllowance = ({
 	token,
 	spender,
 	amount,
@@ -121,7 +121,6 @@ export const useTokenApprove = ({
 	});
 
 	const normalizedAmount = !Number.isNaN(Number(amount)) ? amount : '0';
-	const isLoading = false;
 
 	const mainApproveFunc = async (approveAmount: BigNumber) => {
 		try {
@@ -135,7 +134,7 @@ export const useTokenApprove = ({
 				signer
 			);
 
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+			 
 			(await erc20.approve(spender, approveAmount)).wait();
 			// success?
 			setIsConfirmingApproval(false);
@@ -199,7 +198,7 @@ export const useTokenApprove = ({
 		approve: approve,
 		approveInfinite: approveInfinite,
 		approveReset: approveReset,
-		isLoading: isLoading || isConfirmingApproval,
+		isLoading: isConfirmingApproval,
 		isConfirmingApproval,
 		isInfiniteLoading: isInfiniteLoading || isConfirmingInfiniteApproval,
 		isConfirmingInfiniteApproval,

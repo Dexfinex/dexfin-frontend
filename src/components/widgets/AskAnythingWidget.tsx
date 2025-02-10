@@ -31,6 +31,7 @@ export const AskAnythingWidget: React.FC = () => {
     setIsGamesOpen,
     // setIsWalletOpen,
     setMarketDataView,
+    setTradeOpen,
     // setWallpaper,
     // wallpapers
   } = useStore();
@@ -59,7 +60,7 @@ export const AskAnythingWidget: React.FC = () => {
       try {
         setIsManualStop(true);
         recognitionInstance.abort();
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
       } catch (error) {
         // Ignore errors during cleanup
       }
@@ -140,6 +141,9 @@ export const AskAnythingWidget: React.FC = () => {
         // setIsWalletOpen(true);
       } else if (normalizedCommand.includes('open assistant')) {
         setIsAIAgentOpen(true);
+      }
+      else if (normalizedCommand.includes('open trade')) {
+        setTradeOpen(true);
       }
     });
   };

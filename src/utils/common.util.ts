@@ -1,5 +1,6 @@
 import moment from 'moment/moment';
-import { ethers } from 'ethers';
+import {ethers} from 'ethers';
+import {mapChainId2NativeAddress} from "../config/networks.ts";
 
 const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
 
@@ -7,10 +8,14 @@ export const isValidWalletAddress = (address: string): boolean => {
     return ethAddressRegex.test(address);
 };
 
+export const isNativeTokenAddress = (chainId: number, address: string): boolean => {
+    return mapChainId2NativeAddress[chainId]?.toLowerCase() === address?.toLowerCase()
+}
+
 export const checkIfAddressExists = async (address: string): Promise<boolean> => {
     try {
         // Connect to an EVM chain (e.g., Ethereum mainnet, or any other network)
-        const provider = new ethers.providers.JsonRpcProvider("https://mainnet.base.org	");
+        const provider = new ethers.providers.JsonRpcProvider("https://mainnet.base.org");
 
         // Check if the address has a non-zero balance
         const balance = await provider.getBalance(address);
@@ -29,6 +34,28 @@ export const checkIfAddressExists = async (address: string): Promise<boolean> =>
         return false;
     }
 }
+export const extractAddress = (fullAddress: string): string => {
+    if (!fullAddress) return ""
+    const match = fullAddress.match(/0x[a-fA-F0-9]{40}/);
+    const address = match ? match[0] : "";
+    return address;
+}
+
+export const getChatHistoryDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (diffDays <= 0) {
+        return timeString; // Show only hour and minutes if today
+    } else {
+        return `${diffDays} days ago, ${timeString}`; // Show x days ago + time
+    }
+}
 
 /**
  * Compares two wallet addresses in uppercase.
@@ -40,6 +67,9 @@ export const compareWalletAddresses = (
     address1: string,
     address2: string,
 ): boolean => {
+    if(!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
+        return false;
+    }
     // Convert both addresses to uppercase.
     const normalizedAddress1 = address1.toUpperCase();
     const normalizedAddress2 = address2.toUpperCase();

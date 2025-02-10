@@ -1,3 +1,6 @@
+
+import { useCallback, useEffect } from 'react';
+
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { ethers } from 'ethers';
 import { getAddress } from 'ethers/lib/utils';
@@ -8,10 +11,20 @@ import { useContext } from "react";
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
 import { rpcUrls } from "../config/rpcs.ts";
 
+import { dexfinv3Service } from '../services/dexfin.service.ts';
+import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
+import { EvmWalletBalanceResponseType } from '../types/dexfinv3.type.ts';
+import { TokenBalance } from '../store/useTokenBalanceStore.ts';
+
 interface IGetBalance {
 	address?: string;
 	chainId?: number;
 	token?: string;
+}
+
+interface IEvmWallet {
+	address: string;
+	chainId: number;
 }
 
 const createProviderAndGetBalance = async (rpcUrl: string, address: string, token: string) => {
@@ -26,11 +39,11 @@ const createProviderAndGetBalance = async (rpcUrl: string, address: string, toke
 
 		const contract = new ethers.Contract(getAddress(token), erc20Abi, provider);
 
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-argument
+
 		const [balance, decimals] = await Promise.all<[string, number]>([contract.balanceOf(getAddress(address)), contract.decimals()]);
 
 		return { value: balance, formatted: ethers.utils.formatUnits(balance, decimals), decimals };
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 	} catch (error) {
 		return null;
 	}
@@ -42,18 +55,18 @@ export const getBalance = async ({ address, chainId, token }: IGetBalance) => {
 			return null;
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/ban-ts-comment
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 		// @ts-expect-error
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+
 		const urls = Object.values(rpcUrls[chainId] || {});
 
 		if (urls.length === 0) {
 			return null;
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/ban-ts-comment
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 		// @ts-expect-error
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-return
+
 		return await Promise.any(urls.map((rpcUrl) => createProviderAndGetBalance(rpcUrl, address, token)));
 	} catch (error) {
 		console.log(error);
@@ -125,4 +138,55 @@ export const useBalance = ({
 		formatted: string;
 		decimals?: undefined;
 	}>;
+};
+
+export const useEvmWalletBalance = (params?: IEvmWallet) => {
+
+	const { chainId: connectedChainId, address: connectedAddress } = useContext(Web3AuthContext);
+
+	const activeChainId = params?.chainId || connectedChainId + "";
+	const activeWalletAddress = params?.address || connectedAddress;
+
+	const enabled = !!activeChainId && !!activeWalletAddress;
+	const fetchBalances = useCallback(async () => {
+		if (!activeChainId || !activeWalletAddress) {
+			return []
+		}
+		const data = await dexfinv3Service.getEvmWalletBalance({ chainId: Number(activeChainId), address: activeWalletAddress });
+		if (data) {
+			return data;
+		}
+		return []
+	}, [activeChainId, activeWalletAddress]);
+
+	const { isLoading, refetch, data } = useQuery<EvmWalletBalanceResponseType[]>(
+		{
+			queryKey: ['balance', activeWalletAddress, activeChainId,],
+			queryFn: fetchBalances,
+			refetchInterval: 10_000,
+			enabled
+		}
+	);
+
+	useEffect(() => {
+		if (data) {
+			useTokenBalanceStore.getState().setTokenBalances(data.map((item) => ({
+				chain: item.chain,
+				address: item.tokenAddress as string,
+				symbol: item.symbol,
+				name: item.name,
+				logo: item.logo,
+				balance: item.balanceDecimal,
+				decimals: item.decimals,
+				usdPrice: item.usdPrice,
+				usdValue: item.usdValue,
+			} as unknown as TokenBalance)));
+		}
+	}, [data]);
+
+	return {
+		isLoading,
+		refetch,
+		data,
+	};
 };
