@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect } from 'react';
+import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect } from "react";
 import { coingeckoService } from "../services/coingecko.service";
 import useTokenStore from "../store/useTokenStore";
 
@@ -8,10 +8,7 @@ interface QuoteParam {
     chainId: number;
 }
 
-const useGetTokenPrices = ({
-    chainId,
-    tokenAddresses,
-}: QuoteParam) => {
+const useGetTokenPrices = ({ chainId, tokenAddresses }: QuoteParam) => {
     const enabled = !!tokenAddresses && tokenAddresses.length > 0;
 
     const fetchPrices = useCallback(async () => {
@@ -27,10 +24,10 @@ const useGetTokenPrices = ({
     }, [tokenAddresses, chainId]);
 
     const { isLoading, refetch, data } = useQuery<Record<string, string>>({
-        queryKey: ['get-token-price', tokenAddresses, chainId],
+        queryKey: ["get-token-price", tokenAddresses, chainId],
         queryFn: fetchPrices,
         enabled,
-        refetchInterval: 30_000,
+        refetchInterval: 10_000,
     });
 
     useEffect(() => {
@@ -47,4 +44,3 @@ const useGetTokenPrices = ({
 };
 
 export default useGetTokenPrices;
-
