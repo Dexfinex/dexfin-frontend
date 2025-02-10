@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import { Car, Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { formatNumberByFrac } from '../../../utils/common.util';
+import { Input } from '@chakra-ui/react';
 
 interface CartListProps {
     cartItems: any[];
@@ -9,54 +10,127 @@ interface CartListProps {
     onUpdateQuantity: (id: string, quantity: number) => void;
     onCheckout: () => void;
 }
+interface CartItemProps {
+    item: any;
+    coinPrice: number;
+    onRemove: (id: string) => void;
+    onUpdateQuantity: (id: string, quantity: number) => void;
+}
+
+
 
 const CartItem = React.memo(({
     item,
     coinPrice,
     onRemove,
     onUpdateQuantity
-}: {
-    item: any;
-    coinPrice: number;
-    onRemove: (id: string) => void;
-    onUpdateQuantity: (id: string, quantity: number) => void;
-}) => (
-    <div className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
-        <img src={item.logo} alt={item.name} className="w-10 h-10" loading="lazy" />
-        <div className="flex-1">
-            <div className="flex items-center justify-between">
-                <div className="font-medium">{item.name}</div>
-                <button
-                    onClick={() => onRemove(item.id)}
-                    className="p-1 hover:bg-white/10 rounded-md transition-colors"
-                >
-                    <Trash2 className="w-4 h-4 text-red-400" />
-                </button>
-            </div>
-            <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-2">
+}: CartItemProps) => {
+    const MIN_QUANTITY = 1 / coinPrice;
+    // console.log("MIN_QUANTITY : ", MIN_QUANTITY);
+    const STEP = 0.1;
+    const [inputValue, setInputValue] = useState(item.quantity.toString());
+
+    useEffect(() => {
+        setInputValue(item.quantity.toString());
+    }, [item.quantity]);
+
+    const handleQuantityChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setInputValue(value); 
+
+        if (value === '' || isNaN(Number(value))) {
+            return;
+        }
+
+        const newValue = Number(value);
+        if (newValue < MIN_QUANTITY) {
+            onUpdateQuantity(item.id, MIN_QUANTITY);
+        } else {
+            onUpdateQuantity(item.id, Number(newValue.toFixed(4)));
+        }
+    }, [item.id, onUpdateQuantity]);
+
+    const handleBlur = useCallback(() => {
+        const newValue = Number(inputValue);
+        if (isNaN(newValue) || newValue < MIN_QUANTITY) {
+            onUpdateQuantity(item.id, MIN_QUANTITY);
+            setInputValue(MIN_QUANTITY.toString());
+        } else {
+            const formattedValue = Number(newValue.toFixed(4));
+            onUpdateQuantity(item.id, formattedValue);
+            setInputValue(formattedValue.toString());
+        }
+    }, [inputValue, item.id, onUpdateQuantity]);
+
+    const decrementQuantity = useCallback(() => {
+        const newValue = Number((item.quantity - STEP).toFixed(4));
+        if (newValue < MIN_QUANTITY) {
+            onUpdateQuantity(item.id, MIN_QUANTITY);
+        } else {
+            onUpdateQuantity(item.id, newValue);
+        }
+    }, [item.id, item.quantity, onUpdateQuantity]);
+
+    const incrementQuantity = useCallback(() => {
+        const newValue = Number((item.quantity + STEP).toFixed(4));
+        onUpdateQuantity(item.id, newValue);
+    }, [item.id, item.quantity, onUpdateQuantity]);
+
+    return (
+        <div className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
+            <img src={item.logo} alt={item.name} className="w-10 h-10" loading="lazy" />
+            <div className="flex-1">
+                <div className="flex items-center justify-between">
+                    <div className="font-medium">{item.name}</div>
                     <button
-                        onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                        className="p-1 hover:bg-white/10 rounded-md transition-colors"
-                        disabled={item.quantity <= 1}
-                    >
-                        <Minus className="w-4 h-4" />
-                    </button>
-                    <span>{item.quantity}</span>
-                    <button
-                        onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => onRemove(item.id)}
                         className="p-1 hover:bg-white/10 rounded-md transition-colors"
                     >
-                        <Plus className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
                 </div>
-                <div className="font-medium">
-                    ${formatNumberByFrac(Number(coinPrice) * item.quantity)}
+                <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={decrementQuantity}
+                            className="p-1 hover:bg-white/10 rounded-md transition-colors"
+                            disabled={item.quantity <= MIN_QUANTITY}
+                        >
+                            <Minus className="w-4 h-4" />
+                        </button>
+                        <Input
+                            value={inputValue}
+                            onChange={handleQuantityChange}
+                            onBlur={handleBlur}
+                            min={MIN_QUANTITY}
+                            step={STEP}
+                            type="number"
+                            placeholder="Enter token amount"
+                            _placeholder={{ fontSize: 'xs' }}
+                            bg="whiteAlpha.100"
+                            border="1px solid"
+                            borderColor="whiteAlpha.300"
+                            color="white"
+                            _hover={{ borderColor: 'whiteAlpha.400' }}
+                            _focus={{ borderColor: 'blue.300', boxShadow: 'none' }}
+                            width="24"
+                            textAlign="center"
+                        />
+                        <button
+                            onClick={incrementQuantity}
+                            className="p-1 hover:bg-white/10 rounded-md transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <div className="font-medium">
+                        ${formatNumberByFrac(Number(coinPrice) * item.quantity)}
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-));
+    );
+});
 
 const CartList: React.FC<CartListProps> = React.memo(({
     cartItems,

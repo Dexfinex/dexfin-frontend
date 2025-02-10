@@ -105,7 +105,7 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
             </div>
 
             <div className="p-6">
-                <div className="max-w-2xl mx-auto">
+                <div className='grid grid-cols-2 gap-4'>
                     {/* Order Summary */}
                     <div className="mb-8">
                         <h3 className="text-lg font-medium mb-4">Order Summary</h3>
@@ -119,67 +119,68 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                             ))}
                         </div>
                     </div>
-
-                    {/* Payment Method */}
-                    <div className="mb-8">
-                        <h3 className="text-lg font-medium mb-4">Payment Method</h3>
-                        <div className="space-y-3">
-                            <PaymentMethodButton
-                                method="wallet"
-                                selectedMethod={paymentMethod}
-                                onSelect={setPaymentMethod}
-                            />
-                            <PaymentMethodButton
-                                method="card"
-                                selectedMethod={paymentMethod}
-                                onSelect={setPaymentMethod}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Total Section */}
-                    <div className="mb-8">
-                        <div className="p-4 bg-white/5 rounded-lg space-y-2">
-                            <div className="flex justify-between">
-                                <span className="text-white/60">Subtotal</span>
-                                <span>${formatNumberByFrac(subtotal)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-white/60">Network Fee</span>
-                                <span>~$2.50</span>
-                            </div>
-                            <div className="h-px bg-white/10 my-2" />
-                            <div className="flex justify-between text-lg font-medium">
-                                <span>Total</span>
-                                <span>${formatNumberByFrac(total)}</span>
+                    <div className="max-w-2xl mx-auto">
+                        {/* Payment Method */}
+                        <div className="mb-8">
+                            <h3 className="text-lg font-medium mb-4">Payment Method</h3>
+                            <div className="space-y-3">
+                                <PaymentMethodButton
+                                    method="wallet"
+                                    selectedMethod={paymentMethod}
+                                    onSelect={setPaymentMethod}
+                                />
+                                <PaymentMethodButton
+                                    method="card"
+                                    selectedMethod={paymentMethod}
+                                    onSelect={setPaymentMethod}
+                                />
                             </div>
                         </div>
+                        {/* Total Section */}
+                        <div className="mb-8">
+                            <div className="p-4 bg-white/5 rounded-lg space-y-2">
+                                <div className="flex justify-between">
+                                    <span className="text-white/60">Subtotal</span>
+                                    <span>${formatNumberByFrac(subtotal)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-white/60">Network Fee</span>
+                                    <span>~$2.50</span>
+                                </div>
+                                <div className="h-px bg-white/10 my-2" />
+                                <div className="flex justify-between text-lg font-medium">
+                                    <span>Total</span>
+                                    <span>${formatNumberByFrac(total)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Error Display */}
+                        {buyError && (
+                            <Alert status="error" variant="subtle" bg={'#511414'} borderRadius="md" className="mb-4">
+                                <AlertIcon />
+                                {buyError}
+                            </Alert>
+                        )}
+
+                        {/* Confirm Payment Button */}
+                        <Button
+                            width="full"
+                            colorScheme="blue"
+                            onClick={onExecuteBuy}
+                            isLoading={processingBuy || isBuyPending}
+                            loadingText={
+                                isBuyPending ? "Confirming Transaction..." :
+                                    processingBuy ? "Processing Purchase..." :
+                                        "Preparing Transaction..."
+                            }
+                            isDisabled={!walletAddress || processingBuy || isBuyPending}
+                        >
+                            {walletAddress ? 'Confirm Payment' : 'Connect Wallet to Continue'}
+                        </Button>
                     </div>
-
-                    {/* Error Display */}
-                    {buyError && (
-                        <Alert status="error" variant="subtle" bg={'#511414'} borderRadius="md" className="mb-4">
-                            <AlertIcon />
-                            {buyError}
-                        </Alert>
-                    )}
-
-                    {/* Confirm Payment Button */}
-                    <Button
-                        width="full"
-                        colorScheme="blue"
-                        onClick={onExecuteBuy}
-                        isLoading={processingBuy || isBuyPending}
-                        loadingText={
-                            isBuyPending ? "Confirming Transaction..." :
-                                processingBuy ? "Processing Purchase..." :
-                                    "Preparing Transaction..."
-                        }
-                        isDisabled={!walletAddress || processingBuy || isBuyPending}
-                    >
-                        {walletAddress ? 'Confirm Payment' : 'Connect Wallet to Continue'}
-                    </Button>
                 </div>
+
             </div>
         </>
     );
