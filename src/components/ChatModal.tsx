@@ -13,6 +13,7 @@ import { Spinner } from '@chakra-ui/react';
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
+import { LIMIT } from '../utils/chatApi';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -304,10 +305,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     console.log('isScrollTop')
     if (isScrollTop) {
       console.log('selected user = ', selectedUser)
+      console.log('selected group = ', selectedGroup)
       console.log('chat history = ', chatHistory)
 
       if (selectedUser && chatHistory.length > 0 && chatHistory[0].link) {
         getPrevChatHistory(selectedUser.address, chatHistory[0].chatId)
+      } else if ((selectedGroup && chatHistory.length > 0 && chatHistory[0].link)) {
+        getPrevChatHistory(selectedGroup.groupId, chatHistory[0].chatId)
       }
     }
   }, [isScrollTop])
@@ -445,7 +449,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
 
           updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, true)
-        } else if (receivedMessage.event == "chat.message"  && chatMode === "group" && receivedMessage.message.type) {
+        } else if (receivedMessage.event == "chat.message" && chatMode === "group" && receivedMessage.message.type) {
           if (selectedGroup?.groupId == receivedMessage.chatId) {
             setToBottom(true)
             const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == extractAddress(receivedMessage.from))
@@ -499,7 +503,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
           if (!found) {
             const profile = await getWalletProfile(chatUser, receivedMessage.from)
-            
+
             if (profile) {
               setRequestUsers([...requestUsers, {
                 name: profile.name,
@@ -562,7 +566,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const getPrevChatHistory = async (address: string, chatId: string) => {
     setLoadingPrevChat(true)
-    const prevHistory = await chatUser.chat.history(address, { reference: chatId })
+    const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
     console.log('prev history = ', prevHistory)
 
     if (prevHistory.length > 0) {
@@ -574,9 +578,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           fromAddress: extractAddress(data.fromDID),
           toAddress: extractAddress(data.toDID),
           chatId: data.cid,
-          link: data.link
+          link: data.link,
+          image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
         }
       })
+
       tmp.shift()
       if (tmp.length > 0) {
         setChatHistory([...tmp.reverse(), ...chatHistory])
@@ -793,6 +799,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
+    if (sendingMessage) return;
 
     if (isFailedSent) {
       setIsFailedSent(false)
@@ -868,7 +875,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSelectedUser(user)
 
     try {
-      const history = await chatUser.chat.history(user.address)
+      const history = await chatUser.chat.history(user.address, { limit: LIMIT })
 
       if (history.length > 0) {
         console.log('history = ', history)
@@ -1002,7 +1009,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSelectedGroup(group)
 
     console.log('group = ', group)
-    const history = await chatUser.chat.history(group.groupId)
+    const history = await chatUser.chat.history(group.groupId, { limit: LIMIT })
 
     if (history.length > 0) {
       const tmp: IChat[] = history.map((data: any) => {
