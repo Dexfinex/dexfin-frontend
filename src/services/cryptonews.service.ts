@@ -1,7 +1,7 @@
 import { cryptoNewsApi } from "./api.service.ts";
 import { NewsItem } from '../types';
 
-export const cryptonewsService = {
+export const cryptoNewsService = {
 	getLatestNews: async () => {
 		try {
 			const { data } = await cryptoNewsApi.get<NewsItem[]>('/latest');

@@ -1,35 +1,11 @@
-import React, {useEffect, useState} from 'react';
-import {AlertCircle, Clock, ExternalLink, RefreshCw} from 'lucide-react';
-import {cryptonewsService} from "../../services/cryptonews.service";
-import {NewsItem} from "../../types";
+import React, { useState } from 'react';
+import { AlertCircle, Clock, ExternalLink, RefreshCw } from 'lucide-react';
+import { useGetLatestCryptoNews } from '../../hooks/useCryptoNews';
 
 export const MarketNews: React.FC = () => {
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Market' | 'Regulatory' | 'Technology' | 'DeFi'>('All');
 
-  const fetchNews = async () => {
-    try {
-      setLoading(true);
-      const newsData = await cryptonewsService.getLatestNews();
-      console.log(newsData);
-      setNews(newsData);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching news:', err);
-      setError('Failed to load news');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchNews();
-    // Refresh news every 5 minutes
-    const interval = setInterval(fetchNews, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const { error, data: latestCryptoNews, isLoading, refetch } = useGetLatestCryptoNews();
 
   const getImpactColor = (impact: string) => {
     switch (impact) {
@@ -42,11 +18,15 @@ export const MarketNews: React.FC = () => {
     }
   };
 
+  const refetchHandler = () => {
+    refetch();
+  }
+
   if (error) {
     return (
       <div className="p-6 h-full flex flex-col items-center justify-center text-center">
         <AlertCircle className="w-8 h-8 text-red-400 mb-2" />
-        <p className="text-white/60">{error}</p>
+        <p className="text-white/60">{error.message}</p>
       </div>
     );
   }
@@ -57,41 +37,36 @@ export const MarketNews: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSelectedCategory('All')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
-              selectedCategory === 'All' ? 'bg-white/10' : 'hover:bg-white/5'
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${selectedCategory === 'All' ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
           >
             All
           </button>
           <button
             onClick={() => setSelectedCategory('Market')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
-              selectedCategory === 'Market' ? 'bg-white/10' : 'hover:bg-white/5'
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${selectedCategory === 'Market' ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
           >
             Market
           </button>
           <button
             onClick={() => setSelectedCategory('Regulatory')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
-              selectedCategory === 'Regulatory' ? 'bg-white/10' : 'hover:bg-white/5'
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${selectedCategory === 'Regulatory' ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
           >
             Regulatory
           </button>
           <button
             onClick={() => setSelectedCategory('Technology')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
-              selectedCategory === 'Technology' ? 'bg-white/10' : 'hover:bg-white/5'
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${selectedCategory === 'Technology' ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
           >
             Technology
           </button>
           <button
             onClick={() => setSelectedCategory('DeFi')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
-              selectedCategory === 'DeFi' ? 'bg-white/10' : 'hover:bg-white/5'
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${selectedCategory === 'DeFi' ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
           >
             DeFi
           </button>
@@ -103,7 +78,7 @@ export const MarketNews: React.FC = () => {
             <span>Auto-refreshes every 5 minutes</span>
           </div>
           <button
-            onClick={fetchNews}
+            onClick={refetchHandler}
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
@@ -111,7 +86,7 @@ export const MarketNews: React.FC = () => {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex-1 animate-pulse space-y-4">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="bg-white/5 rounded-lg p-4">
@@ -122,7 +97,7 @@ export const MarketNews: React.FC = () => {
         </div>
       ) : (
         <div className="flex-1 space-y-4 overflow-y-auto ai-chat-scrollbar">
-          {news.map((item, index) => (
+          {(latestCryptoNews || []).map((item, index) => (
             <a
               key={index}
               href={item.link}

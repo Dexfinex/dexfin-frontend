@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { coingeckoService } from '../services/coingecko.service';
-import {cryptonewsService} from "../services/cryptonews.service";
+import {cryptoNewsService} from "../services/cryptonews.service";
 
 import {wallpapers} from '../store/useStore';
 
@@ -44,7 +44,7 @@ const fallbackResponses: Record<string, {
   'latest news': {
     text: 'Here are the latest crypto news updates:',
     action: async () => {
-      const news = await cryptonewsService.getLatestNews();
+      const news = await cryptoNewsService.getLatestNews();
       return {
         text: 'Here are the latest crypto news updates:',
         news
@@ -126,7 +126,7 @@ const processCommand = async (command: string) => {
   const lowerCommand = command.toLowerCase().trim();
 
   if (lowerCommand.includes('latest news') || lowerCommand.includes('show me the news')) {
-    const news = await cryptonewsService.getLatestNews();
+    const news = await cryptoNewsService.getLatestNews();
     return {
       text: "Here are the latest crypto news updates:",
       news

@@ -1,35 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, } from 'react';
 import { ExternalLink, ChevronLeft, ChevronRight, Clock, AlertCircle } from 'lucide-react';
-import {cryptonewsService} from "../../services/cryptonews.service";
-import { NewsItem } from '../../types';
+
+import { useGetLatestCryptoNews } from '../../hooks/useCryptoNews';
 
 export const MarketNewsWidget: React.FC = () => {
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
   const [page, setPage] = useState(0);
   const itemsPerPage = 4;
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        setLoading(true);
-        const newsData = await cryptonewsService.getLatestNews();
-        setNews(newsData);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching news:', err);
-        setError('Failed to load news');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNews();
-    // Refresh news every 5 minutes
-    const interval = setInterval(fetchNews, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const { data: latestCryptoNews, isLoading: isLoadingLatestCryptoNews, error: errorLatestCryptoNews } = useGetLatestCryptoNews();
 
   const getImpactColor = (impact: string) => {
     switch (impact) {
@@ -42,16 +21,16 @@ export const MarketNewsWidget: React.FC = () => {
     }
   };
 
-  if (error) {
+  if (errorLatestCryptoNews) {
     return (
       <div className="p-4 h-full flex flex-col items-center justify-center text-center">
         <AlertCircle className="w-8 h-8 text-red-400 mb-2" />
-        <p className="text-white/60">{error}</p>
+        <p className="text-white/60">{errorLatestCryptoNews.message}</p>
       </div>
     );
   }
 
-  if (loading) {
+  if (isLoadingLatestCryptoNews) {
     return (
       <div className="p-4 h-full">
         <div className="animate-pulse space-y-4">
@@ -66,8 +45,8 @@ export const MarketNewsWidget: React.FC = () => {
     );
   }
 
-  const totalPages = Math.ceil(news.length / itemsPerPage);
-  const displayedNews = news.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
+  const totalPages = Math.ceil((latestCryptoNews || []).length / itemsPerPage);
+  const displayedNews = (latestCryptoNews || []).slice(page * itemsPerPage, (page + 1) * itemsPerPage);
 
   return (
     <div className="p-4 h-full flex flex-col">
@@ -98,7 +77,7 @@ export const MarketNewsWidget: React.FC = () => {
           </button>
         </div>
       </div>
-      
+
       <div className="flex-1 space-y-3 overflow-y-auto ai-chat-scrollbar">
         {displayedNews.map((item, index) => (
           <a
