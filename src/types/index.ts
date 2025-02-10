@@ -199,3 +199,6 @@ export interface Token {
 export interface TransactionError extends Error {
     code?: string;
 }
+export interface BrianData {
+  message:string
+}
