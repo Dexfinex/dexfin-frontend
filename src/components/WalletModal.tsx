@@ -134,7 +134,10 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   );
 
   const renderActivity = () => (
-    <div className="space-y-3">
+    <div className="space-y-3 h-[100%]">
+      {
+        transfers.length === 0 && <div className='w-full h-[100%] flex justify-center items-center align-center'><h2 className='text-white/60 italic'>No activities yet</h2></div>
+      }
       {
         transfers.map((tx) => (
           <div
@@ -175,73 +178,6 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
           </div>
         ))
       }
-      {/* {mockTransactions.map((tx) => (
-        <div
-          key={tx.id}
-          className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tx.type === TransactionType.RECEIVE ? 'bg-green-500/20 text-green-400' :
-                tx.type === TransactionType.SEND ? 'bg-red-500/20 text-red-400' :
-                  'bg-blue-500/20 text-blue-400'
-                }`}>
-                {tx.type}
-              </span>
-              <span className="text-sm text-white/60">
-                {tx.timestamp.toLocaleString()}
-              </span>
-            </div>
-            <a
-              href={`https://etherscan.io/tx/${tx.hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-1 hover:bg-white/10 rounded-md transition-colors"
-            >
-              <ExternalLink className="w-4 h-4 text-white/40" />
-            </a>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {tx.type === TransactionType.SWAP ? (
-                <div className="flex items-center gap-1">
-                  <img src={tx.fromToken?.logo} alt={tx.fromToken?.symbol} className="w-6 h-6" />
-                  <ArrowDown className="w-4 h-4 text-white/40 rotate-[-90deg]" />
-                  <img src={tx.toToken?.logo} alt={tx.toToken?.symbol} className="w-6 h-6" />
-                </div>
-              ) : (
-                <img src={tx.token?.logo} alt={tx.token?.symbol} className="w-6 h-6" />
-              )}
-              <div>
-                {tx.type === TransactionType.SWAP ? (
-                  <div className="text-sm">
-                    {formatTransactionAmount(tx.fromAmount || 0, tx.fromToken?.symbol || '')} →{' '}
-                    {formatTransactionAmount(Math.abs(tx.toAmount || 0), tx.toToken?.symbol || '')}
-                  </div>
-                ) : (
-                  <div className="text-sm">
-                    {formatTransactionAmount(tx.amount, tx.token?.symbol || '')}
-                  </div>
-                )}
-                {tx.value && (
-                  <div className="text-sm text-white/60">
-                    {formatUsdValue(tx.value)}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className={getTransactionStatusColor(tx.status)}>
-                {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
-              </div>
-              <div className="text-sm text-white/60">
-                Fee: {formatUsdValue(tx.fee)}
-              </div>
-            </div>
-          </div>
-        </div>
-      ))} */}
     </div>
   );
 
