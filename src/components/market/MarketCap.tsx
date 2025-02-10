@@ -95,7 +95,7 @@ export const MarketCap: React.FC = () => {
           </thead>
           <tbody className="divide-y divide-white/5">
             {isLoading ? (
-              [...Array(10)].map((_, i) => (
+              [...Array(100)].map((_, i) => (
                 <tr key={i} className="animate-pulse">
                   <td className="py-4 px-4">
                     <div className="h-4 w-4 bg-white/10 rounded" />
@@ -129,7 +129,7 @@ export const MarketCap: React.FC = () => {
                   <td className="py-4 px-4 text-white/60">{token.marketCapRank}</td>
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-3">
-                      <img src={token.logoURI} alt={token.name} className="w-8 h-8" />
+                      <img src={token.logoURI} alt={token.name} className="w-8 h-8 rounded-full" />
                       <div>
                         <div className="font-medium">{token.name}</div>
                         <div className="text-sm text-white/60">{token.symbol.toUpperCase()}</div>
