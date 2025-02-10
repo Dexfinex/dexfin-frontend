@@ -1,9 +1,9 @@
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {ArrowDownUp, Info} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
-import {SlippageOption, TokenType} from '../../../types/swap.type';
+import {GaslessQuoteResponse, QuoteResponse, SlippageOption, TokenType} from '../../../types/swap.type';
 import {formatNumberByFrac} from '../../../utils/common.util';
-import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
+import {Alert, AlertIcon, Button, Flex, Skeleton, Text} from '@chakra-ui/react';
 import {ZEROX_AFFILIATE_FEE} from "../../../constants";
 import useTokenStore from "../../../store/useTokenStore.ts";
 import use0xQuote from "../../../hooks/use0xQuote.ts";
@@ -12,11 +12,13 @@ import useGasEstimation from "../../../hooks/useGasEstimation.ts";
 import {mapChainId2ChainName, mapChainId2ExplorerUrl, mapChainId2NativeAddress} from "../../../config/networks.ts";
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
 import {useBalance} from "../../../hooks/useBalance.tsx";
-import {useTokenApprove} from "../../../hooks/useTokenApprove.ts";
 import {ethers} from "ethers";
 import {useSendTransaction, useSignTypedData, useWaitForTransactionReceipt} from "wagmi";
 import {BaseError, concat, Hex, numberToHex, size} from "viem";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
+import {use0xTokenApprove} from "../../../hooks/use0xTokenApprove.ts";
+import {zeroxService} from "../../../services/0x.service.ts";
+import use0xGaslessSwapStatus from "../../../hooks/use0xGaslessSwapStatus.ts";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -36,6 +38,7 @@ interface PreviewDetailItemProps {
     info: string;
     value: string;
     valueClassName?: string;
+    isFree?: boolean;
     isLoading: boolean;
 }
 
@@ -52,6 +55,7 @@ const PreviewDetailItem = ({
                                info,
                                value,
                                valueClassName,
+                               isFree,
                                isLoading,
                            }: PreviewDetailItemProps) => {
     return (
@@ -69,6 +73,11 @@ const PreviewDetailItem = ({
             {
                 isLoading ? (
                     <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                ) : isFree ? (
+                    <Flex gap={2}>
+                        <span className={'text-green-500'}>Free!</span>
+                        <span className={(valueClassName ? valueClassName : "text-white") + ' line-through'}>{value}</span>
+                    </Flex>
                 ) : (
                     <span className={valueClassName ? valueClassName : "text-white"}>{value}</span>
                 )
@@ -91,10 +100,13 @@ export function SwapBox({
                         }: SwapBoxProps) {
 
     const [txModalOpen, setTxModalOpen] = useState(false);
+    const [gaslessTradeHash, setGaslessTradeHash] = useState<string | undefined>(undefined);
 
     const {
         address: walletAddress,
         chainId: walletChainId,
+        isConnected,
+        login,
         switchChain,
     } = useContext(Web3AuthContext);
 
@@ -102,6 +114,7 @@ export function SwapBox({
     const {
         isLoading: isQuoteLoading,
         quoteResponse,
+        isGasLess: isGasLessSwap,
         // refetch,
         data: quoteData,
     } = use0xQuote({
@@ -144,12 +157,18 @@ export function SwapBox({
 
     const {
         approve,
+        approvalDataToSubmit,
+        tradeDataToSubmit,
+        isReadyToSubmit,
         isLoading: isApproveLoading,
-    } = useTokenApprove({
+    } = use0xTokenApprove({
         token: fromToken?.address as `0x${string}`,
         spender: quoteData?.spenderAddress as `0x${string}`,
         amount: amountToApprove,
-        chainId: tokenChainId
+        chainId: tokenChainId,
+        gaslessQuote: quoteResponse as GaslessQuoteResponse,
+        isGaslessApprove: isGasLessSwap,
+        gaslessApprovalAvailable: quoteData?.gaslessApprovalAvailable ?? false
     });
 
     const insufficientBalance =
@@ -234,33 +253,53 @@ export function SwapBox({
         error,
         sendTransaction,
     } = useSendTransaction();
-    const { signTypedDataAsync } = useSignTypedData();
 
-    const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    const {
+        isLoading: isGaslessTransactionPending,
+        status: gaslessTransactionStatus
+    } = use0xGaslessSwapStatus(gaslessTradeHash)
+
+    // console.log("isGaslessTransactionPending", isGaslessTransactionPending, gaslessTransactionStatus)
+
+    const {signTypedDataAsync} = useSignTypedData();
+
+    const {isLoading: isConfirming, isSuccess: isSuccessNormalSwapAction} =
         useWaitForTransactionReceipt({
             hash,
         });
+
+    const isConfirmed = isSuccessNormalSwapAction || gaslessTransactionStatus === 'confirmed'
 
     // console.log("isPending", isPending, hash, isConfirming, isConfirmed)
 
     useEffect(() => {
         if (isConfirmed) {
             setTxModalOpen(true)
+            setGaslessTradeHash(undefined)
             refetchFromBalance()
             refetchToBalance()
         }
-    }, [isConfirmed])
+    }, [isConfirmed, refetchFromBalance, refetchToBalance])
 
     const handleSwap = async () => {
+        if (isGasLessSwap)
+            await handleGaslessSwap()
+        else
+            await handleNormalSwap()
+    }
+
+    const handleNormalSwap = async () => {
+        /*
         console.log("submitting quote to blockchain");
         console.log("to", quoteResponse.transaction.to);
         console.log("value", quoteResponse.transaction.value);
-
+*/
+        const normalSwapQuoteResponse = quoteResponse as QuoteResponse
         // On click, (1) Sign the Permit2 EIP-712 message returned from quote
-        if (quoteResponse.permit2?.eip712) {
+        if (normalSwapQuoteResponse.permit2?.eip712) {
             let signature: Hex | undefined;
             try {
-                signature = await signTypedDataAsync(quoteResponse.permit2.eip712);
+                signature = await signTypedDataAsync(normalSwapQuoteResponse.permit2.eip712);
                 console.log("Signed permit2 message from quote response");
             } catch (error) {
                 console.error("Error signing permit2 coupon:", error);
@@ -268,17 +307,17 @@ export function SwapBox({
 
             // (2) Append signature length and signature data to calldata
 
-            if (signature && quoteResponse?.transaction?.data) {
+            if (signature && normalSwapQuoteResponse?.transaction?.data) {
                 const signatureLengthInHex = numberToHex(size(signature), {
                     signed: false,
                     size: 32,
                 });
 
-                const transactionData = quoteResponse.transaction.data as Hex;
+                const transactionData = normalSwapQuoteResponse.transaction.data as Hex;
                 const sigLengthHex = signatureLengthInHex as Hex;
                 const sig = signature as Hex;
 
-                quoteResponse.transaction.data = concat([
+                normalSwapQuoteResponse.transaction.data = concat([
                     transactionData,
                     sigLengthHex,
                     sig,
@@ -287,22 +326,26 @@ export function SwapBox({
                 throw new Error("Failed to obtain signature or transaction data");
             }
         }
-
         // (3) Submit the transaction with Permit2 signature
-
         sendTransaction({
             account: walletAddress as `0x${string}`,
-            gas: quoteResponse?.transaction.gas
-                ? BigInt(quoteResponse?.transaction.gas)
+            gas: normalSwapQuoteResponse?.transaction.gas
+                ? BigInt(normalSwapQuoteResponse?.transaction.gas)
                 : undefined,
-            to: quoteResponse?.transaction.to,
-            data: quoteResponse.transaction.data, // submit
-            value: quoteResponse?.transaction.value
-                ? BigInt(quoteResponse.transaction.value)
+            to: normalSwapQuoteResponse?.transaction.to,
+            data: normalSwapQuoteResponse.transaction.data, // submit
+            value: normalSwapQuoteResponse?.transaction.value
+                ? BigInt(normalSwapQuoteResponse.transaction.value)
                 : undefined, // value is used for native tokens
             chainId: walletChainId,
         });
     }
+
+    const handleGaslessSwap = async () => {
+        zeroxService.submitTrade(walletChainId, tradeDataToSubmit, approvalDataToSubmit).then(tradeHash => setGaslessTradeHash(tradeHash))
+    }
+
+    const approvalRequired = quoteData?.tokenApprovalRequired || (isGasLessSwap && !isReadyToSubmit)
 
     return (
         <div className="space-y-2.5">
@@ -416,6 +459,7 @@ export function SwapBox({
                             info={'Estimated network fees for processing the transaction'}
                             value={`$${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}
                             isLoading={isGasEstimationLoading}
+                            isFree={isGasLessSwap}
                         />
 
                         {/* slippage */}
@@ -459,64 +503,82 @@ export function SwapBox({
             {
                 error && (
                     <Alert status="error" variant="subtle" bg={'#511414'} borderRadius="md">
-                        <AlertIcon />
+                        <AlertIcon/>
                         <Text>Error: {(error as BaseError).shortMessage || error.message}</Text>
                     </Alert>
                 )
             }
 
             {
-                isRequireSwitchChain ? (
+                !isConnected ? (
                     <Button
                         isLoading={false}
-                        loadingText={'Changing Network...'}
+                        loadingText={'Connecting Wallet...'}
                         width="full"
                         colorScheme="blue"
                         onClick={() => {
-                            switchChain(tokenChainId)
+                            login()
                             // if (approveReset) approveReset();
                         }}
                         isDisabled={false}
                     >
-                        {textSwitchChain}
+                        Connect Wallet
                     </Button>
                 ) : (
-                    quoteData?.isNeedApproving ? (
+                    isRequireSwitchChain ? (
                         <Button
-                            isLoading={isApproveLoading}
-                            loadingText={'Approving...'}
+                            isLoading={false}
+                            loadingText={'Changing Network...'}
                             width="full"
                             colorScheme="blue"
                             onClick={() => {
-                                approve?.()
+                                switchChain(tokenChainId)
+                                // if (approveReset) approveReset();
                             }}
                             isDisabled={false}
                         >
-                            Approve {fromToken?.symbol}
+                            {textSwitchChain}
                         </Button>
                     ) : (
-                        insufficientBalance ? (
-                            <Button
-                                width="full"
-                                colorScheme="blue"
-                                isDisabled={true}
-                            >
-                                Insufficient Balance
-                            </Button>
+                        approvalRequired ? (
+                                <Button
+                                    isLoading={isApproveLoading}
+                                    loadingText={'Approving...'}
+                                    width="full"
+                                    colorScheme="blue"
+                                    onClick={() => {
+                                        approve?.()
+                                    }}
+                                    isDisabled={false}
+                                >
+                                    Approve {fromToken?.symbol}
+                                </Button>
+                            )
+                            :
+                            (
+                                insufficientBalance ? (
+                                    <Button
+                                        width="full"
+                                        colorScheme="blue"
+                                        isDisabled={true}
+                                    >
+                                        Insufficient Balance
+                                    </Button>
 
-                        ) : (
-                            <Button
-                                isLoading={isPending || isConfirming}
-                                loadingText={isPending ? 'Confirming...' : isConfirming ? 'Waiting for confirmation...' : ''}
-                                width="full"
-                                colorScheme="blue"
-                                onClick={handleSwap}
-                                isDisabled={!(Number(fromAmount) > 0) || isPending || isConfirming}
-                            >
-                                Swap
-                            </Button>
+                                ) : (
+                                    <Button
+                                        isLoading={isPending || isConfirming || isGaslessTransactionPending}
+                                        loadingText={isPending ? 'Confirming...' : (isConfirming || isGaslessTransactionPending) ? 'Waiting for confirmation...' : ''}
+                                        width="full"
+                                        colorScheme="blue"
+                                        onClick={handleSwap}
+                                        isDisabled={!(Number(fromAmount) > 0) || isPending || isConfirming}
+                                    >
+                                        Swap
+                                    </Button>
 
-                        )
+                                )
+                            )
                     )
                 )
             }
@@ -529,12 +591,15 @@ export function SwapBox({
             >
                 Swap
             </button>
-*/}
+*/
+            }
             {
                 isConfirmed && (
-                    <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${hash}`}/>
+                    <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
+                                      link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${(hash ?? gaslessTradeHash)}`}/>
                 )
             }
         </div>
-    );
+    )
+        ;
 }

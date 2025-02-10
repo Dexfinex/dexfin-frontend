@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, AlertCircle } from 'lucide-react';
-import { getTrendingCoins } from '../../lib/coingecko';
+import { coingeckoService } from '../../services/coingecko.service';
 import { TrendingCoin } from '../../types';
 
 export const TrendingWidget: React.FC = () => {
@@ -14,7 +14,7 @@ export const TrendingWidget: React.FC = () => {
       if (showRefreshState) {
         setRefreshing(true);
       }
-      const data = await getTrendingCoins();
+      const data = await coingeckoService.getTrendingCoins();
       if (data && data.length > 0) {
         setCoins(data);
         setError(null);

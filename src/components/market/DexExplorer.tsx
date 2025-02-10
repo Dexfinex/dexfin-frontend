@@ -3,12 +3,10 @@ import {AlertCircle, Filter, RefreshCw, Search, TrendingDown, TrendingUp} from '
 import {
   formatAge,
   formatNumber,
-  getNewPools,
-  getTopPools,
-  getTrendingPools,
   Network,
   TokenPool
 } from '../../lib/geckoTerminal';
+import { geckoterminalService } from '../../services/geckoterminal.service';
 
 const networks: Network[] = [
   { id: 'eth', name: 'Ethereum', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
@@ -36,16 +34,16 @@ export const DexExplorer: React.FC = () => {
       let data: TokenPool[];
       switch (view) {
         case 'trending':
-          data = await getTrendingPools(network);
+          data = await geckoterminalService.getTrendingPools(network);
           break;
         case 'new':
-          data = await getNewPools(network);
+          data = await geckoterminalService.getNewPools(network);
           break;
         case 'top':
-          data = await getTopPools(network);
+          data = await geckoterminalService.getTopPools(network);
           break;
         default:
-          data = await getTrendingPools(network);
+          data = await geckoterminalService.getTrendingPools(network);
       }
       
       setPools(data);

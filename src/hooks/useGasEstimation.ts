@@ -19,7 +19,7 @@ const useGasEstimation = () => {
       );
 */
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+       
       // const decimals = await tokenContract.decimals() as number;
       // const amountValue = ethers.utils.parseUnits(amount.toString(), decimals);
 /*

@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
-import {getCoinPrice, getTrendingCoins} from './coingecko';
-import {getLatestNews} from './cryptonews';
+import { coingeckoService } from '../services/coingecko.service';
+import {cryptonewsService} from "../services/cryptonews.service";
+
 import {wallpapers} from '../store/useStore';
 
 const openai = new OpenAI({
@@ -23,7 +24,7 @@ const fallbackResponses: Record<string, {
   'bitcoin price': {
     text: 'Let me fetch the current Bitcoin price for you.',
     action: async () => {
-      const data = await getCoinPrice('bitcoin');
+      const data = await coingeckoService.getCoinPrice('bitcoin');
       return {
         text: `The current Bitcoin price is $${data.price.toLocaleString()} (${data.priceChange24h.toFixed(2)}% 24h change)`,
         data
@@ -33,7 +34,7 @@ const fallbackResponses: Record<string, {
   'trending tokens': {
     text: 'Here are the currently trending tokens:',
     action: async () => {
-      const data = await getTrendingCoins();
+      const data = await coingeckoService.getTrendingCoins();
       return {
         text: 'Here are the currently trending tokens:',
         trending: data
@@ -43,7 +44,7 @@ const fallbackResponses: Record<string, {
   'latest news': {
     text: 'Here are the latest crypto news updates:',
     action: async () => {
-      const news = await getLatestNews();
+      const news = await cryptonewsService.getLatestNews();
       return {
         text: 'Here are the latest crypto news updates:',
         news
@@ -125,7 +126,7 @@ const processCommand = async (command: string) => {
   const lowerCommand = command.toLowerCase().trim();
 
   if (lowerCommand.includes('latest news') || lowerCommand.includes('show me the news')) {
-    const news = await getLatestNews();
+    const news = await cryptonewsService.getLatestNews();
     return {
       text: "Here are the latest crypto news updates:",
       news
@@ -133,7 +134,7 @@ const processCommand = async (command: string) => {
   }
 
   if (lowerCommand.includes('trending tokens')) {
-    const trendingCoins = await getTrendingCoins();
+    const trendingCoins = await coingeckoService.getTrendingCoins();
     return {
       text: "Here are the currently trending tokens:",
       trending: trendingCoins
@@ -141,7 +142,7 @@ const processCommand = async (command: string) => {
   }
 
   if (lowerCommand.includes('bitcoin price')) {
-    const bitcoinData = await getCoinPrice('bitcoin');
+    const bitcoinData = await coingeckoService.getCoinPrice('bitcoin');
     if (bitcoinData) {
       return {
         text: `The current Bitcoin price is $${bitcoinData.price.toLocaleString()} (${bitcoinData.priceChange24h.toFixed(2)}% 24h change)`,

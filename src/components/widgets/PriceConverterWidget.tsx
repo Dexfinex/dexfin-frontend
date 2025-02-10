@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, RefreshCw, Search, X } from 'lucide-react';
-import { getCoinPrice, searchCoins } from '../../lib/coingecko';
+import { coingeckoService } from '../../services/coingecko.service';
 
 interface Currency {
   id: string;
@@ -35,7 +35,7 @@ const CurrencySelector: React.FC<CurrencySelectorProps> = ({
 
       setLoading(true);
       try {
-        const results = await searchCoins(searchQuery);
+        const results = await coingeckoService.searchCoins(searchQuery);
         setSearchResults(results.map(coin => ({
           id: coin.id,
           symbol: coin.symbol.toUpperCase(),
@@ -151,10 +151,10 @@ export const PriceConverterWidget: React.FC = () => {
     try {
       setLoading(true);
       const [fromData, toData] = await Promise.all([
-        getCoinPrice(fromCurrency.id),
-        getCoinPrice(toCurrency.id)
+        coingeckoService.getCoinPrice(fromCurrency.id),
+        coingeckoService.getCoinPrice(toCurrency.id)
       ]);
-
+      
       if (fromData && toData) {
         const newRate = toData.price / fromData.price;
         setRate(newRate);
