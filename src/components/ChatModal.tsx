@@ -341,6 +341,81 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   //   console.log('request users = ', requestUsers)
   // }, [requestUsers])
 
+  const initStream = async (user: any) => {
+    const stream = await user.initStream(
+      [
+        CONSTANTS.STREAM.CHAT, // Listen for chat messages
+        CONSTANTS.STREAM.NOTIF, // Listen for notifications
+        CONSTANTS.STREAM.CONNECT, // Listen for connection events
+        CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
+      ],
+      {
+        // Filter options:
+        filter: {
+          // Listen to all channels and chats (default):
+          channels: ['*'],
+          chats: ['*'],
+
+          // Listen to specific channels and chats:
+          // channels: ['channel-id-1', 'channel-id-2'],
+          // chats: ['chat-id-1', 'chat-id-2'],
+
+          // Listen to events with a specific recipient:
+          // recipient: '0x...' (replace with recipient wallet address)
+        },
+        // Connection options:
+        connection: {
+          retries: 3, // Retry connection 3 times if it fails
+        },
+        raw: false, // Receive events in structured format
+      }
+    );
+
+    // Stream connection established:
+    stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
+      console.log('Stream Connected ', a);
+
+      // // Send initial message to PushAI Bot:
+      // console.log('Sending message to PushAI Bot');
+
+      // await userAlice.chat.send(pushAIWalletAddress, {
+      //   content: 'Hello, from Alice',
+      //   type: 'Text',
+      // });
+
+      // console.log('Message sent to PushAI Bot');
+    });
+
+    stream.on(CONSTANTS.STREAM.CHAT, (message: any) => {
+      console.log('Encrypted Message Received');
+      console.log(message); // Log the message payload
+      setReceivedMessage(message)
+    });
+
+    // Setup event handling
+    stream.on(CONSTANTS.STREAM.NOTIF, (data: any) => {
+      console.log('notify data = ', data);
+    });
+
+    // Chat operation received:
+    stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
+      console.log('Chat operation received.');
+      console.log(data); // Log the chat operation data
+    });
+
+    await stream.connect(); // Establish the connection after setting up listeners
+    // Stream disconnection:
+    stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
+      console.log('Stream Disconnected');
+    });
+  }
+
+  const scrollBottom = () => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }
+
   const handleReceiveMsg = async () => {
     if (receivedMessage.meta?.group == true && chatMode === "group") {
       if (receivedMessage.origin == "other") {
@@ -455,6 +530,27 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         if (receivedMessage.event == "chat.message") {
           updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
         }
+      }
+    }
+
+    if (receivedMessage.event == "chat.group.participant.join" && receivedMessage.origin == "other") {
+      console.log('chat.group.participant.join------------')
+      // add a member
+      const profile = await getWalletProfile(chatUser, receivedMessage.from)
+      const newMember = {
+        image: profile.picture,
+        isAdmin: false,
+        wallet: receivedMessage.from
+      }
+      console.log('participate profile = ', profile)
+      if (selectedGroup && selectedGroup?.groupId == receivedMessage.chatId) {
+        setSelectedGroup({
+          ...selectedGroup,
+          members: [...selectedGroup.members, newMember]
+        });
+        setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
+      } else if (groupList.find(group => group.groupId == receivedMessage.chatId)) {
+        setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
       }
     }
   }
@@ -669,81 +765,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
 
     setIsHandlingRequest(false)
-  }
-
-  const initStream = async (user: any) => {
-    const stream = await user.initStream(
-      [
-        CONSTANTS.STREAM.CHAT, // Listen for chat messages
-        CONSTANTS.STREAM.NOTIF, // Listen for notifications
-        CONSTANTS.STREAM.CONNECT, // Listen for connection events
-        CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
-      ],
-      {
-        // Filter options:
-        filter: {
-          // Listen to all channels and chats (default):
-          channels: ['*'],
-          chats: ['*'],
-
-          // Listen to specific channels and chats:
-          // channels: ['channel-id-1', 'channel-id-2'],
-          // chats: ['chat-id-1', 'chat-id-2'],
-
-          // Listen to events with a specific recipient:
-          // recipient: '0x...' (replace with recipient wallet address)
-        },
-        // Connection options:
-        connection: {
-          retries: 3, // Retry connection 3 times if it fails
-        },
-        raw: false, // Receive events in structured format
-      }
-    );
-
-    // Stream connection established:
-    stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
-      console.log('Stream Connected ', a);
-
-      // // Send initial message to PushAI Bot:
-      // console.log('Sending message to PushAI Bot');
-
-      // await userAlice.chat.send(pushAIWalletAddress, {
-      //   content: 'Hello, from Alice',
-      //   type: 'Text',
-      // });
-
-      // console.log('Message sent to PushAI Bot');
-    });
-
-    stream.on(CONSTANTS.STREAM.CHAT, (message: any) => {
-      console.log('Encrypted Message Received');
-      console.log(message); // Log the message payload
-      setReceivedMessage(message)
-    });
-
-    // Setup event handling
-    stream.on(CONSTANTS.STREAM.NOTIF, (data: any) => {
-      console.log('notify data = ', data);
-    });
-
-    // Chat operation received:
-    stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
-      console.log('Chat operation received.');
-      console.log(data); // Log the chat operation data
-    });
-
-    await stream.connect(); // Establish the connection after setting up listeners
-    // Stream disconnection:
-    stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
-      console.log('Stream Disconnected');
-    });
-  }
-
-  const scrollBottom = () => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
   }
 
   const handleSendMessage = async () => {
@@ -983,8 +1004,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       }
 
       if (selectedGroup) {
-        setGroupList([selectedGroup, ...groupList])
-        setSelectedGroup({ ...selectedGroup, type: "Connected" })
+        const newGroup: IGroup = {
+          ...selectedGroup,
+          type: "Connected",
+          members: joinGroup.members
+        }
+        setGroupList([{ ...newGroup, type: "Connected" }, ...groupList])
+        setSelectedGroup(newGroup)
       }
     } catch (err) {
       console.log('join group err: ', err)
@@ -1655,7 +1681,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               )}
             </div>
 
-            <div className="p-2 space-y-1">
+            <div className="p-2 overflow-y-auto ai-chat-scrollbar max-h-[calc(100%-182px)]">
               {renderGroupsAndUsers()}
             </div>
           </div>
