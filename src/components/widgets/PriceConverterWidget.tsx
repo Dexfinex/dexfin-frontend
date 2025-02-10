@@ -36,8 +36,17 @@ export const PriceConverterWidget: React.FC = () => {
 
   const nativeTokenAddress = mapChainId2NativeAddress[tokenChainId];
 
+  const tokenAddresses = useMemo(() => {
+    try {
+      const _tokenAddresses = [(fromRealCurrency?.address || "").toLowerCase(), (toRealCurrency?.address || "").toLowerCase(), nativeTokenAddress.toLowerCase()]
+      return [...new Set(_tokenAddresses)]
+    } catch (e) {
+      return []
+    }
+  }, [fromRealCurrency, toRealCurrency, nativeTokenAddress])
+
   const { isLoading: isLoadingTokenPrices, refetch: refetchTokenPrices, data: tokenPrices } = useGetTokenPrices({
-    tokenAddresses: [fromRealCurrency?.address ?? null, toRealCurrency?.address ?? null, nativeTokenAddress],
+    tokenAddresses: tokenAddresses,
     chainId: tokenChainId,
   })
 
