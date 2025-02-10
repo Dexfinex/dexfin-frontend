@@ -60,7 +60,8 @@ const PaymentMethodButton = React.memo(({
                     {method === 'wallet' ? 'Crypto Wallet' : 'Credit Card'}
                 </div>
                 <div className="text-sm text-white/60">
-                    {method === 'wallet' ? 'Pay with your connected wallet' : 'Pay with Visa, Mastercard, etc.'}
+                    {method === 'wallet' ? 'Pay with your connected wallet' : 'Coming soon.'}
+                    {/* Pay with Visa, Mastercard, etc */}
                 </div>
             </div>
         </div>
