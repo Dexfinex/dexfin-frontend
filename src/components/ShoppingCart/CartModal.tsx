@@ -116,7 +116,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
         });
 
         // Return to main view
-        setShowCheckout(false);
+        // setShowCheckout(false);
         
         // Show transaction modal after a brief delay
         setTimeout(() => {

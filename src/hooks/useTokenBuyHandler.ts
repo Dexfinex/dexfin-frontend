@@ -115,7 +115,7 @@ export const useTokenBuyHandler = () => {
                     chainId: 8453,
                 })
 
-                console.log({ txHash });
+                console.log(currentIndex, { txHash });
 
                 currentIndex++;
                 return txHash;
