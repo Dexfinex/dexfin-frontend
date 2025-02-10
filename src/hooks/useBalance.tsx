@@ -160,7 +160,7 @@ export const useEvmWalletBalance = (params?: IEvmWallet) => {
 		{
 			queryKey: ['balance', activeWalletAddress, activeChainId,],
 			queryFn: fetchBalances,
-			refetchInterval: 10_000,
+			refetchInterval: 30_000,
 			enabled
 		}
 	);
