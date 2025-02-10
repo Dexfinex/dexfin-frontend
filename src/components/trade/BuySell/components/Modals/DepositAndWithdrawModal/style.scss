@@ -1,0 +1,90 @@
+.trade-deposit-modal {
+  min-width: 10rem;
+
+  .header-wrapper {
+    width: 100%;
+    font-size: 1.2rem;
+    padding-left: .8rem;
+    padding-bottom: .6rem;
+    border-bottom: 1px solid #222;
+  }
+
+  .w-100 {
+    width: 100%;
+  }
+
+  .normal-input {
+    padding-inline-start: 15px;
+    //border-color: #222;
+    background: #1c1c1c;
+    height: 3.2rem;
+  }
+
+  .market-input-right-element {
+    padding-right: 24px !important;
+    padding-top: 14px;
+  }
+
+  .percentage-buttons-group {
+    display: flex;
+    margin-top: 12px;
+    gap: 6px;
+
+    .percentage-button {
+      width: 25%;
+      font-size: 1rem;
+      font-weight: normal;
+      padding: 0px 8px;
+      color: #aaa;
+      background: #1c1c1c;
+
+      &.selected {
+        color: #121212;
+        font-weight: bold;
+        background: #a3cdfd;
+      }
+    }
+  }
+
+  .deposit-info-row {
+    display: flex;
+    font-size: 15px;
+    color: #888;
+    padding-top: 10px;
+
+    &.error {
+      color: #ff4952;
+    }
+
+    &.first-row {
+      padding-top: 20px;
+    }
+
+    .label {
+      width: 100%;
+      text-align: left;
+    }
+
+    .value {
+      width: 100%;
+      flex-grow: 1;
+      white-space: nowrap;
+      text-align: right;
+    }
+  }
+
+  .warning-text {
+    margin-top: 1rem;
+    font-size: 14px;
+    text-align: justify;
+    color: #e3ac2b;
+  }
+
+  .deposit-button {
+    width: 100%;
+    border-radius: 20px;
+    margin-top: 1rem;
+  }
+
+
+}
