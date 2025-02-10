@@ -394,3 +394,14 @@ body[data-theme='light'] .notification-scrollbar::-webkit-scrollbar-thumb:hover 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(66, 153, 225, 0.8);
 }
+
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react';
-import { Skeleton } from '@chakra-ui/react';
+import React, { useState, useContext, useMemo } from 'react';
+import { Skeleton, useMediaQuery } from '@chakra-ui/react';
 import { X, Maximize2, Minimize2, ArrowDown, CreditCard, Send, Wallet, TrendingUp, LayoutGrid, History, Landmark, ExternalLink, Clock } from 'lucide-react';
 import { SendDrawer } from './wallet/SendDrawer';
 import { ReceiveDrawer } from './wallet/ReceiveDrawer';
@@ -8,9 +8,13 @@ import { mockTransactions, mockDeFiPositions, mockDeFiStats, formatTransactionAm
 import { formatNumberByFrac } from '../utils/common.util.ts';
 import { TransactionType } from '../types/wallet';
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
-import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
 import { TokenChainIcon } from './swap/components/TokenIcon.tsx';
+import { mapChainId2ExplorerUrl } from '../config/networks.ts';
+import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
+import useTokenTransferStore from '../store/useTokenTransferStore.ts';
 import { useEvmWalletBalance } from '../hooks/useBalance.tsx';
+import { useEvmWalletTransfer } from '../hooks/useTransfer.tsx';
+import { formatDate } from '../utils/common.util.ts';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -23,13 +27,28 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const [showSendDrawer, setShowSendDrawer] = useState(false);
   const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
   const [showBuyDrawer, setShowBuyDrawer] = useState(false);
+  const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
 
   const { isLoading: isLoadingBalance } = useEvmWalletBalance();
   const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
+  const { isLoading } = useEvmWalletTransfer();
+  const { transfers } = useTokenTransferStore();
 
   const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
 
   const { address, chainId } = useContext(Web3AuthContext);
+
+  const [isLargerThan1200] = useMediaQuery('(min-width: 1200px)');
+  const [isLargerThan800] = useMediaQuery('(min-width: 800px)');
+
+  const walletContainerWidth = useMemo(() => {
+    if (isFullscreen) return 'w-full h-full rounded-none';
+    if (isLargerThan1200) return 'w-[50%] h-[80%] rounded-xl';
+    if (isLargerThan800) return 'w-[80%] h-[80%] rounded-xl';
+
+    return 'w-full h-full rounded-none';
+
+  }, [isLargerThan800, isLargerThan1200, isFullscreen])
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -69,8 +88,9 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
           <span>Receive</span>
         </button>
         <button
+          disabled={true}
           onClick={() => setShowBuyDrawer(true)}
-          className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
+          className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors opacity-[0.7]"
         >
           <CreditCard className="w-5 h-5" />
           <span>Buy</span>
@@ -82,14 +102,18 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
         {
           isLoadingBalance ?
             <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
-            : tokenBalances.map((position) => (
-              <div
+            : tokenBalances.map((position, index) => (
+              <button
                 key={position.chain + position.symbol}
-                className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                onClick={() => {
+                  setSelectedBalanceIndex(index);
+                  setShowSendDrawer(true);
+                }}
               >
                 <div className="flex items-center gap-3">
                   <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(chainId)} />
-                  <div>
+                  <div className='flex flex-col justify-start items-start'>
                     <div className="font-medium">{position.symbol}</div>
                     <div className="text-sm text-white/60">
                       {`${formatNumberByFrac(position.balance)} ${position.symbol}`}
@@ -102,7 +126,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                   {formatApy(0)} APY
                 </div> */}
                 </div>
-              </div>
+              </button>
             ))
         }
       </div>
@@ -110,74 +134,50 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   );
 
   const renderActivity = () => (
-    <div className="space-y-3">
-      {mockTransactions.map((tx) => (
-        <div
-          key={tx.id}
-          className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tx.type === TransactionType.RECEIVE ? 'bg-green-500/20 text-green-400' :
-                tx.type === TransactionType.SEND ? 'bg-red-500/20 text-red-400' :
-                  'bg-blue-500/20 text-blue-400'
-                }`}>
-                {tx.type}
-              </span>
-              <span className="text-sm text-white/60">
-                {tx.timestamp.toLocaleString()}
-              </span>
+    <div className="space-y-3 h-[100%]">
+      {
+        transfers.length === 0 && <div className='w-full h-[100%] flex justify-center items-center align-center'><h2 className='text-white/60 italic'>No activities yet</h2></div>
+      }
+      {
+        transfers.map((tx) => (
+          <div
+            key={tx.txHash}
+            className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tx.transactionType === TransactionType.Received ? 'bg-green-500/20 text-green-400' :
+                  tx.transactionType === TransactionType.Sent ? 'bg-red-500/20 text-red-400' :
+                    'bg-blue-500/20 text-blue-400'
+                  }`}>
+                  {tx.transactionType}
+                </span>
+                <span className="text-sm text-white/60">
+                  {formatDate(tx.time)}
+                </span>
+              </div>
+              <a
+                href={`${mapChainId2ExplorerUrl[chainId!]}/tx/${tx.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1 hover:bg-white/10 rounded-md transition-colors"
+              >
+                <ExternalLink className="w-4 h-4 text-white/40" />
+              </a>
             </div>
-            <a
-              href={`https://etherscan.io/tx/${tx.hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-1 hover:bg-white/10 rounded-md transition-colors"
-            >
-              <ExternalLink className="w-4 h-4 text-white/40" />
-            </a>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {tx.type === TransactionType.SWAP ? (
-                <div className="flex items-center gap-1">
-                  <img src={tx.fromToken?.logo} alt={tx.fromToken?.symbol} className="w-6 h-6" />
-                  <ArrowDown className="w-4 h-4 text-white/40 rotate-[-90deg]" />
-                  <img src={tx.toToken?.logo} alt={tx.toToken?.symbol} className="w-6 h-6" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-sm">
+                    {formatTransactionAmount(tx.transferAmount, tx.tokenSymbol || '')}
+                  </div>
                 </div>
-              ) : (
-                <img src={tx.token?.logo} alt={tx.token?.symbol} className="w-6 h-6" />
-              )}
-              <div>
-                {tx.type === TransactionType.SWAP ? (
-                  <div className="text-sm">
-                    {formatTransactionAmount(tx.fromAmount || 0, tx.fromToken?.symbol || '')} →{' '}
-                    {formatTransactionAmount(Math.abs(tx.toAmount || 0), tx.toToken?.symbol || '')}
-                  </div>
-                ) : (
-                  <div className="text-sm">
-                    {formatTransactionAmount(tx.amount, tx.token?.symbol || '')}
-                  </div>
-                )}
-                {tx.value && (
-                  <div className="text-sm text-white/60">
-                    {formatUsdValue(tx.value)}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className={getTransactionStatusColor(tx.status)}>
-                {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
-              </div>
-              <div className="text-sm text-white/60">
-                Fee: {formatUsdValue(tx.fee)}
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))
+      }
     </div>
   );
 
@@ -282,10 +282,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
         <div
-          className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
-            ? 'w-full h-full rounded-none'
-            : 'w-[90%] h-[90%] rounded-xl'
-            }`}
+          className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${walletContainerWidth}`}
         >
           <div className="flex flex-col h-full">
             {/* Header */}
@@ -295,16 +292,19 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                 <h2 className="text-xl font-semibold">Wallet</h2>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  {isFullscreen ? (
-                    <Minimize2 className="w-4 h-4" />
-                  ) : (
-                    <Maximize2 className="w-4 h-4" />
-                  )}
-                </button>
+                {
+                  isLargerThan800 &&
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    {isFullscreen ? (
+                      <Minimize2 className="w-4 h-4" />
+                    ) : (
+                      <Maximize2 className="w-4 h-4" />
+                    )}
+                  </button>
+                }
                 <button
                   onClick={onClose}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -355,6 +355,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       {/* Drawers */}
       <SendDrawer
         isOpen={showSendDrawer}
+        selectedAssetIndex={selectedBalanceIndex}
         onClose={() => setShowSendDrawer(false)}
         assets={tokenBalances.map(p => ({
           name: p.name,

@@ -118,6 +118,16 @@ export interface CoinGeckoToken {
   volume24h: number,
   sparkline: number[];
   category: string;
+  id: string;
+  symbol: string;
+  image: string;
+  current_price: number;
+  market_cap: number;
+  market_cap_rank: number;
+  total_volume: number;
+  price_change_percentage_24h: number;
+  sparkline_in_7d: { price: number[] };
+  categories: string[];
 }
 
 export interface DeFiStats {
@@ -148,54 +158,57 @@ export interface YieldData {
 }
 
 export interface TokenPool {
-    id: string;
-    type: string;
-    attributes: {
-        name: string;
-        pool_created_at: string;
-        price_change_percentage: {
-            h24?: string;
-            h1?: string;
-        };
-        base_token_price_usd?: string;
-        transactions?: {
-            h24?: number;
-        };
-        volume_usd?: {
-            h24?: string;
-        };
-        reserve_in_usd?: string;
-        fdv_usd?: string;
+  id: string;
+  type: string;
+  attributes: {
+    name: string;
+    pool_created_at: string;
+    price_change_percentage: {
+      h24?: string;
+      h1?: string;
     };
-    relationships: {
-        base_token: {
-            data: {
-                id: string;
-            };
-        };
-        quote_token: {
-            data: {
-                id: string;
-            };
-        };
+    base_token_price_usd?: string;
+    transactions?: {
+      h24?: number;
     };
-    included?: {
-        tokens: Token[];
-        dexes?: any[];
-        networks?: any[];
+    volume_usd?: {
+      h24?: string;
     };
+    reserve_in_usd?: string;
+    fdv_usd?: string;
+  };
+  relationships: {
+    base_token: {
+      data: {
+        id: string;
+      };
+    };
+    quote_token: {
+      data: {
+        id: string;
+      };
+    };
+  };
+  included?: {
+    tokens: Token[];
+    dexes?: any[];
+    networks?: any[];
+  };
 }
 
 export interface Token {
   id: string;
   type: string;
   attributes: {
-      name: string;
-      symbol: string;
-      logo_url?: string;
+    name: string;
+    symbol: string;
+    logo_url?: string;
   };
 }
 
 export interface TransactionError extends Error {
-    code?: string;
+  code?: string;
+}
+export interface BrianData {
+  message: string
 }

@@ -1,6 +1,6 @@
-import {arbitrum, avalanche, base, bsc, linea, mainnet, optimism, polygon} from "@wagmi/core/chains";
-import {baseSepolia, sepolia} from "viem/chains";
-import {ethers} from "ethers";
+import { arbitrum, avalanche, base, bsc, linea, mainnet, optimism, polygon } from "@wagmi/core/chains";
+import { baseSepolia, sepolia } from "viem/chains";
+import { ethers } from "ethers";
 
 export * from "./zerodev"
 
@@ -30,6 +30,8 @@ export const DEFILLAMA_BASE_URL = "";
 export const FEARGREED_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/fear-greed";
 
 export const GECKOTERMINAL_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/gecko-terminal";
+
+export const BRIAN_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/brian";
 
 export const CRYPTONEWS_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/crypto-news';
 

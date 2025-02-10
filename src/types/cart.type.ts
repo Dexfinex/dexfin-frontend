@@ -4,6 +4,7 @@ export interface CartModalProps {
 }
 
 export interface CoinData {
+  id: string;
   symbol: string;
   name: string;
   address: string;
@@ -17,6 +18,9 @@ export interface CoinData {
   volume24h: number;
   sparkline: number[];
   category: string;
+  platform: string;
+  quantity: number
+
 }
 
 export interface CartItem {
@@ -78,9 +82,8 @@ export interface TokenType {
   decimals: number;
   symbol: string;
   name: string;
-
   logoURI: string;
-
+  category: string;
 }
 
 export interface ZeroxQuoteRequestType {

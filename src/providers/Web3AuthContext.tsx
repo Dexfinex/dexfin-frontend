@@ -38,10 +38,12 @@ import {
     getUserOperationGasPrice,
     KernelEIP1193Provider
 } from "@zerodev/sdk";
-import {ETHRequestSigningPayload} from "@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types";
-import {ethers} from "ethers";
-import {mapChainId2ViemChain} from "../config/networks.ts";
-import {useStore} from "../store/useStore.ts";
+import { ETHRequestSigningPayload } from "@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types";
+import { ethers } from "ethers";
+import { mapChainId2ViemChain } from "../config/networks.ts";
+import { useStore } from "../store/useStore.ts";
+import { useEvmWalletBalance } from "../hooks/useBalance.tsx";
+import { useEvmWalletTransfer } from "../hooks/useTransfer.tsx";
 
 interface Web3AuthContextType {
     login: () => void;
@@ -155,7 +157,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
     // const [chain, setChain] = useState(null);
 
-    console.log("provider", provider, address, chainId, solanaWalletInfo)
+    // console.log("provider", provider, address, chainId, solanaWalletInfo)
 
     const {
         isConnected: isWagmiWalletConnected,
@@ -440,7 +442,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                             // @ts-expect-error
                             litNodeClient: litNodeClient as ILitNodeClient,
                         });
-                        console.log("generated", pkpAddress, generatedPublicKey)
+                        // console.log("generated", pkpAddress, generatedPublicKey)
                         solanaWalletData = {
                             publicKey: generatedPublicKey,
                             pkpAddress: pkpAddress,

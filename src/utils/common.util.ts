@@ -34,8 +34,8 @@ export const checkIfAddressExists = async (address: string): Promise<boolean> =>
         return false;
     }
 }
-
 export const extractAddress = (fullAddress: string): string => {
+    if (!fullAddress) return ""
     const match = fullAddress.match(/0x[a-fA-F0-9]{40}/);
     const address = match ? match[0] : "";
     return address;
@@ -67,6 +67,9 @@ export const compareWalletAddresses = (
     address1: string,
     address2: string,
 ): boolean => {
+    if(!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
+        return false;
+    }
     // Convert both addresses to uppercase.
     const normalizedAddress1 = address1.toUpperCase();
     const normalizedAddress2 = address2.toUpperCase();

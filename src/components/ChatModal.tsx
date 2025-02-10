@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import {
-  X, Maximize2, Minimize2, Search, 
+  X, Maximize2, Minimize2, Search,
   MessageSquare, Share2, Users, ArrowRight, Plus,
-  Settings,   User
+  Settings, User, Info, CheckCircle, XCircle
 } from 'lucide-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
@@ -10,8 +10,9 @@ import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
 import { Spinner } from '@chakra-ui/react';
+import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
-import { getWalletProfile } from '../utils/chatApi';
+import { getAllChatData, getWalletProfile } from '../utils/chatApi';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -23,6 +24,31 @@ interface IUser {
   profilePicture: string;
   address: string;
   chatId: string;
+  type: "Request" | "Connected" | "Searched";
+  lastTimestamp?: number;
+  lastMessage?: string;
+  unreadMessages: number;
+}
+
+interface IMember {
+  image: string;
+  isAdmin: boolean;
+  wallet: string;
+}
+
+interface IGroup {
+  groupId: string;
+  name: string;
+  description: string;
+  public: boolean;
+  image: string;
+  erc20: string;
+  nft: string;
+  members: IMember[];
+  pendingMembers: IMember[];
+  type: "Request" | "Connected" | "Searched";
+  lastTimestamp?: number;
+  lastMessage?: string;
 }
 
 interface IChat {
@@ -33,6 +59,7 @@ interface IChat {
   toAddress: string;
   chatId: string;
   link: string | null;
+  image?: string;
 }
 
 // interface ChatUser {
@@ -203,19 +230,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [chatMode, setChatMode] = useState<'group' | 'p2p'>('group');
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
-  const [selectedGroup, setSelectedGroup] = useState<any>(null);
+  const [selectedGroup, setSelectedGroup] = useState<IGroup | null>(null);
   const [message, setMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [isCreateGroupActive, setIsCreateGroupActive] = useState(false);
-  // const [showCreateGroup, setShowCreateGroup] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
 
   const [loading, setLoading] = useState(false);
-  const [group, setGroup] = useState<Array<any>>([]);
-  const [connectedUsers, setConnectedUsers] = useState<Array<any>>([]);
-  const [searchedOne, setSearchedOne] = useState<IUser | null>(null);
+  const [groupList, setGroupList] = useState<Array<IGroup>>([]);
+  const [connectedUsers, setConnectedUsers] = useState<Array<IUser>>([]);
+  const [searchedUser, setSearchedUser] = useState<IUser | null>(null);
+  const [searchedGroup, setSearchedGroup] = useState<IGroup | null>(null);
+  const [requestUsers, setRequestUsers] = useState<Array<IUser>>([]);
+  const [requestGroups, setRequestGroups] = useState<Array<IGroup>>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
@@ -223,10 +252,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isScrollTop, setIsScrollTop] = useState(false);
   const [loadingPrevChat, setLoadingPrevChat] = useState(false);
   const [toBottom, setToBottom] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [isHandlingRequest, setIsHandlingRequest] = useState(false);
+  const [isJoiningGroup, setIsJoiningGroup] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState<any>([]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
-  // const [messages, setMessages] = useState<Record<string, any[]>>();
   // const [currentUserNfts] = useState([
   //   {
   //     collection: 'Bored Ape Yacht Club',
@@ -259,7 +290,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen && chatUser?.uid) {
       console.log('get chat user')
-      getChatList()
+      getChatInformation()
     } else {
       clearValues()
     }
@@ -283,96 +314,32 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const clearValues = () => {
     setSearchQuery("")
+    setChatHistory([])
     setSelectedUser(null)
-    setSearchedOne(null)
+    setSearchedUser(null)
     setSelectedGroup(null)
+    setSearchedGroup(null)
   }
 
   useEffect(() => {
     setMessage("")
-    setChatHistory([])
   }, [selectedUser, selectedGroup])
 
   useEffect(() => {
-    if (selectedUser?.address) {
-      console.log(address, extractAddress(receivedMessage?.to[0] || ""))
-      if (address == extractAddress(receivedMessage?.to[0] || "")) {
-        setChatHistory(
-          [...chatHistory, {
-            timestamp: Number(receivedMessage.timestamp),
-            type: receivedMessage.message.type,
-            content: receivedMessage.message.content,
-            fromAddress: extractAddress(receivedMessage.from),
-            toAddress: extractAddress(receivedMessage.to[0]),
-            chatId: receivedMessage.chatId,
-            link: null
-          }]
-        )
-      }
+    console.log('chat history = ', chatHistory)
+    if (toBottom) {
+      scrollBottom()
+      setToBottom(false)
     }
+  }, [chatHistory])
+
+  useEffect(() => {
+    handleReceiveMsg()
   }, [receivedMessage])
 
-  const getPrevChatHistory = async (address: string, chatId: string) => {
-    setLoadingPrevChat(true)
-    const prevHistory = await chatUser.chat.history(address, { reference: chatId })
-    console.log('prev history = ', prevHistory)
-    if (prevHistory.length > 0) {
-      const tmp: IChat[] = prevHistory.map((e: any) => {
-        return {
-          timestamp: e.timestamp,
-          type: e.messageType,
-          content: e.messageContent,
-          fromAddress: extractAddress(e.fromDID),
-          toAddress: extractAddress(e.toDID),
-          chatId: e.cid,
-          link: e.link
-        }
-      })
-      tmp.shift()
-      if (tmp.length > 0) {
-        setChatHistory([...tmp.reverse(), ...chatHistory])
-      }
-    }
-    setLoadingPrevChat(false)
-  }
-
-  const getChatList = async () => {
-    setLoading(true)
-    const chatData = await chatUser.chat.list('CHATS')
-    console.log('chatdata = ', chatData)
-
-    let groupInformation: any[] = []
-    let userInformation: any[] = []
-    chatData.forEach((e: any) => {
-      if (e.groupInformation) {
-        groupInformation = [...groupInformation, e.groupInformation]
-      } else {
-        userInformation = [...userInformation, e]
-      }
-    });
-
-    if (groupInformation.length > 0) {
-      setGroup(groupInformation)
-    }
-    if (userInformation.length > 0) {
-      setConnectedUsers(userInformation)
-    }
-    setLoading(false)
-  }
-
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const handleUnlock = async () => {
-    if (!chatUser?.uid) {
-      const user = await PushAPI.initialize(signer, {
-        env: CONSTANTS.ENV.PROD,
-      });
-      setChatUser(user)
-      initStream(user)
-    }
-  }
+  // useEffect(() => {
+  //   console.log('request users = ', requestUsers)
+  // }, [requestUsers])
 
   const initStream = async (user: any) => {
     const stream = await user.initStream(
@@ -425,6 +392,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       setReceivedMessage(message)
     });
 
+    // Setup event handling
+    stream.on(CONSTANTS.STREAM.NOTIF, (data: any) => {
+      console.log('notify data = ', data);
+    });
+
     // Chat operation received:
     stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
       console.log('Chat operation received.');
@@ -444,37 +416,370 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }
 
+  const handleReceiveMsg = async () => {
+    if (receivedMessage.meta?.group == true && chatMode === "group") {
+      if (receivedMessage.origin == "other") {
+        if (receivedMessage.event == "chat.request") {
+          const found = requestGroups.find((group: IGroup) => group.groupId == receivedMessage.chatId)
+
+          if (!found) {
+            const profile = await chatUser.chat.group.info(receivedMessage.chatId)
+            console.log('group profile = ', profile)
+
+            setRequestGroups(
+              [...requestGroups, {
+                groupId: profile.chatId,
+                name: profile.groupName,
+                description: profile.groupDescription,
+                public: profile.isPublic,
+                image: profile.groupImage,
+                erc20: profile.contractAddressERC20,
+                nft: profile.contractAddressNFT,
+                members: profile.members,
+                pendingMembers: profile.pendingMembers,
+                type: "Request",
+                lastTimestamp: receivedMessage?.timestamp ? Number(receivedMessage.timestamp) : undefined,
+                lastMessage: receivedMessage.message?.content ? receivedMessage.message.content : undefined
+              }]
+            )
+          }
+
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, true)
+        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
+          if (selectedGroup?.groupId == receivedMessage.chatId) {
+            setToBottom(true)
+            const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == extractAddress(receivedMessage.from))
+            setChatHistory(
+              [...chatHistory, {
+                timestamp: Number(receivedMessage.timestamp),
+                type: receivedMessage.message.type,
+                content: receivedMessage.message.content,
+                fromAddress: extractAddress(receivedMessage.from),
+                toAddress: "",
+                chatId: receivedMessage.chatId,
+                link: null,
+                image: found?.image || ""
+              }]
+            )
+          }
+
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
+        } else if (receivedMessage.event == "chat.accept") {
+          // add a member
+          const profile = await getWalletProfile(chatUser, receivedMessage.from)
+          console.log('received message from = ', receivedMessage.from)
+          console.log('chat accept profile = ', profile)
+          const newMember = {
+            image: profile.picture,
+            isAdmin: false,
+            wallet: receivedMessage.from
+          }
+
+          if (selectedGroup && selectedGroup?.groupId == receivedMessage.chatId) {
+            setSelectedGroup({
+              ...selectedGroup,
+              members: [...selectedGroup.members, newMember]
+            });
+          } else if (groupList.find(group => group.groupId == receivedMessage.chatId)) {
+            setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
+          } else if (requestGroups.find(group => group.groupId == receivedMessage.chatId)) {
+            setRequestGroups(requestGroups.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
+          }
+        }
+      } else if (receivedMessage.origin == "self") {
+        if (receivedMessage.event == "chat.message") {
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
+        }
+      }
+    } else if (receivedMessage.meta?.group == false && chatMode === "p2p") {
+      if (receivedMessage.origin == "other") {
+        console.log('receive other')
+        if (receivedMessage.event == "chat.request") {
+          const profile = await getWalletProfile(chatUser, receivedMessage.from)
+          if (profile) {
+            setRequestUsers([...requestUsers, {
+              name: profile.name,
+              profilePicture: profile.picture,
+              address: extractAddress(receivedMessage.from),
+              chatId: receivedMessage.chatId,
+              type: "Request",
+              unreadMessages: 0
+            }])
+          }
+        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
+          console.log('chat.message')
+          if (extractAddress(receivedMessage.from) == selectedUser?.address) {
+            setToBottom(true)
+            setChatHistory(
+              [...chatHistory, {
+                timestamp: Number(receivedMessage.timestamp),
+                type: receivedMessage.message.type,
+                content: receivedMessage.message.content,
+                fromAddress: extractAddress(receivedMessage.from),
+                toAddress: extractAddress(receivedMessage.to[0]),
+                chatId: receivedMessage.chatId,
+                link: null
+              }]
+            )
+            updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
+          } else {
+            addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp))
+          }
+        }
+      } else if (receivedMessage.origin == "self") {
+        if (receivedMessage.event == "chat.message") {
+          updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
+        }
+      }
+    }
+
+    if (receivedMessage.event == "chat.group.participant.join" && receivedMessage.origin == "other") {
+      console.log('chat.group.participant.join------------')
+      // add a member
+      const profile = await getWalletProfile(chatUser, receivedMessage.from)
+      const newMember = {
+        image: profile.picture,
+        isAdmin: false,
+        wallet: receivedMessage.from
+      }
+      console.log('participate profile = ', profile)
+      if (selectedGroup && selectedGroup?.groupId == receivedMessage.chatId) {
+        setSelectedGroup({
+          ...selectedGroup,
+          members: [...selectedGroup.members, newMember]
+        });
+        setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
+      } else if (groupList.find(group => group.groupId == receivedMessage.chatId)) {
+        setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
+      }
+    }
+  }
+
+  const getPrevChatHistory = async (address: string, chatId: string) => {
+    setLoadingPrevChat(true)
+    const prevHistory = await chatUser.chat.history(address, { reference: chatId })
+    console.log('prev history = ', prevHistory)
+
+    if (prevHistory.length > 0) {
+      const tmp: IChat[] = prevHistory.map((data: any) => {
+        return {
+          timestamp: data.timestamp,
+          type: data.messageType,
+          content: data.messageContent,
+          fromAddress: extractAddress(data.fromDID),
+          toAddress: extractAddress(data.toDID),
+          chatId: data.cid,
+          link: data.link
+        }
+      })
+      tmp.shift()
+      if (tmp.length > 0) {
+        setChatHistory([...tmp.reverse(), ...chatHistory])
+      }
+    }
+
+    setLoadingPrevChat(false)
+  }
+
+  const getChatInformation = async () => {
+    setLoading(true)
+    setGroupList([])
+    setConnectedUsers([])
+
+    const chatData = await getAllChatData(chatUser)
+    console.log('chatdata = ', chatData)
+
+    let groupInformation: IGroup[] = []
+    let userInformation: IUser[] = []
+
+    chatData.forEach((data: any) => {
+      if (data.groupInformation) {
+        groupInformation = [...groupInformation, {
+          groupId: data.groupInformation.chatId,
+          name: data.groupInformation.groupName,
+          description: data.groupInformation.groupDescription,
+          public: data.groupInformation.isPublic,
+          image: data.groupInformation.groupImage,
+          erc20: data.groupInformation.contractAddressERC20,
+          nft: data.groupInformation.contractAddressNFT,
+          members: data.groupInformation.members,
+          pendingMembers: data.groupInformation.pendingMembers,
+          type: "Connected",
+          lastTimestamp: Number(data.msg.timestamp),
+          lastMessage: data.msg.messageContent
+        }]
+      } else {
+        userInformation = [...userInformation, {
+          name: data.name,
+          profilePicture: data.profilePicture,
+          address: extractAddress(data.wallets),
+          chatId: data.chatId,
+          type: "Connected",
+          lastTimestamp: data.msg.timestamp,
+          lastMessage: data.msg.messageContent,
+          unreadMessages: 0
+        }]
+      }
+    });
+    console.log('groupInformation = ', groupInformation)
+
+    if (groupInformation.length > 0) {
+      setGroupList(groupInformation)
+    }
+    if (userInformation.length > 0) {
+      setConnectedUsers(userInformation)
+    }
+
+    //get chat request
+    const requests = await chatUser.chat.list('REQUESTS')
+    console.log('requests = ', requests)
+    if (requests.length > 0) {
+      let directRequests: IUser[] = []
+      let groupRequests: IGroup[] = []
+
+      requests.forEach((request: any) => {
+        if (!request.groupInformation) {
+          directRequests = [...directRequests, {
+            name: request.name,
+            profilePicture: request.profilePicture,
+            address: extractAddress(request.wallets),
+            chatId: request.chatId,
+            type: "Request",
+            unreadMessages: 0
+          }]
+        } else if (request.groupInformation) {
+          groupRequests = [...groupRequests, {
+            groupId: request.groupInformation.chatId,
+            name: request.groupInformation.groupName,
+            description: request.groupInformation.groupDescription,
+            public: request.groupInformation.isPublic,
+            image: request.groupInformation.groupImage,
+            erc20: request.groupInformation.contractAddressERC20,
+            nft: request.groupInformation.contractAddressNFT,
+            members: request.groupInformation.members,
+            pendingMembers: request.groupInformation.pendingMembers,
+            type: "Request",
+            lastTimestamp: request.msg?.timestamp ? Number(request.msg?.timestamp) : undefined,
+            lastMessage: request.msg?.messageContent ? request.msg?.messageContent : undefined
+          }]
+        }
+      })
+
+      if (directRequests.length > 0) {
+        setRequestUsers(directRequests)
+      }
+      if (groupRequests.length > 0) {
+        setRequestGroups(groupRequests)
+      }
+    }
+
+    setLoading(false)
+  }
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const handleUnlock = async () => {
+    if (!chatUser?.uid) {
+      const user = await PushAPI.initialize(signer, {
+        env: CONSTANTS.ENV.PROD,
+      });
+      setChatUser(user)
+      initStream(user)
+    }
+  }
+
+  const onMakeGroup = (group: any) => {
+    console.log('on make group : ', group)
+    setGroupList([{
+      groupId: group.chatId,
+      name: group.groupName,
+      description: group.groupDescription,
+      public: group.isPublic,
+      image: group.groupImage,
+      erc20: group.contractAddressERC20,
+      nft: group.contractAddressNFT,
+      members: group.members,
+      pendingMembers: group.pendingMembers,
+      type: "Connected"
+    }, ...groupList])
+  }
+
+  const handleAcceptRequest = async () => {
+    try {
+      setIsHandlingRequest(true)
+      const acceptRequest = await chatUser.chat.accept(selectedUser?.address)
+      setRequestUsers(requestUsers.filter((item) => item.chatId !== selectedUser?.chatId))
+
+      if (selectedUser) {
+        setConnectedUsers([{ ...selectedUser, unreadMessages: 0 }, ...connectedUsers])
+      }
+
+      setSelectedUser({
+        ...selectedUser,
+        type: "Connected"
+      } as IUser)
+      console.log('accept request = ', acceptRequest)
+    } catch (err) {
+      console.log('request accept error: ', err)
+    }
+
+    setIsHandlingRequest(false)
+  }
+
+  const handleAcceptGroupRequest = async () => {
+    try {
+      setIsHandlingRequest(true)
+
+      const acceptGroup = await chatUser.chat.group.join(selectedGroup?.groupId);
+      console.log('acceptGroup = ', acceptGroup)
+
+      if (selectedGroup) {
+        setRequestGroups(requestGroups.filter(group => group.groupId != selectedGroup.groupId))
+        setGroupList([{ ...selectedGroup, type: "Connected" }, ...groupList])
+        setSelectedGroup({
+          ...selectedGroup,
+          type: "Connected",
+          members: acceptGroup?.members
+        })
+      }
+    } catch (err) {
+      console.log('request accept error: ', err)
+    }
+
+    setIsHandlingRequest(false)
+  }
+
+  const handleRejectRequest = async () => {
+    try {
+      setIsHandlingRequest(true)
+
+      const rejectGroup = await chatUser.chat.group.reject(selectedGroup?.groupId);
+      console.log('rejectGroup = ', rejectGroup)
+
+      if (selectedGroup) {
+        setRequestGroups(requestGroups.filter(group => group.groupId != selectedGroup.groupId))
+        setSelectedGroup(null)
+      }
+    } catch (err) {
+      console.log('request accept error: ', err)
+    }
+
+    setIsHandlingRequest(false)
+  }
+
   const handleSendMessage = async () => {
     if (!message.trim()) return;
 
-    // const newMessage = {
-    //   id: Date.now().toString(),
-    //   sender: {
-    //     id: 'me',
-    //     name: 'You',
-    //     ens: 'you.eth',
-    //     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
-    //     isOnline: true,
-    //     status: 'Online'
-    //   },
-    //   content: message.trim(),
-    //   timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-    // };
-
-    // if (selectedUser?.id === '2') { // Bob's chat
-    //   setMessages(prev => ({
-    //     ...prev,
-    //     'bob': [...(prev['bob'] || []), newMessage]
-    //   }));
-    // }
-
-    // setMessage('');
     if (isFailedSent) {
       setIsFailedSent(false)
     }
 
+    setSendingMessage(true)
+    setToBottom(true)
+
     if (chatMode === "p2p" && selectedUser) {
-      setToBottom(true)
       setChatHistory([...chatHistory, {
         timestamp: Math.floor(Date.now()),
         type: "Text",
@@ -493,14 +798,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         })
 
         setMessage("")
-        if (searchedOne?.address == selectedUser.address) {
-          setSearchedOne(null)
-          setConnectedUsers([searchedOne, ...connectedUsers])
-
-          // setTimeout(async () => {
-          //   const data = await chatUser.chat.history(searchedOne?.address)
-          //   console.log('searched one history', data)
-          // }, 1000)
+        if (searchedUser?.address == selectedUser.address) {
+          setSearchedUser(null)
+          setConnectedUsers([{ ...searchedUser, unreadMessages: 0 }, ...connectedUsers])
         }
         console.log('sent msg = ', sentMsg)
       } catch (err) {
@@ -508,48 +808,69 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
         console.log('sent msg err: ', err)
       }
+    } else if (chatMode === "group") {
+      const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == address)
+      setChatHistory([...chatHistory, {
+        timestamp: Math.floor(Date.now()),
+        type: "Text",
+        content: message.trim(),
+        fromAddress: address,
+        toAddress: "",
+        chatId: "",
+        link: null,
+        image: found?.image || ""
+      }])
+
+      try {
+        const sentMsg = await chatUser.chat.send(selectedGroup?.groupId, {
+          type: 'Text',
+          content: message.trim()
+        })
+
+        setMessage("")
+
+        console.log('sent msg = ', sentMsg)
+      } catch (err) {
+        setIsFailedSent(true)
+        setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
+        console.log('sent msg err: ', err)
+      }
     }
+
+    setSendingMessage(false)
   };
 
-  useEffect(() => {
-    console.log('chat history = ', chatHistory)
-    if (toBottom) {
-      scrollBottom()
-      setToBottom(false)
-    }
-  }, [chatHistory])
-
-  const handleSelectUser = async (user: any) => {
+  const handleSelectUser = async (user: IUser) => {
     setLoadingChatHistory(true)
-    setSelectedUser({
-      name: user.name,
-      profilePicture: user.profilePicture,
-      address: extractAddress(user.wallets),
-      chatId: user.chatId
-    })
+    setChatHistory([])
+    setSelectedUser(user)
 
     try {
-      const history = await chatUser.chat.history(user.wallets)
+      const history = await chatUser.chat.history(user.address)
+
       if (history.length > 0) {
         console.log('history = ', history)
-        console.log('selected = ', user.wallets)
-        const tmp: IChat[] = history.map((e: any) => {
+        console.log('selected = ', user.address)
+        const tmp: IChat[] = history.map((data: any) => {
           return {
-            timestamp: e.timestamp,
-            type: e.messageType,
-            content: e.messageContent,
-            fromAddress: extractAddress(e.fromDID),
-            toAddress: extractAddress(e.toDID),
-            chatId: e.cid,
-            link: e.link
+            timestamp: data.timestamp,
+            type: data.messageType,
+            content: data.messageContent,
+            fromAddress: extractAddress(data.fromDID),
+            toAddress: extractAddress(data.toDID),
+            chatId: data.cid,
+            link: data.link
           }
         })
+
         setToBottom(true)
         setChatHistory(tmp.reverse())
+        clearUnreadMessages(user.address)
       }
     } catch (err) {
       console.log('load chat history err: ', err)
     }
+
     setLoadingChatHistory(false)
   }
 
@@ -563,31 +884,217 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const handleSearch = async () => {
     if (!searchQuery || searchQuery == address) return
     setIsSearching(true)
-    const profile = await getWalletProfile(searchQuery)
-    // const isValidAddress = await checkIfAddressExists(searchQuery)
-    if (profile) {
-      const found = connectedUsers.find((e: any) => extractAddress(e.wallets) == searchQuery)
-      if (found) {
-        setSelectedUser({
-          name: found.name,
-          address: found.wallets,
-          profilePicture: found.profilePicture,
-          chatId: found.chatId
-        })
-      } else {
-        setSearchedOne({
-          name: profile.name,
-          profilePicture: profile.picture,
-          address: searchQuery,
-          chatId: ""
-        })
+    setChatHistory([])
+
+    if (chatMode == "p2p") {
+      const profile = await getWalletProfile(chatUser, searchQuery)
+      if (profile) {
+        const found = connectedUsers.find((user: IUser) => extractAddress(user.address) == searchQuery)
+        if (found) {
+          setSelectedUser({
+            name: found.name,
+            address: found.address,
+            profilePicture: found.profilePicture,
+            chatId: found.chatId,
+            type: "Connected",
+            unreadMessages: 0
+          })
+        } else {
+          setSearchedUser({
+            name: profile.name,
+            profilePicture: profile.picture,
+            address: searchQuery,
+            chatId: "",
+            type: "Searched",
+            unreadMessages: 0
+          })
+        }
+      }
+    } else if (chatMode == "group") {
+      const profile = await chatUser.chat.group.info(searchQuery)
+      console.log('gropuProfile = ', profile)
+      if (profile) {
+        const found = groupList.find((group: IGroup) => group.groupId == searchQuery)
+        if (found) {
+          setSelectedGroup(found)
+        } else {
+          setSearchedGroup({
+            groupId: profile.chatId,
+            name: profile.groupName,
+            description: profile.groupDescription,
+            public: profile.isPublic,
+            image: profile.groupImage,
+            erc20: profile.contractAddressERC20,
+            nft: profile.contractAddressNFT,
+            members: profile.members,
+            pendingMembers: profile.pendingMembers,
+            type: "Searched"
+          })
+        }
       }
     }
+
     setIsSearching(false)
   }
 
-  const canAccessChat = (user: any, group: any) => {
-    if (!user && !group) return true;
+  const handleSelectRequestUser = async (user: IUser) => {
+    setLoadingChatHistory(true)
+    setChatHistory([])
+    setSelectedUser(user)
+
+    const history = await chatUser.chat.history(user.address)
+    if (history.length > 0) {
+      const tmp: IChat[] = history.map((data: any) => {
+        return {
+          timestamp: data.timestamp,
+          type: data.messageType,
+          content: data.messageContent,
+          fromAddress: extractAddress(data.fromDID),
+          toAddress: extractAddress(data.toDID),
+          chatId: data.cid,
+          link: data.link
+        }
+      })
+      setToBottom(true)
+      setChatHistory(tmp.reverse())
+    }
+
+    setLoadingChatHistory(false)
+  }
+
+  const handleSelectGroup = async (group: IGroup) => {
+    setLoadingChatHistory(true)
+    setChatHistory([])
+    setSelectedGroup(group)
+
+    console.log('group = ', group)
+    const history = await chatUser.chat.history(group.groupId)
+
+    if (history.length > 0) {
+      const tmp: IChat[] = history.map((data: any) => {
+        const found = group?.members.find(member => extractAddress(member.wallet) == extractAddress(data.fromDID))
+        // console.log('found ', group, data.fromDID)
+
+        return {
+          timestamp: data.timestamp,
+          type: data.messageType,
+          content: data.messageContent,
+          fromAddress: extractAddress(data.fromDID),
+          toAddress: extractAddress(data.toDID),
+          chatId: data.cid,
+          link: data.link,
+          image: found?.image || ""
+        }
+      })
+
+      setToBottom(true)
+      setChatHistory(tmp.reverse())
+    }
+
+    setLoadingChatHistory(false)
+  }
+
+  const handleJoinGroup = async () => {
+    setIsJoiningGroup(true)
+
+    try {
+      const joinGroup = await chatUser.chat.group.join(selectedGroup?.groupId);
+      console.log('joingroup = ', joinGroup)
+
+      if (searchedGroup) {
+        setSearchedGroup(null)
+      }
+
+      if (selectedGroup) {
+        const newGroup: IGroup = {
+          ...selectedGroup,
+          type: "Connected",
+          members: joinGroup.members
+        }
+        setGroupList([{ ...newGroup, type: "Connected" }, ...groupList])
+        setSelectedGroup(newGroup)
+      }
+    } catch (err) {
+      console.log('join group err: ', err)
+    }
+
+    setIsJoiningGroup(false)
+  }
+
+  const updateLastMessageInfo = (address: string, msg: string, timestamp: number, isGroup: boolean, isRequest: boolean) => {
+    console.log('updateLastMessageInfo ')
+    if (!isGroup) {
+      connectedUsers.length > 0 && setConnectedUsers((prevUsers) => {
+        const updatedUsers = prevUsers.map((user) =>
+          user.address === address
+            ? { ...user, lastMessage: msg, lastTimestamp: timestamp }
+            : user
+        );
+        // console.log("Previous Users: ", prevUsers);
+        // console.log("Updated Users: ", updatedUsers);
+        return updatedUsers;
+      });
+    } else {
+      if (isRequest) {
+        requestGroups.length > 0 && setRequestGroups((prevGroups) => {
+          const updatedGroups = prevGroups.map((group) =>
+            group.groupId === address
+              ? { ...group, lastMessage: msg, lastTimestamp: timestamp }
+              : group
+          );
+          // console.log("Previous Groups: ", prevGroups);
+          // console.log("Updated Groups: ", updatedGroups);
+          return updatedGroups;
+        });
+      } else {
+        groupList.length > 0 && setGroupList((prevGroups) => {
+          const updatedGroups = prevGroups.map((group) =>
+            group.groupId === address
+              ? { ...group, lastMessage: msg, lastTimestamp: timestamp }
+              : group
+          );
+          // console.log("Previous Groups: ", prevGroups);
+          // console.log("Updated Groups: ", updatedGroups);
+          return updatedGroups;
+        });
+      }
+    }
+  }
+
+  const addUnreadMessagesCount = (address: string, msg: string, timestamp: number) => {
+    if (connectedUsers.length > 0) {
+      setConnectedUsers((prevUsers) => {
+        const updatedUsers = prevUsers.map((user) =>
+          user.address === address
+            ? { ...user, lastMessage: msg, lastTimestamp: timestamp, unreadMessages: ++user.unreadMessages }
+            : user
+        );
+        return updatedUsers;
+      });
+    }
+  }
+
+  const clearUnreadMessages = (address: string) => {
+    if (connectedUsers.length > 0) {
+      setConnectedUsers((prevUsers) => {
+        const updatedUsers = prevUsers.map((user) =>
+          user.address === address && user.unreadMessages > 0
+            ? { ...user, unreadMessages: 0 }
+            : user
+        );
+        return updatedUsers;
+      });
+    }
+  }
+
+  const canAccessChat = (user: IUser | null, group: IGroup | null) => {
+    if (!user && !group) return false;
+
+    if (user?.type === "Request") return false;
+
+    if (group?.type === "Searched") return false;
+
+    if (group?.type === "Request") return false;
     // if (group?.type === 'public') return true;
     // if (group?.type === 'nft-gated') {
     //   return currentUserNfts.some(nft =>
@@ -604,7 +1111,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     return true;
   };
 
-  const renderAccessBadge = (user: any, group: any) => {
+  const renderAccessBadge = (user: IUser | null, group: IGroup | null) => {
     if (!user && !group) return null;
 
     // const hasAccess = canAccessChat(user, group);
@@ -631,6 +1138,315 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     // );
     return null
   };
+
+  const renderDirectRequests = () => {
+    return <>
+      {
+        requestUsers.length > 0 && requestUsers.map(user => <div key={user.chatId} className={`flex p-3 hover:bg-white/5 ${user.address == selectedUser?.address && 'bg-white/10'}`}>
+          <button className={`flex-1 py-2 flex gap-8 items-center`}
+            onClick={() => handleSelectRequestUser(user)}>
+            {user?.profilePicture ? <img src={user.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
+            <div className='flex flex-col'>
+              <span>{user?.name || shrinkAddress(user.address)}</span>
+              {/* <span className='text-sm text-gray-400'>Join Group!</span> */}
+            </div>
+            <Info className='text-red-500' />
+          </button>
+        </div>
+        )
+      }
+    </>
+  }
+
+  const renderGroupsAndUsers = () => {
+    if (chatMode === 'group') {
+      return <>
+        {
+          requestGroups.length > 0 && requestGroups.map(group => <button
+            key={group.groupId}
+            onClick={() => handleSelectGroup(group)}
+            className={`w-full flex items-center justify-between gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.groupId === group.groupId
+              ? 'bg-white/10'
+              : 'hover:bg-white/5'
+              }`}>
+            <img src={group.image} alt="WOW" className="w-14 h-14 rounded-lg" />
+            <div className="flex-1 text-left">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{group.name}</span>
+              </div>
+              {group.lastMessage ? <div className="text-sm text-white/60 truncate">{group.lastMessage.slice(0, 20)}</div> : <></>}
+            </div>
+            {group?.lastTimestamp ? <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(group?.lastTimestamp)}</span> : <></>}
+            <Info className='text-red-500' />
+          </button>)
+        }
+
+        {searchedGroup && <div className={`flex border-b-2 hover:bg-white/5 ${searchedGroup.groupId == selectedGroup?.groupId && 'bg-white/10'}`}>
+          <button className={`flex-1 py-2 flex gap-8 items-center`}
+            onClick={() => handleSelectGroup(searchedGroup)}>
+            <img src={searchedGroup.image} className='w-14 h-14 rounded-lg' />
+            <div className='flex flex-col'>
+              <span>{searchedGroup.name}</span>
+              <span className='text-sm text-gray-400'>Join Group!</span>
+            </div>
+          </button>
+          <button className='mx-2' onClick={() => { setSearchedGroup(null); setSelectedGroup(null); }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>}
+
+        {groupList.length > 0 && groupList.map((group: IGroup) => <button
+          key={group.groupId}
+          onClick={() => handleSelectGroup(group)}
+          className={`w-full flex items-center justify-between gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.groupId === group.groupId
+            ? 'bg-white/10'
+            : 'hover:bg-white/5'
+            }`}>
+          <img src={group.image} alt="WOW" className="w-14 h-14 rounded-lg" />
+          <div className="flex-1 text-left">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{group.name}</span>
+            </div>
+            {group.lastMessage ? <div className="text-sm text-white/60 truncate">{group.lastMessage.slice(0, 20)}</div> : <></>}
+          </div>
+          {group?.lastTimestamp ? <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(group?.lastTimestamp)}</span> : <></>}
+          {/* {group?.unreadMessages > 0 ? <span className='text-red-500 text-xs'>{group?.unreadMessages}</span> : <></>} */}
+          {/* {group?.unreadMessages > 0 ? <CheckCircle className='text-red-500 w-4 h-4' /> : <></>} */}
+        </button>)}
+      </>
+    } else if (chatMode === 'p2p') {
+      return <>
+        {renderDirectRequests()}
+
+        {searchedUser && <div className={`flex border-b-2 hover:bg-white/5 ${searchedUser.address == selectedUser?.address && 'bg-white/10'}`}>
+          <button className={`flex-1 py-2 flex gap-8 items-center`}
+            onClick={() => setSelectedUser(searchedUser)}>
+            {searchedUser?.profilePicture ? <img src={searchedUser.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
+            <div className='flex flex-col'>
+              <span>{searchedUser?.name || shrinkAddress(searchedUser.address)}</span>
+              <span className='text-sm text-white/40'>Start Chat!</span>
+            </div>
+          </button>
+          <button className='mx-2' onClick={() => { setSearchedUser(null); setSelectedUser(null); }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>}
+
+        {connectedUsers.length > 0 && connectedUsers.map((user: IUser) => <button key={user.chatId}
+          onClick={() => handleSelectUser(user)}
+          className={`w-full flex items-center justify-between gap-3 p-3 rounded-lg transition-colors ${selectedUser?.address === extractAddress(user?.address)
+            ? 'bg-white/10'
+            : 'hover:bg-white/5'
+            }`}
+        >
+          {
+            user?.profilePicture ? <img src={user?.profilePicture} className='w-10 h-10 rounded-full' /> : <User className='w-10 h-10' />
+          }
+          <div className='flex flex-col flex-1'>
+            <span className='text-left'>{user?.name || shrinkAddress(extractAddress(user?.address))}</span>
+            <span className='text-left text-sm text-white/40'>{user?.lastMessage ? user?.lastMessage.slice(0, 20) : ""}</span>
+          </div>
+          {user?.lastTimestamp && <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(user?.lastTimestamp)}</span>}
+          {/* {user?.unreadMessages > 0 ? <span className='text-red-500 text-xs'>{user?.unreadMessages}</span> : <></>} */}
+          {user?.unreadMessages > 0 ? <CheckCircle className='text-red-500 w-4 h-4' /> : <></>}
+        </button>)}
+      </>
+    }
+
+    // {
+    //   chatMode === 'group' ? (
+    //     mockGroups.map((group) => (
+    //       <button
+    //         key={group.id}
+    //         onClick={() => {
+    //           setSelectedGroup(group);
+    //           setSelectedUser(null);
+    //         }}
+    //         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.id === group.id
+    //           ? 'bg-white/10'
+    //           : 'hover:bg-white/5'
+    //           }`}
+    //       >
+    //         {group.id === 'wow' ? (
+    //           <img src={group.icon} alt="WOW" className="w-10 h-10" />
+    //         ) : (
+    //           <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg">
+    //             {group.icon}
+    //           </div>
+    //         )}
+    //         <div className="flex-1 text-left">
+    //           <div className="flex items-center gap-2">
+    //             <span className="font-medium">{group.name}</span>
+    //             {group.type === 'private' && (
+    //               <Lock className="w-3 h-3 text-white/40" />
+    //             )}
+    //             {group.type === 'nft-gated' && (
+    //               <Shield className="w-3 h-3 text-white/40" />
+    //             )}
+    //           </div>
+    //           <div className="text-sm text-white/60 truncate">
+    //             {group.members.length} members
+    //           </div>
+    //         </div>
+    //       </button>
+    //     ))
+    //   ) : (
+    //     mockUsers.map((user) => (
+    //       <button
+    //         key={user.id}
+    //         onClick={() => {
+    //           setSelectedUser(user);
+    //           setSelectedGroup(null);
+    //         }}
+    //         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser?.id === user.id
+    //           ? 'bg-white/10'
+    //           : 'hover:bg-white/5'
+    //           }`}
+    //       >
+    //         <div className="relative">
+    //           <img
+    //             src={user.avatar}
+    //             alt={user.name}
+    //             className="w-10 h-10 rounded-full"
+    //           />
+    //           <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0a0c] ${user.isOnline ? 'bg-green-500' : 'bg-gray-500'
+    //             }`} />
+    //         </div>
+    //         <div className="flex-1 text-left">
+    //           <div className="flex items-center gap-2">
+    //             <span className="font-medium">{user.name}</span>
+    //             {user.nftAccess && (
+    //               <Shield className="w-3 h-3 text-white/40" />
+    //             )}
+    //           </div>
+    //           <div className="text-sm text-white/60">
+    //             {user.isOnline ? user.status || user.ens : user.lastSeen}
+    //           </div>
+    //         </div>
+    //       </button>
+    //     ))
+    //   )
+    // }
+  }
+
+  const renderChatHistory = () => {
+    if (chatMode === "p2p") {
+      return chatHistory.map((msg) => (
+        <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
+          {
+            msg.fromAddress == selectedUser?.address &&
+            < img
+              src={selectedUser.profilePicture}
+              className="w-8 h-8 rounded-full mt-1"
+            />
+          }
+          <div className="flex-1 min-w-0">
+            <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+              {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+              <span className="font-medium">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+              <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
+            </div>
+            <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress == selectedUser?.address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+              {msg.content}
+            </div>
+          </div>
+        </div>
+      ))
+    } else if (chatMode === "group") {
+      return chatHistory.map((msg) => (
+        <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
+          {
+            msg.fromAddress != address &&
+            < img
+              src={msg.image}
+              className="w-8 h-8 rounded-full mt-1"
+            />
+          }
+          <div className="flex-1 min-w-0">
+            <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+              {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+              <span className="font-medium">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+              <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
+            </div>
+            <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress != address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+              {msg.content}
+            </div>
+          </div>
+          {
+            msg.fromAddress == address &&
+            < img
+              src={msg.image}
+              className="w-8 h-8 rounded-full mt-1"
+            />
+          }
+        </div>
+      ))
+    }
+  }
+
+  const renderButtonsInHistory = () => {
+    if (selectedUser?.type === "Request") {
+      return <div className='w-full flex justify-center'>
+        <div className='w-[320px] rounded-lg p-3 bg-white/5'>
+          <span className='text-white/40'>This wallet wants to chat with you! Please accept to continue or reject to decline.</span>
+          <div className='mt-2 flex gap-4 justify-center'>
+            {
+              isHandlingRequest ? <Spinner className='w-10 h-10' /> : <>
+                <button onClick={handleAcceptRequest}>
+                  <CheckCircle className='text-blue-500 w-10 h-10' />
+                </button>
+                <button onClick={handleRejectRequest}>
+                  <XCircle className='text-white/40 w-10 h-10' />
+                </button>
+              </>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    if (selectedGroup?.type === "Request") {
+      console.log('group request')
+      return <div className='w-full flex justify-center'>
+        <div className='w-[320px] rounded-lg py-5 px-3 bg-white/5'>
+          <div className='text-white/40 text-center'>You were invited to this group. Please accept to continue messaging in this group.</div>
+          <div className='mt-2 flex gap-4 justify-center'>
+            {
+              isHandlingRequest ? <Spinner className='w-10 h-10' /> : <>
+                <button onClick={handleAcceptGroupRequest}>
+                  <CheckCircle className='text-blue-500 w-10 h-10' />
+                </button>
+                <button onClick={handleRejectRequest}>
+                  <XCircle className='text-white/40 w-10 h-10' />
+                </button>
+              </>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    if (selectedGroup?.type === "Searched") {
+      return <div className='w-full flex justify-center'>
+        <div className='w-[320px] rounded-lg py-5 px-3 bg-white/5'>
+          <div className='text-white/40 text-center'>Click on the button to join the group.</div>
+          <div className='mt-2 flex gap-4 justify-center'>
+            {
+              !isJoiningGroup ?
+                <button
+                  className='py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg'
+                  onClick={handleJoinGroup}>
+                  Join Group
+                </button> :
+                <Spinner />
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    return null
+  }
 
   const renderMessages = () => {
     if (!selectedGroup && !selectedUser) {
@@ -659,34 +1475,28 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <Spinner />
             </div>
           }
-          {chatHistory.map((msg) => (
-            <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-              {
-                msg.fromAddress === selectedUser?.address &&
-                < img
-                  src={selectedUser.profilePicture}
-                  className="w-8 h-8 rounded-full mt-1"
-                />
-              }
-              <div className="flex-1 min-w-0">
-                <div className={`${msg.fromAddress != selectedUser?.address ? "justify-end" : ""} flex items-center gap-2 mb-1`}>
-                  <span className="font-medium">{msg.toAddress != selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
-                  {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                  <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
-                </div>
-                <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress != selectedUser?.address ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
-                  }`}>
-                  {msg.content}
-                </div>
-              </div>
-            </div>
-          ))}
+          {
+            renderChatHistory()
+          }
+          {
+            renderButtonsInHistory()
+          }
+        </div>
+      )
+    } else {
+      return (
+        renderButtonsInHistory() ||
+        <div className="flex flex-col items-center justify-center h-full text-white/40">
+          <MessageSquare className="w-12 h-12 mb-4" />
+          <p>No messages yet</p>
+          <p className="text-sm">Start a conversation!</p>
         </div>
       )
     }
-    if (isFailedSent) {
-      return <div className='text-red-500 text-sm absolute bottom-[76px] right-[8px]'>Can't send message. Please try again.</div>
-    }
+
+    // if (isFailedSent) {
+    //   return <div className='text-red-500 text-sm absolute bottom-[76px] right-[8px]'>Can't send message. Please try again.</div>
+    // }
 
     // // Check access before showing messages
     // if (!canAccessChat(selectedUser, selectedGroup)) {
@@ -798,13 +1608,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     // }
 
     // Empty state for other chats
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-white/40">
-        <MessageSquare className="w-12 h-12 mb-4" />
-        <p>No messages yet</p>
-        <p className="text-sm">Start a conversation!</p>
-      </div>
-    );
   };
 
   if (!isOpen) return null;
@@ -880,126 +1683,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               )}
             </div>
 
-            <div className="p-2 space-y-1">
-              {
-                searchedOne && <div className={`flex border-b-2 hover:bg-white/5 ${searchedOne.address == selectedUser?.address && 'bg-white/10'}`}>
-                  <button className={`flex-1 py-2 flex gap-8 items-center`}
-                    onClick={() => setSelectedUser(searchedOne)}>
-                    {searchedOne?.profilePicture ? <img src={searchedOne.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
-                    <div className='flex flex-col'>
-                      <span>{searchedOne?.name || shrinkAddress(searchedOne.address)}</span>
-                      <span className='text-sm text-gray-400'>Start Chat!</span>
-                    </div>
-                  </button>
-                  <button className='mx-2' onClick={() => { setSearchedOne(null); setSelectedUser(null); }}>
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              }
-              {chatMode === 'group' ? (
-                // mockGroups.map((group) => (
-                //   <button
-                //     key={group.id}
-                //     onClick={() => {
-                //       setSelectedGroup(group);
-                //       setSelectedUser(null);
-                //     }}
-                //     className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.id === group.id
-                //       ? 'bg-white/10'
-                //       : 'hover:bg-white/5'
-                //       }`}
-                //   >
-                //     {group.id === 'wow' ? (
-                //       <img src={group.icon} alt="WOW" className="w-10 h-10" />
-                //     ) : (
-                //       <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg">
-                //         {group.icon}
-                //       </div>
-                //     )}
-                //     <div className="flex-1 text-left">
-                //       <div className="flex items-center gap-2">
-                //         <span className="font-medium">{group.name}</span>
-                //         {group.type === 'private' && (
-                //           <Lock className="w-3 h-3 text-white/40" />
-                //         )}
-                //         {group.type === 'nft-gated' && (
-                //           <Shield className="w-3 h-3 text-white/40" />
-                //         )}
-                //       </div>
-                //       <div className="text-sm text-white/60 truncate">
-                //         {group.members.length} members
-                //       </div>
-                //     </div>
-                //   </button>
-                // ))
-                group.length > 0 && group.map((e: any) => <button
-                  key={e?.chatId}
-                  onClick={() => setSelectedGroup(e)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedGroup?.chatId === e?.chatId
-                    ? 'bg-white/10'
-                    : 'hover:bg-white/5'
-                    }`}>
-                  <img src={e?.groupImage} alt="WOW" className="w-16 h-16 rounded-lg" />
-                  <div className="flex-1 text-left">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{e.groupName}</span>
-                    </div>
-                    <div className="text-sm text-white/60 truncate">
-                      {e.members.length} members
-                    </div>
-                  </div>
-                </button>)
-              ) : (
-                // mockUsers.map((user) => (
-                //   <button
-                //     key={user.id}
-                //     onClick={() => {
-                //       setSelectedUser(user);
-                //       setSelectedGroup(null);
-                //     }}
-                //     className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser?.id === user.id
-                //       ? 'bg-white/10'
-                //       : 'hover:bg-white/5'
-                //       }`}
-                //   >
-                //     <div className="relative">
-                //       <img
-                //         src={user.avatar}
-                //         alt={user.name}
-                //         className="w-10 h-10 rounded-full"
-                //       />
-                //       <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0a0c] ${user.isOnline ? 'bg-green-500' : 'bg-gray-500'
-                //         }`} />
-                //     </div>
-                //     <div className="flex-1 text-left">
-                //       <div className="flex items-center gap-2">
-                //         <span className="font-medium">{user.name}</span>
-                //         {user.nftAccess && (
-                //           <Shield className="w-3 h-3 text-white/40" />
-                //         )}
-                //       </div>
-                //       <div className="text-sm text-white/60">
-                //         {user.isOnline ? user.status || user.ens : user.lastSeen}
-                //       </div>
-                //     </div>
-                //   </button>
-                // ))
-                connectedUsers.map((user: any) => <button key={user?.chatId}
-                  onClick={() => handleSelectUser(user)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${selectedUser?.address === extractAddress(user?.wallets)
-                    ? 'bg-white/10'
-                    : 'hover:bg-white/5'
-                    }`}
-                >
-                  {
-                    user?.profilePicture ? <img src={user?.profilePicture} className='w-10 h-10 rounded-full' /> : <User className='w-10 h-10' />
-                  }
-                  <div className='flex flex-col'>
-                    <span className='text-left'>{user?.name || shrinkAddress(extractAddress(user?.wallets))}</span>
-                    <span className='text-left text-sm text-gray-400'>{user?.msg?.messageContent ? user?.msg?.messageContent.slice(0, 30) : ""}</span>
-                  </div>
-                </button>)
-              )}
+            <div className="p-2 overflow-y-auto ai-chat-scrollbar max-h-[calc(100%-182px)]">
+              {renderGroupsAndUsers()}
             </div>
           </div>
 
@@ -1021,12 +1706,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       {
                         selectedUser?.profilePicture ? <img src={selectedUser?.profilePicture} className='w-10 h-10 mr-4 rounded-full' /> : <User className='w-10 h-10 mr-4' />
                       }
-                      {selectedUser?.name ?
-                        <div className='flex flex-col'>
-                          <div>{selectedUser?.name}</div>
-                          <div className='text-sm text-gray-400'>{extractAddress(selectedUser?.address)}</div>
-                        </div>
-                        : extractAddress(selectedUser?.address)}
+                      {
+                        selectedUser?.name ?
+                          <div className='flex flex-col'>
+                            <div>{selectedUser?.name}</div>
+                            <Clipboard address={selectedUser.address} />
+                          </div>
+                          :
+                          <Clipboard address={selectedUser.address} />
+                      }
                     </div>
                     {/* <div>
                       <div className="font-medium">{selectedUser.name}</div>
@@ -1036,9 +1724,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     </div> */}
                   </>
                 ) : selectedGroup ? (
-                  <>
-                    <img src={selectedGroup?.groupImage} className='w-10 h-10 mr-2 rounded-lg' />
-                    {selectedGroup?.groupName}
+                  <div className='flex items-center'>
+                    <img src={selectedGroup?.image} className='w-10 h-10 mr-2 rounded-lg' />
+                    <div className='flex flex-col'>
+                      {selectedGroup?.name}
+                      <Clipboard address={selectedGroup.groupId} />
+                    </div>
                     {/* {selectedGroup.id === 'wow' ? (
                       <img src={selectedGroup.icon} alt="WOW" className="w-10 h-10" />
                     ) : (
@@ -1060,7 +1751,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                         {selectedGroup.members.length} members
                       </div>
                     </div> */}
-                  </>
+                  </div>
                 ) : (
                   <div className="text-white/40">Select a chat to start messaging</div>
                 )}
@@ -1078,11 +1769,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     </button>
                   </>
                 )} */}
-                {selectedGroup && (
+                {/* {selectedGroup && (
                   <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                     <Settings className="w-4 h-4" />
                   </button>
-                )}
+                )} */}
                 <button
                   onClick={toggleFullscreen}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -1125,14 +1816,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                     <Share2 className="w-5 h-5" />
                   </button>
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={!message.trim()}
-                    className={`p-2 rounded-lg transition-colors ${message.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
-                      }`}
-                  >
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
+                  {
+                    !sendingMessage ? <button
+                      onClick={handleSendMessage}
+                      disabled={!message.trim()}
+                      className={`p-2 rounded-lg transition-colors ${message.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
+                        }`}
+                    >
+                      <ArrowRight className="w-5 h-5" />
+                    </button> : <Spinner />
+                  }
                 </div>
               </div>
             )}
@@ -1143,6 +1836,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       <CreateGroupModal
         isOpen={isCreateGroupActive}
         onClose={() => setIsCreateGroupActive(false)}
+        onMakeGroup={onMakeGroup}
       />
       <VideoCallModal
         isOpen={isVideoCallActive}

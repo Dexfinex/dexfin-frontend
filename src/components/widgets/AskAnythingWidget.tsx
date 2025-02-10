@@ -31,6 +31,7 @@ export const AskAnythingWidget: React.FC = () => {
     setIsGamesOpen,
     // setIsWalletOpen,
     setMarketDataView,
+    setTradeOpen,
     // setWallpaper,
     // wallpapers
   } = useStore();
@@ -140,6 +141,9 @@ export const AskAnythingWidget: React.FC = () => {
         // setIsWalletOpen(true);
       } else if (normalizedCommand.includes('open assistant')) {
         setIsAIAgentOpen(true);
+      }
+      else if (normalizedCommand.includes('open trade')) {
+        setTradeOpen(true);
       }
     });
   };
