@@ -12,7 +12,7 @@ import { useStore } from '../store/useStore';
 import { Spinner } from '@chakra-ui/react';
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
-import { getWalletProfile } from '../utils/chatApi';
+import { getAllChatData, getWalletProfile } from '../utils/chatApi';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -583,8 +583,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const getChatInformation = async () => {
     setLoading(true)
-    //get chat list
-    const chatData = await chatUser.chat.list('CHATS')
+    setGroupList([])
+    setConnectedUsers([])
+
+    const chatData = await getAllChatData(chatUser)
     console.log('chatdata = ', chatData)
 
     let groupInformation: IGroup[] = []
