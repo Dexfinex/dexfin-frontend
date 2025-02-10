@@ -7,6 +7,7 @@ export const getWalletProfile = async (chatUser:any, address: string) => {
     } catch(err) {
         console.log('get wallet profile err: ', err)
     }
+    
     return null
 }
 

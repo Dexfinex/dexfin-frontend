@@ -1,9 +1,11 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import {
-  X, Maximize2, Minimize2, Search,
+  X, Maximize2, Minimize2, Search, Smile,
   MessageSquare, Share2, Users, ArrowRight, Plus,
   Settings, User, Info, CheckCircle, XCircle
 } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
+import { Theme } from 'emoji-picker-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
@@ -256,8 +258,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isHandlingRequest, setIsHandlingRequest] = useState(false);
   const [isJoiningGroup, setIsJoiningGroup] = useState(false);
+  const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState<any>([]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const emojiPickRef = useRef<HTMLDivElement>(null);
+  const emojiBtnRef = useRef<HTMLButtonElement>(null);
 
   // const [currentUserNfts] = useState([
   //   {
@@ -323,10 +328,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSearchedUser(null)
     setSelectedGroup(null)
     setSearchedGroup(null)
+    setIsEmojiOpen(false)
   }
 
   useEffect(() => {
     setMessage("")
+    setIsEmojiOpen(false)
   }, [selectedUser, selectedGroup])
 
   useEffect(() => {
@@ -1062,6 +1069,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsJoiningGroup(false)
   }
 
+  const handleClickModal = (e: any) => {
+    if (emojiBtnRef.current && emojiBtnRef.current.contains(e.target as Node)) {
+      return
+    }
+    
+    if (emojiPickRef.current && !emojiPickRef.current.contains(e.target as Node)) {
+      setIsEmojiOpen(false)
+    }
+  }
+
+  const handleEmojiClick = (emojiData: any) => {
+    console.log('emoji = ', emojiData.emoji)
+    setMessage(message + emojiData.emoji)
+    setIsEmojiOpen(false)
+  }
+
   const updateLastMessageInfo = (address: string, msg: string, timestamp: number, isGroup: boolean, isRequest: boolean) => {
     console.log('updateLastMessageInfo ')
     if (!isGroup) {
@@ -1662,6 +1685,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             ? 'w-full h-full rounded-none'
             : 'w-[90%] h-[90%] rounded-xl'
             }`}
+          onClick={handleClickModal}
         >
           {!chatUser?.uid && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10'>
             <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm" onClick={handleUnlock}>
@@ -1841,11 +1865,20 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
             {/* Chat Input */}
             {canAccessChat(selectedUser, selectedGroup) && (
-              <div className="p-4 border-t border-white/10">
+              <div className="p-4 border-t border-white/10 relative">
                 <div className="flex items-center gap-3">
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                    <Plus className="w-5 h-5" />
+                  <button className="p-2 hover:bg-white/10 rounded-full transition-colors" ref={emojiBtnRef} onClick={() => setIsEmojiOpen(!isEmojiOpen)}>
+                    <Smile className="w-5 h-5" />
                   </button>
+
+                  <div ref={emojiPickRef}
+                    className='!absolute bottom-[62px] left-[16px]'>
+                    <EmojiPicker open={isEmojiOpen}
+                      onEmojiClick={handleEmojiClick}
+                      theme={Theme.DARK}
+                    />
+                  </div>
+
                   <input
                     type="text"
                     value={message}
