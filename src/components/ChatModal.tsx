@@ -417,7 +417,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }
 
   const handleReceiveMsg = async () => {
-    if (receivedMessage.meta?.group == true && chatMode === "group") {
+    if (receivedMessage.meta?.group == true) {
       if (receivedMessage.origin == "other") {
         if (receivedMessage.event == "chat.request") {
           const found = requestGroups.find((group: IGroup) => group.groupId == receivedMessage.chatId)
@@ -445,7 +445,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
 
           updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, true)
-        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
+        } else if (receivedMessage.event == "chat.message"  && chatMode === "group" && receivedMessage.message.type) {
           if (selectedGroup?.groupId == receivedMessage.chatId) {
             setToBottom(true)
             const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == extractAddress(receivedMessage.from))
@@ -464,7 +464,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
 
           updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
-        } else if (receivedMessage.event == "chat.accept") {
+        } else if (receivedMessage.event == "chat.accept" && chatMode === "group") {
           // add a member
           const profile = await getWalletProfile(chatUser, receivedMessage.from)
           console.log('received message from = ', receivedMessage.from)
@@ -487,26 +487,31 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
         }
       } else if (receivedMessage.origin == "self") {
-        if (receivedMessage.event == "chat.message") {
+        if (receivedMessage.event == "chat.message" && chatMode === "group") {
           updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
         }
       }
-    } else if (receivedMessage.meta?.group == false && chatMode === "p2p") {
+    } else if (receivedMessage.meta?.group == false) {
       if (receivedMessage.origin == "other") {
         console.log('receive other')
         if (receivedMessage.event == "chat.request") {
-          const profile = await getWalletProfile(chatUser, receivedMessage.from)
-          if (profile) {
-            setRequestUsers([...requestUsers, {
-              name: profile.name,
-              profilePicture: profile.picture,
-              address: extractAddress(receivedMessage.from),
-              chatId: receivedMessage.chatId,
-              type: "Request",
-              unreadMessages: 0
-            }])
+          const found = requestUsers.find(user => user.chatId == receivedMessage.from)
+
+          if (!found) {
+            const profile = await getWalletProfile(chatUser, receivedMessage.from)
+            
+            if (profile) {
+              setRequestUsers([...requestUsers, {
+                name: profile.name,
+                profilePicture: profile.picture,
+                address: extractAddress(receivedMessage.from),
+                chatId: receivedMessage.chatId,
+                type: "Request",
+                unreadMessages: 0
+              }])
+            }
           }
-        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
+        } else if (receivedMessage.event == "chat.message" && chatMode === "p2p" && receivedMessage.message.type) {
           console.log('chat.message')
           if (extractAddress(receivedMessage.from) == selectedUser?.address) {
             setToBottom(true)
@@ -527,7 +532,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
         }
       } else if (receivedMessage.origin == "self") {
-        if (receivedMessage.event == "chat.message") {
+        if (receivedMessage.event == "chat.message" && chatMode === "p2p") {
           updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
         }
       }
@@ -685,6 +690,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       const user = await PushAPI.initialize(signer, {
         env: CONSTANTS.ENV.PROD,
       });
+
       setChatUser(user)
       initStream(user)
     }
@@ -706,7 +712,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }, ...groupList])
   }
 
-  const handleAcceptRequest = async () => {
+  const handleAcceptChat = async () => {
     try {
       setIsHandlingRequest(true)
       const acceptRequest = await chatUser.chat.accept(selectedUser?.address)
@@ -723,6 +729,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       console.log('accept request = ', acceptRequest)
     } catch (err) {
       console.log('request accept error: ', err)
+    }
+
+    setIsHandlingRequest(false)
+  }
+
+  const handleRejectChat = async () => {
+    try {
+      setIsHandlingRequest(true)
+      const rejectRequest = await chatUser.chat.reject(selectedUser?.address)
+
+      console.log('rejectRequest = ', rejectRequest)
+
+      setRequestUsers(requestUsers.filter((item) => item.chatId !== selectedUser?.chatId))
+      setSelectedUser(null)
+    } catch (err) {
+      console.log('request reject error: ', err)
     }
 
     setIsHandlingRequest(false)
@@ -887,50 +909,62 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setChatHistory([])
 
     if (chatMode == "p2p") {
-      const profile = await getWalletProfile(chatUser, searchQuery)
-      if (profile) {
-        const found = connectedUsers.find((user: IUser) => extractAddress(user.address) == searchQuery)
-        if (found) {
-          setSelectedUser({
-            name: found.name,
-            address: found.address,
-            profilePicture: found.profilePicture,
-            chatId: found.chatId,
-            type: "Connected",
-            unreadMessages: 0
-          })
-        } else {
-          setSearchedUser({
-            name: profile.name,
-            profilePicture: profile.picture,
-            address: searchQuery,
-            chatId: "",
-            type: "Searched",
-            unreadMessages: 0
-          })
+      try {
+        const profile = await getWalletProfile(chatUser, searchQuery)
+
+        if (profile) {
+          const found = connectedUsers.find((user: IUser) => extractAddress(user.address) == searchQuery)
+
+          if (found) {
+            setSelectedUser({
+              name: found.name,
+              address: found.address,
+              profilePicture: found.profilePicture,
+              chatId: found.chatId,
+              type: "Connected",
+              unreadMessages: 0
+            })
+          } else {
+            setSearchedUser({
+              name: profile.name,
+              profilePicture: profile.picture,
+              address: searchQuery,
+              chatId: "",
+              type: "Searched",
+              unreadMessages: 0
+            })
+          }
         }
+      } catch (err) {
+        console.log('get user profile err: ', err)
       }
     } else if (chatMode == "group") {
-      const profile = await chatUser.chat.group.info(searchQuery)
-      console.log('gropuProfile = ', profile)
-      if (profile) {
-        const found = groupList.find((group: IGroup) => group.groupId == searchQuery)
-        if (found) {
-          setSelectedGroup(found)
-        } else {
-          setSearchedGroup({
-            groupId: profile.chatId,
-            name: profile.groupName,
-            description: profile.groupDescription,
-            public: profile.isPublic,
-            image: profile.groupImage,
-            erc20: profile.contractAddressERC20,
-            nft: profile.contractAddressNFT,
-            members: profile.members,
-            pendingMembers: profile.pendingMembers,
-            type: "Searched"
-          })
+      try {
+        const profile = await chatUser.chat.group.info(searchQuery)
+
+        console.log('gropuProfile = ', profile)
+        if (profile) {
+          const found = groupList.find((group: IGroup) => group.groupId == searchQuery)
+
+          if (found) {
+            setSelectedGroup(found)
+          } else {
+            setSearchedGroup({
+              groupId: profile.chatId,
+              name: profile.groupName,
+              description: profile.groupDescription,
+              public: profile.isPublic,
+              image: profile.groupImage,
+              erc20: profile.contractAddressERC20,
+              nft: profile.contractAddressNFT,
+              members: profile.members,
+              pendingMembers: profile.pendingMembers,
+              type: "Searched"
+            })
+          }
         }
+      } catch (err) {
+        console.log('get chat group err: ', err)
       }
     }
 
@@ -1392,10 +1426,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           <div className='mt-2 flex gap-4 justify-center'>
             {
               isHandlingRequest ? <Spinner className='w-10 h-10' /> : <>
-                <button onClick={handleAcceptRequest}>
+                <button onClick={handleAcceptChat}>
                   <CheckCircle className='text-blue-500 w-10 h-10' />
                 </button>
-                <button onClick={handleRejectRequest}>
+                <button onClick={handleRejectChat}>
                   <XCircle className='text-white/40 w-10 h-10' />
                 </button>
               </>
@@ -1683,7 +1717,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               )}
             </div>
 
-            <div className="p-2 overflow-y-auto ai-chat-scrollbar max-h-[calc(100%-182px)]">
+            <div className={`p-2 overflow-y-auto ai-chat-scrollbar ${chatMode === "group" ? "max-h-[calc(100%-182px)]" : "max-h-[calc(100%-132px)]"}`}>
               {renderGroupsAndUsers()}
             </div>
           </div>
