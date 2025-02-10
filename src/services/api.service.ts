@@ -13,9 +13,9 @@ export const zeroxApi = axios.create({
   baseURL: ZEROX_BASE_URL,
 });
 
-export const cryptoNewsApi = axios.create({
-  baseURL: CRYPTONEWS_BASE_URL,
-});
+// export const cryptoNewsApi = axios.create({
+//   baseURL: CRYPTONEWS_BASE_URL,
+// });
 
 export const coinGeckoApi2 = axios.create({
   baseURL: COINGECKO_BASE_URL_2,
