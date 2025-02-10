@@ -127,6 +127,8 @@ export function SwapBox({
         sellAmount: fromAmount
     })
 
+    console.log("fromToken", fromToken)
+
     const tokenChainId = fromToken ? fromToken.chainId : toToken!.chainId
     const nativeTokenAddress = mapChainId2NativeAddress[tokenChainId]
     useGetTokenPrices({
