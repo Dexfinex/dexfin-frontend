@@ -1,6 +1,6 @@
-import {arbitrum, avalanche, base, bsc, linea, mainnet, optimism, polygon} from "@wagmi/core/chains";
-import {baseSepolia, sepolia} from "viem/chains";
-import {ethers} from "ethers";
+import { arbitrum, avalanche, base, bsc, linea, mainnet, optimism, polygon } from "@wagmi/core/chains";
+import { baseSepolia, sepolia } from "viem/chains";
+import { ethers } from "ethers";
 
 export * from "./zerodev"
 
@@ -23,7 +23,11 @@ export const mapRpcUrls: Record<number, string> = {
 export const COINGECKO_API_KEY = import.meta.env.VITE_COINGECKO_API_KEY as string || 'CG-XQa2AKt6eiVgLFnK8Ch7xJV2';
 export const COINGECKO_BASE_URL = 'https://pro-api.coingecko.com/api/v3';
 
-export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
+export const CRYPTONEWS_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/crypto-news';
+
+export const wrappedNativeAddress = "0x4200000000000000000000000000000000000006".toLowerCase();
+
+export const nativeAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".toLowerCase();
 
 export const ZEROX_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/0x';
 export const ZEROX_AFFILIATE_FEE = 50; // 0.5% affiliate fee. Denoted in Bps.

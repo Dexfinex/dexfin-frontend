@@ -1,16 +1,21 @@
-import {zeroxApi} from "./api.service.ts";
-import {QuoteResponse, ZeroxQuoteRequestType} from "../types/swap.type.ts";
+import { zeroxApi } from "./api.service.ts";
+import { QuoteResponse, ZeroxQuoteRequestType } from "../types/swap.type.ts";
 
 export const zeroxService = {
     getQuote: async ({
-                         chainId,
-                         sellTokenAddress,
-                         buyTokenAddress,
-                         sellTokenAmount,
-                         takerAddress,
-                     }: ZeroxQuoteRequestType): Promise<QuoteResponse> => {
+        chainId,
+        sellTokenAddress,
+        buyTokenAddress,
+        sellTokenAmount,
+        takerAddress,
+    }: ZeroxQuoteRequestType): Promise<QuoteResponse> => {
         try {
-            const {data} = await zeroxApi.get<QuoteResponse>('/quote', {
+            // console.log("Full 0x API request : ", chainId,
+            //     sellTokenAddress,
+            //     buyTokenAddress,
+            //     sellTokenAmount,
+            //     takerAddress,)
+            const { data } = await zeroxApi.get<QuoteResponse>('/quote', {
                 params: {
                     chainId,
                     sellTokenAddress,

@@ -1,443 +1,140 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } from 'react';
-import { ChevronDown, Minus, Plus, Search, ShoppingCart, Trash2, TrendingDown, TrendingUp, X, Wallet, CreditCard } from 'lucide-react';
-import * as echarts from 'echarts';
+import React, { useContext, useState, useCallback, useEffect } from 'react';
+import { Web3AuthContext } from '../../providers/Web3AuthContext';
+import { TransactionModal } from './components/TransactionModal';
+import { mapChainId2ExplorerUrl } from '../../config/networks';
+import { CartModalProps } from '../../types/cart.type';
+import { useTokenBuyHandler } from '../../hooks/useTokenBuyHandler';
 import { useStore } from '../../store/useStore';
-import { coingeckoService } from '../../services/coingecko.service';
-import { formatNumberByFrac } from '../../utils/common.util';
-import { CartModalProps, CoinData, PurchaseStatus } from '../../types/cart.type';
-import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenStore from '../../store/useTokenStore';
-import { Web3AuthContext } from "../../providers/Web3AuthContext";
 
-// Constants
-const ITEMS_PER_PAGE = 10;
-const DEBOUNCE_DELAY = 300;
+import SearchHeader from './components/SearchHeader';
+import CoinGrid from './components/CoinGrid';
+import CartList from './components/CartList';
+import CheckoutSection from './components/CheckoutSection';
 
-// Custom hook for debouncing
-function useDebounce<T>(value: T, delay?: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedValue(value), delay || 500);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
-// Custom hook for ECharts
-function useChart(initialData: number[]) {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const chartInstance = useRef<echarts.ECharts>();
-
-  useEffect(() => {
-    if (!chartRef.current) return;
-
-    // Initialize chart
-    if (!chartInstance.current) {
-      chartInstance.current = echarts.init(chartRef.current);
-    }
-
-    const option = {
-      animation: false, // Disable animation for better performance
-      grid: {
-        top: 8,
-        right: 8,
-        bottom: 8,
-        left: 8,
-        show: false
-      },
-      xAxis: {
-        type: 'category',
-        show: false,
-        data: Array.from({ length: initialData.length }, (_, i) => i)
-      },
-      yAxis: {
-        type: 'value',
-        show: false
-      },
-      series: [{
-        data: initialData,
-        type: 'line',
-        smooth: true,
-        showSymbol: false,
-        lineStyle: {
-          color: '#10B981',
-          width: 2
-        },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
-            offset: 0,
-            color: 'rgba(16, 185, 129, 0.2)'
-          }, {
-            offset: 1,
-            color: 'rgba(16, 185, 129, 0)'
-          }])
-        }
-      }]
-    };
-
-    chartInstance.current.setOption(option);
-
-    // Cleanup
-    return () => {
-      chartInstance.current?.dispose();
-      chartInstance.current = undefined;
-    };
-  }, [initialData]);
-
-  return chartRef;
-}
-
-// Cart Item Component
-const CartItem = React.memo(({
-  item,
-  coinPrice,
-  onRemove,
-  onUpdateQuantity
-}: {
-  item: any;
-  coinPrice: number;
-  onRemove: (id: string) => void;
-  onUpdateQuantity: (id: string, quantity: number) => void;
-}) => (
-  <div className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
-    <img src={item.logo} alt={item.name} className="w-10 h-10" loading="lazy" />
-    <div className="flex-1">
-      <div className="flex items-center justify-between">
-        <div className="font-medium">{item.name}</div>
-        <button
-          onClick={() => onRemove(item.id)}
-          className="p-1 hover:bg-white/10 rounded-md transition-colors"
-        >
-          <Trash2 className="w-4 h-4 text-red-400" />
-        </button>
-      </div>
-      <div className="flex items-center justify-between mt-2">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onUpdateQuantity(item.id, Math.max(0, item.quantity - 1))}
-            className="p-1 hover:bg-white/10 rounded-md transition-colors"
-            disabled={item.quantity <= 1}
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-          <span>{item.quantity}</span>
-          <button
-            onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-            className="p-1 hover:bg-white/10 rounded-md transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="font-medium">
-          ${formatNumberByFrac(Number(coinPrice) * item.quantity)}
-        </div>
-      </div>
-    </div>
-  </div>
-));
-
-// Coin Card Component
-const CoinCard = React.memo(({
-  coin,
-  onAddToCart
-}: {
-  coin: CoinData;
-  onAddToCart: (coin: CoinData) => void;
-}) => {
-  const chartRef = useChart(coin.sparkline);
-
-  return (
-    <div className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all hover:scale-[1.02]">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <img src={coin.logoURI} alt={coin.name} className="w-8 h-8" loading="lazy" />
-          <div>
-            <div className="font-medium">{coin.name}</div>
-            <div className="text-sm text-white/60">{coin.symbol}</div>
-          </div>
-        </div>
-        <div className="px-2 py-1 rounded-full text-xs font-medium bg-white/10">
-          {coin.category}
-        </div>
-      </div>
-
-      <div className="h-24 mb-3" ref={chartRef} />
-
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-2xl font-bold">
-          ${formatNumberByFrac(coin.price)}
-        </div>
-        <div className={`text-sm flex items-center gap-1 ${coin.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
-          }`}>
-          {coin.priceChange24h >= 0 ? (
-            <TrendingUp className="w-4 h-4" />
-          ) : (
-            <TrendingDown className="w-4 h-4" />
-          )}
-          {Math.abs(coin.priceChange24h).toFixed(2)}%
-        </div>
-      </div>
-
-      <button
-        onClick={() => onAddToCart(coin)}
-        className="w-full py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
-      >
-        Add to Cart
-      </button>
-    </div>
-  );
-});
-
-// Checkout Section Component
-const CheckoutSection = React.memo(({
-  cartItems,
-  tokenPrices,
-  onClose,
-  address,
-  purchaseStatus,
-  isProcessing
-}: {
-  cartItems: any[];
-  tokenPrices: any;
-  onClose: () => void;
-  address: string;
-  purchaseStatus: PurchaseStatus;
-  isProcessing: boolean;
-}) => {
-  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'card'>('wallet');
-
-  const total = useMemo(() => (
-    cartItems.reduce((sum, item) => {
-      const coinPrice = tokenPrices[`${1}:${item.id.toLowerCase()}`] || item.price;
-      return sum + (Number(coinPrice) * item.quantity);
-    }, 0)
-  ), [cartItems, tokenPrices]);
-
-  return (
-    <>
-      <div className="flex items-center justify-between p-4 border-b border-white/10">
-        <h2 className="text-xl font-semibold">Checkout</h2>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-
-      <div className="p-6">
-        <div className="max-w-2xl mx-auto">
-          {purchaseStatus.status !== 'idle' && (
-            <div className={`mb-4 p-4 rounded-lg ${purchaseStatus.status === 'error'
-                ? 'bg-red-500/10 text-red-500'
-                : 'bg-white/5 text-white'
-              }`}>
-              {purchaseStatus.message}
-            </div>
-          )}
-
-          <div className="mb-8">
-            <h3 className="text-lg font-medium mb-4">Order Summary</h3>
-            <div className="space-y-3">
-              {cartItems.map((item) => {
-                const coinPrice = tokenPrices[`${1}:${item.id.toLowerCase()}`] || item.price;
-                return (
-                  <div key={item.id} className="p-4 bg-white/5 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <img src={item.logo} alt={item.name} className="w-8 h-8" loading="lazy" />
-                        <div>
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-white/60">
-                            {item.quantity} × ${formatNumberByFrac(coinPrice)}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="font-medium">
-                        ${formatNumberByFrac(Number(coinPrice) * item.quantity)}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <h3 className="text-lg font-medium mb-4">Payment Method</h3>
-            <div className="space-y-3">
-              <button
-                onClick={() => setPaymentMethod('wallet')}
-                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${paymentMethod === 'wallet'
-                    ? 'bg-blue-500'
-                    : 'bg-white/5 hover:bg-white/10'
-                  }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
-                    <Wallet className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Crypto Wallet</div>
-                    <div className="text-sm text-white/60">
-                      Pay with your connected wallet
-                    </div>
-                  </div>
-                </div>
-                <ChevronDown className="w-5 h-5" />
-              </button>
-
-              <button
-                disabled
-                className="w-full flex items-center justify-between p-4 rounded-lg bg-white/5 opacity-50 cursor-not-allowed"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
-                    <CreditCard className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Credit Card</div>
-                    <div className="text-sm text-white/60">
-                      Coming soon...
-                    </div>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <div className="p-4 bg-white/5 rounded-lg space-y-2">
-              <div className="flex justify-between">
-                <span className="text-white/60">Subtotal</span>
-                <span>${formatNumberByFrac(total)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/60">Network Fee</span>
-                <span>~$2.50</span>
-              </div>
-              <div className="h-px bg-white/10 my-2" />
-              <div className="flex justify-between text-lg font-medium">
-                <span>Total</span>
-                <span>${formatNumberByFrac(total + 2.50)}</span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            disabled={isProcessing || cartItems.length === 0 || !address}
-            className={`w-full py-3 rounded-lg transition-colors font-medium ${isProcessing || !address || cartItems.length === 0
-                ? 'bg-blue-400 cursor-not-allowed'
-                : 'bg-blue-500 hover:bg-blue-600'
-              }`}
-          >
-            {!address
-              ? 'Connect Wallet'
-              : cartItems.length === 0
-                ? 'Cart is Empty'
-                : purchaseStatus.status === 'quoting'
-                  ? 'Getting Quote...'
-                  : isProcessing
-                    ? 'Processing...'
-                    : 'Confirm Purchase'}
-          </button>
-        </div>
-      </div>
-    </>
-  );
-});
-
-// Main CartModal Component
-export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchInput, setSearchInput] = useState('');
+const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const [showCheckout, setShowCheckout] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [coins, setCoins] = useState<CoinData[]>([]);
-  const [purchaseStatus, setPurchaseStatus] = useState<PurchaseStatus>({
-    status: 'idle',
-    message: ''
-  });
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [txModalOpen, setTxModalOpen] = useState(false);
+  const [currentTxHash, setCurrentTxHash] = useState<string | null>(null);
+  const [buyError, setBuyError] = useState<string | null>(null);
+  const [processingBuy, setProcessingBuy] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { address } = useContext(Web3AuthContext);
-  const { cartItems, addToCart, removeFromCart, updateQuantity } = useStore();
+  const [transactionDetails, setTransactionDetails] = useState<{
+    tokenSymbol: string;
+    amount: number;
+    costInUSD: number;
+  } | null>(null);
+
+  const { address: walletAddress, chainId: walletChainId } = useContext(Web3AuthContext);
+  const { cartItems, addToCart, removeFromCart, updateQuantity, clearCart } = useStore();
   const { tokenPrices } = useTokenStore();
-
-  const debouncedSearch = useDebounce(searchInput, DEBOUNCE_DELAY);
-
-  const tokenAddresses = useMemo(() => (
-    cartItems.map(item => item.id)
-  ), [cartItems]);
-
-  const { isLoading: isTokenPricesLoading } = useGetTokenPrices({
-    chainId: 1,
-    tokenAddresses,
+  
+  const formattedTokenPrices: Record<string, number> = {};
+  Object.entries(tokenPrices).forEach(([key, value]) => {
+    formattedTokenPrices[key] = Number(value);
   });
 
-  // Memoized filtered coins
-  const filteredCoins = useMemo(() => {
-    return coins.filter(coin => {
-      const matchesCategory = selectedCategory === 'All' || coin.category === selectedCategory;
-      const matchesSearch = coin.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        coin.symbol.toLowerCase().includes(debouncedSearch.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [coins, selectedCategory, debouncedSearch]);
+  const { executeBatchBuy, error: buyHandlerError, txHash: buyHandlerTxHash, isPending: isBuyPending, isConfirmed } = useTokenBuyHandler();
 
-  // Calculate total
-  const total = useMemo(() => (
-    cartItems.reduce((total, item) => {
-      const coinPrice = tokenPrices[`${1}:${item.id.toLowerCase()}`] || item.price;
-      return total + (Number(coinPrice) * item.quantity);
-    }, 0)
-  ), [cartItems, tokenPrices]);
-
-  const handleAddToCart = useCallback((coin: CoinData) => {
-    addToCart({
-      id: coin.address,
-      name: coin.name,
-      symbol: coin.symbol,
-      price: coin.price,
-      logo: coin.logoURI,
-      category: coin.category,
-      quantity: 1,
-      chainId: coin.chainId,
-      decimals: coin.decimals
-    });
-  }, [addToCart]);
-
+  // Reset states when modal is closed
   useEffect(() => {
-    let mounted = true;
-    const controller = new AbortController();
-
-    const fetchCoins = async () => {
-      if (!isOpen) return;
-
-      setLoading(true);
-      try {
-        const coinList = await coingeckoService.getTokenList();
-        if (mounted) {
-          setCoins(coinList);
-        }
-      } catch (error) {
-        console.error('Error fetching coins:', error);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchCoins();
-
-    return () => {
-      mounted = false;
-      controller.abort();
-    };
+    if (!isOpen) {
+      setShowCheckout(false);
+      setTxModalOpen(false);
+      setCurrentTxHash(null);
+      setBuyError(null);
+      setProcessingBuy(false);
+      setTransactionDetails(null);
+    }
   }, [isOpen]);
+
+  // Handle transaction confirmation
+  useEffect(() => {
+    if (isConfirmed && currentTxHash) {
+      // Clear cart after confirmation
+      clearCart();
+      
+      // Keep modal open briefly before closing everything
+      const timer = setTimeout(() => {
+        setTxModalOpen(false);
+        setCurrentTxHash(null);
+        setTransactionDetails(null);
+        onClose();
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isConfirmed, currentTxHash, clearCart, onClose]);
+
+  // Handle transaction modal close
+  const handleTxModalClose = useCallback(() => {
+    setTxModalOpen(false);
+    setCurrentTxHash(null);
+    setTransactionDetails(null);
+  }, []);
+
+  const handleBuyExecution = useCallback(async () => {
+    if (!walletAddress || !cartItems.length) return;
+
+    console.log("🚀 Starting purchase for cart items:", cartItems);
+    setProcessingBuy(true);
+    setBuyError(null);
+    setIsLoading(true);
+
+    try {
+      const tokenPurchases = cartItems.map(item => ({
+        token: {
+          address: item.id,
+          symbol: item.symbol,
+          name: item.name,
+          chainId: 1,
+          decimals: 18,
+          logoURI: item.logo,
+          price: item.price
+        },
+        amount: item.quantity.toString()
+      }));
+
+      const hasInvalidTokens = tokenPurchases.some(({ token }) => !token.address || !token.price);
+      if (hasInvalidTokens) {
+        throw new Error(`Invalid token data found in cart`);
+      }
+
+      const result = await executeBatchBuy(tokenPurchases);
+      if (result) {
+        console.log("✅ Batch buy result:", result);
+        
+        // Set transaction details first
+        const currentPurchase = tokenPurchases[0];
+        setTransactionDetails({
+          tokenSymbol: currentPurchase.token.symbol,
+          amount: Number(currentPurchase.amount),
+          costInUSD: Number(currentPurchase.amount) * (currentPurchase.token.price || 0)
+        });
+
+        // Return to main view
+        setShowCheckout(false);
+        
+        // Show transaction modal after a brief delay
+        setTimeout(() => {
+          setCurrentTxHash(result as `0x${string}`);
+          setTxModalOpen(true);
+        }, 100);
+      } else {
+        throw new Error('Transaction failed');
+      }
+
+    } catch (error) {
+      console.error('❌ Buy execution failed:', error);
+      setBuyError(error instanceof Error ? error.message : 'Transaction failed');
+    } finally {
+      setProcessingBuy(false);
+      setIsLoading(false);
+    }
+  }, [walletAddress, cartItems, executeBatchBuy]);
 
   if (!isOpen) return null;
 
@@ -448,120 +145,49 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
         {showCheckout ? (
           <CheckoutSection
             cartItems={cartItems}
-            tokenPrices={tokenPrices}
+            tokenPrices={formattedTokenPrices}
+            walletAddress={walletAddress}
+            buyError={buyError}
+            processingBuy={processingBuy}
+            isBuyPending={isBuyPending}
             onClose={() => setShowCheckout(false)}
-            address={address}
-            purchaseStatus={purchaseStatus}
-            isProcessing={isProcessing}
+            onExecuteBuy={handleBuyExecution}
           />
         ) : (
           <div className="flex h-full">
-            {/* Left Side - Token Grid */}
             <div className="flex-1 flex flex-col border-r border-white/10">
-              <div className="p-4 border-b border-white/10">
-                <div className="flex items-center gap-3 mb-4">
-                  {['All', 'token', 'meme'].map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => setSelectedCategory(category)}
-                      className={`px-3 py-1.5 rounded-lg transition-colors ${selectedCategory === category
-                          ? 'bg-white/10'
-                          : 'hover:bg-white/5'
-                        }`}
-                    >
-                      {category}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-                  <input
-                    type="text"
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Search coins..."
-                    className="w-full bg-white/5 pl-10 pr-4 py-2 rounded-lg outline-none placeholder:text-white/40"
-                  />
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-auto">
-                {loading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-lg">Loading coins...</div>
-                  </div>
-                ) : filteredCoins.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                    <Search className="w-12 h-12 text-white/40 mb-4" />
-                    <p className="text-lg font-medium mb-2">No coins found</p>
-                    <p className="text-white/60">
-                      Try adjusting your search or filter criteria
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4 p-4">
-                    {filteredCoins.map((coin) => (
-                      <CoinCard
-                        key={coin.address}
-                        coin={coin}
-                        onAddToCart={handleAddToCart}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              <SearchHeader
+                selectedCategory={selectedCategory}
+                searchQuery={searchQuery}
+                onCategoryChange={setSelectedCategory}
+                onSearchChange={setSearchQuery}
+              />
+              <CoinGrid
+                searchQuery={searchQuery}
+                selectedCategory={selectedCategory}
+                onAddToCart={addToCart}
+              />
             </div>
-
-            {/* Right Side - Cart */}
             <div className="w-[400px] flex flex-col">
-              <div className="flex-1 p-4 overflow-y-auto">
-                {cartItems.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <ShoppingCart className="w-12 h-12 text-white/40 mb-4" />
-                    <p className="text-lg font-medium mb-2">Your cart is empty</p>
-                    <p className="text-white/60">
-                      Add some coins to get started
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {isTokenPricesLoading && (
-                      <div className="text-sm text-white/60 text-center mb-3">
-                        Updating prices...
-                      </div>
-                    )}
-                    {cartItems.map((item) => (
-                      <CartItem
-                        key={item.id}
-                        item={item}
-                        coinPrice={tokenPrices[`${1}:${item.id.toLowerCase()}`] || item.price}
-                        onRemove={removeFromCart}
-                        onUpdateQuantity={updateQuantity}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="p-4 border-t border-white/10">
-                <div className="text-lg font-semibold">
-                  Total: ${formatNumberByFrac(total)}
-                </div>
-                <button
-                  onClick={() => setShowCheckout(true)}
-                  disabled={cartItems.length === 0}
-                  className={`w-full py-2 mt-4 rounded-lg transition-colors ${cartItems.length === 0
-                      ? 'bg-blue-400 cursor-not-allowed'
-                      : 'bg-blue-500 hover:bg-blue-600'
-                    }`}
-                >
-                  Proceed to Checkout
-                </button>
-              </div>
+              <CartList
+                cartItems={cartItems}
+                tokenPrices={formattedTokenPrices}
+                onRemove={removeFromCart}
+                onUpdateQuantity={updateQuantity}
+                onCheckout={() => setShowCheckout(true)}
+              />
             </div>
           </div>
         )}
       </div>
+      {currentTxHash && (
+        <TransactionModal
+          open={txModalOpen}
+          setOpen={handleTxModalClose}
+          link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${currentTxHash}`}
+          transactionDetails={transactionDetails || undefined}
+        />
+      )}
     </div>
   );
 };

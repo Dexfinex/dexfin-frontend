@@ -1,5 +1,5 @@
 import axios from "axios";
-import {COINGECKO_API_KEY, COINGECKO_BASE_URL, ZEROX_BASE_URL} from "../constants";
+import { COINGECKO_API_KEY, COINGECKO_BASE_URL, ZEROX_BASE_URL, CRYPTONEWS_BASE_URL } from "../constants";
 
 export const coinGeckoApi = axios.create({
     baseURL: COINGECKO_BASE_URL,
@@ -11,4 +11,8 @@ export const coinGeckoApi = axios.create({
 
 export const zeroxApi = axios.create({
     baseURL: ZEROX_BASE_URL,
+});
+
+export const cryptoNewsApi = axios.create({
+    baseURL: CRYPTONEWS_BASE_URL,
 });

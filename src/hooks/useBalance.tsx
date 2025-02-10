@@ -1,12 +1,12 @@
-import {useQuery, UseQueryResult} from '@tanstack/react-query';
-import {ethers} from 'ethers';
-import {getAddress} from 'ethers/lib/utils';
-import {erc20Abi} from 'viem'
-import {useBalance as useWagmiBalance} from 'wagmi';
-import {nativeAddress} from '../constants';
-import {useContext} from "react";
-import {Web3AuthContext} from "../providers/Web3AuthContext.tsx";
-import {rpcUrls} from "../config/rpcs.ts";
+import { useQuery, UseQueryResult } from '@tanstack/react-query';
+import { ethers } from 'ethers';
+import { getAddress } from 'ethers/lib/utils';
+import { erc20Abi } from 'viem'
+import { useBalance as useWagmiBalance } from 'wagmi';
+import { nativeAddress } from '../constants';
+import { useContext } from "react";
+import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
+import { rpcUrls } from "../config/rpcs.ts";
 
 interface IGetBalance {
 	address?: string;
@@ -73,17 +73,17 @@ export const useBalance = ({
 	decimals?: undefined;
 }> => {
 
-/*
-	if (chainId === undefined || token === undefined)
-		return {
-			isLoading: false,
-			isSuccess: false,
-			data: {
-				value:  ethers.BigNumber.from(0),
-				formatted: '0',
+	/*
+		if (chainId === undefined || token === undefined)
+			return {
+				isLoading: false,
+				isSuccess: false,
+				data: {
+					value:  ethers.BigNumber.from(0),
+					formatted: '0',
+				}
 			}
-		}
-*/
+	*/
 
 	const { isConnected, address } = useContext(Web3AuthContext);
 	const tokenAddress = [ethers.constants.AddressZero, nativeAddress.toLowerCase()].includes(token ? token?.toLowerCase() : '')
@@ -118,8 +118,8 @@ export const useBalance = ({
 		!isEnabled
 			? { isLoading: false, isSuccess: false, data: null }
 			: wagmiData.isLoading || wagmiData.data
-			? wagmiData
-			: queryData
+				? wagmiData
+				: queryData
 	) as UseQueryResult<{
 		value: ethers.BigNumber;
 		formatted: string;
