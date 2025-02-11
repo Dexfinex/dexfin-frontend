@@ -96,7 +96,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
             return (
                 <div 
                     key={`${idx}-${level.depth}`}
-                    className={`relative flex w-full h-8 items-center ${isSelected ? 'bg-gray-900/50' : ''}`}
+                    className={`relative flex w-full h-6 items-center ${isSelected ? 'bg-gray-900/50' : ''}`}
                     onMouseEnter={() => {
                         if (orderType === OrderType.ASKS) {
                             setAsksSelectedIndex(idx);
@@ -114,7 +114,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
                                 `linear-gradient(to left, rgba(34, 197, 94, 0.1) ${level.depth}%, transparent ${level.depth}%)`
                         }} />
                     )}
-                    <div className="relative grid grid-cols-4 w-full px-4 text-sm font-mono">
+                    <div className="relative grid grid-cols-4 w-full px-2 text-xs font-mono">
                         <div className={`text-right ${orderType === OrderType.ASKS ? 'text-red-500' : 'text-green-500'}`}>
                             {toFixedFloat(level.price, 2)}
                         </div>
@@ -124,13 +124,13 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
                         <div className="text-right text-gray-300">
                             {level.total > 1000 ? `${(level.total / 1000).toFixed(2)}k` : level.total.toFixed(2)}
                         </div>
-                        <div className="flex justify-end gap-1">
+                        <div className="flex justify-end gap-0.5">
                             {level.exchangesImgUrls?.map((url, i) => (
                                 <img 
                                     key={i} 
                                     src={url} 
                                     alt="exchange"
-                                    className="w-5 h-5 rounded-full"
+                                    className="w-4 h-4 rounded-full"
                                 />
                             ))}
                         </div>
@@ -145,23 +145,23 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
 
         return (
             <div 
-                className="fixed z-50 bg-gray-900 border border-gray-700 rounded p-3 text-sm"
+                className="fixed z-50 bg-gray-900 border border-gray-700 rounded p-2 text-xs"
                 style={{
                     top: tooltipPosition.y,
-                    right: '32rem',
+                    right: '28rem',
                     transform: 'translate(20px, -50%)'
                 }}
             >
-                <div className="space-y-2">
-                    <div className="flex justify-between gap-6">
+                <div className="space-y-1">
+                    <div className="flex justify-between gap-4">
                         <span className="text-gray-400">Avg. Price:</span>
                         <span className="text-white">{toFixedFloat(avgPrice, 2)}</span>
                     </div>
-                    <div className="flex justify-between gap-6">
+                    <div className="flex justify-between gap-4">
                         <span className="text-gray-400">Total {symbolAssetIn}:</span>
                         <span className="text-white">{convertNumberIntoFormat(totalAmountIn)}</span>
                     </div>
-                    <div className="flex justify-between gap-6">
+                    <div className="flex justify-between gap-4">
                         <span className="text-gray-400">Total {symbolAssetOut}:</span>
                         <span className="text-white">{convertNumberIntoFormat(totalAmountOut)}</span>
                     </div>
@@ -172,15 +172,19 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
 
     if (!asks.length || !bids.length) {
         return (
-            <div className="min-h-[600px] flex items-center justify-center bg-gray-900">
+            <div className="min-h-[400px] flex items-center justify-center bg-gray-900">
                 <ThreeDots color="#444" />
             </div>
         );
     }
 
     return (
-        <div className="bg-black text-white w-full">
-            <div className="sticky top-0 z-10 bg-black px-4 py-2 grid grid-cols-4 text-sm text-gray-400 border-b border-gray-800">
+        <div className="bg-black text-white">
+            {/* <div className="px-3 py-2 text-sm font-medium border-b border-gray-800">
+                Order Book
+            </div> */}
+            
+            <div className="sticky top-0 z-10 bg-black px-2 py-1 grid grid-cols-4 text-[10px] text-gray-400 border-b border-gray-800">
                 <div className="text-center">PRICE</div>
                 <div className="text-center">SIZE</div>
                 <div className="text-center">TOTAL</div>
@@ -189,14 +193,14 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
 
             <div 
                 ref={asksContainer}
-                className="h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700"
+                className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700"
                 onMouseLeave={() => handleMouseLeave(true)}
                 onMouseMove={(e) => handleMouseMove(e, asksContainer.current)}
             >
                 {buildPriceLevels(asks, OrderType.ASKS)}
             </div>
             
-            <div className="px-4 py-2 bg-gray-900/50 border-y border-gray-700 grid grid-cols-2 text-sm">
+            <div className="px-2 py-1 bg-gray-900/50 border-y border-gray-700 grid grid-cols-2 text-xs">
                 <div className="text-gray-400">
                     Last Price: <span className="text-white">{Number(lastPrice).toFixed(2)}</span>
                 </div>
@@ -208,7 +212,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
             </div>
             
             <div 
-                className="h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700"
+                className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700"
                 onMouseLeave={() => handleMouseLeave(false)}
                 onMouseMove={(e) => handleMouseMove(e, asksContainer.current)}
             >

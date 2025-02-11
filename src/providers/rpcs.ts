@@ -1,41 +1,52 @@
 import { ethers } from 'ethers';
 import { uniq } from 'lodash';
 
-function createProvider(name: string, defaultRpc: string, chainId: number, random = false) {
-/*
-	if (process.env.HISTORICAL) {
-		if (chainId === 1) {
-			console.log('RPC providers set to historical, only the first RPC provider will be used');
-		}
-		return new ethers.providers.StaticJsonRpcProvider(
-			(process.env[name.toUpperCase() + '_RPC'] ?? defaultRpc)?.split(',')[0],
-			{
-				name,
-				chainId
-			}
-		);
-	} else {
-*/
-		return new ethers.providers.FallbackProvider(
-			(/*process.env[name.toUpperCase() + '_RPC'] ?? */defaultRpc).split(',').map((url, i) => ({
-				provider: new ethers.providers.StaticJsonRpcProvider(url, {
-					name,
-					chainId
-				}),
-				priority: random ? 0 : i
-			})),
-			1
-		);
-	// }
+// Type definitions
+type ChainId = number;
+
+interface NetworkConfig {
+	name: string;
+	chainId: ChainId;
 }
 
-export const rpcUrls = {
+interface ProviderConfig {
+	provider: ethers.providers.StaticJsonRpcProvider;
+	priority: number;
+}
+
+interface RpcUrlConfig {
+	[key: string]: string;
+}
+
+interface RpcUrls {
+	[chainId: number]: RpcUrlConfig;
+}
+
+interface Providers {
+	[network: string]: ethers.providers.FallbackProvider;
+}
+
+// Helper function to create provider
+function createProvider(name: string, defaultRpc: string, chainId: ChainId, random: boolean = false): ethers.providers.FallbackProvider {
+	const urls: string[] = defaultRpc.split(',');
+	const providers: ProviderConfig[] = urls.map((url, index) => ({
+		provider: new ethers.providers.StaticJsonRpcProvider(url, {
+			name,
+			chainId
+		}),
+		priority: random ? 0 : index
+	}));
+
+	return new ethers.providers.FallbackProvider(providers, 1);
+}
+
+// RPC URLs configuration
+export const rpcUrls: RpcUrls = {
 	1: {
 		default: 'https://eth.llamarpc.com',
 		ankr: 'https://rpc.ankr.com/eth',
 		pokt: 'https://eth-mainnet.gateway.pokt.network/v1/5f3453978e354ab992c4da79',
 		cloudflare: 'https://cloudflare-eth.com',
-		//linkpool: 'https://main-light.eth.linkpool.io',
 		flashbots: 'https://rpc.flashbots.net',
 		builder: 'https://rpc.builder0x69.io',
 		publicNode: 'https://ethereum.publicnode.com',
@@ -163,8 +174,12 @@ export const rpcUrls = {
 	70: {
 		default: 'https://http-mainnet.hoosmartchain.com'
 	},
-	32659: { default: 'https://mainnet.anyswap.exchange,https://mainway.freemoon.xyz/gate' },
-	1313161554: { default: 'https://mainnet.aurora.dev' },
+	32659: {
+		default: 'https://mainnet.anyswap.exchange,https://mainway.freemoon.xyz/gate'
+	},
+	1313161554: {
+		default: 'https://mainnet.aurora.dev'
+	},
 	2020: {
 		default: 'https://api.roninchain.com/rpc'
 	},
@@ -194,7 +209,9 @@ export const rpcUrls = {
 	1088: {
 		default: 'https://andromeda.metis.io/?owner=1088'
 	},
-	8: { default: 'https://rpc.octano.dev' },
+	8: {
+		default: 'https://rpc.octano.dev'
+	},
 	106: {
 		default: 'https://evmexplorer.velas.com/rpc'
 	},
@@ -202,7 +219,9 @@ export const rpcUrls = {
 		default: 'https://rpc.callisto.network',
 		zerox: 'https://clo-geth.0xinfra.com'
 	},
-	8217: { default: 'https://public-node-api.klaytnapi.com/v1/cypress' },
+	8217: {
+		default: 'https://public-node-api.klaytnapi.com/v1/cypress'
+	},
 	52: {
 		default: 'https://rpc.coinex.net',
 		coinex1: 'https://rpc1.coinex.net',
@@ -213,15 +232,23 @@ export const rpcUrls = {
 	5551: {
 		default: 'https://l2.nahmii.io'
 	},
-	5050: { default: 'https://rpc.liquidchain.net', xlc: 'https://rpc.xlcscan.com' },
+	5050: {
+		default: 'https://rpc.liquidchain.net',
+		xlc: 'https://rpc.xlcscan.com'
+	},
 	82: {
 		default: 'https://rpc.meter.io'
 	},
 	361: {
 		default: 'https://eth-rpc-api.thetatoken.org/rpc'
 	},
-	42262: { default: 'https://emerald.oasis.dev' },
-	57: { default: 'https://rpc.ankr.com/syscoin', sys: 'https://rpc.syscoin.org' },
+	42262: {
+		default: 'https://emerald.oasis.dev'
+	},
+	57: {
+		default: 'https://rpc.ankr.com/syscoin',
+		sys: 'https://rpc.syscoin.org'
+	},
 	1284: {
 		default: 'https://rpc.api.moonbeam.network'
 	},
@@ -263,25 +290,36 @@ export const rpcUrls = {
 		default: 'https://rpc.linea.build',
 		second: 'https://linea.blockpi.network/v1/rpc/public'
 	}
-};
+} as const;
 
-export const rpcsMap = Object.entries(rpcUrls).reduce((acc, [chainId, rpcs]) => {
-	const normalizedRpcs = Object.values(rpcs).reduce(
-		(innerAcc, rpc, i) => ({ ...innerAcc, [i === 0 ? 'default' : i]: rpc }),
-		{}
-	);
-	return { ...acc, [chainId]: normalizedRpcs };
-}, {});
+// Generate RPCs map
+export const rpcsMap: Record<ChainId, Record<string, string>> = Object.entries(rpcUrls).reduce(
+	(acc, [chainId, rpcs]) => {
+		const normalizedRpcs = Object.values(rpcs).reduce(
+			(innerAcc, rpc, index) => ({
+				...innerAcc,
+				[index === 0 ? 'default' : index.toString()]: rpc
+			}),
+			{}
+		);
+		return { ...acc, [chainId]: normalizedRpcs };
+	},
+	{}
+);
 
-export const rpcsKeys = uniq(
+// Generate unique RPC keys
+export const rpcsKeys: string[] = uniq(
 	Object.values(rpcsMap)
 		.map((obj) => Object.keys(obj))
 		.flat()
 );
 
-const getUrls = (chainId: keyof typeof rpcUrls) => Object.values(rpcUrls[chainId]).join(',');
+// Helper function to get URLs
+const getUrls = (chainId: keyof typeof rpcUrls): string =>
+	Object.values(rpcUrls[chainId]).join(',');
 
-export const providers = {
+// Provider configurations
+export const providers: Providers = {
 	ethereum: createProvider('ethereum', getUrls(1), 1),
 	bsc: createProvider('bsc', getUrls(56), 56),
 	polygon: createProvider('polygon', getUrls(137), 137),

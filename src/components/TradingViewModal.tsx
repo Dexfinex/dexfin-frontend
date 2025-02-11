@@ -13,7 +13,7 @@ import { simpleFetch } from "simple-typed-fetch";
 import Orderbook from "./trade/OrderBook/OrderBook";
 import MarketAndLimitPanel from "./trade/BuySell/components/MarketAndLimitPanel";
 import OrderHistorySection from "./trade/OrderHistorySection";
-
+import "../components/trade/style.scss"
 
 
 
@@ -239,7 +239,7 @@ const doughnutOptions = {
 
 const ChainSelectRow = React.memo(({ network, hasIcon }) => {
   return (
-    <div className="chain-select-row flex">
+    <div className="flex chain-select-row">
       <img width="27" height="27" className={"icon-img"} src={network.icon} />
       <div className="name">{network.name}</div>
     </div>
@@ -295,7 +295,7 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
     Object.values(ORION_TRADE_CONFIG.networks)
   );
   const [mobileTabClassName, setMobileTabClassName] = useState('exchange');
-  const [mobileTabIndex, setMobileTabIndex] = useState(0);
+  const [mobileTabIndex, setMobileTabIndex] = useState([1, 0, 0]);
   const [isClosed, setIsClosed] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [size, setSize] = useState({ width: 320, height: 200 });
@@ -304,17 +304,17 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
   const redColor = '#f03349', greenColor = '#179981';
   const handleMinimize = () => setIsMinimized(!isMinimized);
 
-  const handleMaximize = () => {
-    setIsMaximized(!isMaximized);
-    if (!isMaximized) {
-      setSize({ width: "100%", height: "90%" });
-      setPosition({ x: 0, y: 0 });
-    } else {
-      setSize({ width: 1500, height: 800 });
-      setPosition({ x: 0, y: 0 });
-    }
+  // const handleMaximize = () => {
+  //   setIsMaximized(!isMaximized);
+  //   if (!isMaximized) {
+  //     setSize({ width: "100%", height: "90%" });
+  //     setPosition({ x: 0, y: 0 });
+  //   } else {
+  //     setSize({ width: 1500, height: 800 });
+  //     setPosition({ x: 0, y: 0 });
+  //   }
 
-  };
+  // };
   const handleClose = () => {
     setIsClosed(true);
     onClose();
@@ -324,7 +324,6 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
   if (isClosed) return null;
 
   useEffect(() => {
-
     const classNames = ['exchange', 'chart'/*, 'history'*/, 'orderbook'];
     setMobileTabClassName(classNames[mobileTabIndex]);
 
@@ -515,9 +514,9 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
+        className={`relative bg-black border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
           ? 'w-full h-full rounded-none'
           : 'w-[90%] h-[90%] rounded-xl'
           }`}
@@ -527,7 +526,7 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
           <div className="flex items-center gap-2">
             <button
               onClick={toggleFullscreen}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 transition-colors rounded-lg hover:bg-white/10"
             >
               {isFullscreen ? (
                 <Minimize2 className="w-4 h-4" />
@@ -537,27 +536,29 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 transition-colors rounded-lg hover:bg-white/10"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div className="p-6 h-[calc(100%-73px)] overflow-y-auto ai-chat-scrollbar">
+        <div className="h-[calc(100%-73px)] overflow-y-auto ai-chat-scrollbar">
           {/* Header */}
-          <div className="flex items-center bg-white/5 rounded-xl p-1 pl-2 mb-6" >
-            <div className="flex items-center gap-2 h-full border-r border-white/10 pr-5 cursor-pointer duration-200" onClick={() => setIsPairSelectModalVisible(true)}>
-              <img src={
-                CURRENCY_ICONS_URL +
-                currentPairSymbol.split("-")[0].toLowerCase() +
-                ".svg"
-              }
-                onError={(e: any) => {
-                  e.target.src = DEFAULT_ICON_URL;
-                }} alt="ETH" className="rounded-full w-9 h-9" />
-              <span className="text-1xl font-bold text-white hover:text-green-400 transition-colors duration-200">{currentPairSymbol.split("-").join("/")}</span>
-              <ChevronDown className="w-4 h-4 text-gray-400" />
+          <div className="flex items-center justify-between p-4 transition-all border-b border-white/10" >
+            <div className="flex items-center space-x-4" onClick={() => setIsPairSelectModalVisible(true)}>
+              <div className='flex items-center space-x-2 cursor-pointer'>
+                <img src={
+                  CURRENCY_ICONS_URL +
+                  currentPairSymbol.split("-")[0].toLowerCase() +
+                  ".svg"
+                }
+                  onError={(e: any) => {
+                    e.target.src = DEFAULT_ICON_URL;
+                  }} alt="ETH" className="rounded-full w-9 h-9" />
+                <span className="font-bold text-white transition-colors duration-200 text-1xl hover:text-green-400">{currentPairSymbol.split("-").join("/")}</span>
+                <ChevronDown className="w-4 h-4 text-gray-400" />
+              </div>
             </div>
             <TokenPairSelectModal
               symbolToDataMap={symbolToDataMap}
@@ -565,15 +566,15 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
               setOpen={setIsPairSelectModalVisible}
               setCurrentPairSymbol={setCurrentPairSymbol}
             />
-            <div className="px-4 border-r border-white/10 h-full flex items-center pr-5 pl-5">
-              <span className="text-red-500 text-2xl font-bold" style={{
+            <div className="flex items-center h-full px-4 pl-5 pr-5 border-r border-white/10">
+              <span className="text-2xl font-bold text-red-500" style={{
                 color: change24 < 0 ? 'red' : 'green',
               }}>{lastPrice}</span>
             </div>
 
-            <div className="flex h-full pr-5 pl-1">
-              <div className="px-4 border-r border-white/10 h-full flex flex-col justify-center">
-                <div className="text-md text-gray-500">24h Change</div>
+            <div className="flex h-full pl-1 pr-5">
+              <div className="flex flex-col justify-center h-full px-4 border-r border-white/10">
+                <div className="text-gray-500 text-md">24h Change</div>
                 <div className={`text-md font-bold flex items-center ${change24 < -0.004
                   ? 'text-red-500'
                   : change24 > 0.004
@@ -582,31 +583,31 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
                   }`}>
                   <span className="flex items-center">
                     {change24 < -0.004 ? (
-                      <TrendingDown className="trending-icon mr-1" size={16} />
+                      <TrendingDown className="mr-1 trending-icon" size={16} />
                     ) : change24 > 0.004 ? (
-                      <TrendingUp className="trending-icon mr-1" size={16} />
+                      <TrendingUp className="mr-1 trending-icon" size={16} />
                     ) : null}
                     {toFixedFloat(Math.abs(change24))}%
                   </span>
                 </div>
               </div>
 
-              <div className="px-4 border-r border-white/10 h-full flex flex-col justify-center pr-5 pl-5">
-                <div className="text-md text-gray-500">24h High</div>
-                <div className="text-md font-bold text-white">{high24}</div>
+              <div className="flex flex-col justify-center h-full px-4 pl-5 pr-5 border-r border-white/10">
+                <div className="text-gray-500 text-md">24h High</div>
+                <div className="font-bold text-white text-md">{high24}</div>
               </div>
 
-              <div className="px-4 border-r border-white/10 h-full flex flex-col justify-center pr-5 pl-5">
-                <div className="text-md text-gray-500">24h Low</div>
-                <div className="text-md font-bold text-white">{low24}</div>
+              <div className="flex flex-col justify-center h-full px-4 pl-5 pr-5 border-r border-white/10">
+                <div className="text-gray-500 text-md">24h Low</div>
+                <div className="font-bold text-white text-md">{low24}</div>
               </div>
 
-              <div className="px-4 border-r border-white/10 h-full flex flex-col justify-center pr-5 pl-5">
-                <div className="text-md text-gray-500">24h Volume</div>
-                <div className="text-md font-bold text-white">{vol24}</div>
+              <div className="flex flex-col justify-center h-full px-4 pl-5 pr-5 border-r border-white/10">
+                <div className="text-gray-500 text-md">24h Volume</div>
+                <div className="font-bold text-white text-md">{vol24}</div>
               </div>
             </div>
-            <div className="ml-auto flex items-center gap-2 px-4 h-full border-white/10">
+            <div className="flex items-center h-full gap-2 px-4 ml-auto border-white/10">
               <div className="relative">
                 <button
                   onClick={() => setIsOpen(!open)}
@@ -637,8 +638,7 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
                           setCurrentNetwork(network);
                           setIsOpen(false);
                         }}
-                        className="flex items-center gap-2 w-full px-3 py-2 
-                         hover:bg-white/5 transition-colors duration-200"
+                        className="flex items-center w-full gap-2 px-3 py-2 transition-colors duration-200 hover:bg-white/5"
                       >
                         <img
                           src={network.icon}
@@ -656,38 +656,87 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
             </div>
 
           </div>
+          <Tabs isFitted
+            size='md'
+            variant='enclosed'
+            className="flex lg:!hidden">
+            <TabList>
+              <Tab onClick={() => setMobileTabIndex([1, 0, 0])}>Exchange</Tab>
+              <Tab onClick={() => setMobileTabIndex([0, 1, 0])}>Chart</Tab>
+              {/*<Tab>History</Tab>*/}
+              <Tab onClick={() => setMobileTabIndex([0, 0, 1])}>Order book</Tab>
+            </TabList>
+          </Tabs>
+          <div className="w-full">
+            <div className="block w-full gap-3 lg:grid lg:grid-cols-6">
+              <div className="block w-full lg:col-span-5 rounded-xl">
+                <div className='w-full'>
+                  <div className='flex w-full lg:grid lg:grid-cols-4'>
+                    <div className={`lg:col-span-3 ${mobileTabIndex[1] ? "" : "hidden"} lg:block w-full`}>
+                      <div className="h-full min-h-[500px] max-h-[600px] border-r border-gray-700">
+                        <div className={`h-full min-h-[500px] max-h-[600px] lg:flex`}>
+                          <TradeChart
+                            pairSymbol={currentPairSymbol}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className={`flex w-full ${mobileTabIndex[2] ? "" : "hidden"} lg:flex`}>
+                      <div className="w-full h-full rounded-xl">
+                        {/* Mobile view */}
+                        <div className="block w-full lg:hidden">
+                          {mobileTabIndex[2] ? (
+                            <div className="w-full h-full overflow-auto">
+                              <Orderbook
+                                pricePrecision={pairConfig.pricePrecision}
+                                asks={asks}
+                                bids={bids}
+                                symbolAssetIn={symbolAssetIn}
+                                symbolAssetOut={symbolAssetOut}
+                                lastPrice={lastPrice}
+                                pairConfig={pairConfig}
+                                pairSymbol={currentPairSymbol}
+                              />
+                            </div>
+                          ) : <></>
+                        }
+                        </div>
 
-          {/* Charts Section */}
-          <div className="p-2 sm:p-4 w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 lg:gap-6">
-              {/* Trade chart section - 6 columns */}
-              <div className="col-span-1 lg:col-span-6 bg-white/5 rounded-xl p-2 sm:p-4">
-                <div className="h-full min-h-[600px]">
-                  <TradeChart
-                    pairSymbol={currentPairSymbol}
-                  />
+                        {/* Desktop view */}
+                        <div className="hidden lg:block">
+                          <div className="h-full overflow-auto">
+                            <Orderbook
+                              pricePrecision={pairConfig.pricePrecision}
+                              asks={asks}
+                              bids={bids}
+                              symbolAssetIn={symbolAssetIn}
+                              symbolAssetOut={symbolAssetOut}
+                              lastPrice={lastPrice}
+                              pairConfig={pairConfig}
+                              pairSymbol={currentPairSymbol}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="hidden mt-4 border-t border-gray-800 lg:flex">
+                  <div className="col-span-1 lg:col-span-3 bg-white/5 rounded-xl">
+                    <div className="flex flex-col h-full">
+                      <OrderHistorySection
+                        balances={balances}
+                        orderHistories={orderHistories}
+                        chainServiceInfo={chainServiceInfo}
+                        networkGasFee={networkGasFee}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* Order book section - 4 columns */}
-              <div className="col-span-1 lg:col-span-3 bg-white/5 rounded-xl p-2 sm:p-4">
-                <div className="h-full overflow-auto">
-                  <Orderbook
-                    pricePrecision={pairConfig.pricePrecision}
-                    asks={asks}
-                    bids={bids}
-                    symbolAssetIn={symbolAssetIn}
-                    symbolAssetOut={symbolAssetOut}
-                    lastPrice={lastPrice}
-                    pairConfig={pairConfig}
-                    pairSymbol={currentPairSymbol}
-                  />
-                </div>
-              </div>
-
-              {/* Buy sell section - 2 columns */}
-              <div className="col-span-1 lg:col-span-3 bg-white/5 rounded-xl p-2 sm:p-4">
-                <div className="h-full flex flex-col">
+              <div className={`${mobileTabIndex[0] ? "flex" : "hidden"} border-b border-gray-800 rounded-xl lg:flex`}>
+                <div className="flex flex-col w-full h-full p-2">
                   <Tabs
                     isFitted
                     size='md'
@@ -720,13 +769,6 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
               </div>
             </div>
           </div>
-          <OrderHistorySection
-            balances={balances}
-            orderHistories={orderHistories}
-            chainServiceInfo={chainServiceInfo}
-            networkGasFee={networkGasFee}
-          />
-
         </div>
       </div>
     </div>
