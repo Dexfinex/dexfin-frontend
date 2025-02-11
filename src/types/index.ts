@@ -212,3 +212,9 @@ export interface TransactionError extends Error {
 export interface BrianData {
   message: string
 }
+
+export interface Network {
+  id: string;
+  name: string;
+  logo: string;
+}

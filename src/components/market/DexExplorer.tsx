@@ -1,11 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {AlertCircle, Filter, RefreshCw, Search, TrendingDown, TrendingUp} from 'lucide-react';
-import {
-  formatAge,
-  formatNumber,
-  Network,
-  TokenPool
-} from '../../lib/geckoTerminal';
+import { TokenPool, Network } from '../../types';
+import { formatAge, formatNumber } from '../../utils';
 import { geckoterminalService } from '../../services/geckoterminal.service';
 
 const networks: Network[] = [
