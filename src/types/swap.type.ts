@@ -288,8 +288,14 @@ export interface ZeroxGaslessStatusRequestType {
     tradeHash: string
 }
 
+interface GaslessStatusTransaction {
+    hash: string
+    timestamp: string
+}
+
 export interface ZeroxGaslessStatusResponseType {
     status: string
+    transactions?: GaslessStatusTransaction[]
 }
 
 export interface gaslessSubmitResponse {

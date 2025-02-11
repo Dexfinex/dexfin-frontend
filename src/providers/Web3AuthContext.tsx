@@ -38,12 +38,10 @@ import {
     getUserOperationGasPrice,
     KernelEIP1193Provider
 } from "@zerodev/sdk";
-import { ETHRequestSigningPayload } from "@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types";
-import { ethers } from "ethers";
-import { mapChainId2ViemChain } from "../config/networks.ts";
-import { useStore } from "../store/useStore.ts";
-import { useEvmWalletBalance } from "../hooks/useBalance.tsx";
-import { useEvmWalletTransfer } from "../hooks/useTransfer.tsx";
+import {ETHRequestSigningPayload} from "@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types";
+import {ethers} from "ethers";
+import {mapChainId2ViemChain} from "../config/networks.ts";
+import {useStore} from "../store/useStore.ts";
 
 interface Web3AuthContextType {
     login: () => void;
@@ -215,7 +213,6 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             pkpWallet.request = async (payload: any) => {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (payload?.method === 'eth_accounts') {
                     return [pkpWallet.address]
                 } else {
@@ -301,6 +298,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
             const walletClient = createWalletClient({
                 // Use your own RPC provider (e.g. Infura/Alchemy).
+                account: connectedWalletAddress,
                 transport: http(mapRpcUrls[currentChainId]),
                 chain: mapChainId2ViemChain[currentChainId],
             }).extend(publicActions) // extend wallet client with publicActions for public client
@@ -379,7 +377,10 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 setProvider(provider)
                 setSigner(provider.getSigner())
 
+                console.log("rawProvider", rawProvider)
+
                 const walletClient = createWalletClient({
+                    account: connectedWalletAddress,
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-expect-error
                     transport: custom(rawProvider), // Use rawProvider (window.ethereum)
@@ -410,7 +411,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 initializeAllVariables()
             })
         }
-    }, [storedWalletInfo])
+    }, [currentAccount, initSessionUnSafe, sessionSigs, setAuthMethod, setCurrentAccount, storedWalletInfo])
 
 
     useEffect(() => {
@@ -460,7 +461,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             })()
 
         }
-    }, [currentAccount, sessionSigs, solanaWalletInfo])
+    }, [authMethod, chainId, currentAccount, sessionSigs, setProviderByPKPWallet, setStoredWalletInfo, solanaWalletInfo])
 
 
     const initializeAllVariables = () => {
@@ -528,10 +529,10 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
     const switchChain = async (chainId: number) => {
         try {
-
             if (isWagmiWalletConnected) {
                 await switchChainWagmi({chainId})
                 const walletClient = createWalletClient({
+                    account: connectedWalletAddress,
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-expect-error
                     transport: custom(provider!.provider), // Use rawProvider (window.ethereum)
@@ -541,11 +542,12 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             } else {
                 await setProviderByPKPWallet(chainId)
             }
-
         } catch (err) {
             console.error("switchChain error", err)
         }
     }
+
+    console.log("walletClient", walletClient)
 
     // console.log("switchChain", switchChain)
 

@@ -60,7 +60,7 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
   }
 
   return (
-      <div className="bg-[#000]/95 backdrop-blur-sm rounded-xl overflow-hidden border border-white/5 h-full relative w-full shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+      <div className="backdrop-blur-sm rounded-xl overflow-hidden h-full relative w-full">
 
         <div className="flex items-center gap-2 group px-3 py-2 relative min-w-[180px]">
           <TokenIcon
@@ -84,7 +84,7 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
             onTypeChange={onTypeChange}
             onTimeRangeChange={handleTimeRangeChange}
         />
-        <div className="h-[calc(100%-100px)] overflow-hidden p-3 bg-[#000]/95 relative z-0">
+        <div className="h-[calc(100%-100px)] overflow-hidden p-3 relative z-0">
           <ChartErrorBoundary>
             <Suspense fallback={<ChartLoader/>}>
               <ChartContainer

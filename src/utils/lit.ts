@@ -23,7 +23,7 @@ import {listEncryptedKeyMetadata} from "@lit-protocol/wrapped-keys/src/lib/api";
 
 export const DOMAIN = import.meta.env.VITE_PUBLIC_DOMAIN || 'localhost';
 export const ORIGIN =
-  import.meta.env.NEXT_PUBLIC_VERCEL_ENV === 'production'
+  import.meta.env.VITE_ENV_MODE === 'production'
     ? `https://${DOMAIN}`
     : `http://${DOMAIN}:5173`;
 

@@ -19,6 +19,7 @@ import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {use0xTokenApprove} from "../../../hooks/use0xTokenApprove.ts";
 import {zeroxService} from "../../../services/0x.service.ts";
 import use0xGaslessSwapStatus from "../../../hooks/use0xGaslessSwapStatus.ts";
+import {signTradeObject, tradeSplitSigDataToSubmit} from "../../../utils/swap.util.ts";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -76,7 +77,8 @@ const PreviewDetailItem = ({
                 ) : isFree ? (
                     <Flex gap={2}>
                         <span className={'text-green-500'}>Free!</span>
-                        <span className={(valueClassName ? valueClassName : "text-white") + ' line-through'}>{value}</span>
+                        <span
+                            className={(valueClassName ? valueClassName : "text-white") + ' line-through'}>{value}</span>
                     </Flex>
                 ) : (
                     <span className={valueClassName ? valueClassName : "text-white"}>{value}</span>
@@ -100,9 +102,11 @@ export function SwapBox({
                         }: SwapBoxProps) {
 
     const [txModalOpen, setTxModalOpen] = useState(false);
+    const [transactionHash, setTransactionHash] = useState<string | undefined>(undefined);
     const [gaslessTradeHash, setGaslessTradeHash] = useState<string | undefined>(undefined);
 
     const {
+        walletClient,
         address: walletAddress,
         chainId: walletChainId,
         isConnected,
@@ -158,8 +162,6 @@ export function SwapBox({
     const {
         approve,
         approvalDataToSubmit,
-        tradeDataToSubmit,
-        isReadyToSubmit,
         isLoading: isApproveLoading,
     } = use0xTokenApprove({
         token: fromToken?.address as `0x${string}`,
@@ -256,10 +258,28 @@ export function SwapBox({
 
     const {
         isLoading: isGaslessTransactionPending,
-        status: gaslessTransactionStatus
+        status: gaslessTransactionStatus,
+        hash: gaslessTransactionHash
     } = use0xGaslessSwapStatus(gaslessTradeHash)
 
-    // console.log("isGaslessTransactionPending", isGaslessTransactionPending, gaslessTransactionStatus)
+    useEffect(() => {
+        if (hash) {
+            setTransactionHash(hash)
+        }
+        if (gaslessTransactionHash) {
+            setTransactionHash(gaslessTransactionHash)
+        }
+    }, [hash, gaslessTransactionHash])
+
+    // initialize all after closing success modal
+    useEffect(() => {
+        if (!txModalOpen) {
+            setTransactionHash(undefined)
+            setGaslessTradeHash(undefined)
+            onFromAmountChange?.('')
+            onToAmountChange?.('')
+        }
+    }, [onFromAmountChange, onToAmountChange, txModalOpen])
 
     const {signTypedDataAsync} = useSignTypedData();
 
@@ -270,12 +290,9 @@ export function SwapBox({
 
     const isConfirmed = isSuccessNormalSwapAction || gaslessTransactionStatus === 'confirmed'
 
-    // console.log("isPending", isPending, hash, isConfirming, isConfirmed)
-
     useEffect(() => {
         if (isConfirmed) {
             setTxModalOpen(true)
-            setGaslessTradeHash(undefined)
             refetchFromBalance()
             refetchToBalance()
         }
@@ -342,10 +359,15 @@ export function SwapBox({
     }
 
     const handleGaslessSwap = async () => {
-        zeroxService.submitTrade(walletChainId, tradeDataToSubmit, approvalDataToSubmit).then(tradeHash => setGaslessTradeHash(tradeHash))
+        if (walletClient) {
+            const gaslessQuote = quoteResponse as GaslessQuoteResponse
+            const tradeSignature = await signTradeObject(walletClient, gaslessQuote); // Function to sign trade object
+            const tradeDataToSubmit = await tradeSplitSigDataToSubmit(tradeSignature, gaslessQuote);
+            zeroxService.submitTrade(walletChainId, tradeDataToSubmit, approvalDataToSubmit).then(tradeHash => setGaslessTradeHash(tradeHash))
+        }
     }
 
-    const approvalRequired = quoteData?.tokenApprovalRequired || (isGasLessSwap && !isReadyToSubmit)
+    const approvalRequired = (!isGasLessSwap && quoteData?.tokenApprovalRequired) || (isGasLessSwap && quoteData?.tokenApprovalRequired && !approvalDataToSubmit);
 
     return (
         <div className="space-y-2.5">
@@ -540,7 +562,18 @@ export function SwapBox({
                             {textSwitchChain}
                         </Button>
                     ) : (
-                        approvalRequired ? (
+
+                        insufficientBalance ? (
+                            <Button
+                                width="full"
+                                colorScheme="blue"
+                                isDisabled={true}
+                            >
+                                Insufficient Balance
+                            </Button>
+
+                        ) : (
+                            approvalRequired ? (
                                 <Button
                                     isLoading={isApproveLoading}
                                     loadingText={'Approving...'}
@@ -553,50 +586,26 @@ export function SwapBox({
                                 >
                                     Approve {fromToken?.symbol}
                                 </Button>
+                            ) : (
+                                <Button
+                                    isLoading={isPending || isConfirming || isGaslessTransactionPending}
+                                    loadingText={isPending ? 'Confirming...' : (isConfirming || isGaslessTransactionPending) ? 'Waiting for confirmation...' : ''}
+                                    width="full"
+                                    colorScheme="blue"
+                                    onClick={handleSwap}
+                                    isDisabled={!(Number(fromAmount) > 0) || isPending || isConfirming}
+                                >
+                                    Swap
+                                </Button>
                             )
-                            :
-                            (
-                                insufficientBalance ? (
-                                    <Button
-                                        width="full"
-                                        colorScheme="blue"
-                                        isDisabled={true}
-                                    >
-                                        Insufficient Balance
-                                    </Button>
-
-                                ) : (
-                                    <Button
-                                        isLoading={isPending || isConfirming || isGaslessTransactionPending}
-                                        loadingText={isPending ? 'Confirming...' : (isConfirming || isGaslessTransactionPending) ? 'Waiting for confirmation...' : ''}
-                                        width="full"
-                                        colorScheme="blue"
-                                        onClick={handleSwap}
-                                        isDisabled={!(Number(fromAmount) > 0) || isPending || isConfirming}
-                                    >
-                                        Swap
-                                    </Button>
-
-                                )
-                            )
+                        )
                     )
                 )
-            }
-
-            {/*
-            <button
-                className="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-xl transition-colors"
-                onClick={onSwap}
-                disabled={!fromAmount || !toAmount}
-            >
-                Swap
-            </button>
-*/
             }
             {
                 isConfirmed && (
                     <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                                      link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${(hash ?? gaslessTradeHash)}`}/>
+                                      link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${transactionHash}`}/>
                 )
             }
         </div>
