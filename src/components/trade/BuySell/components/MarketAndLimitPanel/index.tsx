@@ -476,11 +476,11 @@ const MarketAndLimitPanel = ({
                         </div>
 
                         <div className="flex items-start gap-3 pt-2 text-gray-400">
-                            <div className="flex-shrink-0 pt-1">
+                            <div className="flex-shrink-0">
                                 <img
                                     src={exchangeImgUrl}
                                     alt="Exchange"
-                                    className="w-4 h-4 animate-spin"
+                                    className="w-10 h-10 animate-spin"
                                 />
                             </div>
                             <div className="text-sm leading-relaxed">
@@ -492,7 +492,7 @@ const MarketAndLimitPanel = ({
             </div>
 
             <div className="flex items-center space-x-2 ">
-                <span className="text-blue-400 text-sm w-[30%]">Max slippage</span>
+                <span className="text-blue-400 text-sm w-[50%]">Max slippage</span>
                 <div className="w-full py-1 rounded">
                     <MarketInput
                         hasUnit={true}

@@ -166,6 +166,7 @@ export const TokenPairSelectModal: React.FC<TokenPairSelectModalProps> = ({
             isOpen={open}
             onClose={doClose}
         >
+            <div>
             <ModalOverlay/>
             <ModalContent
                 className="trade-token-pair-select-modal"
@@ -219,6 +220,7 @@ export const TokenPairSelectModal: React.FC<TokenPairSelectModalProps> = ({
                     )}
                 </ModalBody>
             </ModalContent>
+            </div>
         </Modal>
     );
 };

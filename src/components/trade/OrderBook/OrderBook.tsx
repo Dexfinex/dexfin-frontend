@@ -114,7 +114,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
                                 `linear-gradient(to left, rgba(34, 197, 94, 0.1) ${level.depth}%, transparent ${level.depth}%)`
                         }} />
                     )}
-                    <div className="relative grid grid-cols-4 w-full px-2 text-xs font-mono">
+                    <div className="relative grid w-full grid-cols-4 px-2 font-mono text-xs">
                         <div className={`text-right ${orderType === OrderType.ASKS ? 'text-red-500' : 'text-green-500'}`}>
                             {toFixedFloat(level.price, 2)}
                         </div>
@@ -145,7 +145,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
 
         return (
             <div 
-                className="fixed z-50 bg-gray-900 border border-gray-700 rounded p-2 text-xs"
+                className="fixed z-50 p-2 text-xs bg-gray-900 border border-gray-700 rounded"
                 style={{
                     top: tooltipPosition.y,
                     right: '28rem',
@@ -179,7 +179,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
     }
 
     return (
-        <div className="bg-black text-white">
+        <div className="text-white bg-black">
             {/* <div className="px-3 py-2 text-sm font-medium border-b border-gray-800">
                 Order Book
             </div> */}
@@ -193,14 +193,14 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
 
             <div 
                 ref={asksContainer}
-                className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700"
+                className="max-h-[300px] overflow-y-auto ai-chat-scrollbar scrollbar-thumb-gray-700"
                 onMouseLeave={() => handleMouseLeave(true)}
                 onMouseMove={(e) => handleMouseMove(e, asksContainer.current)}
             >
                 {buildPriceLevels(asks, OrderType.ASKS)}
             </div>
             
-            <div className="px-2 py-1 bg-gray-900/50 border-y border-gray-700 grid grid-cols-2 text-xs">
+            <div className="grid grid-cols-2 px-2 py-1 text-xs border-gray-700 bg-gray-900/50 border-y">
                 <div className="text-gray-400">
                     Last Price: <span className="text-white">{Number(lastPrice).toFixed(2)}</span>
                 </div>
@@ -212,7 +212,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
             </div>
             
             <div 
-                className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700"
+                className="max-h-[300px] overflow-y-auto ai-chat-scrollbar scrollbar-thumb-gray-700"
                 onMouseLeave={() => handleMouseLeave(false)}
                 onMouseMove={(e) => handleMouseMove(e, asksContainer.current)}
             >
