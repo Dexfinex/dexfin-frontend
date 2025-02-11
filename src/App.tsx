@@ -53,8 +53,8 @@ export default function App() {
 
     const {
         authMethod,
-        accounts,
-        setAuthMethod,
+        // accounts,
+        // setAuthMethod,
         isConnected,
     } = useContext(Web3AuthContext);
 
@@ -76,14 +76,17 @@ export default function App() {
             setIsSigninModalOpen(false)
             setIsSignupModalOpen(false)
         }
-    }, [isConnected]);
+    }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen]);
 
     // remove authMethod state when need to create new one
+    // TODO: why need this?
+/*
     useEffect(() => {
         if (!isSigninModalOpen && authMethod && accounts.length === 0)
             setAuthMethod(undefined)
 
     }, [accounts.length, authMethod, isSigninModalOpen, setAuthMethod])
+*/
 
     useEffect(() => {
         // Check if the previous trigger was set and authMethod has become undefined

@@ -547,7 +547,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         }
     }
 
-    console.log("walletClient", walletClient)
+    console.log("walletClient", walletClient, solanaWalletInfo)
 
     // console.log("switchChain", switchChain)
 
