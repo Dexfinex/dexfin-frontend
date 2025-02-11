@@ -8,16 +8,16 @@ import { mapCoingeckoNetworks } from "../constants/mock/coingeckoNetworks.ts";
 import { MarketCapToken } from "../components/market/MarketCap.tsx";
 
 function formatRelativeTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp * 1000;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 2);
+    const now = Date.now();
+    const diff = now - timestamp * 1000;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 2);
 
-  if (days > 0) return `${days}d ago`;
-  if (hours > 0) return `${hours}h ago`;
-  if (minutes > 0) return `${minutes}m ago`;
-  return 'just now';
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return 'just now';
 }
 
 
@@ -58,6 +58,7 @@ export const coingeckoService = {
                             { params: { localization: false, tickers: false, market_data: false, community_data: false, developer_data: false } }
                         );
 
+                        console.log("tokenDetail : ", tokenDetail)
                         const contractAddress = tokenDetail.platforms['base'] || token.id;
 
                         const formattedToken: TokenType = {
@@ -120,6 +121,8 @@ export const coingeckoService = {
                             `/coins/${token.id}`,
                             { params: { localization: false, tickers: false, market_data: false, community_data: false, developer_data: false } }
                         );
+                        console.log("token - tokenDetail : ", tokenDetail)
+
 
                         const contractAddress = tokenDetail.platforms['base'] || token.id;
                         // const contractAddress = tokenDetail.platforms['ethereum'] || token.id;
@@ -268,11 +271,11 @@ export const coingeckoService = {
     },
     getMarketCap: async (page: number): Promise<MarketCapToken[]> => {
         try {
-          const { data } = await coinGeckoApi2.get<MarketCapToken[]>(`/tokens/marketcap?page=${page}`);
-          return data;
+            const { data } = await coinGeckoApi2.get<MarketCapToken[]>(`/tokens/marketcap?page=${page}`);
+            return data;
         } catch (error) {
-          console.error('Error searching coins:', error);
-          return [];
+            console.error('Error searching coins:', error);
+            return [];
         }
     },
 }

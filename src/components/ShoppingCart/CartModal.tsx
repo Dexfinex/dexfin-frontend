@@ -6,6 +6,7 @@ import { CartModalProps } from '../../types/cart.type';
 import { useTokenBuyHandler } from '../../hooks/useTokenBuyHandler';
 import { useStore } from '../../store/useStore';
 import useTokenStore from '../../store/useTokenStore';
+import { X } from 'lucide-react';
 
 import SearchHeader from './components/SearchHeader';
 import CoinGrid from './components/CoinGrid';
@@ -31,7 +32,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const { address: walletAddress, chainId: walletChainId } = useContext(Web3AuthContext);
   const { cartItems, addToCart, removeFromCart, updateQuantity, clearCart } = useStore();
   const { tokenPrices } = useTokenStore();
-  
+
   const formattedTokenPrices: Record<string, number> = {};
   Object.entries(tokenPrices).forEach(([key, value]) => {
     formattedTokenPrices[key] = Number(value);
@@ -56,7 +57,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     if (isConfirmed && currentTxHash) {
       // Clear cart after confirmation
       clearCart();
-      
+
       // Keep modal open briefly before closing everything
       const timer = setTimeout(() => {
         setTxModalOpen(false);
@@ -106,7 +107,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
       const result = await executeBatchBuy(tokenPurchases);
       if (result) {
         console.log("✅ Batch buy result:", result);
-        
+
         // Set transaction details first
         const currentPurchase = tokenPurchases[0];
         setTransactionDetails({
@@ -117,7 +118,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
 
         // Return to main view
         // setShowCheckout(false);
-        
+
         // Show transaction modal after a brief delay
         setTimeout(() => {
           setCurrentTxHash(result as `0x${string}`);
@@ -140,8 +141,18 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div className="relative glass border border-white/10 shadow-lg w-[90%] h-[90%] rounded-xl">
+        <span className='flex justify-end p-2'>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </span>
+
         {showCheckout ? (
           <CheckoutSection
             cartItems={cartItems}
@@ -154,21 +165,24 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
             onExecuteBuy={handleBuyExecution}
           />
         ) : (
-          <div className="flex h-full">
-            <div className="flex-1 flex flex-col border-r border-white/10">
+          <div className="flex h-[calc(100%-48px)]">
+            <div className="flex-1 flex -mt-9 flex-col border-r border-white/10">
               <SearchHeader
                 selectedCategory={selectedCategory}
                 searchQuery={searchQuery}
                 onCategoryChange={setSelectedCategory}
                 onSearchChange={setSearchQuery}
               />
-              <CoinGrid
-                searchQuery={searchQuery}
-                selectedCategory={selectedCategory}
-                onAddToCart={addToCart}
-              />
+              <div className="flex-1 overflow-hidden"> {/* Container for CoinGrid */}
+                <CoinGrid
+                  searchQuery={searchQuery}
+                  selectedCategory={selectedCategory}
+                  onAddToCart={addToCart}
+                />
+              </div>
+
             </div>
-            <div className="w-[400px] flex flex-col">
+            <div className="w-[400px] flex flex-col  h-full">
               <CartList
                 cartItems={cartItems}
                 tokenPrices={formattedTokenPrices}

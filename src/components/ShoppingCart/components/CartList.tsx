@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { Car, Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { Input } from '@chakra-ui/react';
 
@@ -155,9 +155,8 @@ const CartList: React.FC<CartListProps> = React.memo(({
             </div>
         );
     }
-
     return (
-        <>
+        <div className='flex flex-col h-full'>
             <div className="flex-1 p-4 overflow-y-auto">
                 <div className="space-y-3">
                     {cartItems.map((item) => {
@@ -174,7 +173,7 @@ const CartList: React.FC<CartListProps> = React.memo(({
                     })}
                 </div>
             </div>
-            <div className="p-4 border-t border-white/10">
+            <div className="mt-auto p-4 border-t border-white/10">
                 <div className="text-lg font-semibold">
                     Total: ${formatNumberByFrac(total)}
                 </div>
@@ -185,7 +184,7 @@ const CartList: React.FC<CartListProps> = React.memo(({
                     Proceed to Checkout
                 </button>
             </div>
-        </>
+        </div>
     );
 });
 
