@@ -52,8 +52,8 @@ export const AIAgentVoiceModal: React.FC<AIAgentVoiceModalProps> = ({ isOpen, tr
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {commands.map((command, index) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:from-white/15 hover:to-white/10 transition-colors"
                   >
                     <div className="flex flex-col h-full">

@@ -3,7 +3,7 @@ import { brianApi } from "./api.service.ts";
 import { BrianData } from '../types/index.ts';
 
 export const brianService = {
-	getBrianTransactionData: async (command: string, address: string, chainId: number): Promise<BrianData> => {
+	getBrianTransactionData: async (command: string, address: string, chainId: number | undefined): Promise<BrianData> => {
 		try {
 			const { data } = await brianApi.get<BrianData>(`transaction?command=${command}&address=${address}&chainId=${chainId}`);
 			return data;
