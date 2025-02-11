@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import {
-  X, Maximize2, Minimize2, Search, Smile,
+  X, Maximize2, Minimize2, Search, Smile, Download,
   MessageSquare, Share2, Users, ArrowRight, Plus,
-  Settings, User, Info, CheckCircle, XCircle
+  Settings, User, Info, CheckCircle, XCircle, File
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import GifPicker from 'gif-picker-react';
@@ -10,6 +10,7 @@ import { Theme, EmojiStyle } from 'emoji-picker-react';
 import { Theme as GifTheme } from 'gif-picker-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
+import { SendFileModal } from './SendFileModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
@@ -243,10 +244,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [isCreateGroupActive, setIsCreateGroupActive] = useState(false);
+  const [isSendModalActive, setIsSendModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); ``
   const [groupList, setGroupList] = useState<Array<IGroup>>([]);
   const [connectedUsers, setConnectedUsers] = useState<Array<IUser>>([]);
   const [searchedUser, setSearchedUser] = useState<IUser | null>(null);
@@ -266,6 +268,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [isGifOpen, setIsGifOpen] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState<any>([]);
+  const [selectedFile, setSelectedFile] = useState<any>();
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const emojiPickRef = useRef<HTMLDivElement>(null);
   const gifPickRef = useRef<HTMLDivElement>(null);
@@ -1125,8 +1128,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsEmojiOpen(false)
   }
 
-  const handleGifClick = async (gifData: any) => {
-    setIsGifOpen(false)
+  const sendMedia = async (content: string, type: ChatType) => {
     setToBottom(true)
 
     try {
@@ -1134,8 +1136,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == address)
         setChatHistory([...chatHistory, {
           timestamp: Math.floor(Date.now()),
-          type: 'MediaEmbed',
-          content: gifData.url,
+          type,
+          content,
           fromAddress: address,
           toAddress: "",
           chatId: "",
@@ -1143,27 +1145,27 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           image: found?.image || ""
         }])
 
-        const sentGif = await chatUser.chat.send(selectedGroup?.groupId, {
-          type: 'MediaEmbed',
-          content: gifData.url
+        const sentMedia = await chatUser.chat.send(selectedGroup?.groupId, {
+          type,
+          content
         })
 
         setMessage("")
-        console.log('sent gif: ', sentGif)
+        console.log('sent media: ', sentMedia)
       } else if (chatMode === "p2p" && selectedUser) {
         setChatHistory([...chatHistory, {
           timestamp: Math.floor(Date.now()),
-          type: "MediaEmbed",
-          content: gifData.url,
+          type,
+          content,
           fromAddress: address,
           toAddress: selectedUser?.address,
           chatId: "",
           link: null,
         }])
 
-        const sentGif = await chatUser.chat.send(selectedUser?.address, {
-          type: 'MediaEmbed',
-          content: gifData.url
+        const sentMedia = await chatUser.chat.send(selectedUser?.address, {
+          type,
+          content
         })
 
         setMessage("")
@@ -1171,12 +1173,34 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           setSearchedUser(null)
           setConnectedUsers([{ ...searchedUser, unreadMessages: 0 }, ...connectedUsers])
         }
-        console.log('sent gif: ', sentGif)
+        console.log('sent media: ', sentMedia)
       }
     } catch (err) {
       console.log('send gif err: ', err)
       setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
     }
+  }
+
+  const handleGifClick = async (gifData: any) => {
+    setIsGifOpen(false)
+    sendMedia(gifData.url, "MediaEmbed")
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      console.log('file = ', file)
+      setSelectedFile(file)
+      setIsSendModalActive(true)
+      event.target.value = "";
+    }
+  }
+
+  const handleSendFile = (type: string, base64: string) => {
+    console.log('file type ', type)
+    console.log('base64 ', base64)
+    sendMedia(base64, type as ChatType)
   }
 
   const updateLastMessageInfo = (address: string, type: ChatType, msg: string, timestamp: number, isGroup: boolean, isRequest: boolean) => {
@@ -1233,6 +1257,24 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       });
     }
   }
+  const downloadBase64File = (base64Data: string, fileName: string, fileType: string) => {
+    // Convert Base64 to a Blob
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) => byteCharacters.charCodeAt(i));
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: fileType });
+
+    // Create a temporary link element and trigger the download
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  };
 
   const clearUnreadMessages = (address: string) => {
     if (connectedUsers.length > 0) {
@@ -1489,6 +1531,48 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     // }
   }
 
+  const renderChatBox = (type: ChatType, isOwner: boolean, content: string) => {
+    let messageContent = content
+    let fileName = ""
+    let fileSize = ""
+    let fileType = ""
+
+    try {
+      if (type === "File") {
+        const parsed = JSON.parse(content)
+        // console.log('parsed = ', parsed)
+        if (parsed) {
+          messageContent = parsed.content.split(",")[1]
+          fileName = parsed.name
+          fileSize = parsed.size
+          fileType = parsed.type
+        }
+      } else if (type === "Image") {
+        const parsed = JSON.parse(content)
+        if (parsed) {
+          messageContent = parsed.content
+        }
+      }
+    } catch (err) {
+      // console.log('file content parse err')
+    }
+
+    return (
+      type == "Text" ? <div className={`rounded-lg p-3 w-[480px] ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>{messageContent}</div> :
+        type == "MediaEmbed" ? <img className={`w-52 h-auto ${!isOwner ? '' : 'ml-auto'}`} src={messageContent} /> :
+          type == "Image" ? <img className={`w-52 h-auto ${!isOwner ? '' : 'ml-auto'}`} src={messageContent} /> :
+            type == "File" ? <button className={`flex flex-col gap-4 items-center w-56 h-20 rounded-lg justify-center  ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`} onClick={() => downloadBase64File(messageContent, fileName, fileType)}>
+              <div className='flex gap-4'>
+                <File className='w-10 h-10' />
+                <div className='flex flex-col'>
+                  <span className='text-md'>{fileName}</span>
+                  <span className='text-sm text-center'>{fileSize}B</span>
+                </div>
+              </div>
+            </button> : <></>
+    )
+  }
+
   const renderChatHistory = () => {
     if (chatMode === "p2p") {
       return chatHistory.map((msg) => (
@@ -1507,9 +1591,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
             {
-              msg.type == "Text" ? <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress == selectedUser?.address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
-                {msg.content}
-              </div> : msg.type == "MediaEmbed" ? <img className={`w-52 h-auto ${msg.fromAddress == selectedUser?.address ? '' : 'ml-auto'}`} src={msg.content} /> : <></>
+              renderChatBox(msg.type, msg.fromAddress != selectedUser?.address, msg.content)
             }
           </div>
         </div>
@@ -1531,9 +1613,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
             {
-              msg.type == "Text" ? <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress != address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
-                {msg.content}
-              </div> : msg.type == "MediaEmbed" ? <img className={`w-52 h-auto ${msg.fromAddress != address ? '' : 'ml-auto'}`} src={msg.content} /> : <></>
+              renderChatBox(msg.type, msg.fromAddress == address, msg.content)
             }
           </div>
           {
@@ -2002,9 +2082,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     />
                   </div>}
 
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                  <label className="cursor-pointer p-2 hover:bg-white/10 rounded-lg transition-colors">
                     <Share2 className="w-5 h-5" />
-                  </button>
+                    <input type="file" className="hidden" onChange={handleFileChange} />
+                  </label>
                   {
                     !sendingMessage ? <button
                       onClick={handleSendMessage}
@@ -2027,6 +2108,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         onClose={() => setIsCreateGroupActive(false)}
         onMakeGroup={onMakeGroup}
       />
+
+      <SendFileModal
+        isOpen={isSendModalActive}
+        onClose={() => { setIsSendModalActive(false); setSelectedFile(null); }}
+        file={selectedFile}
+        onSendFile={handleSendFile}
+      />
+
       <VideoCallModal
         isOpen={isVideoCallActive}
         onClose={() => setIsVideoCallActive(false)}

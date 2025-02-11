@@ -1,4 +1,4 @@
-export const LIMIT = 30;
+export const LIMIT = 12;
 
 export const getWalletProfile = async (chatUser:any, address: string) => {
     try {
