@@ -443,21 +443,8 @@ const OrderHistorySection = ({
         },
         {
             title: (
-                // <div className='dashboard-action-column-header'>
-                //     <Checkbox
-                //         isChecked={!visibleZeroTokens}
-                //         onChange={(e) => setVisibleZeroTokens(!e.target.checked)}
-                //     >Hide zero</Checkbox>
-                //     <CustomizedInput
-                //         hasRightElement={true}
-                //         rightElement={<BiSearch />}
-                //         placeholder={'Search'}
-                //         value={dashboardFilterKey}
-                //         setValue={setDashboardFilterKey}
-                //     />
-                // </div>
-                <div className="flex items-center gap-5 p-1">
-                    <label className="flex items-center gap-2 text-gray-300">
+                <div className="relative flex items-center gap-5 p-1">
+                    <label className="relative flex items-center gap-2 text-gray-300">
                         <input
                             type="checkbox"
                             className="w-4 h-4 bg-gray-800 border-gray-600 rounded checked:bg-blue-500"
@@ -467,17 +454,10 @@ const OrderHistorySection = ({
                         Hide zero
                     </label>
 
-                    <div className="relative flex-1">
-                        <CustomizedInput
-                            hasRightElement={true}
-                            rightElement={<BiSearch />}
-                            placeholder={'Search'}
-                            value={dashboardFilterKey}
-                            setValue={setDashboardFilterKey}
-                        />
-                    </div>
+
                 </div>
             ),
+
             className: 'dashboard-status-header',
             render: (text, record) => {
                 return (
@@ -507,35 +487,39 @@ const OrderHistorySection = ({
                                 <FaArrowDown />
                             </Button>
                         </Tooltip>
-
-                        {/*
-                        <Tooltip hasArrow label='Trade'>
-                            <Button className="dashboard-button" onClick={() => {
-                            }}>
-                                <RxMixerVertical/>
-                            </Button>
-                        </Tooltip>
-*/}
-
                     </div>
                 )
             }
+
+        },
+        {
+            title:(
+                <div className="relative flex-1">
+                <CustomizedInput
+                    hasRightElement={true}
+                    rightElement={<BiSearch />}
+                    placeholder={'Search'}
+                    value={dashboardFilterKey}
+                    setValue={setDashboardFilterKey}
+                />
+            </div>
+            )
         }
     ]));
 
     return (
-        <div className="w-full text-white bg-black">
+        <div className="relative w-full text-white bg-black glass">
             {/* Header Section */}
             <div className="">
-                <div className="flex items-center justify-between px-4 py-2">
+                <div className="relative flex items-center justify-between px-4 py-2 glass">
                     {/* Tabs */}
-                    <div className="flex px-4 space-x-1">
+                    <div className="relative flex px-4 space-x-1 glass">
                         {['Dashboard', 'Open Orders', 'Order history'].map((tab, idx) => (
                             <button
                                 key={tab}
                                 onClick={() => setTabIndex(idx)}
-                                className={`px-4 py-2 rounded-md text-sm transition-colors duration-200 ${tabIndex === idx
-                                    ? 'bg-gray-800 text-white'
+                                className={`px-4 py-2 rounded-md text-sm transition-colors duration-200 relative glass ${tabIndex === idx
+                                    ? 'bg-gray-800 text-white '
                                     : 'text-gray-400 hover:text-gray-300'
                                     }`}
                             >
@@ -546,8 +530,8 @@ const OrderHistorySection = ({
 
                     {/* Date Selector */}
                     {tabIndex !== 0 && (
-                        <div className="flex items-center space-x-4 text-gray-400">
-                            <div className="flex items-center px-3 py-2 space-x-2 bg-gray-800 rounded-md">
+                        <div className="flex items-center space-x-4 text-gray-400 ">
+                            <div className="relative flex items-center px-3 py-2 space-x-2 bg-gray-800 rounded-md glass">
                                 <input
                                     type="date"
                                     value={beginDate.toISOString().split('T')[0]}
@@ -557,7 +541,7 @@ const OrderHistorySection = ({
                                 <CalendarIcon className="w-4 h-4" />
                             </div>
                             <span>-</span>
-                            <div className="flex items-center px-3 py-2 space-x-2 bg-gray-800 rounded-md">
+                            <div className="flex items-center px-3 py-2 space-x-2 bg-gray-800 rounded-md glass">
                                 <input
                                     type="date"
                                     value={endDate.toISOString().split('T')[0]}
@@ -577,13 +561,13 @@ const OrderHistorySection = ({
             </div>
 
             {/* Content Section */}
-            <div className="px-6 py-4">
+            <div className="px-3 py-4">
                 {tabIndex === 0 ? (
                     // Dashboard Table
                     <div className="space-y-4">
-                        <div className="grid grid-cols-6 gap-4 mb-4">
+                        <div className="grid grid-cols-7 gap-4 mb-4">
                             {dashboardColumns.map((col, idx) => (
-                                <div key={idx} className="flex items-center space-x-1 text-gray-400">
+                                <div key={idx} className="flex items-center space-x-1 text-gray-400 ">
                                     <span>{col.title}</span>
                                     {col.tooltip && (
                                         <span className="text-gray-500 cursor-help">ⓘ</span>

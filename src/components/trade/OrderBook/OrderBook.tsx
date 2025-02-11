@@ -184,7 +184,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
                 Order Book
             </div> */}
             
-            <div className="sticky top-0 z-10 bg-black px-2 py-1 grid grid-cols-4 text-[10px] text-gray-400 border-b border-gray-800">
+            <div className="sticky top-0 z-10 bg-black px-2 py-1 grid grid-cols-4 text-[10px] text-gray-400 border-b border-gray-800 glass">
                 <div className="text-center">PRICE</div>
                 <div className="text-center">SIZE</div>
                 <div className="text-center">TOTAL</div>
@@ -193,14 +193,14 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
 
             <div 
                 ref={asksContainer}
-                className="max-h-[300px] overflow-y-auto ai-chat-scrollbar scrollbar-thumb-gray-700"
+                className="max-h-[300px] overflow-y-auto ai-chat-scrollbar scrollbar-thumb-gray-700 glass"
                 onMouseLeave={() => handleMouseLeave(true)}
                 onMouseMove={(e) => handleMouseMove(e, asksContainer.current)}
             >
                 {buildPriceLevels(asks, OrderType.ASKS)}
             </div>
             
-            <div className="grid grid-cols-2 px-2 py-1 text-xs border-gray-700 bg-gray-900/50 border-y">
+            <div className="grid grid-cols-2 px-2 py-1 text-xs border-gray-700 bg-gray-900/50 border-y glass">
                 <div className="text-gray-400">
                     Last Price: <span className="text-white">{Number(lastPrice).toFixed(2)}</span>
                 </div>
@@ -212,7 +212,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
             </div>
             
             <div 
-                className="max-h-[300px] overflow-y-auto ai-chat-scrollbar scrollbar-thumb-gray-700"
+                className="max-h-[300px] overflow-y-auto ai-chat-scrollbar scrollbar-thumb-gray-700 glass"
                 onMouseLeave={() => handleMouseLeave(false)}
                 onMouseMove={(e) => handleMouseMove(e, asksContainer.current)}
             >

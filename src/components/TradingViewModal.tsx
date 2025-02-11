@@ -14,6 +14,8 @@ import Orderbook from "./trade/OrderBook/OrderBook";
 import MarketAndLimitPanel from "./trade/BuySell/components/MarketAndLimitPanel";
 import OrderHistorySection from "./trade/OrderHistorySection";
 import "../components/trade/style.scss"
+import { useStore } from '../store/useStore';
+
 
 
 
@@ -247,6 +249,16 @@ const ChainSelectRow = React.memo(({ network, hasIcon }) => {
 });
 
 export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClose }) => {
+const { theme } = useStore();
+
+  const {
+    isTradeChartOpen,
+    setIsTradeChartOpen
+} = useStore();
+
+useEffect(() => {
+  document.body.setAttribute('data-theme', theme);
+}, [theme]);
   const [currentMLIndex, setCurrentMLIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [lastPrice, setLastPrice] = useState(0);
@@ -270,7 +282,6 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
   const [currentPairSymbol, setCurrentPairSymbol] = useState(
     "ETH-USDT"
   );
-  // const [currentPairSymbol, setCurrentPairSymbol] = useLocalStorage('trade-default-pair-symbol', 'ETH-USDT');
 
 
   const { priceFeedAll, balances, orderHistories } = useOrionHook(unit);
@@ -304,17 +315,6 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
   const redColor = '#f03349', greenColor = '#179981';
   const handleMinimize = () => setIsMinimized(!isMinimized);
 
-  // const handleMaximize = () => {
-  //   setIsMaximized(!isMaximized);
-  //   if (!isMaximized) {
-  //     setSize({ width: "100%", height: "90%" });
-  //     setPosition({ x: 0, y: 0 });
-  //   } else {
-  //     setSize({ width: 1500, height: 800 });
-  //     setPosition({ x: 0, y: 0 });
-  //   }
-
-  // };
   const handleClose = () => {
     setIsClosed(true);
     onClose();
@@ -513,10 +513,10 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center ">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative bg-black border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
+        className={`relative glass bg-black border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
           ? 'w-full h-full rounded-none'
           : 'w-[90%] h-[90%] rounded-xl'
           }`}
@@ -545,7 +545,7 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
 
         <div className="h-[calc(100%-73px)] overflow-y-auto ai-chat-scrollbar">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 transition-all border-b border-white/10" >
+          <div className="flex flex-col items-center justify-between gap-2 p-4 transition-all border-b lg:flex-row border-white/10" >
             <div className="flex items-center space-x-4" onClick={() => setIsPairSelectModalVisible(true)}>
               <div className='flex items-center space-x-2 cursor-pointer'>
                 <img src={
@@ -573,8 +573,8 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
             </div>
 
             <div className="flex h-full pl-1 pr-5">
-              <div className="flex flex-col justify-center h-full px-4 border-r border-white/10">
-                <div className="text-gray-500 text-md">24h Change</div>
+              <div className="flex flex-col justify-center px-3 border-r lg:px-4 border-white/10">
+                <div className="text-sm text-gray-500 lg:text-md">24h Change</div>
                 <div className={`text-md font-bold flex items-center ${change24 < -0.004
                   ? 'text-red-500'
                   : change24 > 0.004
@@ -592,19 +592,19 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
                 </div>
               </div>
 
-              <div className="flex flex-col justify-center h-full px-4 pl-5 pr-5 border-r border-white/10">
-                <div className="text-gray-500 text-md">24h High</div>
-                <div className="font-bold text-white text-md">{high24}</div>
+              <div className="flex flex-col justify-center px-3 border-r lg:px-4 border-white/10">
+                <div className="text-sm text-gray-500 lg:text-md">24h High</div>
+                <div className="text-sm font-bold text-white lg:text-md">{high24}</div>
               </div>
 
-              <div className="flex flex-col justify-center h-full px-4 pl-5 pr-5 border-r border-white/10">
-                <div className="text-gray-500 text-md">24h Low</div>
-                <div className="font-bold text-white text-md">{low24}</div>
+              <div className="flex flex-col justify-center px-3 border-r lg:px-4 border-white/10">
+                <div className="text-sm text-gray-500 lg:text-md">24h Low</div>
+                <div className="text-sm font-bold text-white lg:text-md">{low24}</div>
               </div>
 
-              <div className="flex flex-col justify-center h-full px-4 pl-5 pr-5 border-r border-white/10">
-                <div className="text-gray-500 text-md">24h Volume</div>
-                <div className="font-bold text-white text-md">{vol24}</div>
+              <div className="flex flex-col justify-center px-3 border-r lg:px-4 border-white/10">
+                <div className="text-sm text-gray-500 lg:text-md">24h Volume</div>
+                <div className="text-sm font-bold text-white lg:text-md">{vol24}</div>
               </div>
             </div>
             <div className="flex items-center h-full gap-2 px-4 ml-auto border-white/10">
@@ -668,20 +668,26 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
             </TabList>
           </Tabs>
           <div className="w-full">
-            <div className="block w-full gap-3 lg:grid lg:grid-cols-6">
+            <div className="block w-full lg:grid lg:grid-cols-6">
               <div className="block w-full lg:col-span-5 rounded-xl">
                 <div className='w-full'>
                   <div className='flex w-full lg:grid lg:grid-cols-4'>
-                    <div className={`lg:col-span-3 ${mobileTabIndex[1] ? "" : "hidden"} lg:block w-full border-t border-gray-800`}>
-                      {/* <div className="h-full min-h-[500px] max-h-[600px] border-r border-gray-700"> */}
-                        <div className={`h-full lg:flex`}>
-                          <TradeChart
-                            pairSymbol={currentPairSymbol}
-                          />
-                        </div>
-                      {/* </div> */}
+                    <div
+                      className={`lg:col-span-3 ${mobileTabIndex[1]
+                        ? "w-full h-screen flex flex-col"
+                        : "hidden"
+                        } lg:block w-full border-t border-gray-800`}
+                    >
+                      <div className="flex-1 h-full glass">
+                        <TradeChart
+                          pairSymbol={currentPairSymbol}
+                          className="w-full h-full glass"
+                          isOpen={isTradeChartOpen}
+                          onClose={() => setIsTradeChartOpen(false)}
+                        />
+                      </div>
                     </div>
-                    
+
                     <div className={`flex w-full ${mobileTabIndex[2] ? "" : "hidden"} lg:flex border-t border-gray-800`}>
                       <div className="w-full h-full rounded-xl">
                         {/* Mobile view */}
@@ -700,7 +706,7 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
                               />
                             </div>
                           ) : <></>
-                        }
+                          }
                         </div>
 
                         {/* Desktop view */}
@@ -736,7 +742,7 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
                 </div>
               </div>
               <div className={`${mobileTabIndex[0] ? "flex" : "hidden"} border-b border-gray-800 rounded-xl lg:flex`}>
-                <div className="flex flex-col w-full h-full p-2">
+                <div className="flex flex-col w-full h-full glass">
                   <Tabs
                     isFitted
                     size='md'

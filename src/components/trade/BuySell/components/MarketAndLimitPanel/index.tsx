@@ -71,7 +71,7 @@ const FeeAssetRow = ({ item, isBottomMenu }: IFeeAssetRow) => {
         return null;
 
     return (
-        <div className={"fee-asset-row " + (isBottomMenu ? 'bottom-menu' : '')}>
+        <div className={"fee-asset-row glass " + (isBottomMenu ? 'bottom-menu' : '')}>
             <div className="token-symbol">
                 <img width="27"
                     height="27"
@@ -348,7 +348,7 @@ const MarketAndLimitPanel = ({
 
     return (
         // <div className="w-full text-white bg-black">
-        <div className="w-full text-white bg-black">
+        <div className="relative w-full text-white bg-black border glass">
             <MarketInput
                 hasLeftElement={true}
                 disabled={currentTabIndex === 0}
@@ -357,7 +357,6 @@ const MarketAndLimitPanel = ({
                 value={price}
                 setValue={setPrice}
             />
-
             <MarketInput
                 onFocus={() => {
                     setPercentage(0)
@@ -372,7 +371,6 @@ const MarketAndLimitPanel = ({
                 value={amountAssetIn}
                 setValue={setAmountAssetIn}
             />
-
             <Box
                 display="flex"
                 gap="1"
@@ -387,11 +385,11 @@ const MarketAndLimitPanel = ({
                         }}
                         key={'slippage-btn' + buttonName}
                         variant="ghost"
-                        bg={buttonName === percentage ? "#2C3036" : "#1A1D1F"}
-                        color={buttonName === percentage ? "white" : "whiteAlpha.600"}
+                        bg={buttonName === percentage ? "#a8adb8" : "#71717a"}
+                        color={buttonName === percentage ? "#3d434f" : "whiteAlpha.600"}
                         _hover={{
-                            bg: "#2C3036",
-                            color: "white"
+                            bg: "#red",
+                            color: "#a8adb8"
                         }}
                         height="28px"
                         flex="1"
@@ -400,7 +398,7 @@ const MarketAndLimitPanel = ({
                         fontWeight="medium"
                         p="0"
                         border="1px solid"
-                        borderColor={buttonName === percentage ? "#3A3F44" : "#2C3036"}
+                        borderColor={buttonName === percentage ? "#262a2e" : "#2C3036"}
                     >
                         {buttonName} %
                     </Button>
@@ -417,7 +415,7 @@ const MarketAndLimitPanel = ({
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="flex w-full p-1 rounded-lg bg-zinc-900">
+                <div className="relative flex w-full p-1 rounded-lg bg-zinc-900 glass">
                     {TabNames.map((tabName, index) => (
                         <button
                             key={index}
@@ -426,7 +424,7 @@ const MarketAndLimitPanel = ({
               flex-1 py-2 px-4 rounded-lg text-sm font-medium
               transition-all duration-200 ease-in-out
               ${activeTabName === tabName
-                                    ? 'bg-zinc-800 text-white'
+                                    ? 'bg-zinc-500 text-white'
                                     : 'text-gray-400 hover:text-white'
                                 }
             `}
@@ -447,6 +445,7 @@ const MarketAndLimitPanel = ({
                 label={'Total'}
                 value={amountAssetOut}
                 setValue={setAmountAssetOut}
+                
             />
             {/* Network fee.....Order will be ... */}
 
