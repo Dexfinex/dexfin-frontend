@@ -551,7 +551,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                               </div>
                             )}
                             {message.trending && <TrendingCoins coins={message.trending} />}
-                            {message.news && <NewsWidget news={message.news} />}
+                            {message.news && <NewsWidget />}
                           </div>
                         </div>
                       ))
