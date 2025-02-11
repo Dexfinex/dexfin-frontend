@@ -9,8 +9,8 @@ interface TokenStoreState {
   getTokenPrice: (address: string, chainId: number) => number;
   setTokenMetadata: (metadata: TokenMetadata, chainId: number) => void;
   getTokenMetadata: (
-    tokenAddress: string,
-    chainId: number
+    chainId: number,
+    tokenAddress: string
   ) => TokenMetadata | null;
 }
 
@@ -18,7 +18,11 @@ interface TokenStoreState {
 const useTokenStore = create<TokenStoreState>((set) => ({
   tokenPrices: {}, // Initialize with an empty object
   setTokenPrices: (prices: Record<string, string>) =>
-    set(() => ({ tokenPrices: prices })), // Update the token prices
+    set((state) => {
+      return {
+        tokenPrices: { ...state.tokenPrices, ...prices },
+      };
+    }), // Update the token prices
   getTokenPrice: (address: string, chainId: number) => {
     const state = useTokenStore.getState() as TokenStoreState;
     const value = state.tokenPrices[`${chainId}:${address.toLowerCase()}`];
