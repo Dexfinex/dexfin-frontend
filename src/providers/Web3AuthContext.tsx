@@ -38,12 +38,10 @@ import {
     getUserOperationGasPrice,
     KernelEIP1193Provider
 } from "@zerodev/sdk";
-import { ETHRequestSigningPayload } from "@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types";
-import { ethers } from "ethers";
-import { mapChainId2ViemChain } from "../config/networks.ts";
-import { useStore } from "../store/useStore.ts";
-import { useEvmWalletBalance } from "../hooks/useBalance.tsx";
-import { useEvmWalletTransfer } from "../hooks/useTransfer.tsx";
+import {ETHRequestSigningPayload} from "@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types";
+import {ethers} from "ethers";
+import {mapChainId2ViemChain} from "../config/networks.ts";
+import {useStore} from "../store/useStore.ts";
 
 interface Web3AuthContextType {
     login: () => void;

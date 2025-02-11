@@ -127,8 +127,6 @@ export function SwapBox({
         sellAmount: fromAmount
     })
 
-    console.log("fromToken", fromToken)
-
     const tokenChainId = fromToken ? fromToken.chainId : toToken!.chainId
     const nativeTokenAddress = mapChainId2NativeAddress[tokenChainId]
     useGetTokenPrices({
@@ -283,11 +281,6 @@ export function SwapBox({
         }
     }, [onFromAmountChange, onToAmountChange, txModalOpen])
 
-
-    console.log("gaslessTransactionStatus", gaslessTransactionStatus)
-
-    // console.log("isGaslessTransactionPending", isGaslessTransactionPending, gaslessTransactionStatus)
-
     const {signTypedDataAsync} = useSignTypedData();
 
     const {isLoading: isConfirming, isSuccess: isSuccessNormalSwapAction} =
@@ -296,8 +289,6 @@ export function SwapBox({
         });
 
     const isConfirmed = isSuccessNormalSwapAction || gaslessTransactionStatus === 'confirmed'
-
-    // console.log("isPending", isPending, hash, isConfirming, isConfirmed)
 
     useEffect(() => {
         if (isConfirmed) {
