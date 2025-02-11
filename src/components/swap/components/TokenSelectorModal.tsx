@@ -92,7 +92,7 @@ export function TokenSelectorModal({
     }, [selectedNetwork])
 
     return ReactDOM.createPortal(
-        <div className={`fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-[100] ${
+        <div className={`fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-[10000] ${
             isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         } transition-opacity duration-200`}>
             <div
