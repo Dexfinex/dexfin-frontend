@@ -2,14 +2,13 @@ import { TokenPool } from "../types/index.ts";
 import { geckoTerminalApi } from "./api.service.ts";
 
 export const geckoterminalService = {
-	getTrendingPools: async (network: string = 'eth', include: string = 'base_token,quote_token'): Promise<TokenPool[]> => {
+	getTrendingPools: async (network: string = 'eth'): Promise<TokenPool[]> => {
 		try {
 			const { data } = await geckoTerminalApi.get<TokenPool[]>(`/trending?network=${network}`);
 			return data;
 		} catch (error) {
 			console.error('Error fetching trending pools:', {
 				network,
-				include,
 				error: error instanceof Error ? {
 					name: error.name,
 					message: error.message,
@@ -20,7 +19,7 @@ export const geckoterminalService = {
 		}
 	},
 
-	getNewPools: async (network: string = 'eth', include: string = 'base_token,quote_token'): Promise<TokenPool[]> => {
+	getNewPools: async (network: string = 'eth'): Promise<TokenPool[]> => {
 		try {
 			const { data } = await geckoTerminalApi.get<TokenPool[]>(`/new?network=${network}`);
 			return data;
@@ -30,7 +29,7 @@ export const geckoterminalService = {
 		}
 	},
 
-	getTopPools: async (network: string = 'eth', include: string = 'base_token,quote_token'): Promise<TokenPool[]> => {
+	getTopPools: async (network: string = 'eth'): Promise<TokenPool[]> => {
 		try {
 			const { data } = await geckoTerminalApi.get<TokenPool[]>(`/top?network=${network}`);
 			return data;

@@ -1544,7 +1544,7 @@ const assetsMap = {};
     });
 })()
 
-console.log("assetsMap", assetsMap);
+// console.log("assetsMap", assetsMap);
 
 const UNISWAP_V2_FACTORY_ADDRESS = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f';
 const providerURL = 'https://mainnet.infura.io/v3/34815cc4b79d43ddacef021408fc3065';

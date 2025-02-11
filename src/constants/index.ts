@@ -25,7 +25,7 @@ export const COINGECKO_BASE_URL = 'https://pro-api.coingecko.com/api/v3';
 
 export const COINGECKO_BASE_URL_2 = 'https://dexfinv3-backend-production.up.railway.app/coingecko';
 
-export const DEFILLAMA_BASE_URL = "";
+export const DEFILLAMA_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/defillama";
 
 export const FEARGREED_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/fear-greed";
 

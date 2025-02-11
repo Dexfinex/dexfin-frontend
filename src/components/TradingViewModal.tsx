@@ -497,7 +497,7 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
           )();
           delete _feeAssets["ORN"];
           setFeeAssets(_feeAssets);
-          console.log("feeAssets", _feeAssets, info);
+          // console.log("feeAssets", _feeAssets, info);
 
           const _quotedPriceInfo = await simpleFetch(
             unit.blockchainService.getPricesWithQuoteAsset

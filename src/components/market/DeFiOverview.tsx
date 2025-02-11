@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  TrendingUp, 
+import React from 'react';
+import {
+  TrendingUp,
   TrendingDown,
   BarChart2,
   Wallet,
@@ -10,43 +10,31 @@ import {
   ExternalLink,
   ChevronRight
 } from 'lucide-react';
-import { getDeFiStats, getYieldData, DeFiStats, YieldData } from '../../lib/defillama';
+
+import { useGetDefillamaPools, useGetDefillamaProtocols } from '../../hooks/useDefillama';
+import useDefillamaStore from '../../store/useDefillamaStore';
 
 export const DeFiOverview: React.FC = () => {
-  const [defiStats, setDefiStats] = useState<DeFiStats | null>(null);
-  const [yieldData, setYieldData] = useState<YieldData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { isLoading: isLoadingPool, error: errorPool, refetch: refetchPool } = useGetDefillamaPools();
+  const { isLoading: isLoadingProtocol, error: errorProtocol, refetch: refetchProtocol } = useGetDefillamaProtocols();
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [stats, yields] = await Promise.all([
-        getDeFiStats(),
-        getYieldData()
-      ]);
-      setDefiStats(stats);
-      setYieldData(yields);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching DeFi data:', err);
-      setError('Failed to load DeFi metrics');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { getDeFiStats, pools } = useDefillamaStore();
+  const defiStats = getDeFiStats();
+  const yieldData = pools;
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 5 * 60 * 1000); // Refresh every 5 minutes
-    return () => clearInterval(interval);
-  }, []);
+  const loading = isLoadingPool || isLoadingProtocol;
+  const error = errorPool || errorProtocol;
+
+  const refetch = async () => {
+    await refetchPool();
+    await refetchProtocol();
+  }
 
   if (error) {
     return (
       <div className="p-6 h-full flex flex-col items-center justify-center text-center">
         <AlertCircle className="w-8 h-8 text-red-400 mb-2" />
-        <p className="text-white/60">{error}</p>
+        <p className="text-white/60">{error.message}</p>
       </div>
     );
   }
@@ -82,9 +70,8 @@ export const DeFiOverview: React.FC = () => {
           <div className="text-2xl font-bold mb-1">
             ${(defiStats.totalTvl / 1e9).toFixed(2)}B
           </div>
-          <div className={`flex items-center gap-1 text-sm ${
-            defiStats.totalChange24h >= 0 ? 'text-green-400' : 'text-red-400'
-          }`}>
+          <div className={`flex items-center gap-1 text-sm ${defiStats.totalChange24h >= 0 ? 'text-green-400' : 'text-red-400'
+            }`}>
             {defiStats.totalChange24h >= 0 ? (
               <TrendingUp className="w-4 h-4" />
             ) : (
@@ -130,7 +117,7 @@ export const DeFiOverview: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium">Top Protocols by TVL</h3>
             <button
-              onClick={fetchData}
+              onClick={refetch}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
@@ -143,11 +130,18 @@ export const DeFiOverview: React.FC = () => {
                 key={protocol.name}
                 className="flex items-center gap-4 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
               >
-                <img
-                  src={protocol.logo}
-                  alt={protocol.name}
-                  className="w-8 h-8 rounded-full"
-                />
+                {
+                  protocol.logo ?
+                    <img
+                      src={protocol.logo}
+                      alt={protocol.name}
+                      className="w-8 h-8 rounded-full"
+                    />
+                    :
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-[#0a0a0c]">
+                      <span className="text-xs font-medium">{protocol.name.charAt(0)}</span>
+                    </div>
+                }
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <div>
@@ -156,9 +150,8 @@ export const DeFiOverview: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <div>${(protocol.tvl / 1e9).toFixed(2)}B</div>
-                      <div className={`text-sm ${
-                        protocol.change24h >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
+                      <div className={`text-sm ${protocol.change24h >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
                         {protocol.change24h >= 0 ? '↑' : '↓'}
                         {Math.abs(protocol.change24h).toFixed(2)}%
                       </div>
@@ -186,20 +179,18 @@ export const DeFiOverview: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {yieldData.map((pool) => (
+            {(yieldData || []).map((pool) => (
               <div
                 key={`${pool.protocol}-${pool.symbol}`}
                 className="flex items-center gap-4 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
               >
-                <img
-                  src={pool.logo}
-                  alt={pool.protocol}
-                  className="w-8 h-8 rounded-full"
-                />
+                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-[#0a0a0c]">
+                  <span className="text-xs font-medium">{pool.symbol.charAt(0)}</span>
+                </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-medium">{pool.protocol}</div>
+                      <div className="font-medium">{pool.symbol}</div>
                       <div className="text-sm text-white/60">
                         {pool.symbol} • {pool.chain}
                       </div>

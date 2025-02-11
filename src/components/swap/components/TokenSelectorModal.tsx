@@ -182,7 +182,7 @@ export function TokenSelectorModal({
                                 <div className="flex flex-wrap gap-1">
                                     {popularTokens.map(popularToken => (
                                         <Button
-                                            key={popularToken.address}
+                                            key={popularToken.name + popularToken.chainId}
                                             variant="ghost"
                                             onClick={() => {
                                                 onSelect(popularToken);

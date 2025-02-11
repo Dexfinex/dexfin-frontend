@@ -148,15 +148,6 @@ export interface DeFiStats {
   }[];
 }
 
-export interface YieldData {
-  protocol: string;
-  symbol: string;
-  chain: string;
-  apy: number;
-  tvlUsd: number;
-  logo: string;
-}
-
 export interface TokenPool {
   id: string;
   type: string;
@@ -211,4 +202,36 @@ export interface TransactionError extends Error {
 }
 export interface BrianData {
   message: string
+}
+
+export interface Network {
+  id: string;
+  name: string;
+  logo: string;
+}
+
+export interface DefillamaProtocol {
+  name: string;
+  slug: string;
+  address: string | null;
+  symbol: string;
+  logo: string;
+  tvl: number;
+  change_1h: number;
+  change_1d: number;
+  change_7d: number;
+  tokenBreakdowns: Object;
+}
+
+export interface DefillamaPool {
+  protocol: string;
+  symbol: string;
+  chain: string;
+  apy: number;
+  tvlUsd: number;
+}
+export interface DefillamaCategory {
+  name: string;
+  tvl: number;
+  change24h: number;
 }

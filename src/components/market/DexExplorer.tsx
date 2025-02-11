@@ -1,92 +1,86 @@
-import React, {useEffect, useState} from 'react';
-import {AlertCircle, Filter, RefreshCw, Search, TrendingDown, TrendingUp} from 'lucide-react';
-import {
-  formatAge,
-  formatNumber,
-  Network,
-  TokenPool
-} from '../../lib/geckoTerminal';
-import { geckoterminalService } from '../../services/geckoterminal.service';
+import React, { useMemo, useState } from 'react';
+import { AlertCircle, Filter, RefreshCw, Search, TrendingDown, TrendingUp } from 'lucide-react';
 
-const networks: Network[] = [
+import { formatAge, formatNumber } from '../../utils';
+import { getChainIcon } from '../../utils/getChainIcon';
+
+import { useGetTrendingPools, useGetNewPools, useGetTopPools } from '../../hooks/useGeckoTerminal';
+
+const networks = [
   { id: 'eth', name: 'Ethereum', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
-  { id: 'base', name: 'Base', logo: 'https://cryptologos.cc/logos/base-logo.png' },
+  { id: 'base', name: 'Base', logo: getChainIcon(8453) },
   { id: 'solana', name: 'Solana', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' }
 ];
 
 export const DexExplorer: React.FC = () => {
   const [network, setNetwork] = useState<string>('eth');
-  const [pools, setPools] = useState<TokenPool[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'trending' | 'new' | 'top'>('trending');
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
   const [showNetworkSelector, setShowNetworkSelector] = useState(false);
 
-  const fetchPools = async (showRefreshState = false) => {
-    try {
-      if (showRefreshState) {
-        setRefreshing(true);
-      }
-      setLoading(true);
-      
-      let data: TokenPool[];
-      switch (view) {
-        case 'trending':
-          data = await geckoterminalService.getTrendingPools(network);
-          break;
-        case 'new':
-          data = await geckoterminalService.getNewPools(network);
-          break;
-        case 'top':
-          data = await geckoterminalService.getTopPools(network);
-          break;
-        default:
-          data = await geckoterminalService.getTrendingPools(network);
-      }
-      
-      setPools(data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching pools:', err);
-      setError('Failed to load pool data');
-    } finally {
-      setLoading(false);
-      if (showRefreshState) {
-        setRefreshing(false);
-      }
-    }
-  };
+  const { data: trendingPoolsData, error: trendingError, isLoading: isLoadingTrending, refetch: refetchTrend } = useGetTrendingPools(network);
+  const { data: newPoolsData, error: newError, isLoading: isLoadingNew, refetch: refetchNew } = useGetNewPools(network);
+  const { data: topPoolsData, error: topError, isLoading: isLoadingTop, refetch: refetchTop } = useGetTopPools(network);
 
-  useEffect(() => {
-    fetchPools();
-    // Refresh every 30 seconds
-    const interval = setInterval(() => fetchPools(), 30000);
-    return () => clearInterval(interval);
-  }, [network, view]);
+  const pools = useMemo(() => {
+    switch (view) {
+      case 'trending':
+        return trendingPoolsData;
+      case 'new':
+        return newPoolsData;
+      case 'top':
+        return topPoolsData;
+      default:
+        return trendingPoolsData;
+    }
+  }, [view, trendingPoolsData, newPoolsData, topPoolsData])
+
+  const error = useMemo(() => {
+    return trendingError || newError || topError
+  }, [trendingError, newError, topError])
+
+  const loading = useMemo(() => {
+    switch (view) {
+      case 'trending':
+        return isLoadingTrending;
+      case 'new':
+        return isLoadingNew;
+      case 'top':
+        return isLoadingTop;
+      default:
+        return isLoadingTrending;
+    }
+  }, [isLoadingTrending, isLoadingNew, isLoadingTop, view])
 
   const handleRefresh = () => {
-    fetchPools(true);
+    switch (view) {
+      case 'trending':
+        return refetchTrend();
+      case 'new':
+        return refetchNew();
+      case 'top':
+        return refetchTop();
+      default:
+        return refetchTrend();
+    }
   };
 
   const handleNetworkChange = (newNetwork: string) => {
     setNetwork(newNetwork);
     setShowNetworkSelector(false);
-    setLoading(true);
   };
 
   const selectedNetwork = networks.find(n => n.id === network);
 
-  const filteredPools = pools.filter(pool => {
+  const filteredPools = (pools || []).filter(pool => {
     const searchLower = searchQuery.toLowerCase();
-    const baseToken = pool.included?.tokens.find(t => 
+    const baseToken = pool.included?.tokens.find(t =>
       t.id === pool.relationships.base_token.data.id
     );
-    const quoteToken = pool.included?.tokens.find(t => 
+    const quoteToken = pool.included?.tokens.find(t =>
       t.id === pool.relationships.quote_token.data.id
     );
-    
+
     return (
       pool.attributes.name.toLowerCase().includes(searchLower) ||
       baseToken?.attributes.symbol.toLowerCase().includes(searchLower) ||
@@ -98,7 +92,7 @@ export const DexExplorer: React.FC = () => {
     return (
       <div className="p-6 h-full flex flex-col items-center justify-center text-center">
         <AlertCircle className="w-8 h-8 text-red-400 mb-2" />
-        <p className="text-white/60 mb-4">{error}</p>
+        <p className="text-white/60 mb-4">{error.message}</p>
         <button
           onClick={handleRefresh}
           className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
@@ -121,8 +115,8 @@ export const DexExplorer: React.FC = () => {
               className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
             >
               {selectedNetwork && (
-                <img 
-                  src={selectedNetwork.logo} 
+                <img
+                  src={selectedNetwork.logo}
                   alt={selectedNetwork.name}
                   className="w-5 h-5"
                 />
@@ -150,9 +144,8 @@ export const DexExplorer: React.FC = () => {
                     <button
                       key={n.id}
                       onClick={() => handleNetworkChange(n.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-2 hover:bg-white/5 transition-colors ${
-                        network === n.id ? 'bg-white/10' : ''
-                      }`}
+                      className={`w-full flex items-center gap-3 px-4 py-2 hover:bg-white/5 transition-colors ${network === n.id ? 'bg-white/10' : ''
+                        }`}
                     >
                       <img src={n.logo} alt={n.name} className="w-5 h-5" />
                       <span>{n.name}</span>
@@ -166,25 +159,22 @@ export const DexExplorer: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setView('trending')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                view === 'trending' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${view === 'trending' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               Trending
             </button>
             <button
               onClick={() => setView('new')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                view === 'new' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${view === 'new' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               New
             </button>
             <button
               onClick={() => setView('top')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                view === 'top' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${view === 'top' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               Top
             </button>
@@ -205,13 +195,12 @@ export const DexExplorer: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleRefresh}
-            disabled={refreshing}
-            className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${
-              refreshing ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            disabled={loading}
+            className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             title="Refresh data"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <Filter className="w-4 h-4" />
@@ -273,18 +262,18 @@ export const DexExplorer: React.FC = () => {
               </tr>
             ) : (
               filteredPools.map((pool) => {
-                const baseToken = pool.included?.tokens.find(t => 
+                const baseToken = pool.included?.tokens.find(t =>
                   t.id === pool.relationships.base_token.data.id
                 );
-                const quoteToken = pool.included?.tokens.find(t => 
+                const quoteToken = pool.included?.tokens.find(t =>
                   t.id === pool.relationships.quote_token.data.id
                 );
-                
+
                 const priceChange24h = parseFloat(pool.attributes.price_change_percentage?.h24 || '0');
                 const volume24h = parseFloat(pool.attributes.volume_usd?.h24 || '0');
                 const transactions24h = pool.attributes.transactions?.h24 || 0;
                 const tvl = parseFloat(pool.attributes.reserve_in_usd || '0');
-                
+
                 return (
                   <tr key={pool.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-4 px-4">
@@ -327,9 +316,8 @@ export const DexExplorer: React.FC = () => {
                       ${formatNumber(pool.attributes.base_token_price_usd || '0')}
                     </td>
                     <td className="py-4 px-4">
-                      <div className={`flex items-center gap-1 ${
-                        priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
+                      <div className={`flex items-center gap-1 ${priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
                         {priceChange24h >= 0 ? (
                           <TrendingUp className="w-4 h-4" />
                         ) : (
