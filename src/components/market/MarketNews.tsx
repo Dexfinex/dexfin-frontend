@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
-import { AlertCircle, Clock, ExternalLink, RefreshCw } from 'lucide-react';
-import { useGetLatestCryptoNews } from '../../hooks/useCryptoNews';
+import { Search, AlertCircle, Clock, ExternalLink, RefreshCw } from 'lucide-react';
+import { useGetCryptoNews } from '../../hooks/useCryptoNews';
 
 export const MarketNews: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Market' | 'Regulatory' | 'Technology' | 'DeFi'>('All');
+  const [page, setPage] = useState(1);
 
-  const { error, data: latestCryptoNews, isLoading, refetch } = useGetLatestCryptoNews();
+  const { error, data: cryptoNews, isLoading, refetch } = useGetCryptoNews(page);
+
+  const filteredNews = (cryptoNews || []).filter(news =>
+    news.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    news.source.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    news.time.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    news.impact.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const getImpactColor = (impact: string) => {
     switch (impact) {
@@ -34,7 +43,17 @@ export const MarketNews: React.FC = () => {
   return (
     <div className="p-6 h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search news..."
+            className="w-full bg-white/5 pl-10 pr-4 py-2 rounded-lg outline-none placeholder:text-white/40"
+          />
+        </div>
+        {/* <div className="flex items-center gap-2">
           <button
             onClick={() => setSelectedCategory('All')}
             className={`px-3 py-1.5 rounded-lg transition-colors ${selectedCategory === 'All' ? 'bg-white/10' : 'hover:bg-white/5'
@@ -70,7 +89,7 @@ export const MarketNews: React.FC = () => {
           >
             DeFi
           </button>
-        </div>
+        </div> */}
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-white/60">
@@ -88,7 +107,7 @@ export const MarketNews: React.FC = () => {
 
       {isLoading ? (
         <div className="flex-1 animate-pulse space-y-4">
-          {[...Array(5)].map((_, i) => (
+          {[...Array(10)].map((_, i) => (
             <div key={i} className="bg-white/5 rounded-lg p-4">
               <div className="h-5 bg-white/10 rounded w-3/4 mb-2" />
               <div className="h-4 bg-white/10 rounded w-1/2" />
@@ -97,7 +116,7 @@ export const MarketNews: React.FC = () => {
         </div>
       ) : (
         <div className="flex-1 space-y-4 overflow-y-auto ai-chat-scrollbar">
-          {(latestCryptoNews || []).map((item, index) => (
+          {filteredNews.map((item, index) => (
             <a
               key={index}
               href={item.link}
@@ -126,6 +145,30 @@ export const MarketNews: React.FC = () => {
           ))}
         </div>
       )}
+      {/* Pagination */}
+      <div className="flex items-center justify-between mt-6">
+        <div className="text-sm text-white/60">
+          Showing {filteredNews.length} news
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1.5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="px-3 py-1.5 bg-white/10 rounded-lg">
+            Page {page}
+          </span>
+          <button
+            onClick={() => setPage(p => p + 1)}
+            className="px-3 py-1.5 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
