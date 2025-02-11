@@ -1,14 +1,13 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
-
+import { coingeckoService } from '../../services/coingecko.service';
+import { cryptoNewsService } from '../../services/cryptonews.service.ts';
+import { brianService } from '../../services/brian.services';
+import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/brian.tsx';
 import {
-  Bot,
-  Maximize2,
   Mic,
-  Minimize2,
   Send,
   Trash2,
-  X
 } from 'lucide-react';
 import { VoiceModal } from '../VoiceModal.tsx';
 import { Message } from '../../types/index.ts';
@@ -22,7 +21,6 @@ import { PortfolioProcess } from '../PortfolioProcess.tsx';
 import { SendProcess } from '../SendProcess.tsx';
 import { StakeProcess } from '../StakeProcess.tsx';
 import { ProjectAnalysisProcess } from '../ProjectAnalysisProcess.tsx';
-import { generateResponse } from '../../lib/openai.ts';
 import { WalletPanel } from './WalletPanel.tsx';
 import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
@@ -59,6 +57,218 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowSendProcess(false);
     setShowStakeProcess(false);
     setShowProjectAnalysis(false);
+  };
+
+
+
+  const processCommandCase = async (command: string, address: string, chainId: number | undefined) => {
+
+    const fallbackResponse = await findFallbackResponse(command);
+    if (fallbackResponse) {
+      return fallbackResponse;
+    }
+
+    const lowerCommand = command.toLowerCase().trim();
+
+    if (lowerCommand.includes('latest news') || lowerCommand.includes('show me the news')) {
+      const news = await cryptoNewsService.getLatestNews();
+      return {
+        text: "Here are the latest crypto news updates:",
+        news
+      };
+    }
+
+    if (lowerCommand.includes('trending tokens')) {
+      const trendingCoins = await coingeckoService.getTrendingCoins();
+      return {
+        text: "Here are the currently trending tokens:",
+        trending: trendingCoins
+      };
+    }
+
+    if (lowerCommand.includes('bitcoin price')) {
+      const bitcoinData = await coingeckoService.getCoinPrice('bitcoin');
+      if (bitcoinData) {
+        return {
+          text: `The current Bitcoin price is $${bitcoinData.price.toLocaleString()} (${bitcoinData.priceChange24h.toFixed(2)}% 24h change)`,
+          data: bitcoinData
+        };
+      }
+    }
+
+    // If no direct match, use OpenAI with fallback
+    try {
+      if (address) {
+        const brianTransactionData = await brianService.getBrianTransactionData(command, address, chainId);
+        return {
+          text: brianTransactionData.message
+        }
+      } else {
+        const brianKnowledgeData = await brianService.getBrianKnowledgeData(command);
+        return {
+          text: convertBrianKnowledgeToPlainText(brianKnowledgeData.message)
+        }
+      }
+    } catch (e) {
+
+      const error = e as {
+        error?: { type?: string; code?: string };
+        message?: string
+      };
+      // Handle OpenAI API errors gracefully
+      console.error('OpenAI API Error:', error);
+
+      // Return a helpful response based on the error type
+      if (error.error?.type === 'insufficient_quota' || error.error?.code === 'insufficient_quota') {
+        return {
+          text: "I'm currently experiencing high demand. In the meantime, I can help you with:\n\n" +
+            "• Checking cryptocurrency prices\n" +
+            "• Viewing trending tokens\n" +
+            "• Getting the latest news\n" +
+            "• Basic market analysis\n\n" +
+            "What would you like to know?"
+        };
+      }
+
+      if (error.message?.includes('timeout')) {
+        return {
+          text: "I'm taking longer than usual to respond. Would you like to:\n\n" +
+            "• Check current prices\n" +
+            "• View market trends\n" +
+            "• See latest news\n\n" +
+            "Just let me know what interests you!"
+        };
+      }
+
+      return {
+        text: "I'm having some trouble processing complex queries right now. I can still help you with basic market information, prices, and news. What would you like to know?"
+      };
+    }
+  };
+
+  async function generateResponse(userMessage: string, address: string, chainId: number | undefined) {
+    try {
+      // Parse chained commands
+      console.log(address);
+      const commands = parseChainedCommands(userMessage);
+
+      // If there are multiple commands, process them sequentially
+      if (commands.length > 1) {
+        const results = [];
+        for (const command of commands) {
+          try {
+            const result = await processCommandCase(command, address, chainId);
+            results.push(result);
+          } catch (error) {
+            console.error(`Error processing command "${command}":`, error);
+            results.push({
+              text: `Failed to process command: ${command}`
+            });
+          }
+        }
+
+        // Combine results
+        return {
+          text: results.map(r => r.text).join('\n'),
+          data: results.find(r => r.data)?.data,
+          trending: results.find(r => r.trending)?.trending,
+          news: results.find(r => r.news)?.news,
+          command: results.find(r => r.command)?.command,
+          wallpaper: results.find(r => r.wallpaper)?.wallpaper
+        };
+      }
+
+      // Single command processing
+      return await processCommandCase(userMessage, address, chainId);
+    } catch (error) {
+      console.error('Error generating response:', error);
+
+      // Try fallback response one last time
+      const fallbackResponse = await findFallbackResponse(userMessage);
+      if (fallbackResponse) {
+        return fallbackResponse;
+      }
+
+      // Final fallback message
+      return {
+        text: "I'm having trouble connecting to my language processing service right now, but I can still help you with basic tasks like checking prices, showing trending tokens, or getting the latest news. What would you like to know?"
+      };
+    }
+  }
+
+  const fallbackResponses: Record<string, {
+    text: string;
+    action?: (param?: string) => Promise<any>;
+  }> = {
+    'bitcoin price': {
+      text: 'Let me fetch the current Bitcoin price for you.',
+      action: async () => {
+        const data = await coingeckoService.getCoinPrice('bitcoin');
+        return {
+          text: `The current Bitcoin price is $${data.price.toLocaleString()} (${data.priceChange24h.toFixed(2)}% 24h change)`,
+          data
+        };
+      }
+    },
+    'trending tokens': {
+      text: 'Here are the currently trending tokens:',
+      action: async () => {
+        const data = await coingeckoService.getTrendingCoins();
+        return {
+          text: 'Here are the currently trending tokens:',
+          trending: data
+        };
+      }
+    },
+    'latest news': {
+      text: 'Here are the latest crypto news updates:',
+      action: async () => {
+        const news = await cryptoNewsService.getLatestNews();
+        return {
+          text: 'Here are the latest crypto news updates:',
+          news
+        };
+      }
+    },
+    'stake eth': {
+      text: 'Opening Lido staking interface...',
+      action: async () => ({
+        text: 'Opening Lido staking interface...',
+        command: 'STAKE_ETH'
+      })
+    },
+    'open settings': {
+      text: 'Opening settings...',
+      action: async () => ({
+        text: 'Opening settings...',
+        command: 'OPEN_SETTINGS'
+      })
+    },
+  };
+
+  const findFallbackResponse = async (message: string) => {
+    const normalizedMessage = message.toLowerCase();
+
+    // Special handling for wallpaper changes
+    // if (normalizedMessage.includes('change wallpaper to')) {
+    //   const wallpaperName = message.split('to').pop()?.trim();
+    //   return await fallbackResponses['change wallpaper'].action?.(wallpaperName);
+    // }
+
+    for (const [key, response] of Object.entries(fallbackResponses)) {
+      if (normalizedMessage.includes(key)) {
+        if (response.action) {
+          try {
+            return await response.action();
+          } catch (error) {
+            console.error(`Error executing fallback action for ${key}:`, error);
+            return { text: response.text };
+          }
+        }
+        return { text: response.text };
+      }
+    }
+    return null;
   };
 
   const processCommand = async (text: string, address: string, chainId: number | undefined) => {
@@ -293,7 +503,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         ) : (
           <div className="flex flex-col h-full">
             {/* Header */}
-            <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen = {isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} />
+            <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} />
             <div className="flex h-full overflow-auto">
               {/* Main Content */}
               <div className="flex-1 flex flex-col relative overflow-auto">
