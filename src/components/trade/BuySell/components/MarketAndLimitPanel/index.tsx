@@ -347,151 +347,153 @@ const MarketAndLimitPanel = ({
 
 
     return (
-        // <div className="bg-black text-white w-full">
-            <div className="market-and-limit-panel">
-                <MarketInput
-                    hasLeftElement={true}
-                    disabled={currentTabIndex === 0}
-                    isInvalid={false}
-                    label={'Price'}
-                    value={price}
-                    setValue={setPrice}
-                />
+        // <div className="w-full text-white bg-black">
+        <div className="w-full text-white bg-black">
+            <MarketInput
+                hasLeftElement={true}
+                disabled={currentTabIndex === 0}
+                isInvalid={false}
+                label={'Price'}
+                value={price}
+                setValue={setPrice}
+            />
 
-                <MarketInput
-                    onFocus={() => {
-                        setPercentage(0)
-                    }}
-                    hasLeftElement={assetInHasLabel}
-                    hasUnit={true}
-                    // isInvalid={amountAssetIn > 0 && !isAssetInTokenApproved}
-                    isInvalid={isInsufficientAssetIn}
-                    invalidText={invalidTextAssetIn}
-                    unitName={symbolAssetIn}
-                    label={'Amount'}
-                    value={amountAssetIn}
-                    setValue={setAmountAssetIn}
-                />
+            <MarketInput
+                onFocus={() => {
+                    setPercentage(0)
+                }}
+                hasLeftElement={assetInHasLabel}
+                hasUnit={true}
+                // isInvalid={amountAssetIn > 0 && !isAssetInTokenApproved}
+                isInvalid={isInsufficientAssetIn}
+                invalidText={invalidTextAssetIn}
+                unitName={symbolAssetIn}
+                label={'Amount'}
+                value={amountAssetIn}
+                setValue={setAmountAssetIn}
+            />
 
-                <Box
-                    display="flex"
-                    gap="1"
-                    width="100%"
-                    my="3"  // Changed this: added margin top and bottom
-                >
-                    {buttonNames.map((buttonName, index) => (
-                        <Button
-                            onClick={() => {
-                                setAmountAssetIn(parseFloat(formatNumberByFrac(availableAssetInAmount * 0.25 * (1 + index))));
-                                setPercentage(buttonName);
-                            }}
-                            key={'slippage-btn' + buttonName}
-                            variant="ghost"
-                            bg={buttonName === percentage ? "#2C3036" : "#1A1D1F"}
-                            color={buttonName === percentage ? "white" : "whiteAlpha.600"}
-                            _hover={{
-                                bg: "#2C3036",
-                                color: "white"
-                            }}
-                            height="28px"
-                            flex="1"
-                            borderRadius="md"
-                            fontSize="13px"
-                            fontWeight="medium"
-                            p="0"
-                            border="1px solid"
-                            borderColor={buttonName === percentage ? "#3A3F44" : "#2C3036"}
-                        >
-                            {buttonName} %
-                        </Button>
-                    ))}
-                </Box>
-                {/* Available, Buy Sell */}
-                <div className="w-full max-w-md mx-auto p-4">
-                    {/* Available Amount */}
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="text-sm text-gray-400">Available</span>
-                        <span className="text-sm text-blue-400">
-                            {formatNumberByFrac(availableAmount, 6)} {availableSymbol}
-                        </span>
-                    </div>
+            <Box
+                display="flex"
+                gap="1"
+                width="100%"
+                my="3"  // Changed this: added margin top and bottom
+            >
+                {buttonNames.map((buttonName, index) => (
+                    <Button
+                        onClick={() => {
+                            setAmountAssetIn(parseFloat(formatNumberByFrac(availableAssetInAmount * 0.25 * (1 + index))));
+                            setPercentage(buttonName);
+                        }}
+                        key={'slippage-btn' + buttonName}
+                        variant="ghost"
+                        bg={buttonName === percentage ? "#2C3036" : "#1A1D1F"}
+                        color={buttonName === percentage ? "white" : "whiteAlpha.600"}
+                        _hover={{
+                            bg: "#2C3036",
+                            color: "white"
+                        }}
+                        height="28px"
+                        flex="1"
+                        borderRadius="md"
+                        fontSize="13px"
+                        fontWeight="medium"
+                        p="0"
+                        border="1px solid"
+                        borderColor={buttonName === percentage ? "#3A3F44" : "#2C3036"}
+                    >
+                        {buttonName} %
+                    </Button>
+                ))}
+            </Box>
+            {/* Available, Buy Sell */}
+            <div className="w-full">
+                {/* Available Amount */}
+                <div className="flex items-center justify-between w-full mb-4">
+                    <span className="text-sm text-gray-400">Available</span>
+                    <span className="text-sm text-blue-400">
+                        {formatNumberByFrac(availableAmount, 6)} {availableSymbol}
+                    </span>
+                </div>
 
-                    {/* Navigation Tabs */}
-                    <div className="flex w-full rounded-lg bg-zinc-900 p-1">
-                        {TabNames.map((tabName, index) => (
-                            <button
-                                key={index}
-                                onClick={() => setActiveTabName(tabName)}
-                                className={`
+                {/* Navigation Tabs */}
+                <div className="flex w-full p-1 rounded-lg bg-zinc-900">
+                    {TabNames.map((tabName, index) => (
+                        <button
+                            key={index}
+                            onClick={() => setActiveTabName(tabName)}
+                            className={`
               flex-1 py-2 px-4 rounded-lg text-sm font-medium
               transition-all duration-200 ease-in-out
               ${activeTabName === tabName
-                                        ? 'bg-zinc-800 text-white'
-                                        : 'text-gray-400 hover:text-white'
-                                    }
+                                    ? 'bg-zinc-800 text-white'
+                                    : 'text-gray-400 hover:text-white'
+                                }
             `}
-                            >
-                                {tabName.charAt(0).toUpperCase() + tabName.slice(1)}
-                            </button>
-                        ))}
+                        >
+                            {tabName.charAt(0).toUpperCase() + tabName.slice(1)}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <MarketInput
+                disabled={assetOutInputDisabled} // setDisabled when select market tab
+                hasLeftElement={assetOutHasLabel}
+                hasUnit={true}
+                isInvalid={isInsufficientAssetOut}
+                invalidText={'insufficient balance'}
+                unitName={symbolAssetOut}
+                label={'Total'}
+                value={amountAssetOut}
+                setValue={setAmountAssetOut}
+            />
+            {/* Network fee.....Order will be ... */}
+
+            <div className="space-y-6 text-sm">
+                {(swapInfo && swapInfo.poolOptimal === false) ? (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between text-gray-400">
+                            <span>Network fee:</span>
+                            <span>{networkGasFee} {chainServiceInfo?.baseSymbol}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-gray-400">
+                            <span>Total fee:</span>
+                            <span>{networkGasFee} {chainServiceInfo?.baseSymbol}</span>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between pb-2 text-gray-400">
+                            <span>Network fee:</span>
+                            <span>{networkGasFee} {chainServiceInfo?.baseSymbol}</span>
+                        </div>
 
-                <MarketInput
-                    disabled={assetOutInputDisabled} // setDisabled when select market tab
-                    hasLeftElement={assetOutHasLabel}
-                    hasUnit={true}
-                    isInvalid={isInsufficientAssetOut}
-                    invalidText={'insufficient balance'}
-                    unitName={symbolAssetOut}
-                    label={'Total'}
-                    value={amountAssetOut}
-                    setValue={setAmountAssetOut}
-                />
-                {/* Network fee.....Order will be ... */}
+                        <div className="flex items-center justify-between pb-3 text-gray-400">
+                            <span>fee</span>
+                            <span className="text-blue-400">0%</span>
+                        </div>
 
-                <div className="text-sm space-y-6">
-                    {(swapInfo && swapInfo.poolOptimal === false) ? (
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center text-gray-400">
-                                <span>Network fee:</span>
-                                <span>{networkGasFee} {chainServiceInfo?.baseSymbol}</span>
+                        <div className="flex items-start gap-3 pt-2 text-gray-400">
+                            <div className="flex-shrink-0">
+                                <img
+                                    src={exchangeImgUrl}
+                                    alt="Exchange"
+                                    className="w-10 h-10 animate-spin"
+                                />
                             </div>
-
-                            <div className="flex justify-between items-center text-gray-400">
-                                <span>Total fee:</span>
-                                <span>{networkGasFee} {chainServiceInfo?.baseSymbol}</span>
+                            <div className="text-sm leading-relaxed">
+                                The order will be executed directly on the Exchange Contract via {poolDescription}
                             </div>
                         </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center text-gray-400 pb-2">
-                                <span>Network fee:</span>
-                                <span>{networkGasFee} {chainServiceInfo?.baseSymbol}</span>
-                            </div>
+                    </div>
+                )}
+            </div>
 
-                            <div className="flex justify-between items-center text-gray-400 pb-3">
-                                <span>fee</span>
-                                <span className="text-blue-400">0%</span>
-                            </div>
-
-                            <div className="flex items-start gap-3 text-gray-400 pt-2">
-                                <div className="flex-shrink-0 pt-1">
-                                    <img
-                                        src={exchangeImgUrl}
-                                        alt="Exchange"
-                                        className="h-4 w-4 animate-spin"
-                                    />
-                                </div>
-                                <div className="text-sm leading-relaxed">
-                                    The order will be executed directly on the Exchange Contract via {poolDescription}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-                <div className="slippage-container">
-                    <span>Max slippage</span>
+            <div className="flex items-center space-x-2 ">
+                <span className="text-blue-400 text-sm w-[50%]">Max slippage</span>
+                <div className="w-full py-1 rounded">
                     <MarketInput
                         hasUnit={true}
                         isInvalid={false}
@@ -502,78 +504,79 @@ const MarketAndLimitPanel = ({
                         }}
                     />
                 </div>
-
-
-                {/* connect wallet */}
-                <div className="mt-5" >
-                    {
-                        !isConnected ? (
-                            <Button className="w-full py-3 px-4 rounded-full bg-blue-400 hover:bg-blue-500 text-white font-medium transition-all duration-200 ease-in-out"
-                                colorScheme={'messenger'}
-                                onClick={login}>
-                                Connect Wallet
-                            </Button>
-                        ) : !isValidSelectedChain ? (
-                            <Button className="w-full py-3 px-4 rounded-full bg-blue-400 hover:bg-blue-500 text-white font-medium transition-all duration-200 ease-in-out"
-                                colorScheme={'messenger'}
-                                onClick={() => switchChain(parseInt(unit.chainId))}>
-                                Switch Network
-                            </Button>
-                        ) : (isNeccessaryToDeposit || isNeccessaryToWithdraw) ? (
-                            <Button className="w-full py-3 px-4 rounded-full bg-blue-400 hover:bg-blue-500 text-white font-medium transition-all duration-200 ease-in-out"
-                                colorScheme={'messenger'}
-                                onClick={() => setDepositWithdrawModalVisible(true)}>
-                                {isNeccessaryToDeposit ? 'Deposit ' : 'Withdraw '} {fromToken.symbol}
-                            </Button>
-                        ) : (
-                            <Button className="w-full py-3 px-4 rounded-full bg-blue-400 hover:bg-blue-500 text-white font-medium transition-all duration-200 ease-in-out"
-                                colorScheme={'messenger'}
-                                onClick={handleAction}
-                                isDisabled={amountAssetIn == 0 || isInsufficientAssetIn || isInsufficientAssetOut}
-                            >
-                                {(activeTabName.charAt(0).toUpperCase() + activeTabName.slice(1)) + ' ' + symbolAssetIn}
-                            </Button>
-                        )
-                    }
-
-                </div>
-
-                <BenefitsSlider tradeProfits={tradeProfits} />
-                {
-                    depositWithdrawModalVisible && (
-                        <DepositWithdrawModal
-                            unit={unit}
-                            isWithdrawWindow={isNeccessaryToWithdraw}
-                            signer={signer}
-                            networkFeeStr={`${networkGasFee} ${chainServiceInfo?.baseSymbol}`}
-                            fromToken={fromToken}
-                            open={depositWithdrawModalVisible}
-                            setOpen={setDepositWithdrawModalVisible}
-                        />
-                    )
-                }
-                {
-                    confirmModalVisible && (
-                        <ConfirmOrderModal
-                            unit={unit}
-                            swapType={activeTabName === 'buy' ? 'exactReceive' : 'exactSpend'}
-                            isMarketSwap={currentTabIndex === 0 ? true : false}
-                            slippage={slippage}
-                            signer={signer}
-                            price={price}
-                            networkFee={networkGasFee}
-                            platformFee={calculatePlatformFeePriceByBaseSymbol(currentFeeAssetItem)}
-                            needPlatformFee={swapInfo && swapInfo.poolOptimal === false}
-                            open={confirmModalVisible}
-                            setOpen={setConfirmModalVisible}
-                            serviceInfo={chainServiceInfo}
-                            pairConfig={pairConfig}
-                            fromToken={fromToken}
-                            feeAssetSymbol={currentFeeAssetSymbol}
-                            toToken={toToken} />
-                    )
-                }
             </div>
+
+
+            {/* connect wallet */}
+            <div className="flex items-center justify-center p-2">
+                {
+                    !isConnected ? (
+                        <Button className="w-full py-3 font-medium text-white transition-all duration-200 ease-in-out bg-blue-400 rounded-full hover:bg-blue-500"
+                            colorScheme={'messenger'}
+                            onClick={login}>
+                            Connect Wallet
+                        </Button>
+                    ) : !isValidSelectedChain ? (
+                        <Button className="w-full py-3 font-medium text-white transition-all duration-200 ease-in-out bg-blue-400 rounded-full hover:bg-blue-500"
+                            colorScheme={'messenger'}
+                            onClick={() => switchChain(parseInt(unit.chainId))}>
+                            Switch Network
+                        </Button>
+                    ) : (isNeccessaryToDeposit || isNeccessaryToWithdraw) ? (
+                        <Button className="w-full py-3 font-medium text-white transition-all duration-200 ease-in-out bg-blue-400 rounded-full hover:bg-blue-500"
+                            colorScheme={'messenger'}
+                            onClick={() => setDepositWithdrawModalVisible(true)}>
+                            {isNeccessaryToDeposit ? 'Deposit ' : 'Withdraw '} {fromToken.symbol}
+                        </Button>
+                    ) : (
+                        <Button className="w-full py-3 font-medium text-white transition-all duration-200 ease-in-out bg-blue-400 rounded-full hover:bg-blue-500"
+                            colorScheme={'messenger'}
+                            onClick={handleAction}
+                            isDisabled={amountAssetIn == 0 || isInsufficientAssetIn || isInsufficientAssetOut}
+                        >
+                            {(activeTabName.charAt(0).toUpperCase() + activeTabName.slice(1)) + ' ' + symbolAssetIn}
+                        </Button>
+                    )
+                }
+
+            </div>
+
+            <BenefitsSlider tradeProfits={tradeProfits} />
+            {
+                depositWithdrawModalVisible && (
+                    <DepositWithdrawModal
+                        unit={unit}
+                        isWithdrawWindow={isNeccessaryToWithdraw}
+                        signer={signer}
+                        networkFeeStr={`${networkGasFee} ${chainServiceInfo?.baseSymbol}`}
+                        fromToken={fromToken}
+                        open={depositWithdrawModalVisible}
+                        setOpen={setDepositWithdrawModalVisible}
+                    />
+                )
+            }
+            {
+                confirmModalVisible && (
+                    <ConfirmOrderModal
+                        unit={unit}
+                        swapType={activeTabName === 'buy' ? 'exactReceive' : 'exactSpend'}
+                        isMarketSwap={currentTabIndex === 0 ? true : false}
+                        slippage={slippage}
+                        signer={signer}
+                        price={price}
+                        networkFee={networkGasFee}
+                        platformFee={calculatePlatformFeePriceByBaseSymbol(currentFeeAssetItem)}
+                        needPlatformFee={swapInfo && swapInfo.poolOptimal === false}
+                        open={confirmModalVisible}
+                        setOpen={setConfirmModalVisible}
+                        serviceInfo={chainServiceInfo}
+                        pairConfig={pairConfig}
+                        fromToken={fromToken}
+                        feeAssetSymbol={currentFeeAssetSymbol}
+                        toToken={toToken} />
+                )
+            }
+        </div>
         // </div>
     );
 }

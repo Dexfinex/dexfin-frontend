@@ -1,65 +1,86 @@
-export const capitalizeFirstLetter = (word) => word.charAt(0).toUpperCase() + word.slice(1);
+// Constants
+const ICONS_CDN = 'https://icons.llamao.fi/icons' as const;
 
-const ICONS_CDN = 'https://icons.llamao.fi/icons';
+// Type definitions
+type TokenMap = {
+  [key: string]: unknown;
+};
 
-export function chainIconUrl(chain) {
-	return `${ICONS_CDN}/chains/rsz_${chain.toLowerCase()}?w=48&h=48`;
+type CurrencySymbol = string | boolean;
+
+// String manipulation utilities
+export const capitalizeFirstLetter = (word: string): string => {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+};
+
+// URL generation utilities
+export function chainIconUrl(chain: string): string {
+  return `${ICONS_CDN}/chains/rsz_${chain.toLowerCase()}?w=48&h=48`;
 }
 
-export function protoclIconUrl(protocol) {
-	return `${ICONS_CDN}/protocols/${protocol}?w=48&h=48`;
+export function protoclIconUrl(protocol: string): string {
+  return `${ICONS_CDN}/protocols/${protocol}?w=48&h=48`;
 }
 
-export function getSavedTokens() {
-	return JSON.parse(localStorage.getItem('savedTokens') || '{}');
+// Local storage utilities
+export function getSavedTokens(): TokenMap {
+  const savedTokens = localStorage.getItem('savedTokens');
+  return JSON.parse(savedTokens || '{}');
 }
 
+// Mathematical utilities
 export const median = (arr: number[]): number => {
-	const s = [...arr].sort((a, b) => a - b);
-	const mid = Math.floor(s.length / 2);
-	return s.length % 2 === 0 ? (s[mid - 1] + s[mid]) / 2 : s[mid];
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 
+    ? (sorted[mid - 1] + sorted[mid]) / 2 
+    : sorted[mid];
 };
 
-export const formattedNum = (number, symbol = false, acceptNegatives = false) => {
-	let currencySymbol;
-	if (symbol === true) {
-		currencySymbol = '$';
-	} else if (symbol === false) {
-		currencySymbol = '';
-	} else {
-		currencySymbol = symbol;
-	}
-	if (!number || number === '' || Number.isNaN(Number(number))) {
-		return symbol ? `${currencySymbol}0` : 0;
-	}
-	let formattedNum = String();
-	let num = parseFloat(number);
-	const isNegative = num < 0;
+// Number formatting utilities
+export const formattedNum = (
+  number: string | number,
+  symbol: CurrencySymbol = false,
+  acceptNegatives: boolean = false
+): string => {
+  let currencySymbol: string;
+  
+  if (symbol === true) {
+    currencySymbol = '$';
+  } else if (symbol === false) {
+    currencySymbol = '';
+  } else {
+    currencySymbol = symbol;
+  }
 
-	// const currencyMark = isNegative ? `${currencySymbol}-` : currencySymbol
-	// const normalMark = isNegative ? '-' : ''
+  if (!number || number === '' || Number.isNaN(Number(number))) {
+    return symbol ? `${currencySymbol}0` : '0';
+  }
 
-	// if (num > 10000000) {
-	// 	return (symbol ? currencyMark : normalMark) + toK(num.toFixed(0), true)
-	// }
+  let num = parseFloat(String(number));
+  const isNegative = num < 0;
 
-	// if (num === 0) {
-	// 	return symbol ? `${currencySymbol}0` : 0
-	// }
+  let maximumFractionDigits = num < 1 ? 8 : 4;
+  maximumFractionDigits = num > 100000 ? 2 : maximumFractionDigits;
 
-	// if (num < 0.0001 && num > 0) {
-	// 	return symbol ? `< ${currencySymbol}0.0001` : '< 0.0001'
-	// }
+  const formattedNum = num.toLocaleString('en-US', { 
+    maximumFractionDigits 
+  });
 
-	let maximumFractionDigits = num < 1 ? 8 : 4;
-	maximumFractionDigits = num > 100000 ? 2 : maximumFractionDigits;
-	formattedNum = num.toLocaleString('en-US', { maximumFractionDigits });
-
-	return String(formattedNum);
+  return formattedNum;
 };
 
-export const normalizeTokens = (t0 = '0', t1 = '0') => {
-	if (!t0 || !t1) return null;
+// Token normalization utilities
+export const normalizeTokens = (
+  t0: string = '0',
+  t1: string = '0'
+): [string, string] | null => {
+  if (!t0 || !t1) return null;
 
-	return Number(t0) < Number(t1) ? [t0.toLowerCase(), t1.toLowerCase()] : [t1.toLowerCase(), t0.toLowerCase()];
+  const token0 = t0.toLowerCase();
+  const token1 = t1.toLowerCase();
+
+  return Number(t0) < Number(t1) 
+    ? [token0, token1] 
+    : [token1, token0];
 };
