@@ -130,9 +130,18 @@ export const DeFiOverview: React.FC = () => {
                 key={protocol.name}
                 className="flex items-center gap-4 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-[#0a0a0c]">
-                  <span className="text-xs font-medium">{protocol.name.charAt(0)}</span>
-                </div>
+                {
+                  protocol.logo ?
+                    <img
+                      src={protocol.logo}
+                      alt={protocol.name}
+                      className="w-8 h-8 rounded-full"
+                    />
+                    :
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-[#0a0a0c]">
+                      <span className="text-xs font-medium">{protocol.name.charAt(0)}</span>
+                    </div>
+                }
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <div>

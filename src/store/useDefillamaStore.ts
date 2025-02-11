@@ -38,9 +38,10 @@ const useDefillamaStore = create<DefillamaStore>((set) => ({
     pools: [], // Initialize with an empty array
     protocols: [], // Initialize with an empty array
     categories: [], // Initialize with an empty array
-    setPools: (pools: DefillamaPool[]) => set({ pools: pools }),
+    setPools: (pools: DefillamaPool[]) => {
+        set({ pools: pools.sort((a, b) => a.apy > b.apy ? -1 : 1) })
+    },
     setProtocols: (protocols: DefillamaProtocol[]) => {
-        debugger
         const totalTvl = protocols.reduce((sum, p) => sum + p.tvl, 0);
         const totalChange24h = protocols.reduce((sum, p) => sum + p.change_1d, 0) / protocols.length;
 
@@ -72,7 +73,7 @@ const useDefillamaStore = create<DefillamaStore>((set) => ({
             tvl: protocol.tvl,
             change24h: protocol.change_1d,
             category: protocol.slug,
-            logo: ""
+            logo: protocol.logo,
         }))
 
         return {
