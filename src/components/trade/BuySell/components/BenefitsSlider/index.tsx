@@ -59,7 +59,7 @@ const benefitsSlider = ({ tradeProfits }) => {
                                 );
 
                             })}
-                        // </div>
+                        </div>
                     )
                     : (
                         <div className="empty-container">

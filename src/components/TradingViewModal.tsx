@@ -672,17 +672,17 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
               <div className="block w-full lg:col-span-5 rounded-xl">
                 <div className='w-full'>
                   <div className='flex w-full lg:grid lg:grid-cols-4'>
-                    <div className={`lg:col-span-3 ${mobileTabIndex[1] ? "" : "hidden"} lg:block w-full`}>
-                      <div className="h-full min-h-[500px] max-h-[600px] border-r border-gray-700">
-                        <div className={`h-full min-h-[500px] max-h-[600px] lg:flex`}>
+                    <div className={`lg:col-span-3 ${mobileTabIndex[1] ? "" : "hidden"} lg:block w-full border-t border-gray-800`}>
+                      {/* <div className="h-full min-h-[500px] max-h-[600px] border-r border-gray-700"> */}
+                        <div className={`h-full lg:flex`}>
                           <TradeChart
                             pairSymbol={currentPairSymbol}
                           />
                         </div>
-                      </div>
+                      {/* </div> */}
                     </div>
                     
-                    <div className={`flex w-full ${mobileTabIndex[2] ? "" : "hidden"} lg:flex`}>
+                    <div className={`flex w-full ${mobileTabIndex[2] ? "" : "hidden"} lg:flex border-t border-gray-800`}>
                       <div className="w-full h-full rounded-xl">
                         {/* Mobile view */}
                         <div className="block w-full lg:hidden">
@@ -722,8 +722,8 @@ export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClos
                     </div>
                   </div>
                 </div>
-                <div className="hidden mt-4 border-t border-gray-800 lg:flex">
-                  <div className="col-span-1 lg:col-span-3 bg-white/5 rounded-xl">
+                <div className="hidden border-t border-gray-800 lg:flex">
+                  <div className="w-full col-span-1 lg:col-span-3 bg-white/5 rounded-xl">
                     <div className="flex flex-col h-full">
                       <OrderHistorySection
                         balances={balances}

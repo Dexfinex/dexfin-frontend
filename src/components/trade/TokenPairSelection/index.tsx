@@ -166,10 +166,11 @@ export const TokenPairSelectModal: React.FC<TokenPairSelectModalProps> = ({
             isOpen={open}
             onClose={doClose}
         >
-            <div>
+            
             <ModalOverlay/>
             <ModalContent
                 className="trade-token-pair-select-modal"
+                bg="#121212"
             >
                 <ModalBody display="flex" gap="8px" flexDir="column" alignItems="center" marginTop="1rem"
                            marginBottom="5px" color="white">
@@ -220,7 +221,7 @@ export const TokenPairSelectModal: React.FC<TokenPairSelectModalProps> = ({
                     )}
                 </ModalBody>
             </ModalContent>
-            </div>
+            
         </Modal>
     );
 };

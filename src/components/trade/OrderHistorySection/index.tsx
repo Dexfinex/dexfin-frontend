@@ -255,7 +255,7 @@ const HeaderItem = ({ text, description }) => {
 
     return (
         <Tooltip hasArrow label={description}>
-            <div className="flex gap-8 items-center">
+            <div className="flex items-center gap-8">
                 {text}
                 <MdInfo />
             </div>
@@ -460,7 +460,7 @@ const OrderHistorySection = ({
                     <label className="flex items-center gap-2 text-gray-300">
                         <input
                             type="checkbox"
-                            className="h-4 w-4 rounded border-gray-600 bg-gray-800 checked:bg-blue-500"
+                            className="w-4 h-4 bg-gray-800 border-gray-600 rounded checked:bg-blue-500"
                             checked={!visibleZeroTokens}
                             onChange={(e) => setVisibleZeroTokens(!e.target.checked)}
                         />
@@ -481,7 +481,7 @@ const OrderHistorySection = ({
             className: 'dashboard-status-header',
             render: (text, record) => {
                 return (
-                    <div className='flex-center gap-8'>
+                    <div className='gap-8 flex-center'>
                         <Tooltip hasArrow label='Deposit'>
                             <Button className="dashboard-button" onClick={() => {
                                 setIsWithdrawWindow(false);
@@ -524,12 +524,12 @@ const OrderHistorySection = ({
     ]));
 
     return (
-        <div className="bg-black text-white w-full">
+        <div className="w-full text-white bg-black">
             {/* Header Section */}
-            <div className="border-b border-gray-800">
-                <div className="flex justify-between items-center px-6 py-4">
+            <div className="">
+                <div className="flex items-center justify-between px-4 py-2">
                     {/* Tabs */}
-                    <div className="flex space-x-1">
+                    <div className="flex px-4 space-x-1">
                         {['Dashboard', 'Open Orders', 'Order history'].map((tab, idx) => (
                             <button
                                 key={tab}
@@ -547,17 +547,17 @@ const OrderHistorySection = ({
                     {/* Date Selector */}
                     {tabIndex !== 0 && (
                         <div className="flex items-center space-x-4 text-gray-400">
-                            <div className="flex items-center space-x-2 bg-gray-800 rounded-md px-3 py-2">
+                            <div className="flex items-center px-3 py-2 space-x-2 bg-gray-800 rounded-md">
                                 <input
                                     type="date"
                                     value={beginDate.toISOString().split('T')[0]}
                                     onChange={(e) => setBeginDate(new Date(e.target.value))}
-                                    className="bg-transparent text-gray-300 focus:outline-none"
+                                    className="text-gray-300 bg-transparent focus:outline-none"
                                 />
                                 <CalendarIcon className="w-4 h-4" />
                             </div>
                             <span>-</span>
-                            <div className="flex items-center space-x-2 bg-gray-800 rounded-md px-3 py-2">
+                            <div className="flex items-center px-3 py-2 space-x-2 bg-gray-800 rounded-md">
                                 <input
                                     type="date"
                                     value={endDate.toISOString().split('T')[0]}
@@ -567,7 +567,7 @@ const OrderHistorySection = ({
                                         date.setMinutes(59);
                                         setEndDate(date);
                                     }}
-                                    className="bg-transparent text-gray-300 focus:outline-none"
+                                    className="text-gray-300 bg-transparent focus:outline-none"
                                 />
                                 <CalendarIcon className="w-4 h-4" />
                             </div>
@@ -586,7 +586,7 @@ const OrderHistorySection = ({
                                 <div key={idx} className="flex items-center space-x-1 text-gray-400">
                                     <span>{col.title}</span>
                                     {col.tooltip && (
-                                        <span className="cursor-help text-gray-500">ⓘ</span>
+                                        <span className="text-gray-500 cursor-help">ⓘ</span>
                                     )}
                                 </div>
                             ))}
@@ -613,7 +613,7 @@ const OrderHistorySection = ({
                     </div>
                 ) : (
                     // Orders Table
-                    <div className="space-y-4">
+                    <div className="w-full space-y-4">
                         <div className="grid grid-cols-11 gap-4 mb-4">
                             {mainColumns.map((col, idx) => (
                                 <div key={idx} className="text-gray-400">
