@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useMediaQuery } from '@chakra-ui/react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -14,13 +15,22 @@ interface WalletPanelProps {
   setIsWalletPanelOpen: (value: boolean) => void;
 }
 
-
 export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletPanelProps) {
-
   const [activeWalletTab, setActiveWalletTab] = useState<WalletTab>('assets');
+  const [isLargerThan962] = useMediaQuery('(min-width: 962px)');
+
   // Filter positions correctly
   const assetPositions = mockDeFiPositions.filter(p => !p.type || p.type === 'STAKING');
   const defiPositions = mockDeFiPositions.filter(p => p.type === 'LENDING');
+
+  // Handle window resize to hide panel on mobile
+  useEffect(() => {
+    if (!isLargerThan962) {
+      setIsWalletPanelOpen(false);
+    } else {
+      setIsWalletPanelOpen(true);
+    }
+  }, [isLargerThan962, setIsWalletPanelOpen]);
 
   return (
     <div className={`right-0 top-[73px] bottom-[89px] border-l border-white/10 transition-all duration-300 ${isWalletPanelOpen ? 'w-80' : 'w-0'

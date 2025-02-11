@@ -100,9 +100,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     try {
       if (address) {
         const brianTransactionData = await brianService.getBrianTransactionData(command, address, chainId);
-        return {
-          text: brianTransactionData.message
-        }
+        return brianTransactionData;
       } else {
         const brianKnowledgeData = await brianService.getBrianKnowledgeData(command);
         return {
@@ -110,14 +108,10 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         }
       }
     } catch (e) {
-
       const error = e as {
         error?: { type?: string; code?: string };
         message?: string
       };
-      // Handle OpenAI API errors gracefully
-      console.error('OpenAI API Error:', error);
-
       // Return a helpful response based on the error type
       if (error.error?.type === 'insufficient_quota' || error.error?.code === 'insufficient_quota') {
         return {
@@ -139,7 +133,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             "Just let me know what interests you!"
         };
       }
-
       return {
         text: "I'm having some trouble processing complex queries right now. I can still help you with basic market information, prices, and news. What would you like to know?"
       };
@@ -149,9 +142,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   async function generateResponse(userMessage: string, address: string, chainId: number | undefined) {
     try {
       // Parse chained commands
-      console.log(address);
       const commands = parseChainedCommands(userMessage);
-
       // If there are multiple commands, process them sequentially
       if (commands.length > 1) {
         const results = [];
@@ -166,7 +157,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             });
           }
         }
-
         // Combine results
         return {
           text: results.map(r => r.text).join('\n'),
@@ -177,7 +167,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           wallpaper: results.find(r => r.wallpaper)?.wallpaper
         };
       }
-
       // Single command processing
       return await processCommandCase(userMessage, address, chainId);
     } catch (error) {
@@ -188,7 +177,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
       if (fallbackResponse) {
         return fallbackResponse;
       }
-
       // Final fallback message
       return {
         text: "I'm having trouble connecting to my language processing service right now, but I can still help you with basic tasks like checking prices, showing trending tokens, or getting the latest news. What would you like to know?"
@@ -230,30 +218,10 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         };
       }
     },
-    'stake eth': {
-      text: 'Opening Lido staking interface...',
-      action: async () => ({
-        text: 'Opening Lido staking interface...',
-        command: 'STAKE_ETH'
-      })
-    },
-    'open settings': {
-      text: 'Opening settings...',
-      action: async () => ({
-        text: 'Opening settings...',
-        command: 'OPEN_SETTINGS'
-      })
-    },
   };
 
   const findFallbackResponse = async (message: string) => {
     const normalizedMessage = message.toLowerCase();
-
-    // Special handling for wallpaper changes
-    // if (normalizedMessage.includes('change wallpaper to')) {
-    //   const wallpaperName = message.split('to').pop()?.trim();
-    //   return await fallbackResponses['change wallpaper'].action?.(wallpaperName);
-    // }
 
     for (const [key, response] of Object.entries(fallbackResponses)) {
       if (normalizedMessage.includes(key)) {
@@ -285,58 +253,17 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
       for (const command of commands) {
         const normalizedCommand = command.trim();
 
-        // Send USDC command
-        if (normalizedCommand.match(/send\s+(\d+)\s+usdc\s+to\s+vitalik/i)) {
-          resetProcessStates();
-          setShowSendProcess(true);
-          response = { text: 'Opening send interface to transfer USDC to vitalik.eth...' };
-        }
-        // Project evaluation command
-        else if (normalizedCommand.match(/(?:analyze|evaluate)\s+project\s+([^\s]+)/i)) {
-          const projectNameMatch = normalizedCommand.match(/project\s+([^\s]+)/i);
-          if (projectNameMatch) {
+        response = await generateResponse(normalizedCommand, address, chainId);
+
+        if (response.type == "action") {
+          if (response.data.action == 'swap') {
             resetProcessStates();
-            setProjectName(projectNameMatch[1]);
-            setShowProjectAnalysis(true);
-            response = { text: `Analyzing project ${projectNameMatch[1]}...` };
+            setShowSwapProcess(true);
+            response = { text: 'Opening swap interface...' };
           }
+
         }
-        // Find yield command
-        else if (normalizedCommand.includes('find best yield') || normalizedCommand.includes('best yield')) {
-          resetProcessStates();
-          setShowYieldProcess(true);
-          response = { text: 'Opening yield finder...' };
-        }
-        // Swap command
-        else if (normalizedCommand.includes('swap') || normalizedCommand.includes('exchange')) {
-          resetProcessStates();
-          setShowSwapProcess(true);
-          response = { text: 'Opening swap interface...' };
-        }
-        // Bridge command
-        else if (normalizedCommand.includes('bridge')) {
-          resetProcessStates();
-          setShowBridgeProcess(true);
-          response = { text: 'Opening bridge interface...' };
-        }
-        // Portfolio command
-        else if (normalizedCommand.includes('portfolio') || normalizedCommand.includes('build portfolio')) {
-          resetProcessStates();
-          setShowPortfolioProcess(true);
-          response = { text: 'Opening portfolio builder...' };
-        }
-        // Stake command
-        else if (normalizedCommand.includes('stake')) {
-          resetProcessStates();
-          setShowStakeProcess(true);
-          response = { text: 'Opening staking interface...' };
-        }
-        // Use OpenAI for other commands
-        else {
-          response = await generateResponse(command, address, chainId);
-        }
-        response = await generateResponse(command, address, chainId);
-        // Add response to messages if we got one
+
         if (response) {
           setMessages(prev => [...prev, {
             role: 'user',

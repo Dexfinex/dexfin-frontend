@@ -213,8 +213,10 @@ export interface Token {
 export interface TransactionError extends Error {
   code?: string;
 }
-export interface BrianData {
-  message: string
+export interface BrianTransactionData {
+  message: string;
+  type:string;
+  data: {};
 }
 
 export interface Network {
@@ -248,4 +250,7 @@ export interface DefillamaCategory {
   name: string;
   tvl: number;
   change24h: number;
+}
+export interface BrianKnowledgeData {
+  message: string;
 }
