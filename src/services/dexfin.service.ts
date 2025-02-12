@@ -63,12 +63,14 @@ export const dexfinv3Service = {
 
   getEvmDeifPositionByWallet: async (chainId: number, walletAddress: string) => {
     try {
-      const { data } = await dexfinv3Api.get<[EvmDefiPosition[]]>(
+      const { data } = await dexfinv3Api.get<EvmDefiPosition[]>(
         `/evm/defi/positions/${chainId}/${walletAddress}`
       );
+
       return data;
     } catch (error) {
       console.log("Failed to fetch evm defi position:", error);
+      throw error;
     }
   }
 };
