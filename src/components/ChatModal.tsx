@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import GifPicker from 'gif-picker-react';
-import { Theme, EmojiStyle } from 'emoji-picker-react';
+import { Theme } from 'emoji-picker-react';
 import { Theme as GifTheme } from 'gif-picker-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
@@ -14,7 +14,7 @@ import { SendFileModal } from './SendFileModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
-import { Spinner, Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverHeader, PopoverBody, Button } from '@chakra-ui/react';
+import { Spinner, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
@@ -68,6 +68,7 @@ interface IChat {
   toAddress: string;
   chatId: string;
   link: string | null;
+  reaction: string;
   image?: string;
 }
 
@@ -346,6 +347,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const clearValues = () => {
     setSearchQuery("")
     setChatHistory([])
+    setRequestUsers([])
     setSelectedUser(null)
     setSearchedUser(null)
     setSelectedGroup(null)
@@ -478,22 +480,28 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
 
           updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, true)
-        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
+        } else if (receivedMessage.event == "chat.message") {
           if (selectedGroup?.groupId == receivedMessage.chatId) {
-            setToBottom(true)
             const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == extractAddress(receivedMessage.from))
-            setChatHistory(
-              [...chatHistory, {
-                timestamp: Number(receivedMessage.timestamp),
-                type: receivedMessage.message.type,
-                content: receivedMessage.message.content,
-                fromAddress: extractAddress(receivedMessage.from),
-                toAddress: "",
-                chatId: receivedMessage.chatId,
-                link: null,
-                image: found?.image || ""
-              }]
-            )
+
+            if (receivedMessage.message.type == "Reaction") {
+              setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
+            } else {
+              setToBottom(true)
+              setChatHistory(
+                [...chatHistory, {
+                  timestamp: Number(receivedMessage.timestamp),
+                  type: receivedMessage.message.type,
+                  content: receivedMessage.message.content,
+                  fromAddress: extractAddress(receivedMessage.from),
+                  toAddress: "",
+                  chatId: receivedMessage.chatId,
+                  link: null,
+                  image: found?.image || "",
+                  reaction: ""
+                }]
+              )
+            }
           }
 
           updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
@@ -550,21 +558,26 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               updateEnsName("request", undefined, undefined, users)
             }
           }
-        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
+        } else if (receivedMessage.event == "chat.message") {
           console.log('chat.message')
           if (extractAddress(receivedMessage.from) == selectedUser?.address) {
-            setToBottom(true)
-            setChatHistory(
-              [...chatHistory, {
-                timestamp: Number(receivedMessage.timestamp),
-                type: receivedMessage.message.type,
-                content: receivedMessage.message.content,
-                fromAddress: extractAddress(receivedMessage.from),
-                toAddress: extractAddress(receivedMessage.to[0]),
-                chatId: receivedMessage.chatId,
-                link: null
-              }]
-            )
+            if (receivedMessage.message.type == "Reaction") {
+              setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
+            } else {
+              setToBottom(true)
+              setChatHistory(
+                [...chatHistory, {
+                  timestamp: Number(receivedMessage.timestamp),
+                  type: receivedMessage.message.type,
+                  content: receivedMessage.message.content,
+                  fromAddress: extractAddress(receivedMessage.from),
+                  toAddress: extractAddress(receivedMessage.to[0]),
+                  chatId: receivedMessage.chatId,
+                  link: null,
+                  reaction: ""
+                }]
+              )
+            }
 
             updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
           } else {
@@ -572,7 +585,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
         }
       } else if (receivedMessage.origin == "self") {
-        if (receivedMessage.event == "chat.message") {
+        if (receivedMessage.event == "chat.message" || receivedMessage.even == "chat.request") {
           updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
         }
       }
@@ -628,6 +641,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setLoadingPrevChat(false)
   }
 
+  const setLastMessage = (type: ChatType, content: string) => {
+    if (type === "Text" || type === "Reaction") {
+      return content
+    } else {
+      return "💻Media"
+    }
+  }
+
   const getChatInformation = async () => {
     setLoading(true)
     setGroupList([])
@@ -653,7 +674,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           pendingMembers: data.groupInformation.pendingMembers,
           type: "Connected",
           lastTimestamp: Number(data.msg.timestamp),
-          lastMessage: data.msg.messageType === "Text" ? data.msg.messageContent : data.msg.messageType ? "💻Media" : "",
+          lastMessage: setLastMessage(data.msg.messageType, data.msg.messageContent)
         }]
       } else {
         userInformation = [...userInformation, {
@@ -664,7 +685,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           chatId: data.chatId,
           type: "Connected",
           lastTimestamp: data.msg.timestamp,
-          lastMessage: data.msg.messageType === "Text" ? data.msg.messageContent : data.msg.messageType ? "💻Media" : "",
+          lastMessage: setLastMessage(data.msg.messageType, data.msg.messageContent),
           unreadMessages: 0
         }]
       }
@@ -842,23 +863,28 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsHandlingRequest(false)
   }
 
-  const handleReaction = async (chatId: string, address: string, content: string, action: string) => {
-    console.log('reference: ', chatId)
-    console.log('address: ', address)
-    console.log('content: ', content)
-    console.log('action: ', action)
+  const handleReaction = async (chatId: string, content: string) => {
+    // console.log('reference: ', chatId)
+    // console.log('address: ', address)
+    // console.log('content: ', content)
+
+    const receipient = selectedGroup ? selectedGroup.groupId : selectedUser ? selectedUser.address : ""
+
+    if (!receipient) return
 
     try {
-      const sentReaction = await chatUser.chat.send(address, {
+      setChatHistory(prev => prev.map(chat => chat.chatId == chatId ? { ...chat, reaction: content } : chat))
+
+      const sentReaction = await chatUser.chat.send(receipient, {
         type: 'Reaction',
         content,
-        action,
         reference: chatId
       })
 
       console.log('sent reaction = ', sentReaction)
     } catch (err) {
       console.log('reaction err: ', err)
+      setChatHistory(prev => prev.map(chat => chat.chatId == chatId ? { ...chat, reaction: "" } : chat))
     }
   }
 
@@ -882,6 +908,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         toAddress: selectedUser.address,
         chatId: "",
         link: null,
+        reaction: ""
       }])
 
       try {
@@ -912,7 +939,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         toAddress: "",
         chatId: "",
         link: null,
-        image: found?.image || ""
+        image: found?.image || "",
+        reaction: ""
       }])
 
       try {
@@ -943,22 +971,41 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       const history = await chatUser.chat.history(user.address, { limit: LIMIT })
 
       if (history.length > 0) {
-        // console.log('history = ', history)
-        // console.log('selected = ', user.address)
-        const tmp: IChat[] = history.map((data: any) => {
-          return {
-            timestamp: data.timestamp,
-            type: data.messageType,
-            content: data.messageContent,
-            fromAddress: extractAddress(data.fromDID),
-            toAddress: extractAddress(data.toDID),
-            chatId: data.cid,
-            link: data.link
+        console.log('history = ', history)
+        let chats: IChat[] = []
+        let reactions: any[] = []
+
+        history.forEach((data: any) => {
+          if (data.messageType == "Reaction") {
+            reactions = [...reactions, data.messageObj]
+          } else {
+            chats = [...chats, {
+              timestamp: data.timestamp,
+              type: data.messageType,
+              content: data.messageContent,
+              fromAddress: extractAddress(data.fromDID),
+              toAddress: extractAddress(data.toDID),
+              chatId: data.cid,
+              link: data.link,
+            } as IChat]
           }
         })
 
+        if (reactions.length > 0) {
+          chats = chats.map(chat => {
+            const found = reactions.find(e => e.reference == chat.chatId)
+            if (found) {
+              return {
+                ...chat,
+                reaction: found.content
+              }
+            }
+            return chat
+          })
+        }
+
         setToBottom(true)
-        setChatHistory(tmp.reverse())
+        setChatHistory(chats.reverse())
         clearUnreadMessages(user.address)
       }
     } catch (err) {
@@ -1092,24 +1139,42 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     const history = await chatUser.chat.history(group.groupId, { limit: LIMIT })
 
     if (history.length > 0) {
-      const tmp: IChat[] = history.map((data: any) => {
-        const found = group?.members.find(member => extractAddress(member.wallet) == extractAddress(data.fromDID))
-        // console.log('found ', group, data.fromDID)
+      let chats: IChat[] = []
+      let reactions: any[] = []
 
-        return {
-          timestamp: data.timestamp,
-          type: data.messageType,
-          content: data.messageContent,
-          fromAddress: extractAddress(data.fromDID),
-          toAddress: extractAddress(data.toDID),
-          chatId: data.cid,
-          link: data.link,
-          image: found?.image || ""
+      history.forEach((data: any) => {
+        if (data.messageType == "Reaction") {
+          reactions = [...reactions, data.messageObj]
+        } else {
+          const found = group?.members.find(member => extractAddress(member.wallet) == extractAddress(data.fromDID))
+          chats = [...chats, {
+            timestamp: data.timestamp,
+            type: data.messageType,
+            content: data.messageContent,
+            fromAddress: extractAddress(data.fromDID),
+            toAddress: extractAddress(data.toDID),
+            chatId: data.cid,
+            link: data.link,
+            image: found?.image || ""
+          } as IChat]
         }
       })
 
+      if (reactions.length > 0) {
+        chats = chats.map(chat => {
+          const found = reactions.find(e => e.reference == chat.chatId)
+          if (found) {
+            return {
+              ...chat,
+              reaction: found.content
+            }
+          }
+          return chat
+        })
+      }
+
       setToBottom(true)
-      setChatHistory(tmp.reverse())
+      setChatHistory(chats.reverse())
     }
 
     setLoadingChatHistory(false)
@@ -1186,7 +1251,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           toAddress: "",
           chatId: "",
           link: null,
-          image: found?.image || ""
+          image: found?.image || "",
+          reaction: ""
         }])
 
         const sentMedia = await chatUser.chat.send(selectedGroup?.groupId, {
@@ -1205,6 +1271,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           toAddress: selectedUser?.address,
           chatId: "",
           link: null,
+          reaction: ""
         }])
 
         const sentMedia = await chatUser.chat.send(selectedUser?.address, {
@@ -1280,7 +1347,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const updateLastMessageInfo = (address: string, type: ChatType, msg: string, timestamp: number, isGroup: boolean, isRequest: boolean) => {
     console.log('updateLastMessageInfo ')
-    const lastMessage = (type === "Text" ? msg : "💻Media")
+    const lastMessage = (type === "Text" || type === "Reaction" ? msg : "💻Media")
 
     if (!isGroup) {
       connectedUsers.length > 0 && setConnectedUsers((prevUsers) => {
@@ -1321,7 +1388,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }
 
   const addUnreadMessagesCount = (address: string, type: ChatType, msg: string, timestamp: number) => {
-    const lastMessage = (type === "Text" ? msg : "💻Media")
+    const lastMessage = (type === "Text" || type === "Reaction" ? msg : "💻Media")
 
     if (connectedUsers.length > 0) {
       setConnectedUsers((prevUsers) => {
@@ -1610,30 +1677,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     // }
   }
 
-  const renderReactionBtn = (isOwner: boolean, chatId: string, address: string) => {
-    return (
-      <div className={`absolute ${!isOwner ? 'right-[-20px]' : 'left-[-20px]'} bottom-[2px]`}>
-        <Popover>
-          <PopoverTrigger>
-            <Smile className={`text-white/50 w-4 h-4 cursor-pointer`} />
-          </PopoverTrigger>
-          <PopoverContent className='!bg-transparent !border-transparent !w-[200px]'>
-            <div className='flex gap-1'>
-              <button onClick={() => handleReaction(chatId, address, '👍', 'ThumbsUp')}>👍</button>
-              <button onClick={() => handleReaction(chatId, address, '👎', 'ThumbsDown')}>👎</button>
-              <button onClick={() => handleReaction(chatId, address, '❤️', 'Heart')}>❤️</button>
-              <button onClick={() => handleReaction(chatId, address, '🔥', 'Fire')}>🔥</button>
-              <button onClick={() => handleReaction(chatId, address, '😲', 'Surprised')}>😲</button>
-              <button onClick={() => handleReaction(chatId, address, '😂', 'Laugh')}>😂</button>
-              <button onClick={() => handleReaction(chatId, address, '😢', 'Sad')}>😢</button>
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-    )
-  }
-
-  const renderChatBox = (chatId: string, type: ChatType, isOwner: boolean, content: string, address: string) => {
+  const renderChatBox = (chatId: string, type: ChatType, isOwner: boolean, content: string, address: string, reaction?: string) => {
     let messageContent = content
     let fileName = ""
     let fileSize = ""
@@ -1659,22 +1703,46 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       // console.log('file content parse err')
     }
 
+    const renderReactionBtn = () => <div className={`absolute ${!isOwner ? 'right-[-20px]' : 'left-[-20px]'} bottom-[2px]`}>
+      <Popover>
+        <PopoverTrigger>
+          <Smile className={`text-white/50 w-4 h-4 cursor-pointer`} />
+        </PopoverTrigger>
+        <PopoverContent className='!bg-transparent !border-transparent !w-[200px]'>
+          <div className='flex gap-1'>
+            <button onClick={() => handleReaction(chatId, '👍')}>👍</button>
+            <button onClick={() => handleReaction(chatId, '👎')}>👎</button>
+            <button onClick={() => handleReaction(chatId, '❤️')}>❤️</button>
+            <button onClick={() => handleReaction(chatId, '🔥')}>🔥</button>
+            <button onClick={() => handleReaction(chatId, '😲')}>😲</button>
+            <button onClick={() => handleReaction(chatId, '😂')}>😂</button>
+            <button onClick={() => handleReaction(chatId, '😢')}>😢</button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+
+    const reactionIcon = () => reaction ? <span className={`absolute ${!isOwner ? 'right-[8px]' : 'left-[8px]'} bottom-[-10px]`}>{reaction}</span> : null
+
     if (type === "Text") {
       return <div className={`flex ${!isOwner ? 'justify-start' : 'justify-end'}`}>
         <div className={`relative rounded-lg p-3 max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
           {messageContent}
-          {renderReactionBtn(isOwner, chatId, address)}
+          {renderReactionBtn()}
+          {reactionIcon()}
         </div>
       </div>
     } else if (type === "MediaEmbed") {
       return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
         <img className={`w-52 h-auto`} src={messageContent} />
-        {renderReactionBtn(isOwner, chatId, address)}
+        {renderReactionBtn()}
+        {reactionIcon()}
       </div>
     } else if (type === "Image") {
       return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
         <img className={`w-52 h-auto`} src={messageContent} />
-        {renderReactionBtn(isOwner, chatId, address)}
+        {renderReactionBtn()}
+        {reactionIcon()}
       </div>
     } else if (type === "File") {
       return <div className={`relative flex flex-col gap-4 items-center w-56 h-20 rounded-lg justify-center  ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
@@ -1686,15 +1754,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           </div>
           <Download className='w-5 h-5 cursor-pointer' onClick={() => downloadBase64File(messageContent, fileName, fileType)} />
         </div>
-        {renderReactionBtn(isOwner, chatId, address)}
+        {renderReactionBtn()}
+        {reactionIcon()}
       </div>
     }
   }
 
   const renderChatHistory = () => {
     if (chatMode === "p2p") {
-      return chatHistory.map((msg) => (
-        <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
+      return chatHistory.map((msg: IChat) => (
+        msg.type !== "Reaction" ? <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
           {
             msg.fromAddress == selectedUser?.address &&
             < img
@@ -1709,10 +1778,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
             {
-              renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress)
+              renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
             }
           </div>
-        </div>
+        </div> : null
       ))
     } else if (chatMode === "group") {
       return chatHistory.map((msg) => (
@@ -1731,7 +1800,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
             {
-              renderChatBox(msg.chatId, msg.type, msg.fromAddress == address, msg.content, "")
+              renderChatBox(msg.chatId, msg.type, msg.fromAddress == address, msg.content, "", msg.reaction)
             }
           </div>
           {
