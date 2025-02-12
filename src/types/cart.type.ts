@@ -76,14 +76,39 @@ export interface PurchaseStatus {
   status: 'idle' | 'loading' | 'quoting' | 'success' | 'error';
   message: string;
 }
-export interface TokenType {
-  address: string;
+export interface PlatformAddresses {
+  'arbitrum-one'?: string;
+  'avalanche'?: string;
+  'binance-smart-chain'?: string;
+  'ethereum'?: string;
+  'fantom'?: string;
+  'harmony-shard-0'?: string;
+  'huobi-token'?: string;
+  'milkomeda-cardano'?: string;
+  'near-protocol'?: string;
+  'optimistic-ethereum'?: string;
+  'osmosis'?: string;
+  'polygon-pos'?: string;
+  'sora'?: string;
+  'xdai'?: string;
+  [key: string]: string | undefined;
+}
+export interface TokenTypeB {
+  category: string;
   chainId: number;
   decimals: number;
-  symbol: string;
-  name: string;
+  id: string;
   logoURI: string;
-  category: string;
+  marketCap: number;
+  marketCapRank: number;
+  name: string;
+  platforms: PlatformAddresses;
+  price: number;
+  priceChange24h: number;
+  sparkline: number[];
+  symbol: string;
+  volume24h: number;
+  address: string;
 }
 
 export interface ZeroxQuoteRequestType {
@@ -113,4 +138,17 @@ export interface QuoteResponse {
   allowanceTarget: string;
   sellTokenToEthRate: string;
   buyTokenToEthRate: string;
+}
+export interface CoinGridProps {
+  searchQuery: string;
+  selectedCategory: string;
+  onAddToCart: (coin: any) => void;
+  walletChainId: number;
+}
+
+export interface SearchHeaderProps {
+  selectedCategory: string;
+  searchQuery: string;
+  onCategoryChange: (category: string) => void;
+  onSearchChange: (query: string) => void;
 }

@@ -21,9 +21,8 @@ export const mapRpcUrls: Record<number, string> = {
 }
 
 export const COINGECKO_API_KEY = import.meta.env.VITE_COINGECKO_API_KEY as string || 'CG-XQa2AKt6eiVgLFnK8Ch7xJV2';
-export const COINGECKO_BASE_URL = 'https://pro-api.coingecko.com/api/v3';
 
-export const COINGECKO_BASE_URL_2 = 'https://dexfinv3-backend-production.up.railway.app/coingecko';
+export const COINGECKO_BASE_URL ="https://dexfinv3-backend-production.up.railway.app/coingecko"
 
 export const DEFILLAMA_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/defillama";
 

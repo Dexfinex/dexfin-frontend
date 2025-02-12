@@ -1,171 +1,76 @@
-import { coinGeckoApi, coinGeckoApi2 } from "./api.service.ts";
+import { coinGeckoApi } from "./api.service.ts";
 import { CoinGeckoToken, TrendingCoin, SearchResult, CoinData } from "../types";
 import { ChartDataPoint, TokenType } from "../types/swap.type.ts";
+import { TokenTypeB } from "../types/cart.type.ts";
+
 import axios from "axios";
 import { mapCoingeckoAssetPlatforms } from "../constants/mock/coingeckoAssetPlatforms.ts";
 import { NULL_ADDRESS } from "../constants";
 import { mapCoingeckoNetworks } from "../constants/mock/coingeckoNetworks.ts";
 import { MarketCapToken } from "../components/market/MarketCap.tsx";
 
-function formatRelativeTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp * 1000;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 2);
-
-  if (days > 0) return `${days}d ago`;
-  if (hours > 0) return `${hours}h ago`;
-  if (minutes > 0) return `${minutes}m ago`;
-  return 'just now';
-}
-
-
-
-interface CoinGeckoTokenDetail {
-    id: string;
-    symbol: string;
-    name: string;
-    platforms: {
-        [key: string]: string;  // platform -> contract address mapping
-    };
-}
-
 export const coingeckoService = {
     getMemecoins: async () => {
         try {
-            console.log('Fetching memecoins from CoinGecko...');
-            const { data } = await coinGeckoApi.get<CoinGeckoToken[]>('/coins/markets', {
-                params: {
-                    vs_currency: 'usd',
-                    category: 'meme-token',
-                    order: 'market_cap_desc',
-                    per_page: 100,
-                    sparkline: true,
-                    price_change_percentage: '24h',
-                    precision: 'full',
-                },
-            });
-
-            // console.log('Initial memecoin data:', data.slice(0, 2));
-
-            const detailedTokens = await Promise.all(
-                data.map(async token => {
-                    try {
-                        // console.log(`Fetching detailed info for memecoin: ${token.name} (${token.id})`);
-                        const { data: tokenDetail } = await coinGeckoApi.get<CoinGeckoTokenDetail>(
-                            `/coins/${token.id}`,
-                            { params: { localization: false, tickers: false, market_data: false, community_data: false, developer_data: false } }
-                        );
-
-                        const contractAddress = tokenDetail.platforms['base'] || token.id;
-
-                        const formattedToken: TokenType = {
-                            symbol: token.symbol.toUpperCase(),
-                            name: token.name,
-                            address: contractAddress,
-                            chainId: 8453,
-                            // 1,
-                            decimals: 18,
-                            logoURI: token.image,
-                            price: Number(token.current_price) || 0,
-                            priceChange24h: Number(token.price_change_percentage_24h) || 0,
-                            marketCap: Number(token.market_cap) || 0,
-                            marketCapRank: Number(token.market_cap_rank) || 0,
-                            volume24h: Number(token.total_volume) || 0,
-                            sparkline: token.sparkline_in_7d.price.map(Number),
-                            category: 'meme',
-                            geckoId: token.id
-                        };
-
-                        return formattedToken;
-                    } catch (error) {
-                        console.error(`Failed to fetch details for memecoin ${token.id}:`, error);
-                        return null;
-                    }
-                })
-            );
-
-            const validTokens = detailedTokens.filter((token): token is TokenType => token !== null);
-            // console.log(`Successfully processed ${validTokens.length} memecoins`);
-            return validTokens;
+            const { data } = await coinGeckoApi.get<CoinGeckoToken[]>('/memecoins');
+            const memedata = data.map(token => ({
+                category: "meme",
+                chainId: token.chainId,
+                decimals: 18,
+                id: token.id,
+                logoURI: token.logoURI,
+                marketCap: token.marketCap,
+                marketCapRank: token.marketCapRank,
+                name: token.name,
+                platforms: token.platforms,
+                price: token.price,
+                priceChange24h: token.priceChange24h,
+                sparkline: token.sparkline,
+                symbol: token.symbol.toUpperCase(),
+                volume24h: token.volume24h,
+                address: ""
+            }));
+            return memedata;
         } catch (error) {
             console.error('Failed to fetch memecoins:', error);
             throw error;
         }
     },
-
     getTokenList: async () => {
+        console.log("getTokenList : ");
         try {
             console.log('Fetching both top tokens and memecoins...');
             const [topTokens, memeTokens] = await Promise.all([
-                coinGeckoApi.get<CoinGeckoToken[]>('/coins/markets', {
-                    params: {
-                        vs_currency: 'usd',
-                        order: 'market_cap_desc',
-                        per_page: 50,
-                        sparkline: true,
-                        price_change_percentage: '24h',
-                        precision: 'full',
-                    },
-                }),
+                coinGeckoApi.get<CoinGeckoToken[]>('/tokens/all'),
                 coingeckoService.getMemecoins(),
             ]);
-
-            const topTokensDetails = await Promise.all(
-                topTokens.data.map(async token => {
-                    try {
-                        // console.log(`Fetching detailed info for top token: ${token.name} (${token.id})`);
-                        const { data: tokenDetail } = await coinGeckoApi.get<CoinGeckoTokenDetail>(
-                            `/coins/${token.id}`,
-                            { params: { localization: false, tickers: false, market_data: false, community_data: false, developer_data: false } }
-                        );
-
-                        const contractAddress = tokenDetail.platforms['base'] || token.id;
-                        // const contractAddress = tokenDetail.platforms['ethereum'] || token.id;
-
-                        const formattedToken: TokenType = {
-                            symbol: token.symbol.toUpperCase(),
-                            name: token.name,
-                            address: contractAddress,
-                            chainId: 8453,
-                            // 1,
-                            decimals: 18,
-                            logoURI: token.image,
-                            price: Number(token.current_price) || 0,
-                            priceChange24h: Number(token.price_change_percentage_24h) || 0,
-                            marketCap: Number(token.market_cap) || 0,
-                            marketCapRank: Number(token.market_cap_rank) || 0,
-                            volume24h: Number(token.total_volume) || 0,
-                            sparkline: token.sparkline_in_7d.price.map(Number),
-                            category: token.categories?.includes('meme-token') ? 'meme' : 'token',
-                            geckoId: token.id
-                        };
-
-                        return formattedToken;
-                    } catch (error) {
-                        console.error(`Failed to fetch details for top token ${token.id}:`, error);
-                        return null;
-                    }
-                })
-            );
-
-            const validTopTokens = topTokensDetails.filter((token): token is TokenType => token !== null);
-            // console.log(`Successfully processed ${validTopTokens.length} top tokens`);
-
-            // Combine and deduplicate tokens
+            const tokendata = topTokens.data.map(token => ({
+                category: token.category,
+                chainId: token.chainId,
+                decimals: 18,
+                id: token.id,
+                logoURI: token.logoURI,
+                marketCap: token.marketCap,
+                marketCapRank: token.marketCapRank,
+                name: token.name,
+                platforms: token.platforms,
+                price: token.price,
+                priceChange24h: token.priceChange24h,
+                sparkline: token.sparkline,
+                symbol: token.symbol.toUpperCase(),
+                volume24h: token.volume24h,
+                address: ""
+            }));
+            const validTopTokens = tokendata.filter((token): token is TokenTypeB => token !== null);
             const allTokens = [...validTopTokens, ...memeTokens];
-
-            const uniqueTokens = Array.from(
-                new Map(allTokens.map(token => [token.address.toLowerCase(), token])).values()
-            );
-
-            return uniqueTokens;
+            return allTokens;
         } catch (error) {
             console.error('Failed to fetch token list:', error);
             throw error;
         }
     },
+
+
     getOHLCV: async (tokenId: string, days = 30) => {
         try {
             // Ensure days is a valid number
@@ -221,12 +126,14 @@ export const coingeckoService = {
         }
         return ""
     },
-    getTokenPrices: async (chainId: number, addresses: (string | null)[]): Promise<Record<string, string>> => {
+    getTokenPrices: async (chainId: number, address: (string | null)[]): Promise<Record<string, string>> => {
         try {
-            const filteredAddresses = addresses.filter(address => !!address)
+            console.log("getTokenPrices : ", chainId, address);
+            const filteredAddress = address.filter(address => !!address)
             const assetId = mapCoingeckoAssetPlatforms[chainId].id;
             const networkId = mapCoingeckoNetworks[assetId].id;
-            const { data } = await coinGeckoApi.get<{ data: { attributes: { token_prices: Record<string, string> } } }>(`/onchain/simple/networks/${networkId}/token_price/${filteredAddresses.join(',')}`);
+            const { data } = await coinGeckoApi.get<{ data: { attributes: { token_prices: Record<string, string> } } }>(`/onchain/simple/networks/${networkId}/token_price/${filteredAddress.join(',')}`);
+            console.log("data : ", data);
             return data?.data?.attributes?.token_prices ?? {};
         } catch (e) {
             console.log(e);
@@ -235,7 +142,7 @@ export const coingeckoService = {
     },
     getTrendingCoins: async (): Promise<TrendingCoin[]> => {
         try {
-            const { data } = await coinGeckoApi2.get<TrendingCoin[]>('/trending/');
+            const { data } = await coinGeckoApi.get<TrendingCoin[]>('/trending/');
             return data;
         } catch (error) {
             console.error('Failed to fetch trending coins:', error);
@@ -245,7 +152,7 @@ export const coingeckoService = {
 
     searchCoins: async (query: string): Promise<SearchResult[]> => {
         try {
-            const { data } = await coinGeckoApi2.get<SearchResult[]>(`/search?query=${encodeURIComponent(query)}`);
+            const { data } = await coinGeckoApi.get<SearchResult[]>(`/search?query=${encodeURIComponent(query)}`);
             return data;
         } catch (error) {
             console.error('Error searching coins:', error);
@@ -255,7 +162,7 @@ export const coingeckoService = {
 
     getCoinPrice: async (coinId: string): Promise<CoinData> => {
         try {
-            const { data } = await coinGeckoApi2.get<CoinData>(`/price/${coinId}`);
+            const { data } = await coinGeckoApi.get<CoinData>(`/price/${coinId}`);
             return data;
         } catch (error) {
             console.error('CoinGecko API Error:', {
@@ -268,11 +175,11 @@ export const coingeckoService = {
     },
     getMarketCap: async (page: number): Promise<MarketCapToken[]> => {
         try {
-          const { data } = await coinGeckoApi2.get<MarketCapToken[]>(`/tokens/marketcap?page=${page}`);
-          return data;
+            const { data } = await coinGeckoApi.get<MarketCapToken[]>(`/tokens/marketcap?page=${page}`);
+            return data;
         } catch (error) {
-          console.error('Error searching coins:', error);
-          return [];
+            console.error('Error searching coins:', error);
+            return [];
         }
     },
 }

@@ -105,29 +105,39 @@ export interface ChartOptions {
   };
 }
 
+export interface PlatformAddresses {
+  'arbitrum-one'?: string;
+  'avalanche'?: string;
+  'binance-smart-chain'?: string;
+  'ethereum'?: string;
+  'fantom'?: string;
+  'harmony-shard-0'?: string;
+  'huobi-token'?: string;
+  'milkomeda-cardano'?: string;
+  'near-protocol'?: string;
+  'optimistic-ethereum'?: string;
+  'osmosis'?: string;
+  'polygon-pos'?: string;
+  'sora'?: string;
+  'xdai'?: string;
+  [key: string]: string | undefined;
+}
+
 export interface CoinGeckoToken {
-  name: string,
-  address: string,
-  chainId: number,
-  decimals: number,
-  logoURI: string,
-  price: number,
-  priceChange24h: number,
-  marketCap: number,
-  marketCapRank: number,
-  volume24h: number,
-  sparkline: number[];
   category: string;
+  chainId: number;
+  decimals: number;
   id: string;
+  logoURI: string;
+  marketCap: number;
+  marketCapRank: number;
+  name: string;
+  platforms: PlatformAddresses;
+  price: number;
+  priceChange24h: number;
+  sparkline: number[];
   symbol: string;
-  image: string;
-  current_price: number;
-  market_cap: number;
-  market_cap_rank: number;
-  total_volume: number;
-  price_change_percentage_24h: number;
-  sparkline_in_7d: { price: number[] };
-  categories: string[];
+  volume24h: number;
 }
 
 export interface DeFiStats {
