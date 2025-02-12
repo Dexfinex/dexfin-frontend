@@ -1,9 +1,10 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X } from 'lucide-react';
 
-import { useDefiPositionByWallet } from '../hooks/useDefi';
+import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useDefi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import useDefiStore, { Position } from '../store/useDefiStore';
+import { formatNumberByFrac } from '../utils/common.util';
 
 interface DeFiModalProps {
   isOpen: boolean;
@@ -157,9 +158,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [modalState, setModalState] = useState<ModalState>({ type: null });
 
   const { chainId, address } = useContext(Web3AuthContext);
-  const { positions } = useDefiStore();
+  const { positions, protocol, netAPY, healthFactor, protocolTypes } = useDefiStore();
 
   useDefiPositionByWallet({ chainId: chainId, walletAddress: address })
+  useDefiProtocolsByWallet({ chainId, walletAddress: address })
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -175,6 +177,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         return '🔒';
       case 'POOL':
         return '🌊';
+      default:
+        return '🎢'
     }
   };
 
@@ -241,7 +245,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         <div>
                           <span className="text-sm text-white/60">Borrowed</span>
                           <div className="text-lg">
-                            {position.borrowed} {position.token}
+                            {position.borrowed} {position.tokens}
                             <span className="text-sm text-white/60 ml-1">
                               (${(position.borrowed! * 3245.67).toLocaleString()})
                             </span>
@@ -250,7 +254,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         <div>
                           <span className="text-sm text-white/60">Borrow Limit</span>
                           <div className="text-lg">
-                            {position.maxBorrow} {position.token}
+                            {position.maxBorrow} {position.tokens}
                             <span className="text-sm text-white/60 ml-1">
                               (${(position.maxBorrow! * 3245.67).toLocaleString()})
                             </span>
@@ -477,7 +481,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       protocol: offering.protocol,
                       type: offering.type,
                       amount: 0,
-                      token: offering.token,
+                      tokens: offering.token,
                       apy: offering.apy,
                       logo: offering.logo
                     }
@@ -559,7 +563,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Total Value Locked</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    $9,555
+                    {formatNumberByFrac(protocol.total_usd_value)}
                   </div>
                   <div className="flex items-center gap-1 text-emerald-400">
                     <TrendingUp className="w-4 h-4" />
@@ -574,7 +578,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Net APY</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    +5.82%
+                    + {netAPY}%
                   </div>
                   <div className="text-sm text-white/60">
                     Across all positions
@@ -587,7 +591,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Total Rewards</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    +$549.25
+                    +$ {protocol.total_unclaimed_usd_value}
                   </div>
                   <div className="text-sm text-white/60">
                     Unclaimed rewards
@@ -603,7 +607,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     Healthy
                   </div>
                   <div className="text-sm text-white/60">
-                    All positions safe
+                    All positions safe ({healthFactor})
                   </div>
                 </div>
               </div>
@@ -619,7 +623,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 >
                   All Types
                 </button>
-                {(['LENDING', 'BORROWING', 'STAKING', 'POOL'] as Position['type'][]).map(type => (
+                {protocolTypes.map(type => (
                   <button
                     key={type}
                     onClick={() => setSelectedPositionType(type)}
@@ -643,7 +647,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 <div className="bg-white/5 rounded-xl p-4">
                   <h3 className="text-lg font-medium mb-4">Protocol Breakdown</h3>
                   <div className="space-y-3">
-                    {['Aave V3', 'Compound V3', 'Lido', 'Uniswap V3'].map((protocol) => {
+                    {positions.map((position) => {
+                      const protocol = position.protocol;
                       const protocolPositions = positions.filter(p => p.protocol === protocol);
                       const totalValue = protocolPositions.reduce((sum, p) => sum + p.amount, 0);
                       const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
@@ -677,7 +682,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 <div className="bg-white/5 rounded-xl p-4">
                   <h3 className="text-lg font-medium mb-4">Type Distribution</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    {(['LENDING', 'BORROWING', 'STAKING', 'POOL'] as Position['type'][]).map((type) => {
+                    {protocolTypes.map((type) => {
                       const typePositions = positions.filter(p => p.type === type);
                       const totalValue = typePositions.reduce((sum, p) => sum + p.amount, 0);
                       const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
@@ -744,7 +749,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 <div>
                   <div className="font-medium">{modalState.position.protocol}</div>
                   <div className="text-sm text-white/60">
-                    {modalState.position.token}
+                    {modalState.position.tokens}
                     {modalState.position.pairToken && `/${modalState.position.pairToken}`}
                   </div>
                 </div>
@@ -774,10 +779,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   <span className="text-white/60">
                     {modalState.type === 'borrow'
                       ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
-                      } ${modalState.position.token}`
+                      } ${modalState.position.tokens}`
                       : modalState.type === 'repay'
-                        ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.token}`
-                        : `Balance: ${modalState.position.amount} ${modalState.position.token}`
+                        ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
+                        : `Balance: ${modalState.position.amount} ${modalState.position.tokens}`
                     }
                   </span>
                   <button className="text-blue-400">MAX</button>
