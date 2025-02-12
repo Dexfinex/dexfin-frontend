@@ -24,7 +24,7 @@ export const COINGECKO_API_KEY = import.meta.env.VITE_COINGECKO_API_KEY as strin
 
 export const COINGECKO_BASE_URL ="https://dexfinv3-backend-production.up.railway.app/coingecko"
 
-export const DEFILLAMA_BASE_URL = "";
+export const DEFILLAMA_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/defillama";
 
 export const FEARGREED_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/fear-greed";
 

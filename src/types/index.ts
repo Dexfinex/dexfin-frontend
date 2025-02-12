@@ -139,6 +139,9 @@ export interface CoinGeckoToken {
   symbol: string;
   volume24h: number;
 }
+export interface CoinGeckoNativeToken {
+  tokenPrice: string,
+}
 
 export interface DeFiStats {
   totalTvl: number;
@@ -156,15 +159,6 @@ export interface DeFiStats {
     category: string;
     logo: string;
   }[];
-}
-
-export interface YieldData {
-  protocol: string;
-  symbol: string;
-  chain: string;
-  apy: number;
-  tvlUsd: number;
-  logo: string;
 }
 
 export interface TokenPool {
@@ -221,4 +215,37 @@ export interface TransactionError extends Error {
 }
 export interface BrianData {
   message: string
+}
+
+export interface Network {
+  id: string;
+  name: string;
+  logo: string;
+}
+
+export interface DefillamaProtocol {
+  name: string;
+  slug: string;
+  address: string | null;
+  symbol: string;
+  logo: string;
+  tvl: number;
+  change_1h: number;
+  change_1d: number;
+  change_7d: number;
+  tokenBreakdowns: Object;
+  mcap?: number;
+}
+
+export interface DefillamaPool {
+  protocol: string;
+  symbol: string;
+  chain: string;
+  apy: number;
+  tvlUsd: number;
+}
+export interface DefillamaCategory {
+  name: string;
+  tvl: number;
+  change24h: number;
 }

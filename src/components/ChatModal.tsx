@@ -1,17 +1,22 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import {
-  X, Maximize2, Minimize2, Search,
+  X, Maximize2, Minimize2, Search, Smile, Download,
   MessageSquare, Share2, Users, ArrowRight, Plus,
-  Settings, User, Info, CheckCircle, XCircle
+  Settings, User, Info, CheckCircle, XCircle, File
 } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
+import GifPicker from 'gif-picker-react';
+import { Theme, EmojiStyle } from 'emoji-picker-react';
+import { Theme as GifTheme } from 'gif-picker-react';
 import { VideoCallModal } from './VideoCallModal';
 import { CreateGroupModal } from './CreateGroupModal';
+import { SendFileModal } from './SendFileModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
-import { Spinner } from '@chakra-ui/react';
+import { Spinner, Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverHeader, PopoverBody, Button } from '@chakra-ui/react';
 import { Clipboard } from './common/Clipboard';
-import { extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
+import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
 import { LIMIT } from '../utils/chatApi';
 
@@ -22,12 +27,13 @@ interface ChatModalProps {
 
 interface IUser {
   name: string;
+  ensName: string;
   profilePicture: string;
   address: string;
   chatId: string;
   type: "Request" | "Connected" | "Searched";
-  lastTimestamp?: number;
-  lastMessage?: string;
+  lastTimestamp: number;
+  lastMessage: string;
   unreadMessages: number;
 }
 
@@ -48,13 +54,15 @@ interface IGroup {
   members: IMember[];
   pendingMembers: IMember[];
   type: "Request" | "Connected" | "Searched";
-  lastTimestamp?: number;
-  lastMessage?: string;
+  lastTimestamp: number;
+  lastMessage: string;
 }
+
+type ChatType = "Text" | "MediaEmbed" | "Image" | "File" | "Reaction";
 
 interface IChat {
   timestamp: number;
-  type: string;
+  type: ChatType;
   content: string;
   fromAddress: string;
   toAddress: string;
@@ -62,6 +70,7 @@ interface IChat {
   link: string | null;
   image?: string;
 }
+
 
 // interface ChatUser {
 //   id: string;
@@ -236,10 +245,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [isCreateGroupActive, setIsCreateGroupActive] = useState(false);
+  const [isSendModalActive, setIsSendModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); ``
   const [groupList, setGroupList] = useState<Array<IGroup>>([]);
   const [connectedUsers, setConnectedUsers] = useState<Array<IUser>>([]);
   const [searchedUser, setSearchedUser] = useState<IUser | null>(null);
@@ -256,8 +266,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isHandlingRequest, setIsHandlingRequest] = useState(false);
   const [isJoiningGroup, setIsJoiningGroup] = useState(false);
+  const [isEmojiOpen, setIsEmojiOpen] = useState(false);
+  const [isGifOpen, setIsGifOpen] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState<any>([]);
+  const [selectedFile, setSelectedFile] = useState<any>();
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const emojiPickRef = useRef<HTMLDivElement>(null);
+  const gifPickRef = useRef<HTMLDivElement>(null);
+  const emojiBtnRef = useRef<HTMLButtonElement>(null);
+  const gifBtnRef = useRef<HTMLButtonElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // const [currentUserNfts] = useState([
   //   {
@@ -316,6 +334,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isScrollTop])
 
+  useEffect(() => {
+    if (!message) {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.style.height = "40px";
+      }
+    }
+  }, [message])
+
   const clearValues = () => {
     setSearchQuery("")
     setChatHistory([])
@@ -323,6 +350,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSearchedUser(null)
     setSelectedGroup(null)
     setSearchedGroup(null)
+    setIsEmojiOpen(false)
+    setIsGifOpen(false)
   }
 
   useEffect(() => {
@@ -442,14 +471,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 members: profile.members,
                 pendingMembers: profile.pendingMembers,
                 type: "Request",
-                lastTimestamp: receivedMessage?.timestamp ? Number(receivedMessage.timestamp) : undefined,
-                lastMessage: receivedMessage.message?.content ? receivedMessage.message.content : undefined
+                lastTimestamp: receivedMessage?.timestamp ? Number(receivedMessage.timestamp) : 0,
+                lastMessage: receivedMessage.message?.content ? receivedMessage.message.content : ""
               }]
             )
           }
 
-          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, true)
-        } else if (receivedMessage.event == "chat.message" && chatMode === "group" && receivedMessage.message.type) {
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, true)
+        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
           if (selectedGroup?.groupId == receivedMessage.chatId) {
             setToBottom(true)
             const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == extractAddress(receivedMessage.from))
@@ -467,7 +496,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             )
           }
 
-          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
         } else if (receivedMessage.event == "chat.accept" && chatMode === "group") {
           // add a member
           const profile = await getWalletProfile(chatUser, receivedMessage.from)
@@ -491,8 +520,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
         }
       } else if (receivedMessage.origin == "self") {
-        if (receivedMessage.event == "chat.message" && chatMode === "group") {
-          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
+        if (receivedMessage.event == "chat.message") {
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
         }
       }
     } else if (receivedMessage.meta?.group == false) {
@@ -505,17 +534,23 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             const profile = await getWalletProfile(chatUser, receivedMessage.from)
 
             if (profile) {
-              setRequestUsers([...requestUsers, {
+              const users = [...requestUsers, {
                 name: profile.name,
+                ensName: "",
                 profilePicture: profile.picture,
                 address: extractAddress(receivedMessage.from),
                 chatId: receivedMessage.chatId,
                 type: "Request",
-                unreadMessages: 0
-              }])
+                unreadMessages: 0,
+                lastTimestamp: 0,
+                lastMessage: ""
+              }] as Array<IUser>
+              setRequestUsers(users)
+
+              updateEnsName("request", undefined, undefined, users)
             }
           }
-        } else if (receivedMessage.event == "chat.message" && chatMode === "p2p" && receivedMessage.message.type) {
+        } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
           console.log('chat.message')
           if (extractAddress(receivedMessage.from) == selectedUser?.address) {
             setToBottom(true)
@@ -530,14 +565,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 link: null
               }]
             )
-            updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
+
+            updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
           } else {
-            addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp))
+            addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp))
           }
         }
       } else if (receivedMessage.origin == "self") {
-        if (receivedMessage.event == "chat.message" && chatMode === "p2p") {
-          updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
+        if (receivedMessage.event == "chat.message") {
+          updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
         }
       }
     }
@@ -617,17 +653,18 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           pendingMembers: data.groupInformation.pendingMembers,
           type: "Connected",
           lastTimestamp: Number(data.msg.timestamp),
-          lastMessage: data.msg.messageContent
+          lastMessage: data.msg.messageType === "Text" ? data.msg.messageContent : data.msg.messageType ? "💻Media" : "",
         }]
       } else {
         userInformation = [...userInformation, {
           name: data.name,
+          ensName: "",
           profilePicture: data.profilePicture,
           address: extractAddress(data.wallets),
           chatId: data.chatId,
           type: "Connected",
           lastTimestamp: data.msg.timestamp,
-          lastMessage: data.msg.messageContent,
+          lastMessage: data.msg.messageType === "Text" ? data.msg.messageContent : data.msg.messageType ? "💻Media" : "",
           unreadMessages: 0
         }]
       }
@@ -635,10 +672,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     console.log('groupInformation = ', groupInformation)
 
     if (groupInformation.length > 0) {
-      setGroupList(groupInformation)
+      setGroupList(groupInformation.sort((a, b) => b.lastTimestamp - a.lastTimestamp))
     }
     if (userInformation.length > 0) {
-      setConnectedUsers(userInformation)
+      const sorted = userInformation.sort((a, b) => b.lastTimestamp - a.lastTimestamp)
+      setConnectedUsers(sorted)
+      updateEnsName("connected", undefined, undefined, sorted)
     }
 
     //get chat request
@@ -652,11 +691,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         if (!request.groupInformation) {
           directRequests = [...directRequests, {
             name: request.name,
+            ensName: "",
             profilePicture: request.profilePicture,
             address: extractAddress(request.wallets),
             chatId: request.chatId,
             type: "Request",
-            unreadMessages: 0
+            unreadMessages: 0,
+            lastTimestamp: 0,
+            lastMessage: ""
           }]
         } else if (request.groupInformation) {
           groupRequests = [...groupRequests, {
@@ -670,14 +712,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             members: request.groupInformation.members,
             pendingMembers: request.groupInformation.pendingMembers,
             type: "Request",
-            lastTimestamp: request.msg?.timestamp ? Number(request.msg?.timestamp) : undefined,
-            lastMessage: request.msg?.messageContent ? request.msg?.messageContent : undefined
+            lastTimestamp: request.msg?.timestamp ? Number(request.msg?.timestamp) : 0,
+            lastMessage: request.msg?.messageContent ? request.msg?.messageContent : ""
           }]
         }
       })
 
       if (directRequests.length > 0) {
         setRequestUsers(directRequests)
+        updateEnsName("request", undefined, undefined, directRequests)
       }
       if (groupRequests.length > 0) {
         setRequestGroups(groupRequests)
@@ -714,7 +757,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       nft: group.contractAddressNFT,
       members: group.members,
       pendingMembers: group.pendingMembers,
-      type: "Connected"
+      type: "Connected",
+      lastTimestamp: 0,
+      lastMessage: ""
     }, ...groupList])
   }
 
@@ -795,6 +840,26 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
 
     setIsHandlingRequest(false)
+  }
+
+  const handleReaction = async (chatId: string, address: string, content: string, action: string) => {
+    console.log('reference: ', chatId)
+    console.log('address: ', address)
+    console.log('content: ', content)
+    console.log('action: ', action)
+
+    try {
+      const sentReaction = await chatUser.chat.send(address, {
+        type: 'Reaction',
+        content,
+        action,
+        reference: chatId
+      })
+
+      console.log('sent reaction = ', sentReaction)
+    } catch (err) {
+      console.log('reaction err: ', err)
+    }
   }
 
   const handleSendMessage = async () => {
@@ -878,8 +943,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       const history = await chatUser.chat.history(user.address, { limit: LIMIT })
 
       if (history.length > 0) {
-        console.log('history = ', history)
-        console.log('selected = ', user.address)
+        // console.log('history = ', history)
+        // console.log('selected = ', user.address)
         const tmp: IChat[] = history.map((data: any) => {
           return {
             timestamp: data.timestamp,
@@ -903,12 +968,26 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setLoadingChatHistory(false)
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleTextChange = (e: any) => {
+    setMessage(e.target.value)
+    adjustHeight()
+  }
+
+  const adjustHeight = () => {
+    const textarea = textareaRef.current;
+
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    }
+  };
+
+  const handleKeyDown = (e: any) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
-  };
+  }
 
   const handleSearch = async () => {
     if (!searchQuery || searchQuery == address) return
@@ -923,23 +1002,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           const found = connectedUsers.find((user: IUser) => extractAddress(user.address) == searchQuery)
 
           if (found) {
-            setSelectedUser({
-              name: found.name,
-              address: found.address,
-              profilePicture: found.profilePicture,
-              chatId: found.chatId,
-              type: "Connected",
-              unreadMessages: 0
-            })
+            handleSelectUser(found)
           } else {
-            setSearchedUser({
+            const user = {
               name: profile.name,
+              ensName: "",
               profilePicture: profile.picture,
               address: searchQuery,
               chatId: "",
               type: "Searched",
-              unreadMessages: 0
-            })
+              unreadMessages: 0,
+              lastTimestamp: 0,
+              lastMessage: ""
+            } as IUser
+
+            setSearchedUser(user)
+            updateEnsName("search", address, user)
           }
         }
       } catch (err) {
@@ -954,7 +1032,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           const found = groupList.find((group: IGroup) => group.groupId == searchQuery)
 
           if (found) {
-            setSelectedGroup(found)
+            handleSelectGroup(found)
           } else {
             setSearchedGroup({
               groupId: profile.chatId,
@@ -966,7 +1044,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               nft: profile.contractAddressNFT,
               members: profile.members,
               pendingMembers: profile.pendingMembers,
-              type: "Searched"
+              type: "Searched",
+              lastTimestamp: 0,
+              lastMessage: ""
             })
           }
         }
@@ -1062,25 +1142,163 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsJoiningGroup(false)
   }
 
-  const updateLastMessageInfo = (address: string, msg: string, timestamp: number, isGroup: boolean, isRequest: boolean) => {
+  const handleClickModal = (e: any) => {
+    if (emojiBtnRef.current && emojiBtnRef.current.contains(e.target as Node)) {
+      if (isGifOpen) {
+        setIsGifOpen(false)
+      }
+      return
+    }
+
+    if (gifBtnRef.current && gifBtnRef.current.contains(e.target as Node)) {
+      if (isEmojiOpen) {
+        setIsEmojiOpen(false)
+      }
+      return
+    }
+
+    if (gifPickRef.current && !gifPickRef.current.contains(e.target as Node)) {
+      setIsGifOpen(false)
+    }
+
+    if (emojiPickRef.current && !emojiPickRef.current.contains(e.target as Node)) {
+      setIsEmojiOpen(false)
+    }
+  }
+
+  const handleEmojiClick = (emojiData: any) => {
+    console.log('emoji = ', emojiData.emoji)
+    setMessage(message + emojiData.emoji)
+    setIsEmojiOpen(false)
+  }
+
+  const sendMedia = async (content: string, type: ChatType) => {
+    setToBottom(true)
+
+    try {
+      if (chatMode === "group" && selectedGroup) {
+        const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == address)
+        setChatHistory([...chatHistory, {
+          timestamp: Math.floor(Date.now()),
+          type,
+          content,
+          fromAddress: address,
+          toAddress: "",
+          chatId: "",
+          link: null,
+          image: found?.image || ""
+        }])
+
+        const sentMedia = await chatUser.chat.send(selectedGroup?.groupId, {
+          type,
+          content
+        })
+
+        setMessage("")
+        console.log('sent media: ', sentMedia)
+      } else if (chatMode === "p2p" && selectedUser) {
+        setChatHistory([...chatHistory, {
+          timestamp: Math.floor(Date.now()),
+          type,
+          content,
+          fromAddress: address,
+          toAddress: selectedUser?.address,
+          chatId: "",
+          link: null,
+        }])
+
+        const sentMedia = await chatUser.chat.send(selectedUser?.address, {
+          type,
+          content
+        })
+
+        setMessage("")
+        if (searchedUser?.address == selectedUser.address) {
+          setSearchedUser(null)
+          setConnectedUsers([{ ...searchedUser, unreadMessages: 0 }, ...connectedUsers])
+        }
+        console.log('sent media: ', sentMedia)
+      }
+    } catch (err) {
+      console.log('send gif err: ', err)
+      setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
+    }
+  }
+
+  const handleGifClick = async (gifData: any) => {
+    setIsGifOpen(false)
+    sendMedia(gifData.url, "MediaEmbed")
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      console.log('file = ', file)
+      setSelectedFile(file)
+      setIsSendModalActive(true)
+      event.target.value = "";
+    }
+  }
+
+  const handleSendFile = (type: string, base64: string) => {
+    console.log('file type ', type)
+    console.log('base64 ', base64)
+    sendMedia(base64, type as ChatType)
+  }
+
+  const updateEnsName = async (type: string, address?: string, user?: IUser, userList?: Array<IUser>) => {
+    console.log('update ens name')
+    if (type === "connected" && userList) {
+      const updated = await Promise.all(
+        userList?.map(async (user) => {
+          const ensName: string = await getEnsName(user.address);
+          return ensName ? { ...user, ensName } : user;
+        })
+      );
+
+      setConnectedUsers(updated)
+    } else if (type === "search" && address) {
+      const ensName: string = await getEnsName(address)
+      if (ensName && user) {
+        setSearchedUser({
+          ...user,
+          ensName
+        })
+      }
+    } else if (type === "request" && userList) {
+      const updated = await Promise.all(
+        userList?.map(async (user) => {
+          const ensName: string = await getEnsName(user.address);
+          return ensName ? { ...user, ensName } : user;
+        })
+      );
+
+      setRequestUsers(updated)
+    }
+  }
+
+  const updateLastMessageInfo = (address: string, type: ChatType, msg: string, timestamp: number, isGroup: boolean, isRequest: boolean) => {
     console.log('updateLastMessageInfo ')
+    const lastMessage = (type === "Text" ? msg : "💻Media")
+
     if (!isGroup) {
       connectedUsers.length > 0 && setConnectedUsers((prevUsers) => {
         const updatedUsers = prevUsers.map((user) =>
           user.address === address
-            ? { ...user, lastMessage: msg, lastTimestamp: timestamp }
+            ? { ...user, lastMessage, lastTimestamp: timestamp }
             : user
         );
         // console.log("Previous Users: ", prevUsers);
         // console.log("Updated Users: ", updatedUsers);
-        return updatedUsers;
+        return updatedUsers.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
       });
     } else {
       if (isRequest) {
         requestGroups.length > 0 && setRequestGroups((prevGroups) => {
           const updatedGroups = prevGroups.map((group) =>
             group.groupId === address
-              ? { ...group, lastMessage: msg, lastTimestamp: timestamp }
+              ? { ...group, lastMessage, lastTimestamp: timestamp }
               : group
           );
           // console.log("Previous Groups: ", prevGroups);
@@ -1091,29 +1309,51 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         groupList.length > 0 && setGroupList((prevGroups) => {
           const updatedGroups = prevGroups.map((group) =>
             group.groupId === address
-              ? { ...group, lastMessage: msg, lastTimestamp: timestamp }
+              ? { ...group, lastMessage, lastTimestamp: timestamp }
               : group
           );
           // console.log("Previous Groups: ", prevGroups);
           // console.log("Updated Groups: ", updatedGroups);
-          return updatedGroups;
+          return updatedGroups.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
         });
       }
     }
   }
 
-  const addUnreadMessagesCount = (address: string, msg: string, timestamp: number) => {
+  const addUnreadMessagesCount = (address: string, type: ChatType, msg: string, timestamp: number) => {
+    const lastMessage = (type === "Text" ? msg : "💻Media")
+
     if (connectedUsers.length > 0) {
       setConnectedUsers((prevUsers) => {
         const updatedUsers = prevUsers.map((user) =>
           user.address === address
-            ? { ...user, lastMessage: msg, lastTimestamp: timestamp, unreadMessages: ++user.unreadMessages }
+            ? { ...user, lastMessage, lastTimestamp: timestamp, unreadMessages: ++user.unreadMessages }
             : user
         );
-        return updatedUsers;
+
+        return updatedUsers.sort((a, b) => b.lastTimestamp - a.lastTimestamp)
       });
     }
   }
+
+  const downloadBase64File = (base64Data: string, fileName: string, fileType: string) => {
+    // Convert Base64 to a Blob
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) => byteCharacters.charCodeAt(i));
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: fileType });
+
+    // Create a temporary link element and trigger the download
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  };
 
   const clearUnreadMessages = (address: string) => {
     if (connectedUsers.length > 0) {
@@ -1188,7 +1428,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             onClick={() => handleSelectRequestUser(user)}>
             {user?.profilePicture ? <img src={user.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
             <div className='flex flex-col'>
-              <span>{user?.name || shrinkAddress(user.address)}</span>
+              <span>{user.ensName ? user.ensName : user?.name || shrinkAddress(user.address)}</span>
               {/* <span className='text-sm text-gray-400'>Join Group!</span> */}
             </div>
             <Info className='text-red-500' />
@@ -1264,7 +1504,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             onClick={() => setSelectedUser(searchedUser)}>
             {searchedUser?.profilePicture ? <img src={searchedUser.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
             <div className='flex flex-col'>
-              <span>{searchedUser?.name || shrinkAddress(searchedUser.address)}</span>
+              <span>{searchedUser?.ensName ? searchedUser?.ensName : searchedUser?.name || shrinkAddress(searchedUser.address)}</span>
               <span className='text-sm text-white/40'>Start Chat!</span>
             </div>
           </button>
@@ -1284,7 +1524,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             user?.profilePicture ? <img src={user?.profilePicture} className='w-10 h-10 rounded-full' /> : <User className='w-10 h-10' />
           }
           <div className='flex flex-col flex-1'>
-            <span className='text-left'>{user?.name || shrinkAddress(extractAddress(user?.address))}</span>
+            <span className='text-left'>{user.ensName ? user.ensName : user?.name || shrinkAddress(extractAddress(user?.address))}</span>
             <span className='text-left text-sm text-white/40'>{user?.lastMessage ? user?.lastMessage.slice(0, 20) : ""}</span>
           </div>
           {user?.lastTimestamp && <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(user?.lastTimestamp)}</span>}
@@ -1370,6 +1610,87 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     // }
   }
 
+  const renderReactionBtn = (isOwner: boolean, chatId: string, address: string) => {
+    return (
+      <div className={`absolute ${!isOwner ? 'right-[-20px]' : 'left-[-20px]'} bottom-[2px]`}>
+        <Popover>
+          <PopoverTrigger>
+            <Smile className={`text-white/50 w-4 h-4 cursor-pointer`} />
+          </PopoverTrigger>
+          <PopoverContent className='!bg-transparent !border-transparent !w-[200px]'>
+            <div className='flex gap-1'>
+              <button onClick={() => handleReaction(chatId, address, '👍', 'ThumbsUp')}>👍</button>
+              <button onClick={() => handleReaction(chatId, address, '👎', 'ThumbsDown')}>👎</button>
+              <button onClick={() => handleReaction(chatId, address, '❤️', 'Heart')}>❤️</button>
+              <button onClick={() => handleReaction(chatId, address, '🔥', 'Fire')}>🔥</button>
+              <button onClick={() => handleReaction(chatId, address, '😲', 'Surprised')}>😲</button>
+              <button onClick={() => handleReaction(chatId, address, '😂', 'Laugh')}>😂</button>
+              <button onClick={() => handleReaction(chatId, address, '😢', 'Sad')}>😢</button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    )
+  }
+
+  const renderChatBox = (chatId: string, type: ChatType, isOwner: boolean, content: string, address: string) => {
+    let messageContent = content
+    let fileName = ""
+    let fileSize = ""
+    let fileType = ""
+
+    try {
+      if (type === "File") {
+        const parsed = JSON.parse(content)
+        // console.log('parsed = ', parsed)
+        if (parsed) {
+          messageContent = parsed.content.split(",")[1]
+          fileName = parsed.name
+          fileSize = parsed.size
+          fileType = parsed.type
+        }
+      } else if (type === "Image") {
+        const parsed = JSON.parse(content)
+        if (parsed) {
+          messageContent = parsed.content
+        }
+      }
+    } catch (err) {
+      // console.log('file content parse err')
+    }
+
+    if (type === "Text") {
+      return <div className={`flex ${!isOwner ? 'justify-start' : 'justify-end'}`}>
+        <div className={`relative rounded-lg p-3 max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+          {messageContent}
+          {renderReactionBtn(isOwner, chatId, address)}
+        </div>
+      </div>
+    } else if (type === "MediaEmbed") {
+      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
+        <img className={`w-52 h-auto`} src={messageContent} />
+        {renderReactionBtn(isOwner, chatId, address)}
+      </div>
+    } else if (type === "Image") {
+      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
+        <img className={`w-52 h-auto`} src={messageContent} />
+        {renderReactionBtn(isOwner, chatId, address)}
+      </div>
+    } else if (type === "File") {
+      return <div className={`relative flex flex-col gap-4 items-center w-56 h-20 rounded-lg justify-center  ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+        <div className='flex gap-4 items-center'>
+          <File className='w-10 h-10 text-white/50' />
+          <div className='flex flex-col text-white/50'>
+            <span className='text-md'>{fileName}</span>
+            <span className='text-sm text-center'>{fileSize}B</span>
+          </div>
+          <Download className='w-5 h-5 cursor-pointer' onClick={() => downloadBase64File(messageContent, fileName, fileType)} />
+        </div>
+        {renderReactionBtn(isOwner, chatId, address)}
+      </div>
+    }
+  }
+
   const renderChatHistory = () => {
     if (chatMode === "p2p") {
       return chatHistory.map((msg) => (
@@ -1384,12 +1705,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           <div className="flex-1 min-w-0">
             <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
               {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-              <span className="font-medium">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+              <span className="font-medium text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
-            <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress == selectedUser?.address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
-              {msg.content}
-            </div>
+            {
+              renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress)
+            }
           </div>
         </div>
       ))
@@ -1406,12 +1727,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           <div className="flex-1 min-w-0">
             <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
               {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-              <span className="font-medium">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+              <span className="font-medium text-white/70">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
-            <div className={`rounded-lg p-3 w-[480px] ${msg.fromAddress != address ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
-              {msg.content}
-            </div>
+            {
+              renderChatBox(msg.chatId, msg.type, msg.fromAddress == address, msg.content, "")
+            }
           </div>
           {
             msg.fromAddress == address &&
@@ -1662,6 +1983,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             ? 'w-full h-full rounded-none'
             : 'w-[90%] h-[90%] rounded-xl'
             }`}
+          onClick={handleClickModal}
         >
           {!chatUser?.uid && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10'>
             <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm" onClick={handleUnlock}>
@@ -1751,10 +2073,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                         selectedUser?.name ?
                           <div className='flex flex-col'>
                             <div>{selectedUser?.name}</div>
-                            <Clipboard address={selectedUser.address} />
+                            <Clipboard address={selectedUser.address} ensName={selectedUser.ensName} />
                           </div>
                           :
-                          <Clipboard address={selectedUser.address} />
+                          <Clipboard address={selectedUser.address} ensName={selectedUser.ensName} />
                       }
                     </div>
                     {/* <div>
@@ -1769,7 +2091,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     <img src={selectedGroup?.image} className='w-10 h-10 mr-2 rounded-lg' />
                     <div className='flex flex-col'>
                       {selectedGroup?.name}
-                      <Clipboard address={selectedGroup.groupId} />
+                      <Clipboard address={selectedGroup.groupId} ensName='' />
                     </div>
                     {/* {selectedGroup.id === 'wow' ? (
                       <img src={selectedGroup.icon} alt="WOW" className="w-10 h-10" />
@@ -1835,28 +2157,53 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Chat Messages */}
-            <div ref={chatScrollRef} className="flex-1 p-4 overflow-y-auto ai-chat-scrollbar">
+            <div ref={chatScrollRef} className="flex-1 p-4 overflow-x-hidden overflow-y-auto ai-chat-scrollbar">
               {renderMessages()}
             </div>
 
             {/* Chat Input */}
             {canAccessChat(selectedUser, selectedGroup) && (
-              <div className="p-4 border-t border-white/10">
+              <div className="p-4 border-t border-white/10 relative">
                 <div className="flex items-center gap-3">
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                    <Plus className="w-5 h-5" />
+                  <button className="p-2 hover:bg-white/10 rounded-full transition-colors" ref={emojiBtnRef} onClick={() => setIsEmojiOpen(!isEmojiOpen)}>
+                    <Smile className="w-5 h-5" />
                   </button>
-                  <input
-                    type="text"
+
+                  <div ref={emojiPickRef}
+                    className='!absolute bottom-[62px] left-[16px]'>
+                    <EmojiPicker open={isEmojiOpen}
+                      onEmojiClick={handleEmojiClick}
+                      theme={Theme.DARK}
+                    />
+                  </div>
+
+                  <textarea
+                    ref={textareaRef}
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={handleKeyPress}
+                    onChange={handleTextChange}
+                    onKeyDown={handleKeyDown}
                     placeholder="Type a message..."
-                    className="flex-1 bg-white/5 px-4 py-2 rounded-lg outline-none"
+                    className="flex-1 bg-white/5 px-4 py-2 rounded-lg outline-none resize-none overflow-hidden"
+                    rows={1} // Adjust rows dynamically
                   />
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                    <Share2 className="w-5 h-5" />
+
+                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" ref={gifBtnRef} onClick={() => setIsGifOpen(!isGifOpen)}>
+                    Gif
                   </button>
+
+                  {isGifOpen && <div ref={gifPickRef}
+                    className='!absolute bottom-[62px] right-[16px]'>
+                    <GifPicker
+                      tenorApiKey={"AIzaSyBxr4hrP59kdbQV4xJ-t2CSQX0Y6q4gcbA"}
+                      theme={GifTheme.DARK}
+                      onGifClick={handleGifClick}
+                    />
+                  </div>}
+
+                  <label className="cursor-pointer p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <Share2 className="w-5 h-5" />
+                    <input type="file" className="hidden" onChange={handleFileChange} />
+                  </label>
                   {
                     !sendingMessage ? <button
                       onClick={handleSendMessage}
@@ -1879,6 +2226,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         onClose={() => setIsCreateGroupActive(false)}
         onMakeGroup={onMakeGroup}
       />
+
+      <SendFileModal
+        isOpen={isSendModalActive}
+        onClose={() => { setIsSendModalActive(false); setSelectedFile(null); }}
+        file={selectedFile}
+        onSendFile={handleSendFile}
+      />
+
       <VideoCallModal
         isOpen={isVideoCallActive}
         onClose={() => setIsVideoCallActive(false)}

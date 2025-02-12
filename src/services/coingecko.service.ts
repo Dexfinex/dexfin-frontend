@@ -1,5 +1,5 @@
 import { coinGeckoApi } from "./api.service.ts";
-import { CoinGeckoToken, TrendingCoin, SearchResult, CoinData } from "../types";
+import { CoinGeckoToken, TrendingCoin, SearchResult, CoinData, CoinGeckoNativeToken } from "../types";
 import { ChartDataPoint, TokenType } from "../types/swap.type.ts";
 import { TokenTypeB } from "../types/cart.type.ts";
 
@@ -128,13 +128,8 @@ export const coingeckoService = {
     },
     getTokenPrices: async (chainId: number, address: (string | null)[]): Promise<Record<string, string>> => {
         try {
-            console.log("getTokenPrices : ", chainId, address);
-            const filteredAddress = address.filter(address => !!address)
-            const assetId = mapCoingeckoAssetPlatforms[chainId].id;
-            const networkId = mapCoingeckoNetworks[assetId].id;
-            const { data } = await coinGeckoApi.get<{ data: { attributes: { token_prices: Record<string, string> } } }>(`/onchain/simple/networks/${networkId}/token_price/${filteredAddress.join(',')}`);
-            console.log("data : ", data);
-            return data?.data?.attributes?.token_prices ?? {};
+            const response = await coinGeckoApi.get<Record<string, string>>(`/prices/${chainId}?addresses=${address}`);
+            return response.data;
         } catch (e) {
             console.log(e);
         }

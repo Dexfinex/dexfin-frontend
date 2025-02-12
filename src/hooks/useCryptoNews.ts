@@ -30,3 +30,24 @@ export const useGetLatestCryptoNews = () => {
         error
     };
 };
+
+export const useGetCryptoNews = (page: number = 1) => {
+    const fetchLatestNews = useCallback(async () => {
+        const data = await cryptoNewsService.getLatestNews(page);
+
+        return data;
+    }, []);
+
+    const { isLoading, refetch, data, error } = useQuery<NewsItem[]>({
+        queryKey: [`get-latest-crypto-news-${page}`],
+        queryFn: fetchLatestNews,
+        refetchInterval: 5 * 60_000,
+    });
+
+    return {
+        isLoading,
+        refetch,
+        data,
+        error
+    };
+};

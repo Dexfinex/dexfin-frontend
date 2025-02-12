@@ -26,9 +26,9 @@ export const useTokenBuyHandler = () => {
 
     const getEthPrice = async (): Promise<number> => {
         try {
-            console.log("Fetching ETH price...", walletChainId);
             const ethPrices = await coingeckoService.getTokenPrices(1, [nativeAddress]);
             const ethPrice = ethPrices[nativeAddress];
+            console.log("ETH price:", ethPrice);
             if (!ethPrice) throw new Error('Failed to fetch ETH price');
             // console.log('ETH price:', ethPrice);
             return parseFloat(ethPrice);
@@ -79,7 +79,7 @@ export const useTokenBuyHandler = () => {
                     takerAddress: walletAddress,
                 };
 
-                // console.log("Requesting quote with params:", quoteParams);
+                console.log("Requesting quote with params:", quoteParams);
                 const quoteResponse = await zeroxService.getQuote(quoteParams);
 
                 if (!quoteResponse?.transaction) {

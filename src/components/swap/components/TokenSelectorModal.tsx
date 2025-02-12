@@ -92,7 +92,7 @@ export function TokenSelectorModal({
     }, [selectedNetwork])
 
     return ReactDOM.createPortal(
-        <div className={`fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-[100] ${
+        <div className={`fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-[10000] ${
             isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         } transition-opacity duration-200`}>
             <div
@@ -182,7 +182,7 @@ export function TokenSelectorModal({
                                 <div className="flex flex-wrap gap-1">
                                     {popularTokens.map(popularToken => (
                                         <Button
-                                            key={popularToken.address}
+                                            key={popularToken.name + popularToken.chainId}
                                             variant="ghost"
                                             onClick={() => {
                                                 onSelect(popularToken);
