@@ -1,11 +1,19 @@
 import React, {useEffect, useState} from 'react';
 import {ArrowRight, CheckCircle2, Wallet, X} from 'lucide-react';
+import { TokenType } from '../../../types/brian.type';
+import {convertCryptoAmount} from '../../../utils/brian';
+import {shrinkAddress} from '../../../utils/common.util';
+import {mapChainId2ViemChain} from '../../../config/networks';
 
 interface SendProcessProps {
   onClose: () => void;
+  fromToken: TokenType;
+  toToken: TokenType;
+  fromAmount: string;
+  receiver: string;
 }
 
-export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
+export const SendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmount, toToken, fromToken, onClose }) => {
   const [step/*, setStep*/] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
@@ -42,7 +50,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
           <Wallet className="w-6 h-6 text-blue-500" />
         </div>
         <div>
-          <h3 className="text-xl font-medium">Send USDC</h3>
+          <h3 className="text-xl font-medium">Send {fromToken?.symbol}</h3>
           <p className="text-white/60">Review transaction details</p>
         </div>
       </div>
@@ -52,13 +60,13 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
           <div className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
               <img 
-                src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" 
+                src={fromToken.logoURI}
                 alt="USDC" 
                 className="w-10 h-10"
               />
               <div>
                 <div className="text-sm text-white/60">Amount</div>
-                <div className="text-xl font-medium">100 USDC</div>
+                <div className="text-xl font-medium">{fromToken ? convertCryptoAmount(fromAmount, fromToken.decimals) : ''} {fromToken?.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
@@ -70,7 +78,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
               />
               <div>
                 <div className="text-sm text-white/60">Recipient</div>
-                <div className="text-xl font-medium">vitalik.eth</div>
+                <div className="text-xl font-medium">{shrinkAddress(receiver)}</div>
               </div>
             </div>
           </div>
@@ -78,15 +86,15 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
           <div className="p-4 bg-white/5 rounded-lg space-y-3">
             <div className="flex justify-between">
               <span className="text-white/60">Network</span>
-              <span className="font-medium">Ethereum</span>
+              <span className="font-medium">{mapChainId2ViemChain[fromToken.chainId].name}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-white/60">Transaction Fee</span>
-              <span className="font-medium">~0.01 USDC</span>
+              <span className="font-medium">0 {fromToken?.symbol}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-white/60">Total Amount</span>
-              <span className="font-medium">100.01 USDC</span>
+              <span className="font-medium">{convertCryptoAmount(fromAmount, fromToken.decimals)  } {fromToken?.symbol}</span>
             </div>
           </div>
         </div>

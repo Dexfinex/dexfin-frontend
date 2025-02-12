@@ -15,3 +15,7 @@ export const parseChainedCommands = (message: string): string[] => {
   const commands = message.split(/\s+(?:and|&)\s+/i).map(cmd => cmd.trim());
   return commands;
 };
+
+export function convertCryptoAmount(fromAmount: string, decimal: number): number {
+  return parseFloat(fromAmount) / Math.pow(10, decimal);
+}

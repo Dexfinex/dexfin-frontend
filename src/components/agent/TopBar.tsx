@@ -5,7 +5,6 @@ import {
   X,
   ChevronDown,
   LineChart,
-  IconComponent
 } from 'lucide-react';
 
 import {

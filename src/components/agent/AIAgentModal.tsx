@@ -15,15 +15,16 @@ import { PriceChart } from '../PriceChart.tsx';
 import { TrendingCoins } from '../TrendingCoins.tsx';
 import { NewsWidget } from '../widgets/NewsWidget.tsx';
 import { YieldProcess } from '../YieldProcess.tsx';
-import { SwapProcess } from '../SwapProcess.tsx';
+import { SwapProcess } from './components/SwapProcess.tsx';
 import { BridgeProcess } from '../BridgeProcess.tsx';
 import { PortfolioProcess } from '../PortfolioProcess.tsx';
-import { SendProcess } from '../SendProcess.tsx';
+import { SendProcess } from './components/SendProcess.tsx';
 import { StakeProcess } from '../StakeProcess.tsx';
 import { ProjectAnalysisProcess } from '../ProjectAnalysisProcess.tsx';
 import { WalletPanel } from './WalletPanel.tsx';
 import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
+import { TokenType } from '../../types/brian.type.ts';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -48,6 +49,12 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
   const { address, chainId } = useContext(Web3AuthContext);
 
+  const [fromToken, setFromToken] = useState<TokenType>();
+  const [toToken, setToToken] = useState<TokenType>();
+  const [fromAmount, setFromAmount] = useState('0');
+  const [receiver, setReceiver] = useState('');
+
+
   // Reset all process states
   const resetProcessStates = () => {
     setShowYieldProcess(false);
@@ -58,8 +65,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowStakeProcess(false);
     setShowProjectAnalysis(false);
   };
-
-
 
   const processCommandCase = async (command: string, address: string, chainId: number | undefined) => {
 
@@ -100,7 +105,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     try {
       if (address) {
         const brianTransactionData = await brianService.getBrianTransactionData(command, address, chainId);
-        return brianTransactionData;
+        return {
+          text: brianTransactionData.message,
+          brianData: brianTransactionData.data,
+          type: brianTransactionData.type
+        }
       } else {
         const brianKnowledgeData = await brianService.getBrianKnowledgeData(command);
         return {
@@ -256,12 +265,16 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         response = await generateResponse(normalizedCommand, address, chainId);
 
         if (response.type == "action") {
-          if (response.data.action == 'swap') {
+          if (response.brianData.action == 'transfer') {
             resetProcessStates();
-            setShowSwapProcess(true);
+            setFromToken(response.brianData.data.fromToken);
+            setToToken(response.brianData.data.toToken);
+            setFromAmount(response.brianData.data.fromAmount);
+            setReceiver(response.brianData.data.receiver);
+            console.log(response.brianData);
+            setShowSendProcess(true);
             response = { text: 'Opening swap interface...' };
           }
-
         }
 
         if (response) {
@@ -410,7 +423,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setMessages([]);
           }} />
         ) : showSendProcess ? (
-          <SendProcess onClose={() => {
+          <SendProcess receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} onClose={() => {
             setShowSendProcess(false);
             setMessages([]);
           }} />
