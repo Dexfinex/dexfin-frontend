@@ -2,6 +2,7 @@ import { dexfinv3Api } from "./api.service.ts";
 import {
   EvmWalletBalanceRequestType,
   EvmWalletBalanceResponseType,
+  EvmDefiPosition,
 } from "../types/dexfinv3.type.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.ts";
 
@@ -59,4 +60,15 @@ export const dexfinv3Service = {
 
     return null;
   },
+
+  getEvmDeifPositionByWallet: async (chainId: number, walletAddress: string) => {
+    try {
+      const { data } = await dexfinv3Api.get<[EvmDefiPosition[]]>(
+        `/evm/defi/positions/${chainId}/${walletAddress}`
+      );
+      return data;
+    } catch (error) {
+      console.log("Failed to fetch evm defi position:", error);
+    }
+  }
 };
