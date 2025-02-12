@@ -42,7 +42,6 @@ export const useGetDefillamaPools = () => {
     const { isLoading, refetch, data, error } = useQuery<DefillamaPool[]>({
         queryKey: ["get-defillama-pools"],
         queryFn: fetchDefillamaPools,
-        refetchInterval: 5 * 60_000,
     });
 
     useEffect(() => {
