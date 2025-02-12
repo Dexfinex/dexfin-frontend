@@ -2,7 +2,8 @@ import React, { useContext, useEffect, useState, useRef } from 'react';
 import {
   X, Maximize2, Minimize2, Search, Smile, Download,
   MessageSquare, Share2, Users, ArrowRight, Plus,
-  Settings, User, Info, CheckCircle, XCircle, File
+  Settings, User, Info, CheckCircle, XCircle, File,
+  Edit
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import GifPicker from 'gif-picker-react';
@@ -19,6 +20,7 @@ import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
 import { LIMIT } from '../utils/chatApi';
+import { EditChatProfileModal } from './EditChatProfileModal';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -72,7 +74,11 @@ interface IChat {
   image?: string;
 }
 
-
+type ProfileType = {
+  desc: string,
+  name: string,
+  picture: string,
+}
 // interface ChatUser {
 //   id: string;
 //   name: string;
@@ -246,11 +252,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [isCreateGroupActive, setIsCreateGroupActive] = useState(false);
+  const [isEditProfileActive, setIsEditProfileActive] = useState(false);
   const [isSendModalActive, setIsSendModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
 
-  const [loading, setLoading] = useState(false); ``
+  const [loading, setLoading] = useState(false);
+  const [ownProfile, setOwnProfile] = useState<ProfileType | null>(null);
   const [groupList, setGroupList] = useState<Array<IGroup>>([]);
   const [connectedUsers, setConnectedUsers] = useState<Array<IUser>>([]);
   const [searchedUser, setSearchedUser] = useState<IUser | null>(null);
@@ -310,7 +318,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen && chatUser?.uid) {
       console.log('get chat user')
+      setProfile()
       getChatInformation()
+      // const profile = await getWalletProfile(chatUser, searchQuery)
     } else {
       clearValues()
     }
@@ -449,6 +459,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
+  }
+
+  const setProfile = async () => {
+    const profile = await chatUser.profile.info()
+
+    setOwnProfile({
+      name: profile?.name || "",
+      desc: profile?.desc || "",
+      picture: profile.picture
+    })
   }
 
   const handleReceiveMsg = async () => {
@@ -619,22 +639,44 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     console.log('prev history = ', prevHistory)
 
     if (prevHistory.length > 0) {
-      const tmp: IChat[] = prevHistory.map((data: any) => {
-        return {
-          timestamp: data.timestamp,
-          type: data.messageType,
-          content: data.messageContent,
-          fromAddress: extractAddress(data.fromDID),
-          toAddress: extractAddress(data.toDID),
-          chatId: data.cid,
-          link: data.link,
-          image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
+      let chats: IChat[] = []
+      let reactions: any[] = []
+
+      // todo should add reactions more
+      prevHistory.forEach((data: any) => {
+        if (data.messageType == "Reaction") {
+          reactions = [...reactions, data.messageObj]
+        } else {
+          chats = [...chats, {
+            timestamp: data.timestamp,
+            type: data.messageType,
+            content: data.messageContent,
+            fromAddress: extractAddress(data.fromDID),
+            toAddress: extractAddress(data.toDID),
+            chatId: data.cid,
+            link: data.link,
+            image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
+          } as IChat]
         }
       })
 
-      tmp.shift()
-      if (tmp.length > 0) {
-        setChatHistory([...tmp.reverse(), ...chatHistory])
+      if (reactions.length > 0) {
+        chats = chats.map(chat => {
+          const found = reactions.find(e => e.reference == chat.chatId)
+          if (found) {
+            return {
+              ...chat,
+              reaction: found.content
+            }
+          }
+          return chat
+        })
+      }
+
+      chats.shift()
+
+      if (chats.length > 0) {
+        setChatHistory([...chats.reverse(), ...chatHistory])
       }
     }
 
@@ -2065,7 +2107,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           </div>}
 
           {/* Left Sidebar */}
-          <div className="w-80 border-r border-white/10">
+          <div className="w-80 border-r border-white/10 relative">
             <div className="p-4 border-b border-white/10">
               <div className="flex items-center gap-2 mb-4">
                 <button
@@ -2115,8 +2157,18 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               )}
             </div>
 
-            <div className={`p-2 overflow-y-auto ai-chat-scrollbar ${chatMode === "group" ? "max-h-[calc(100%-182px)]" : "max-h-[calc(100%-132px)]"}`}>
+            <div className={`p-2 overflow-y-auto ai-chat-scrollbar ${chatMode === "group" ? "max-h-[calc(100%-238px)]" : "max-h-[calc(100%-188px)]"}`}>
               {renderGroupsAndUsers()}
+            </div>
+
+            <div className='border-t border-white/10 absolute left-0 right-0 bottom-[12px] pt-2 px-4'>
+              {ownProfile && <div className='flex justify-between items-center'>
+                <div className='flex justify-center items-center gap-4'>
+                  <img src={ownProfile.picture} className='rounded-full w-10 h-10' />
+                  <Clipboard address={address} ensName='' />
+                </div>
+                <Edit className='text-white/50 w-4 h-4 cursor-pointer' onClick={() => setIsEditProfileActive(true)} />
+              </div>}
             </div>
           </div>
 
@@ -2307,6 +2359,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         isOpen={isVideoCallActive}
         onClose={() => setIsVideoCallActive(false)}
         user={null}
+      />
+
+      <EditChatProfileModal
+        isOpen={isEditProfileActive}
+        onClose={() => setIsEditProfileActive(false)}
+        profile={ownProfile}
+        setProfile={setOwnProfile}
       />
     </>
   );
