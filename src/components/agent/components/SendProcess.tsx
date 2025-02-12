@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowRight, CheckCircle2, Wallet, X, ShieldClose } from 'lucide-react';
+import { Link } from '@chakra-ui/react';
 
 import { TokenType, Step } from '../../../types/brian.type';
 import { convertCryptoAmount } from '../../../utils/brian';
@@ -23,6 +24,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
   const { data: walletClient } = useWalletClient();
+  const [scan, setScan] = useState('https://etherscan.io/');
   const publicClient = usePublicClient();
 
   const handleTransaction = async (data: any) => {
@@ -41,16 +43,15 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           ...transactionStep
         });
         if (tx) {
-          const receipt = await publicClient?.waitForTransactionReceipt({
+            const receipt = await publicClient?.waitForTransactionReceipt({
             hash: tx,
-          })
-          if (receipt) {
-            console.log('--success--');
+            })
+            if (receipt) {
             console.log(receipt);
-            console.log("All transactions executed successfully.");
             setTransactionProgress(100);
             setTransactionStatus('Transaction confirmed!');
-          }
+            setScan(`${mapChainId2ViemChain[fromToken.chainId].blockExplorers?.default.url}/tx/${tx}`);
+            }
         }
       }
     } catch (error) {
@@ -188,6 +189,14 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           <p className="text-white/60 mb-2">
             Successfully sent {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
           </p>
+          <Link
+            href={scan}
+            isExternal
+            color="blue.500"
+            _hover={{ textDecoration: 'underline' }}
+          >
+            View Transaction
+          </Link>
           <button
             onClick={onClose}
             className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg mt-6"
