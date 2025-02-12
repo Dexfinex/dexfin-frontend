@@ -1,12 +1,10 @@
 import { coinGeckoApi } from "./api.service.ts";
-import { CoinGeckoToken, TrendingCoin, SearchResult, CoinData } from "../types";
+import { CoinGeckoToken, TrendingCoin, SearchResult, CoinData, CoinGeckoNativeToken } from "../types";
 import { ChartDataPoint, TokenType } from "../types/swap.type.ts";
 import { TokenTypeB } from "../types/cart.type.ts";
-
 import axios from "axios";
 import { mapCoingeckoAssetPlatforms } from "../constants/mock/coingeckoAssetPlatforms.ts";
 import { NULL_ADDRESS } from "../constants";
-import { mapCoingeckoNetworks } from "../constants/mock/coingeckoNetworks.ts";
 import { MarketCapToken } from "../components/market/MarketCap.tsx";
 
 export const coingeckoService = {
@@ -69,8 +67,6 @@ export const coingeckoService = {
             throw error;
         }
     },
-
-
     getOHLCV: async (tokenId: string, days = 30) => {
         try {
             // Ensure days is a valid number
@@ -128,13 +124,8 @@ export const coingeckoService = {
     },
     getTokenPrices: async (chainId: number, address: (string | null)[]): Promise<Record<string, string>> => {
         try {
-            console.log("getTokenPrices : ", chainId, address);
-            const filteredAddress = address.filter(address => !!address)
-            const assetId = mapCoingeckoAssetPlatforms[chainId].id;
-            const networkId = mapCoingeckoNetworks[assetId].id;
-            const { data } = await coinGeckoApi.get<{ data: { attributes: { token_prices: Record<string, string> } } }>(`/onchain/simple/networks/${networkId}/token_price/${filteredAddress.join(',')}`);
-            console.log("data : ", data);
-            return data?.data?.attributes?.token_prices ?? {};
+            const response = await coinGeckoApi.get<Record<string, string>>(`/prices/${chainId}?addresses=${address}`);
+            return response.data;
         } catch (e) {
             console.log(e);
         }

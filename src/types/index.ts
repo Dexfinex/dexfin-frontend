@@ -139,6 +139,9 @@ export interface CoinGeckoToken {
   symbol: string;
   volume24h: number;
 }
+export interface CoinGeckoNativeToken {
+  tokenPrice: string,
+}
 
 export interface DeFiStats {
   totalTvl: number;

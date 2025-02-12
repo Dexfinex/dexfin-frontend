@@ -2,33 +2,42 @@ import React, { useContext, useState, useCallback, useEffect, useMemo } from 're
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
 import { TransactionModal } from './components/TransactionModal';
 import { mapChainId2ExplorerUrl } from '../../config/networks';
-import { CartModalProps } from '../../types/cart.type';
+import { CartModalProps, TokenPurchaseDetails } from '../../types/cart.type';
 import { useTokenBuyHandler } from '../../hooks/useTokenBuyHandler';
 import { useStore } from '../../store/useStore';
 import useTokenStore from '../../store/useTokenStore';
 import { X } from 'lucide-react';
 import Spinner from './components/Spinner';
-
 import SearchHeader from './components/SearchHeader';
 import CoinGrid from './components/CoinGrid';
 import CartList from './components/CartList';
 import CheckoutSection from './components/CheckoutSection';
+
 
 const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [txModalOpen, setTxModalOpen] = useState(false);
-  const [currentTxHash, setCurrentTxHash] = useState<string | null>(null);
+  const [transactionHashes, setTransactionHashes] = useState<string[]>([]);
   const [buyError, setBuyError] = useState<string | null>(null);
   const [processingBuy, setProcessingBuy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [allTransactionsComplete, setAllTransactionsComplete] = useState(false);
+  const [tokenDetails, setTokenDetails] = useState<TokenPurchaseDetails[]>([]);
 
   const { address: walletAddress, chainId: walletChainId } = useContext(Web3AuthContext);
   const { cartItems, addToCart, removeFromCart, updateQuantity, clearCart } = useStore();
   const { tokenPrices } = useTokenStore();
 
-  // Initial loading effect
+  const {
+    executeBatchBuy,
+    error: buyHandlerError,
+    txHashes,
+    isPending: isBuyPending,
+    isConfirmed
+  } = useTokenBuyHandler();
+
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
@@ -48,45 +57,47 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     return prices;
   }, [tokenPrices]);
 
-  const { executeBatchBuy, error: buyHandlerError, txHash: buyHandlerTxHash, isPending: isBuyPending, isConfirmed } = useTokenBuyHandler();
-
-  const [transactionDetails, setTransactionDetails] = useState<{
-    tokenSymbol: string;
-    amount: number;
-    costInUSD: number;
-  } | null>(null);
-
-  // Reset modal state
   useEffect(() => {
     if (!isOpen) {
       setShowCheckout(false);
       setTxModalOpen(false);
-      setCurrentTxHash(null);
+      setTransactionHashes([]);
       setBuyError(null);
       setProcessingBuy(false);
-      setTransactionDetails(null);
+      setTokenDetails([]);
+      setAllTransactionsComplete(false);
     }
   }, [isOpen]);
 
-  // Handle transaction confirmation
+  // Update transaction hashes when they change in the handler
   useEffect(() => {
-    if (isConfirmed && currentTxHash) {
-      clearCart();
-      const timer = setTimeout(() => {
-        setTxModalOpen(false);
-        setCurrentTxHash(null);
-        setTransactionDetails(null);
-        onClose();
-      }, 2000);
-      return () => clearTimeout(timer);
+    if (txHashes.length > 0) {
+      setTransactionHashes(txHashes);
     }
-  }, [isConfirmed, currentTxHash, clearCart, onClose]);
+  }, [txHashes]);
+
+  // Handle transaction confirmation and completion
+  useEffect(() => {
+    if (isConfirmed && txHashes.length > 0 && txHashes.length === cartItems.length) {
+      setAllTransactionsComplete(true);
+    }
+  }, [isConfirmed, txHashes, cartItems.length]);
+
+  // Handle cart clearing after all transactions
+  useEffect(() => {
+    if (allTransactionsComplete && !txModalOpen) {
+      clearCart();
+      setShowCheckout(false);
+    }
+  }, [allTransactionsComplete, txModalOpen, clearCart]);
 
   const handleTxModalClose = useCallback(() => {
     setTxModalOpen(false);
-    setCurrentTxHash(null);
-    setTransactionDetails(null);
-  }, []);
+    if (allTransactionsComplete) {
+      setTransactionHashes([]);
+      setTokenDetails([]);
+    }
+  }, [allTransactionsComplete]);
 
   const handleCategoryChange = useCallback((category: string) => {
     setSelectedCategory(category);
@@ -108,7 +119,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
           address: item.address,
           symbol: item.symbol,
           name: item.name,
-          chainId: 1,
+          chainId: item.chainId,
           decimals: 18,
           logoURI: item.logo,
           price: item.price,
@@ -128,20 +139,17 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
         throw new Error('Invalid token data found in cart');
       }
 
+      // Prepare token details for all purchases
+      const details = tokenPurchases.map(purchase => ({
+        tokenSymbol: purchase.token.symbol,
+        amount: Number(purchase.amount),
+        costInUSD: Number(purchase.amount) * (purchase.token.price || 0)
+      }));
+      setTokenDetails(details);
+
       const result = await executeBatchBuy(tokenPurchases);
-
       if (result) {
-        const currentPurchase = tokenPurchases[0];
-        setTransactionDetails({
-          tokenSymbol: currentPurchase.token.symbol,
-          amount: Number(currentPurchase.amount),
-          costInUSD: Number(currentPurchase.amount) * (currentPurchase.token.price || 0)
-        });
-
-        setTimeout(() => {
-          setCurrentTxHash(result as `0x${string}`);
-          setTxModalOpen(true);
-        }, 100);
+        setTxModalOpen(true);
       } else {
         throw new Error('Transaction failed');
       }
@@ -158,7 +166,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div className="relative glass border border-white/10 shadow-lg w-[90%] h-[90%] rounded-xl">
-        <span className='flex justify-end p-2'>
+        <span className="flex justify-end p-2">
           <button
             onClick={onClose}
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -212,12 +220,14 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
           </div>
         )}
       </div>
-      {currentTxHash && (
+
+      {transactionHashes.length > 0 && (
         <TransactionModal
           open={txModalOpen}
           setOpen={handleTxModalClose}
-          link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${currentTxHash}`}
-          transactionDetails={transactionDetails || undefined}
+          transactionHashes={transactionHashes}
+          chainExplorerUrl={mapChainId2ExplorerUrl[walletChainId!]}
+          tokenDetails={tokenDetails}
         />
       )}
     </div>

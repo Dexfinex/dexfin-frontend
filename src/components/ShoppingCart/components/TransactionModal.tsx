@@ -9,29 +9,24 @@ import {
     Box,
     VStack,
     HStack,
-    Divider
+    Divider,
+    Accordion,
+    AccordionItem,
+    AccordionButton,
+    AccordionPanel,
 } from '@chakra-ui/react';
 import { Check } from 'lucide-react';
-
-interface TransactionDetails {
-    tokenSymbol: string;
-    amount: number;
-    costInUSD: number;
-}
-
-interface TransactionModalProps {
-    open: boolean;
-    setOpen: (open: boolean) => void;
-    link: string;
-    transactionDetails?: TransactionDetails;
-}
+import { TransactionModalProps } from '../../../types/cart.type';
 
 export const TransactionModal = ({
     open,
     setOpen,
-    link,
-    transactionDetails
+    transactionHashes,
+    chainExplorerUrl,
+    tokenDetails,
 }: TransactionModalProps) => {
+    const totalCost = tokenDetails.reduce((sum, token) => sum + token.costInUSD, 0);
+
     return (
         <Modal
             isCentered
@@ -62,45 +57,84 @@ export const TransactionModal = ({
                         </Box>
                     </Box>
                     <Text as="h1" fontSize="xl" fontWeight="600" mb={4}>
-                        Transaction Submitted
+                        Transactions Submitted
                     </Text>
 
-                    {transactionDetails && (
-                        <VStack spacing={3} width="100%" px={4}>
-                            <HStack justify="space-between" width="100%">
+                    <VStack spacing={3} width="100%" px={4}>
+                        {tokenDetails.map((token, index) => (
+                            <HStack key={index} justify="space-between" width="100%">
                                 <Text color="gray.300">Amount:</Text>
                                 <Text fontWeight="500">
-                                    {transactionDetails.amount} {transactionDetails.tokenSymbol}
+                                    {token.amount} {token.tokenSymbol}
                                 </Text>
                             </HStack>
-                            <HStack justify="space-between" width="100%">
-                                <Text color="gray.300">Total Cost:</Text>
-                                <Text fontWeight="500">
-                                    ${transactionDetails.costInUSD.toFixed(2)} USD
-                                </Text>
-                            </HStack>
-                            <Divider my={2} borderColor="gray.700" />
-                        </VStack>
-                    )}
+                        ))}
+                        <Divider my={2} borderColor="gray.700" />
+                        <HStack justify="space-between" width="100%">
+                            <Text color="gray.300">Total Cost:</Text>
+                            <Text fontWeight="500">
+                                ${totalCost.toFixed(2)} USD
+                            </Text>
+                        </HStack>
+                    </VStack>
+
+                    <VStack width="100%" px={4} spacing={4} mt={4}>
+                        <Accordion allowMultiple width="100%">
+                            {transactionHashes.map((hash, index) => (
+                                <AccordionItem
+                                    key={hash}
+                                    border="1px solid"
+                                    borderColor="gray.700"
+                                    borderRadius="md"
+                                    mb={2}
+                                >
+                                    <AccordionButton
+                                        _hover={{ bg: 'whiteAlpha.50' }}
+                                        borderRadius="md"
+                                    >
+                                        <Box flex="1" textAlign="left">
+                                            <Text fontWeight="500">
+                                                Transaction #{index + 1}
+                                            </Text>
+                                        </Box>
+                                    </AccordionButton>
+                                    <AccordionPanel pb={4}>
+                                        <ChakraLink
+                                            href={`${chainExplorerUrl}/tx/${hash}`}
+                                            isExternal
+                                            color="#3b82f6"
+                                            _hover={{ color: '#60a5fa' }}
+                                            fontSize="sm"
+                                            wordBreak="break-all"
+                                        >
+                                            {hash}
+                                        </ChakraLink>
+                                    </AccordionPanel>
+                                </AccordionItem>
+                            ))}
+                        </Accordion>
+                    </VStack>
                 </ModalBody>
 
-                <ChakraLink
-                    href={link}
-                    isExternal
-                    fontSize="lg"
-                    textAlign="center"
-                    padding="6px 1rem"
-                    borderRadius="0.375rem"
-                    bg="#183f6d"
-                    margin="0 1rem 1rem"
-                    color="white"
-                    _hover={{
-                        textDecoration: 'none',
-                        bg: '#224b82'
-                    }}
-                >
-                    View Transaction
-                </ChakraLink>
+                <Box p={4}>
+                    <ChakraLink
+                        onClick={() => setOpen(false)}
+                        fontSize="lg"
+                        textAlign="center"
+                        padding="6px 1rem"
+                        borderRadius="0.375rem"
+                        bg="#183f6d"
+                        display="block"
+                        color="white"
+                        cursor="pointer"
+                        _hover={{
+                            textDecoration: 'none',
+                            bg: '#224b82'
+                        }}
+                    >
+                        Close
+                    </ChakraLink>
+                </Box>
             </ModalContent>
         </Modal>
     );

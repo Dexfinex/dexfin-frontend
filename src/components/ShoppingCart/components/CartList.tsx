@@ -3,21 +3,7 @@ import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { Input } from '@chakra-ui/react';
 import debounce from 'lodash/debounce';
-
-interface CartListProps {
-    cartItems: any[];
-    tokenPrices: Record<string, number>;
-    onRemove: (id: string) => void;
-    onUpdateQuantity: (id: string, quantity: number) => void;
-    onCheckout: () => void;
-}
-
-interface CartItemProps {
-    item: any;
-    coinPrice: number;
-    onRemove: (id: string) => void;
-    onUpdateQuantity: (id: string, quantity: number) => void;
-}
+import { CartListProps, CartItemProps } from '../../../types/cart.type';
 
 const CartItem = React.memo(({
     item,

@@ -33,6 +33,17 @@ const networkToplatform: Readonly<Record<string, string>> = {
     'celo': 'celo'
 } as const;
 
+// chainIDPlatform to platform mapping
+const chainIDPlatform: Readonly<Record<string, string>> = {
+    '1': 'ethereum',
+    '56': 'binance-smart-chain',
+    '43114': 'avalanche',
+    '8453': 'base',
+    '10': 'optimistic-ethereum',
+    '42220': 'celo',
+    '42161': 'arbitrum-one',
+    '137': 'polygon-pos',
+} as const;
 const CoinGrid: React.FC<CoinGridProps> = React.memo(({
     searchQuery,
     selectedCategory,
@@ -44,12 +55,18 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
     const coinsRef = useRef<TokenTypeB[]>([]);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    const getContractAddress = useCallback((platforms: any, chainId: number): string => {
+    const getContractAddress = useCallback((platforms: any, chainId: number, selectedcategory: string): string => {
         if (!platforms) return 'null';
-        const platformKey = Object.entries(networkToplatform).find(([, platform]) =>
-            platforms[platform]
-        )?.[1];
-        return platformKey ? platforms[platformKey] : 'null';
+        if (selectedcategory !== 'All' && selectedcategory !== 'token' && selectedcategory !== 'meme') {
+            const platformKey = networkToplatform[selectedcategory.toLowerCase()];
+            // console.log("selectedcategory : ", platforms[platformKey]);
+            return platforms[platformKey];
+        }
+        else {
+            // console.log("chainIDPlatform : ", chainIDPlatform[chainId.toString()]);
+            const platformKey = chainIDPlatform[chainId.toString()];
+            return platforms[platformKey];
+        }
     }, []);
 
     // Fetch coins with abort controller
@@ -106,10 +123,10 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
             if (selectedCategory === 'token' || selectedCategory === 'meme') {
                 return coin.category === selectedCategory;
             }
-
             // Network-based filtering
             const platformKey = networkToplatform[selectedCategory.toLowerCase()];
-            return platformKey ? !!coin.platforms?.[platformKey] : false;
+            // console.log("platformKey : ", platformKey);
+            return platformKey ? coin.platforms?.[platformKey] : false;
         });
     }, [coins, selectedCategory, searchQuery]);
 
@@ -156,7 +173,7 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
         <div className="h-full overflow-y-auto">
             <div className="grid grid-cols-2 gap-4 p-4 overflow-y-auto">
                 {filteredCoins.map((coin, index) => {
-                    const contractAddress = getContractAddress(coin.platforms, walletChainId);
+                    const contractAddress = getContractAddress(coin.platforms, walletChainId, selectedCategory);
                     return (
                         <div
                             key={index}
