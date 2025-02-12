@@ -8,7 +8,7 @@ export const brianService = {
 			const { data } = await brianApi.get<BrianTransactionData>(`transaction?command=${command}&address=${address}&chainId=${chainId}`);
 			return data;
 		} catch (error) {
-			console.error('Failed to fetch fear & greed:', error);
+			console.error('Failed to fetch brian transaction data:', error);
 			throw error;
 		}
 	},
@@ -17,7 +17,7 @@ export const brianService = {
 			const { data } = await brianApi.get<BrianKnowledgeData>(`knowledge?command=${command}`);
 			return data;
 		} catch (error) {
-			console.error('Failed to fetch fear & greed:', error);
+			console.error('Failed to brian knowledge data:', error);
 			throw error;
 		}
 	},

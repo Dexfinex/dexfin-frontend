@@ -24,7 +24,7 @@ import { ProjectAnalysisProcess } from '../ProjectAnalysisProcess.tsx';
 import { WalletPanel } from './WalletPanel.tsx';
 import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
-import { TokenType } from '../../types/brian.type.ts';
+import { TokenType, Step } from '../../types/brian.type.ts';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -53,7 +53,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [toToken, setToToken] = useState<TokenType>();
   const [fromAmount, setFromAmount] = useState('0');
   const [receiver, setReceiver] = useState('');
-
+  const [steps, setSteps] = useState<Step[]>([]);
 
   // Reset all process states
   const resetProcessStates = () => {
@@ -271,7 +271,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setToToken(response.brianData.data.toToken);
             setFromAmount(response.brianData.data.fromAmount);
             setReceiver(response.brianData.data.receiver);
-            console.log(response.brianData);
+            setSteps(response.brianData.data.steps);
             setShowSendProcess(true);
             response = { text: 'Opening swap interface...' };
           }
@@ -423,7 +423,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setMessages([]);
           }} />
         ) : showSendProcess ? (
-          <SendProcess receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} onClose={() => {
+          <SendProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} onClose={() => {
             setShowSendProcess(false);
             setMessages([]);
           }} />

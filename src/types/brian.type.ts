@@ -9,3 +9,12 @@ export type TokenType = {
   coinKey: string;
 };
 
+export type Step = {
+  blockNumber: number;
+  chainId: number;
+  data: string;
+  from: string;
+  gasLimit: string;
+  to: string;
+  value: string;
+}

@@ -1,9 +1,11 @@
-import React, {useEffect, useState} from 'react';
-import {ArrowRight, CheckCircle2, Wallet, X} from 'lucide-react';
-import { TokenType } from '../../../types/brian.type';
-import {convertCryptoAmount} from '../../../utils/brian';
-import {shrinkAddress} from '../../../utils/common.util';
-import {mapChainId2ViemChain} from '../../../config/networks';
+import React, { useEffect, useState } from 'react';
+import { ArrowRight, CheckCircle2, Wallet, X } from 'lucide-react';
+
+import { TokenType, Step } from '../../../types/brian.type';
+import { convertCryptoAmount } from '../../../utils/brian';
+import { shrinkAddress } from '../../../utils/common.util';
+import { mapChainId2ViemChain } from '../../../config/networks';
+import { useWalletClient, usePublicClient } from "wagmi";
 
 interface SendProcessProps {
   onClose: () => void;
@@ -11,13 +13,49 @@ interface SendProcessProps {
   toToken: TokenType;
   fromAmount: string;
   receiver: string;
+  steps: Step[];
 }
 
-export const SendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmount, toToken, fromToken, onClose }) => {
+export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromAmount, toToken, fromToken, onClose }) => {
   const [step/*, setStep*/] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
+  const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient();
+
+  const handleTransaction = async (data: any) => {
+    try {
+      if (!walletClient) {
+        console.error("Wallet client not found");
+        return;
+      }
+      if (steps.length === 0) {
+        console.error("No transaction details available");
+        return;
+      }
+      setShowConfirmation(true);
+      for (const transactionStep of data) {
+        const tx = await walletClient.sendTransaction({
+          ...transactionStep
+        });
+        if (tx) {
+          const receipt =  await publicClient?.waitForTransactionReceipt({
+            hash: tx,
+          })
+          if(receipt) {
+            console.log("All transactions executed successfully.");    
+            setTransactionProgress(100);
+            setTransactionStatus('Transaction confirmed!');
+          } else {
+            
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error executing transactions:", error);
+    }
+  };
 
   useEffect(() => {
     if (showConfirmation) {
@@ -30,7 +68,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmount, 
 
       let currentStage = 0;
       const timer = setInterval(() => {
-        if (currentStage < stages.length) {
+        if (currentStage < stages.length-1) {
           setTransactionProgress(stages[currentStage].progress);
           setTransactionStatus(stages[currentStage].status);
           currentStage++;
@@ -59,9 +97,9 @@ export const SendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmount, 
         <div className="space-y-6">
           <div className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
-              <img 
+              <img
                 src={fromToken.logoURI}
-                alt="USDC" 
+                alt="USDC"
                 className="w-10 h-10"
               />
               <div>
@@ -71,9 +109,9 @@ export const SendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmount, 
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
             <div className="flex items-center gap-3">
-              <img 
+              <img
                 src="https://api.dicebear.com/7.x/avataaars/svg?seed=vitalik"
-                alt="Vitalik" 
+                alt="Vitalik"
                 className="w-10 h-10 rounded-full"
               />
               <div>
@@ -89,18 +127,14 @@ export const SendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmount, 
               <span className="font-medium">{mapChainId2ViemChain[fromToken.chainId].name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-white/60">Transaction Fee</span>
-              <span className="font-medium">0 {fromToken?.symbol}</span>
-            </div>
-            <div className="flex justify-between">
               <span className="text-white/60">Total Amount</span>
-              <span className="font-medium">{convertCryptoAmount(fromAmount, fromToken.decimals)  } {fromToken?.symbol}</span>
+              <span className="font-medium">{convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol}</span>
             </div>
           </div>
         </div>
 
         <button
-          onClick={() => setShowConfirmation(true)}
+          onClick={() => handleTransaction(steps)}
           className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
         >
           Confirm Send
@@ -119,27 +153,27 @@ export const SendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmount, 
               <span className="text-sm text-white/60">{transactionProgress}%</span>
             </div>
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-blue-500 transition-all duration-500"
                 style={{ width: `${transactionProgress}%` }}
               />
             </div>
           </div>
           <div className="flex items-center gap-4 animate-pulse">
-            <img 
-              src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" 
-              alt="USDC" 
+            <img
+              src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
+              alt="USDC"
               className="w-12 h-12"
             />
             <ArrowRight className="w-6 h-6 text-white/40" />
-            <img 
+            <img
               src="https://api.dicebear.com/7.x/avataaars/svg?seed=vitalik"
-              alt="Vitalik" 
+              alt="Vitalik"
               className="w-12 h-12 rounded-full"
             />
           </div>
           <p className="mt-4 text-white/60">
-            Sending 100 USDC to vitalik.eth
+            Sending {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
           </p>
         </>
       ) : (
@@ -170,9 +204,8 @@ export const SendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmount, 
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
           <div className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              step >= 1 ? 'bg-blue-500' : 'bg-white/10'
-            }`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-blue-500' : 'bg-white/10'
+              }`}>
               <span>1</span>
             </div>
           </div>
