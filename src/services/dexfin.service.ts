@@ -66,7 +66,12 @@ export const dexfinv3Service = {
       const { data } = await dexfinv3Api.get<EvmDefiPosition[]>(
         `/evm/defi/positions/${chainId}/${walletAddress}`
       );
-
+      // const { data } = await dexfinv3Api.get<EvmDefiPosition[]>(
+      //   `/evm/defi/positions/${1}/${"0xcB1C1FdE09f811B294172696404e88E658659905"}`
+      // );
+      // const { data } = await dexfinv3Api.get<EvmDefiPosition[]>(
+      //   `/evm/defi/positions/${1}/${"0xae2Fc483527B8EF99EB5D9B44875F005ba1FaE13"}`
+      // );
       return data;
     } catch (error) {
       console.log("Failed to fetch evm defi position:", error);

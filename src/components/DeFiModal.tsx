@@ -1,25 +1,13 @@
-import React, {useState} from 'react';
-import {BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X} from 'lucide-react';
+import React, { useState, useContext, useEffect } from 'react';
+import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X } from 'lucide-react';
+
+import { useDefiPositionByWallet } from '../hooks/useDefi';
+import { Web3AuthContext } from '../providers/Web3AuthContext';
+import useDefiStore, { Position } from '../store/useDefiStore';
 
 interface DeFiModalProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-interface Position {
-  protocol: string;
-  type: 'LENDING' | 'BORROWING' | 'STAKING' | 'POOL';
-  amount: number;
-  token: string;
-  apy: number;
-  rewards?: number;
-  healthFactor?: number;
-  poolShare?: number;
-  pairToken?: string;
-  logo: string;
-  borrowed?: number;
-  maxBorrow?: number;
-  collateralFactor?: number;
 }
 
 interface Offering {
@@ -47,59 +35,6 @@ interface ModalState {
   type: 'deposit' | 'withdraw' | 'borrow' | 'repay' | null;
   position?: Position;
 }
-
-const positions: Position[] = [
-  {
-    protocol: 'Aave V3',
-    type: 'LENDING',
-    amount: 1875,
-    token: 'USDC',
-    apy: 8.15,
-    logo: 'https://cryptologos.cc/logos/aave-aave-logo.png',
-    collateralFactor: 0.85
-  },
-  {
-    protocol: 'Compound V3',
-    type: 'BORROWING',
-    amount: 2500,
-    token: 'ETH',
-    apy: 3.5,
-    borrowed: 1.5,
-    maxBorrow: 2.0,
-    healthFactor: 1.75,
-    logo: 'https://cryptologos.cc/logos/compound-comp-logo.png'
-  },
-  {
-    protocol: 'Lido',
-    type: 'STAKING',
-    amount: 3700,
-    token: 'ETH',
-    apy: 5.5,
-    rewards: 2.5,
-    logo: 'https://cryptologos.cc/logos/lido-dao-ldo-logo.png'
-  },
-  {
-    protocol: 'Uniswap V3',
-    type: 'POOL',
-    amount: 3150,
-    token: 'ETH',
-    pairToken: 'USDC',
-    apy: 12.45,
-    poolShare: 0.015,
-    logo: 'https://cryptologos.cc/logos/uniswap-uni-logo.png'
-  },
-  {
-    protocol: 'Aave V3',
-    type: 'BORROWING',
-    amount: 5000,
-    token: 'USDC',
-    apy: 4.25,
-    borrowed: 2500,
-    maxBorrow: 4250,
-    healthFactor: 1.45,
-    logo: 'https://cryptologos.cc/logos/aave-aave-logo.png'
-  }
-];
 
 const offerings: Offering[] = [
   {
@@ -221,12 +156,17 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [selectedPositionType, setSelectedPositionType] = useState<Position['type'] | 'ALL'>('ALL');
   const [modalState, setModalState] = useState<ModalState>({ type: null });
 
+  const { chainId, address } = useContext(Web3AuthContext);
+  const { positions } = useDefiStore();
+
+  useDefiPositionByWallet({ chainId: chainId, walletAddress: address })
+
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
   const getTypeIcon = (type: Position['type']) => {
-    switch (type) {
+    switch (type.toUpperCase()) {
       case 'LENDING':
         return '💰';
       case 'BORROWING':
@@ -290,11 +230,11 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     </span>
                     <span className="text-white/40">•</span>
                     <span className="text-sm text-white/60">
-                      {position.token}
+                      {position.tokens}
                       {position.pairToken && `/${position.pairToken}`}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-6">
                     {position.type === 'BORROWING' ? (
                       <>
@@ -322,10 +262,9 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         </div>
                         <div>
                           <span className="text-sm text-white/60">Health Factor</span>
-                          <div className={`${
-                            position.healthFactor! >= 1.5 ? 'text-green-400' :
+                          <div className={`${position.healthFactor! >= 1.5 ? 'text-green-400' :
                             position.healthFactor! >= 1.1 ? 'text-yellow-400' : 'text-red-400'
-                          }`}>
+                            }`}>
                             {position.healthFactor!.toFixed(2)}
                           </div>
                         </div>
@@ -334,16 +273,16 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       <>
                         <div>
                           <span className="text-sm text-white/60">Amount</span>
-                          <div className="text-lg">${position.amount.toLocaleString()}</div>
+                          <div className="text-lg">${(position.amount || "0").toLocaleString()}</div>
                         </div>
                         <div>
                           <span className="text-sm text-white/60">APY</span>
-                          <div className="text-emerald-400">{position.apy}%</div>
+                          <div className="text-emerald-400">{(position.apy || "0")}%</div>
                         </div>
                         {position.rewards && (
                           <div>
                             <span className="text-sm text-white/60">Rewards</span>
-                            <div className="text-blue-400">+{position.rewards}% APR</div>
+                            <div className="text-blue-400">+{(position.rewards || "0")}% APR</div>
                           </div>
                         )}
                         {position.healthFactor && (
@@ -413,11 +352,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all ${
-                      (position.borrowed! / position.maxBorrow!) >= 0.8 ? 'bg-red-500' :
+                    className={`h-full transition-all ${(position.borrowed! / position.maxBorrow!) >= 0.8 ? 'bg-red-500' :
                       (position.borrowed! / position.maxBorrow!) >= 0.6 ? 'bg-yellow-500' :
-                      'bg-green-500'
-                    }`}
+                        'bg-green-500'
+                      }`}
                     style={{ width: `${(position.borrowed! / position.maxBorrow!) * 100}%` }}
                   />
                 </div>
@@ -433,11 +371,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => setSelectedPositionType('ALL')}
-          className={`px-3 py-1.5 rounded-lg transition-colors ${
-            selectedPositionType === 'ALL'
-              ? 'bg-white/10'
-              : 'hover:bg-white/5'
-          }`}
+          className={`px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
+            ? 'bg-white/10'
+            : 'hover:bg-white/5'
+            }`}
         >
           All Types
         </button>
@@ -445,11 +382,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           <button
             key={type}
             onClick={() => setSelectedPositionType(type)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-              selectedPositionType === type
-                ? 'bg-white/10'
-                : 'hover:bg-white/5'
-            }`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
+              ? 'bg-white/10'
+              : 'hover:bg-white/5'
+              }`}
           >
             {getTypeIcon(type)}
             <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
@@ -471,7 +407,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   alt={offering.protocol}
                   className="w-10 h-10"
                 />
-                
+
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-medium">{offering.protocol}</h3>
@@ -484,7 +420,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       {offering.pairToken && `/${offering.pairToken}`}
                     </span>
                   </div>
-                  
+
                   <p className="text-sm text-white/60 mb-2">
                     {offering.description}
                   </p>
@@ -492,9 +428,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   <div className="flex items-center gap-6">
                     <div>
                       <span className="text-sm text-white/60">Base APY</span>
-                      <div className={`${
-                        offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
-                      }`}>
+                      <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
+                        }`}>
                         {offering.apy}%
                       </div>
                     </div>
@@ -564,32 +499,29 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${
-          isFullscreen
-            ? 'w-full h-full rounded-none'
-            : 'w-[90%] h-[90%] rounded-xl'
-        }`}
+        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
+          ? 'w-full h-full rounded-none'
+          : 'w-[90%] h-[90%] rounded-xl'
+          }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSelectedTab('overview')}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
-                  selectedTab === 'overview'
-                    ? 'bg-white/10'
-                    : 'hover:bg-white/5'
-                }`}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'overview'
+                  ? 'bg-white/10'
+                  : 'hover:bg-white/5'
+                  }`}
               >
                 Overview
               </button>
               <button
                 onClick={() => setSelectedTab('explore')}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
-                  selectedTab === 'explore'
-                    ? 'bg-white/10'
-                    : 'hover:bg-white/5'
-                }`}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'explore'
+                  ? 'bg-white/10'
+                  : 'hover:bg-white/5'
+                  }`}
               >
                 Explore
               </button>
@@ -680,11 +612,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               <div className="flex items-center gap-2 mb-6">
                 <button
                   onClick={() => setSelectedPositionType('ALL')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${
-                    selectedPositionType === 'ALL'
-                      ? 'bg-white/10'
-                      : 'hover:bg-white/5'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
+                    ? 'bg-white/10'
+                    : 'hover:bg-white/5'
+                    }`}
                 >
                   All Types
                 </button>
@@ -692,11 +623,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   <button
                     key={type}
                     onClick={() => setSelectedPositionType(type)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                      selectedPositionType === type
-                        ? 'bg-white/10'
-                        : 'hover:bg-white/5'
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
+                      ? 'bg-white/10'
+                      : 'hover:bg-white/5'
+                      }`}
                   >
                     {getTypeIcon(type)}
                     <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
@@ -717,7 +647,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       const protocolPositions = positions.filter(p => p.protocol === protocol);
                       const totalValue = protocolPositions.reduce((sum, p) => sum + p.amount, 0);
                       const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
-                      
+
                       return (
                         <div key={protocol} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
                           <img
@@ -751,7 +681,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       const typePositions = positions.filter(p => p.type === type);
                       const totalValue = typePositions.reduce((sum, p) => sum + p.amount, 0);
                       const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
-                      
+
                       return (
                         <div key={type} className="p-4 bg-white/5 rounded-lg">
                           <div className="flex items-center justify-between mb-2">
@@ -793,8 +723,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-medium">
                 {modalState.type === 'deposit' ? 'Deposit' :
-                 modalState.type === 'withdraw' ? 'Withdraw' :
-                 modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
+                  modalState.type === 'withdraw' ? 'Withdraw' :
+                    modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
               </h3>
               <button
                 onClick={() => setModalState({ type: null })}
@@ -819,11 +749,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 </div>
                 <div className="ml-auto text-right">
-                  <div className={`${
-                    modalState.type === 'borrow' || modalState.type === 'repay'
-                      ? 'text-red-400'
-                      : 'text-emerald-400'
-                  }`}>
+                  <div className={`${modalState.type === 'borrow' || modalState.type === 'repay'
+                    ? 'text-red-400'
+                    : 'text-emerald-400'
+                    }`}>
                     {modalState.position.apy}% APY
                   </div>
                   {modalState.position.rewards && (
@@ -843,13 +772,12 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 />
                 <div className="flex items-center justify-between mt-2 text-sm">
                   <span className="text-white/60">
-                    {modalState.type === 'borrow' 
-                      ? `Available to borrow: ${
-                          modalState.position.maxBorrow! - modalState.position.borrowed!
-                        } ${modalState.position.token}`
+                    {modalState.type === 'borrow'
+                      ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
+                      } ${modalState.position.token}`
                       : modalState.type === 'repay'
-                      ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.token}`
-                      : `Balance: ${modalState.position.amount} ${modalState.position.token}`
+                        ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.token}`
+                        : `Balance: ${modalState.position.amount} ${modalState.position.token}`
                     }
                   </span>
                   <button className="text-blue-400">MAX</button>
@@ -864,10 +792,9 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-white/60">Health Factor</span>
-                    <span className={`${
-                      modalState.position.healthFactor! >= 1.5 ? 'text-green-400' :
+                    <span className={`${modalState.position.healthFactor! >= 1.5 ? 'text-green-400' :
                       modalState.position.healthFactor! >= 1.1 ? 'text-yellow-400' : 'text-red-400'
-                    }`}>
+                      }`}>
                       {modalState.position.healthFactor!.toFixed(2)}
                     </span>
                   </div>
@@ -880,8 +807,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
               <button className="w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium">
                 {modalState.type === 'deposit' ? 'Deposit' :
-                 modalState.type === 'withdraw' ? 'Withdraw' :
-                 modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
+                  modalState.type === 'withdraw' ? 'Withdraw' :
+                    modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
               </button>
             </div>
           </div>
