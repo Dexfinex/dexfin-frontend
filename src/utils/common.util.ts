@@ -42,6 +42,8 @@ export const extractAddress = (fullAddress: string): string => {
 }
 
 export const getChatHistoryDate = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
     const date = new Date(timestamp);
     const now = new Date();
 

@@ -14,7 +14,7 @@ import { SendFileModal } from './SendFileModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
-import { Spinner } from '@chakra-ui/react';
+import { Spinner, Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverHeader, PopoverBody, Button } from '@chakra-ui/react';
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
@@ -31,8 +31,8 @@ interface IUser {
   address: string;
   chatId: string;
   type: "Request" | "Connected" | "Searched";
-  lastTimestamp?: number;
-  lastMessage?: string;
+  lastTimestamp: number;
+  lastMessage: string;
   unreadMessages: number;
 }
 
@@ -53,11 +53,11 @@ interface IGroup {
   members: IMember[];
   pendingMembers: IMember[];
   type: "Request" | "Connected" | "Searched";
-  lastTimestamp?: number;
-  lastMessage?: string;
+  lastTimestamp: number;
+  lastMessage: string;
 }
 
-type ChatType = "Text" | "MediaEmbed" | "Image" | "File";
+type ChatType = "Text" | "MediaEmbed" | "Image" | "File" | "Reaction";
 
 interface IChat {
   timestamp: number;
@@ -470,8 +470,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 members: profile.members,
                 pendingMembers: profile.pendingMembers,
                 type: "Request",
-                lastTimestamp: receivedMessage?.timestamp ? Number(receivedMessage.timestamp) : undefined,
-                lastMessage: receivedMessage.message?.content ? receivedMessage.message.content : undefined
+                lastTimestamp: receivedMessage?.timestamp ? Number(receivedMessage.timestamp) : 0,
+                lastMessage: receivedMessage.message?.content ? receivedMessage.message.content : ""
               }]
             )
           }
@@ -519,7 +519,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
         }
       } else if (receivedMessage.origin == "self") {
-        if (receivedMessage.event == "chat.message" && chatMode === "group") {
+        if (receivedMessage.event == "chat.message") {
           updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
         }
       }
@@ -539,7 +539,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 address: extractAddress(receivedMessage.from),
                 chatId: receivedMessage.chatId,
                 type: "Request",
-                unreadMessages: 0
+                unreadMessages: 0,
+                lastTimestamp: 0,
+                lastMessage: ""
               }])
             }
           }
@@ -561,11 +563,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
             updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
           } else {
-            addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.content, Number(receivedMessage.timestamp))
+            addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp))
           }
         }
       } else if (receivedMessage.origin == "self") {
-        if (receivedMessage.event == "chat.message" && chatMode === "p2p") {
+        if (receivedMessage.event == "chat.message") {
           updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
         }
       }
@@ -646,7 +648,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           pendingMembers: data.groupInformation.pendingMembers,
           type: "Connected",
           lastTimestamp: Number(data.msg.timestamp),
-          lastMessage: data.msg.messageType === "Text" ? data.msg.messageContent : "💻Media",
+          lastMessage: data.msg.messageType === "Text" ? data.msg.messageContent : data.msg.messageType ? "💻Media" : "",
         }]
       } else {
         userInformation = [...userInformation, {
@@ -656,7 +658,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           chatId: data.chatId,
           type: "Connected",
           lastTimestamp: data.msg.timestamp,
-          lastMessage: data.msg.messageType === "Text" ? data.msg.messageContent : "💻Media",
+          lastMessage: data.msg.messageType === "Text" ? data.msg.messageContent : data.msg.messageType ? "💻Media" : "",
           unreadMessages: 0
         }]
       }
@@ -664,10 +666,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     console.log('groupInformation = ', groupInformation)
 
     if (groupInformation.length > 0) {
-      setGroupList(groupInformation)
+      setGroupList(groupInformation.sort((a, b) => b.lastTimestamp - a.lastTimestamp))
     }
     if (userInformation.length > 0) {
-      setConnectedUsers(userInformation)
+      setConnectedUsers(userInformation.sort((a, b) => b.lastTimestamp - a.lastTimestamp))
     }
 
     //get chat request
@@ -685,7 +687,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             address: extractAddress(request.wallets),
             chatId: request.chatId,
             type: "Request",
-            unreadMessages: 0
+            unreadMessages: 0,
+            lastTimestamp: 0,
+            lastMessage: ""
           }]
         } else if (request.groupInformation) {
           groupRequests = [...groupRequests, {
@@ -699,8 +703,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             members: request.groupInformation.members,
             pendingMembers: request.groupInformation.pendingMembers,
             type: "Request",
-            lastTimestamp: request.msg?.timestamp ? Number(request.msg?.timestamp) : undefined,
-            lastMessage: request.msg?.messageContent ? request.msg?.messageContent : undefined
+            lastTimestamp: request.msg?.timestamp ? Number(request.msg?.timestamp) : 0,
+            lastMessage: request.msg?.messageContent ? request.msg?.messageContent : ""
           }]
         }
       })
@@ -743,7 +747,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       nft: group.contractAddressNFT,
       members: group.members,
       pendingMembers: group.pendingMembers,
-      type: "Connected"
+      type: "Connected",
+      lastTimestamp: 0,
+      lastMessage: ""
     }, ...groupList])
   }
 
@@ -824,6 +830,26 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
 
     setIsHandlingRequest(false)
+  }
+
+  const handleReaction = async (chatId: string, address: string, content: string, action: string) => {
+    console.log('reference: ', chatId)
+    console.log('address: ', address)
+    console.log('content: ', content)
+    console.log('action: ', action)
+
+    try {
+      const sentReaction = await chatUser.chat.send(address, {
+        type: 'Reaction',
+        content,
+        action,
+        reference: chatId
+      })
+
+      console.log('sent reaction = ', sentReaction)
+    } catch (err) {
+      console.log('reaction err: ', err)
+    }
   }
 
   const handleSendMessage = async () => {
@@ -974,7 +1000,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               address: searchQuery,
               chatId: "",
               type: "Searched",
-              unreadMessages: 0
+              unreadMessages: 0,
+              lastTimestamp: 0,
+              lastMessage: ""
             })
           }
         }
@@ -1002,7 +1030,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               nft: profile.contractAddressNFT,
               members: profile.members,
               pendingMembers: profile.pendingMembers,
-              type: "Searched"
+              type: "Searched",
+              lastTimestamp: 0,
+              lastMessage: ""
             })
           }
         }
@@ -1216,7 +1246,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         );
         // console.log("Previous Users: ", prevUsers);
         // console.log("Updated Users: ", updatedUsers);
-        return updatedUsers;
+        return updatedUsers.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
       });
     } else {
       if (isRequest) {
@@ -1239,24 +1269,28 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           );
           // console.log("Previous Groups: ", prevGroups);
           // console.log("Updated Groups: ", updatedGroups);
-          return updatedGroups;
+          return updatedGroups.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
         });
       }
     }
   }
 
-  const addUnreadMessagesCount = (address: string, msg: string, timestamp: number) => {
+  const addUnreadMessagesCount = (address: string, type: ChatType, msg: string, timestamp: number) => {
+    const lastMessage = (type === "Text" ? msg : "💻Media")
+
     if (connectedUsers.length > 0) {
       setConnectedUsers((prevUsers) => {
         const updatedUsers = prevUsers.map((user) =>
           user.address === address
-            ? { ...user, lastMessage: msg, lastTimestamp: timestamp, unreadMessages: ++user.unreadMessages }
+            ? { ...user, lastMessage, lastTimestamp: timestamp, unreadMessages: ++user.unreadMessages }
             : user
         );
-        return updatedUsers;
+
+        return updatedUsers.sort((a, b) => b.lastTimestamp - a.lastTimestamp)
       });
     }
   }
+
   const downloadBase64File = (base64Data: string, fileName: string, fileType: string) => {
     // Convert Base64 to a Blob
     const byteCharacters = atob(base64Data);
@@ -1531,7 +1565,30 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     // }
   }
 
-  const renderChatBox = (type: ChatType, isOwner: boolean, content: string) => {
+  const renderReactionBtn = (isOwner: boolean, chatId: string, address: string) => {
+    return (
+      <div className={`absolute ${!isOwner ? 'right-[-20px]' : 'left-[-20px]'} bottom-[2px]`}>
+        <Popover>
+          <PopoverTrigger>
+            <Smile className={`text-white/50 w-4 h-4 cursor-pointer`} />
+          </PopoverTrigger>
+          <PopoverContent className='!bg-transparent !border-transparent !w-[200px]'>
+            <div className='flex gap-1'>
+              <button onClick={() => handleReaction(chatId, address, '👍', 'ThumbsUp')}>👍</button>
+              <button onClick={() => handleReaction(chatId, address, '👎', 'ThumbsDown')}>👎</button>
+              <button onClick={() => handleReaction(chatId, address, '❤️', 'Heart')}>❤️</button>
+              <button onClick={() => handleReaction(chatId, address, '🔥', 'Fire')}>🔥</button>
+              <button onClick={() => handleReaction(chatId, address, '😲', 'Surprised')}>😲</button>
+              <button onClick={() => handleReaction(chatId, address, '😂', 'Laugh')}>😂</button>
+              <button onClick={() => handleReaction(chatId, address, '😢', 'Sad')}>😢</button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    )
+  }
+
+  const renderChatBox = (chatId: string, type: ChatType, isOwner: boolean, content: string, address: string) => {
     let messageContent = content
     let fileName = ""
     let fileSize = ""
@@ -1557,20 +1614,36 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       // console.log('file content parse err')
     }
 
-    return (
-      type == "Text" ? <div className={`rounded-lg p-3 w-[480px] ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>{messageContent}</div> :
-        type == "MediaEmbed" ? <img className={`w-52 h-auto ${!isOwner ? '' : 'ml-auto'}`} src={messageContent} /> :
-          type == "Image" ? <img className={`w-52 h-auto ${!isOwner ? '' : 'ml-auto'}`} src={messageContent} /> :
-            type == "File" ? <button className={`flex flex-col gap-4 items-center w-56 h-20 rounded-lg justify-center  ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`} onClick={() => downloadBase64File(messageContent, fileName, fileType)}>
-              <div className='flex gap-4'>
-                <File className='w-10 h-10' />
-                <div className='flex flex-col'>
-                  <span className='text-md'>{fileName}</span>
-                  <span className='text-sm text-center'>{fileSize}B</span>
-                </div>
-              </div>
-            </button> : <></>
-    )
+    if (type === "Text") {
+      return <div className={`flex ${!isOwner ? 'justify-start' : 'justify-end'}`}>
+        <div className={`relative rounded-lg p-3 max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+          {messageContent}
+          {renderReactionBtn(isOwner, chatId, address)}
+        </div>
+      </div>
+    } else if (type === "MediaEmbed") {
+      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
+        <img className={`w-52 h-auto`} src={messageContent} />
+        {renderReactionBtn(isOwner, chatId, address)}
+      </div>
+    } else if (type === "Image") {
+      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
+        <img className={`w-52 h-auto`} src={messageContent} />
+        {renderReactionBtn(isOwner, chatId, address)}
+      </div>
+    } else if (type === "File") {
+      return <div className={`relative flex flex-col gap-4 items-center w-56 h-20 rounded-lg justify-center  ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+        <div className='flex gap-4 items-center'>
+          <File className='w-10 h-10 text-white/50' />
+          <div className='flex flex-col text-white/50'>
+            <span className='text-md'>{fileName}</span>
+            <span className='text-sm text-center'>{fileSize}B</span>
+          </div>
+          <Download className='w-5 h-5 cursor-pointer' onClick={() => downloadBase64File(messageContent, fileName, fileType)} />
+        </div>
+        {renderReactionBtn(isOwner, chatId, address)}
+      </div>
+    }
   }
 
   const renderChatHistory = () => {
@@ -1591,7 +1664,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
             {
-              renderChatBox(msg.type, msg.fromAddress != selectedUser?.address, msg.content)
+              renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress)
             }
           </div>
         </div>
@@ -1613,7 +1686,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
             {
-              renderChatBox(msg.type, msg.fromAddress == address, msg.content)
+              renderChatBox(msg.chatId, msg.type, msg.fromAddress == address, msg.content, "")
             }
           </div>
           {
@@ -2039,7 +2112,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Chat Messages */}
-            <div ref={chatScrollRef} className="flex-1 p-4 overflow-y-auto ai-chat-scrollbar">
+            <div ref={chatScrollRef} className="flex-1 p-4 overflow-x-hidden overflow-y-auto ai-chat-scrollbar">
               {renderMessages()}
             </div>
 
