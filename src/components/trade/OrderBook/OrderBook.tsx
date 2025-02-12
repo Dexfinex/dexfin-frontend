@@ -96,7 +96,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
             return (
                 <div 
                     key={`${idx}-${level.depth}`}
-                    className={`relative flex w-full h-6 items-center ${isSelected ? 'bg-gray-800/50 dark:bg-gray-800/50' : ''}`}
+                    className={`relative flex w-full h-6 items-center ${isSelected ? 'bg-gray-800/50 dark:bg-gray-800/50 glass' : ''}`}
                     onMouseEnter={() => {
                         if (orderType === OrderType.ASKS) {
                             setAsksSelectedIndex(idx);
