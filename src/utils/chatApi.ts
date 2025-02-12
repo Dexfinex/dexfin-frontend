@@ -1,4 +1,4 @@
-export const LIMIT = 30;
+export const LIMIT = 12;
 
 export const getWalletProfile = async (chatUser:any, address: string) => {
     try {
@@ -7,6 +7,7 @@ export const getWalletProfile = async (chatUser:any, address: string) => {
     } catch(err) {
         console.log('get wallet profile err: ', err)
     }
+    
     return null
 }
 
