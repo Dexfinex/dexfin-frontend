@@ -2,17 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronDown, ShoppingCart, X } from 'lucide-react';
 import { Alert, AlertIcon, Button } from '@chakra-ui/react';
 import { formatNumberByFrac } from '../../../utils/common.util';
-
-interface CheckoutSectionProps {
-    cartItems: any[];
-    tokenPrices: Record<string, number>;
-    walletAddress: string | null;
-    buyError: string | null;
-    processingBuy: boolean;
-    isBuyPending: boolean;
-    onClose: () => void;
-    onExecuteBuy: () => Promise<void>;
-}
+import { CheckoutSectionProps } from '../../../types/cart.type';
 
 const OrderSummaryItem = React.memo(({
     item,
@@ -61,7 +51,6 @@ const PaymentMethodButton = React.memo(({
                 </div>
                 <div className="text-sm text-white/60">
                     {method === 'wallet' ? 'Pay with your connected wallet' : 'Coming soon.'}
-                    {/* Pay with Visa, Mastercard, etc */}
                 </div>
             </div>
         </div>
@@ -105,7 +94,7 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
             </div>
 
             <div className="p-6">
-                <div className='grid grid-cols-2 gap-4'>
+                <div className="grid grid-cols-2 gap-4">
                     {/* Order Summary */}
                     <div className="mb-8">
                         <h3 className="text-lg font-medium mb-4">Order Summary</h3>
@@ -119,8 +108,9 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                             ))}
                         </div>
                     </div>
-                    <div className="max-w-2xl mx-auto">
-                        {/* Payment Method */}
+
+                    {/* Payment Section */}
+                    <div>
                         <div className="mb-8">
                             <h3 className="text-lg font-medium mb-4">Payment Method</h3>
                             <div className="space-y-3">
@@ -136,8 +126,9 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                                 />
                             </div>
                         </div>
+
                         {/* Total Section */}
-                        <div className="mb-8">
+                        <div className="space-y-4">
                             <div className="p-4 bg-white/5 rounded-lg space-y-2">
                                 <div className="flex justify-between">
                                     <span className="text-white/60">Subtotal</span>
@@ -153,34 +144,43 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                                     <span>${formatNumberByFrac(total)}</span>
                                 </div>
                             </div>
+
+                            {/* Error Display */}
+                            {buyError && (
+                                <Alert
+                                    status="error"
+                                    variant="subtle"
+                                    bg="#511414"
+                                    borderRadius="md"
+                                    fontSize="sm"
+                                    padding="2"
+                                >
+                                    <AlertIcon boxSize="4" />
+                                    <div className="overflow-x-hidden text-ellipsis overflow-y-auto h-24">
+
+                                        {buyError}
+                                    </div>
+                                </Alert>
+                            )}
+
+                            {/* Confirm Payment Button */}
+                            <Button
+                                width="full"
+                                colorScheme="blue"
+                                onClick={onExecuteBuy}
+                                isLoading={processingBuy || isBuyPending}
+                                loadingText={
+                                    isBuyPending ? "Confirming Transaction..." :
+                                        processingBuy ? "Processing Purchase..." :
+                                            "Preparing Transaction..."
+                                }
+                                isDisabled={!walletAddress || processingBuy || isBuyPending}
+                            >
+                                {walletAddress ? 'Confirm Payment' : 'Connect Wallet to Continue'}
+                            </Button>
                         </div>
-
-                        {/* Error Display */}
-                        {buyError && (
-                            <Alert status="error" variant="subtle" bg={'#511414'} borderRadius="md" className="mb-4">
-                                <AlertIcon />
-                                {buyError}
-                            </Alert>
-                        )}
-
-                        {/* Confirm Payment Button */}
-                        <Button
-                            width="full"
-                            colorScheme="blue"
-                            onClick={onExecuteBuy}
-                            isLoading={processingBuy || isBuyPending}
-                            loadingText={
-                                isBuyPending ? "Confirming Transaction..." :
-                                    processingBuy ? "Processing Purchase..." :
-                                        "Preparing Transaction..."
-                            }
-                            isDisabled={!walletAddress || processingBuy || isBuyPending}
-                        >
-                            {walletAddress ? 'Confirm Payment' : 'Connect Wallet to Continue'}
-                        </Button>
                     </div>
                 </div>
-
             </div>
         </>
     );

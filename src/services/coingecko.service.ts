@@ -2,11 +2,9 @@ import { coinGeckoApi } from "./api.service.ts";
 import { CoinGeckoToken, TrendingCoin, SearchResult, CoinData, CoinGeckoNativeToken } from "../types";
 import { ChartDataPoint, TokenType } from "../types/swap.type.ts";
 import { TokenTypeB } from "../types/cart.type.ts";
-
 import axios from "axios";
 import { mapCoingeckoAssetPlatforms } from "../constants/mock/coingeckoAssetPlatforms.ts";
 import { NULL_ADDRESS } from "../constants";
-import { mapCoingeckoNetworks } from "../constants/mock/coingeckoNetworks.ts";
 import { MarketCapToken } from "../components/market/MarketCap.tsx";
 
 export const coingeckoService = {
@@ -69,8 +67,6 @@ export const coingeckoService = {
             throw error;
         }
     },
-
-
     getOHLCV: async (tokenId: string, days = 30) => {
         try {
             // Ensure days is a valid number

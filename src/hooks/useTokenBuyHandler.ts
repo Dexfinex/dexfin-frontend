@@ -9,28 +9,25 @@ import { coingeckoService } from "../services/coingecko.service";
 
 export const useTokenBuyHandler = () => {
     const [error, setError] = useState<Error | null>(null);
-    const [txHash, setTxHash] = useState<string | null>(null);
+    const [txHashes, setTxHashes] = useState<string[]>([]);
+    const [currentTxHash, setCurrentTxHash] = useState<string | null>(null);
     const { address: walletAddress, provider, chainId: walletChainId } = useContext(Web3AuthContext);
     const SLIPPAGE_TOLERANCE = 0.005; // 0.5%
 
     const {
-        data: hash,
         isPending,
-        sendTransaction,
         sendTransactionAsync
     } = useSendTransaction();
 
     const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-        hash: hash as `0x${string}`,
+        hash: currentTxHash as `0x${string}`,
     });
 
     const getEthPrice = async (): Promise<number> => {
         try {
             const ethPrices = await coingeckoService.getTokenPrices(1, [nativeAddress]);
             const ethPrice = ethPrices[nativeAddress];
-            console.log("ETH price:", ethPrice);
             if (!ethPrice) throw new Error('Failed to fetch ETH price');
-            // console.log('ETH price:', ethPrice);
             return parseFloat(ethPrice);
         } catch (error) {
             console.error('ETH price fetch failed:', error);
@@ -44,23 +41,21 @@ export const useTokenBuyHandler = () => {
         }
 
         console.log("Starting batch buy for tokens:", tokens);
-        // return;
-        let currentIndex = 0;
+        const completedTxHashes: string[] = [];
+        setTxHashes([]); 
+        try {
+            // Get ETH price once for all transactions
+            const ETH_PRICE_USD = await getEthPrice();
 
-        while (currentIndex < tokens.length) {
-            console.log(`Processing token ${currentIndex + 1} of ${tokens.length}`);
+            // Process each token sequentially
+            for (let i = 0; i < tokens.length; i++) {
+                console.log(`Processing token ${i + 1} of ${tokens.length}`);
 
-            try {
-                // Get current gas price
+                // Get current gas price for each transaction
                 const gasPrice = await provider?.getGasPrice();
                 if (!gasPrice) throw new Error('Could not get gas price');
 
-                // Get ETH price
-                const ETH_PRICE_USD = await getEthPrice();
-                // console.log("ETH_PRICE_USD:", ETH_PRICE_USD);
-
-                // Calculate amounts for current token
-                const currentToken = tokens[currentIndex];
+                const currentToken = tokens[i];
                 const tokenQuantity = parseFloat(currentToken.amount);
                 const tokenPriceInUSD = currentToken.token.price || 0;
                 const totalCostInUSD = tokenPriceInUSD * tokenQuantity;
@@ -68,31 +63,26 @@ export const useTokenBuyHandler = () => {
                 const ethAmount = (totalCostWithSlippage / ETH_PRICE_USD).toFixed(18);
                 const sellTokenAmount = ethers.utils.parseEther(ethAmount).toString();
 
-                // console.log(`Sell token amount in Wei for token ${currentIndex}:`, sellTokenAmount);
-
-                // Get quote from 0x API
                 const quoteParams = {
-                    chainId: 8453,
+                    chainId: walletChainId || 8453,
                     buyTokenAddress: currentToken.token.address,
                     sellTokenAddress: nativeAddress,
                     sellTokenAmount: sellTokenAmount,
                     takerAddress: walletAddress,
                 };
 
-                console.log("Requesting quote with params:", quoteParams);
+                console.log(`Requesting quote for token ${i + 1}:`, quoteParams);
                 const quoteResponse = await zeroxService.getQuote(quoteParams);
 
                 if (!quoteResponse?.transaction) {
-                    throw new Error(`Invalid quote response for token ${currentIndex}`);
+                    throw new Error(`Invalid quote response for token ${i + 1}`);
                 }
-
-                // console.log(`Quote received for token ${currentIndex}:`, quoteResponse);
 
                 const transaction = quoteResponse.transaction;
                 const gasLimit = BigInt(transaction.gas || '400000');
                 const gasCost = gasLimit * gasPrice.toBigInt();
 
-                // Check balance
+                // Check balance for each transaction
                 const balance = await provider?.getBalance(walletAddress);
                 if (!balance) throw new Error('Could not fetch balance');
 
@@ -100,11 +90,10 @@ export const useTokenBuyHandler = () => {
                 if (balance.lt(totalCost)) {
                     const userBalance = ethers.utils.formatEther(balance);
                     const requiredAmount = ethers.utils.formatEther(totalCost);
-                    throw new Error(`Insufficient ETH balance for token ${currentIndex}. Have ${userBalance} ETH, need ${requiredAmount} ETH`);
+                    throw new Error(`Insufficient ETH balance for token ${i + 1}. Have ${userBalance} ETH, need ${requiredAmount} ETH`);
                 }
 
-                // Send transaction
-                // console.log(`Sending transaction for token ${currentIndex}...`);
+                // Execute transaction
                 const txHash = await sendTransactionAsync({
                     account: walletAddress as `0x${string}`,
                     to: transaction.to as `0x${string}`,
@@ -113,29 +102,34 @@ export const useTokenBuyHandler = () => {
                     gas: gasLimit,
                     maxFeePerGas: gasPrice.toBigInt(),
                     chainId: walletChainId || 8453,
-                })
+                });
 
-                console.log(currentIndex, { txHash });
+                console.log(`Transaction ${i + 1} hash:`, txHash);
+                completedTxHashes.push(txHash);
+                setCurrentTxHash(txHash);
+                setTxHashes(prevHashes => [...prevHashes, txHash]); 
 
-                currentIndex++;
-                return txHash;
-            } catch (err) {
-                console.error(`Buy execution failed for token ${currentIndex}:`, err);
-                const errorMessage = err instanceof Error ?
-                    err.message :
-                    'Transaction failed - Please ensure you have enough ETH for gas fees';
-                setError(new Error(`Token ${currentIndex}: ${errorMessage}`));
-                throw err;
+                // Wait for transaction confirmation before proceeding to next token
+                await provider?.waitForTransaction(txHash);
             }
-        }
 
-        console.log("Batch buy completed successfully");
+            // console.log("All transactions completed:", completedTxHashes);
+            return completedTxHashes[completedTxHashes.length - 1]; 
+        } catch (err) {
+            console.error('Batch buy execution failed:', err);
+            const errorMessage = err instanceof Error ?
+                err.message :
+                'Transaction failed - Please ensure you have enough ETH for gas fees';
+            setError(new Error(errorMessage));
+            throw err;
+        }
     };
 
     return {
         executeBatchBuy,
         error,
-        txHash,
+        txHash: currentTxHash,
+        txHashes, // Return all transaction hashes
         isLoading: isPending || isConfirming,
         isConfirmed,
         isPending,

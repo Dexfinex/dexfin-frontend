@@ -2,7 +2,6 @@ export interface CartModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
 export interface CoinData {
   id: string;
   symbol: string;
@@ -22,7 +21,6 @@ export interface CoinData {
   quantity: number
 
 }
-
 export interface CartItem {
   id: string;
   name: string;
@@ -34,7 +32,6 @@ export interface CartItem {
   chainId: number;
   decimals: number;
 }
-
 export interface ChartOptions {
   responsive: boolean;
   maintainAspectRatio: boolean;
@@ -60,7 +57,6 @@ export interface ChartOptions {
     };
   };
 }
-
 export interface ChartData {
   labels: string[];
   datasets: {
@@ -110,7 +106,11 @@ export interface TokenTypeB {
   volume24h: number;
   address: string;
 }
-
+export interface TokenPurchaseDetails {
+  tokenSymbol: string;
+  amount: number;
+  costInUSD: number;
+}
 export interface ZeroxQuoteRequestType {
   chainId: number;
   sellTokenAddress: string;
@@ -118,7 +118,6 @@ export interface ZeroxQuoteRequestType {
   sellTokenAmount: string;
   takerAddress: string;
 }
-
 export interface QuoteResponse {
   price: string;
   guaranteedPrice: string;
@@ -145,10 +144,46 @@ export interface CoinGridProps {
   onAddToCart: (coin: any) => void;
   walletChainId: number;
 }
-
 export interface SearchHeaderProps {
   selectedCategory: string;
   searchQuery: string;
   onCategoryChange: (category: string) => void;
   onSearchChange: (query: string) => void;
+}
+export interface CheckoutSectionProps {
+  cartItems: any[];
+  tokenPrices: Record<string, number>;
+  walletAddress: string | null;
+  buyError: string | null;
+  processingBuy: boolean;
+  isBuyPending: boolean;
+  onClose: () => void;
+  onExecuteBuy: () => Promise<void>;
+}
+export interface TokenPurchaseDetails {
+  tokenSymbol: string;
+  amount: number;
+  costInUSD: number;
+}
+
+export interface TransactionModalProps {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  transactionHashes: string[];
+  chainExplorerUrl: string;
+  tokenDetails: TokenPurchaseDetails[];
+}
+export interface CartListProps {
+  cartItems: any[];
+  tokenPrices: Record<string, number>;
+  onRemove: (id: string) => void;
+  onUpdateQuantity: (id: string, quantity: number) => void;
+  onCheckout: () => void;
+}
+
+export interface CartItemProps {
+  item: any;
+  coinPrice: number;
+  onRemove: (id: string) => void;
+  onUpdateQuantity: (id: string, quantity: number) => void;
 }

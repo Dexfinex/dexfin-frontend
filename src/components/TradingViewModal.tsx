@@ -249,16 +249,16 @@ const ChainSelectRow = React.memo(({ network, hasIcon }) => {
 });
 
 export const TradingViewModal: React.FC<DashboardModalProps> = ({ isOpen, onClose }) => {
-const { theme } = useStore();
+  const { theme } = useStore();
 
   const {
     isTradeChartOpen,
     setIsTradeChartOpen
-} = useStore();
+  } = useStore();
 
-useEffect(() => {
-  document.body.setAttribute('data-theme', theme);
-}, [theme]);
+  useEffect(() => {
+    document.body.setAttribute('data-theme', theme);
+  }, [theme]);
   const [currentMLIndex, setCurrentMLIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [lastPrice, setLastPrice] = useState(0);
@@ -670,48 +670,29 @@ useEffect(() => {
           <div className="w-full">
             <div className="block w-full lg:grid lg:grid-cols-6">
               <div className="block w-full lg:col-span-5 rounded-xl">
-                <div className='w-full'>
-                  <div className='flex w-full lg:grid lg:grid-cols-4'>
-                    <div
-                      className={`lg:col-span-3 ${mobileTabIndex[1]
-                        ? "w-full h-screen flex flex-col"
-                        : "hidden"
-                        } lg:block w-full border-t border-gray-800`}
-                    >
-                      <div className="flex-1 h-full glass">
-                        <TradeChart
-                          pairSymbol={currentPairSymbol}
-                          className="w-full h-full glass"
-                          isOpen={isTradeChartOpen}
-                          onClose={() => setIsTradeChartOpen(false)}
-                        />
-                      </div>
+                <div className='flex w-full lg:grid lg:grid-cols-4'>
+                  <div
+                    className={`lg:col-span-3 ${mobileTabIndex[1]
+                      ? "w-full h-screen flex flex-col"
+                      : "hidden"
+                      } lg:block w-full border-t border-gray-800`}
+                  >
+                    <div className="flex-1 h-full glass">
+                      <TradeChart
+                        pairSymbol={currentPairSymbol}
+                        isOpen={isTradeChartOpen}
+                        onClose={() => setIsTradeChartOpen(false)}
+                        theme={theme}
+                      />
                     </div>
+                  </div>
 
-                    <div className={`flex w-full ${mobileTabIndex[2] ? "" : "hidden"} lg:flex border-t border-gray-800`}>
-                      <div className="w-full h-full rounded-xl">
-                        {/* Mobile view */}
-                        <div className="block w-full lg:hidden">
-                          {mobileTabIndex[2] ? (
-                            <div className="w-full h-full overflow-auto">
-                              <Orderbook
-                                pricePrecision={pairConfig.pricePrecision}
-                                asks={asks}
-                                bids={bids}
-                                symbolAssetIn={symbolAssetIn}
-                                symbolAssetOut={symbolAssetOut}
-                                lastPrice={lastPrice}
-                                pairConfig={pairConfig}
-                                pairSymbol={currentPairSymbol}
-                              />
-                            </div>
-                          ) : <></>
-                          }
-                        </div>
-
-                        {/* Desktop view */}
-                        <div className="hidden lg:block">
-                          <div className="h-full overflow-auto">
+                  <div className={`flex w-full ${mobileTabIndex[2] ? "" : "hidden"} lg:flex border-t border-gray-800`}>
+                    <div className="w-full h-full rounded-xl">
+                      {/* Mobile view */}
+                      <div className="block w-full lg:hidden">
+                        {mobileTabIndex[2] ? (
+                          <div className="w-full">
                             <Orderbook
                               pricePrecision={pairConfig.pricePrecision}
                               asks={asks}
@@ -723,12 +704,29 @@ useEffect(() => {
                               pairSymbol={currentPairSymbol}
                             />
                           </div>
+                        ) : <></>
+                        }
+                      </div>
+
+                      {/* Desktop view */}
+                      <div className="hidden lg:block">
+                        <div className="h-full">
+                          <Orderbook
+                            pricePrecision={pairConfig.pricePrecision}
+                            asks={asks}
+                            bids={bids}
+                            symbolAssetIn={symbolAssetIn}
+                            symbolAssetOut={symbolAssetOut}
+                            lastPrice={lastPrice}
+                            pairConfig={pairConfig}
+                            pairSymbol={currentPairSymbol}
+                          />
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="hidden border-t border-gray-800 lg:flex">
+                <div className="hidden border-t border-gray-800 lg:flex"> 
                   <div className="w-full col-span-1 lg:col-span-3 bg-white/5 rounded-xl">
                     <div className="flex flex-col h-full">
                       <OrderHistorySection
