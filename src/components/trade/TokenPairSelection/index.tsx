@@ -166,10 +166,11 @@ export const TokenPairSelectModal: React.FC<TokenPairSelectModalProps> = ({
             isOpen={open}
             onClose={doClose}
         >
-            <div>
+            
             <ModalOverlay/>
             <ModalContent
-                className="trade-token-pair-select-modal"
+                className="relative trade-token-pair-select-modal glass"
+                bg="#121212"
             >
                 <ModalBody display="flex" gap="8px" flexDir="column" alignItems="center" marginTop="1rem"
                            marginBottom="5px" color="white">
@@ -186,9 +187,10 @@ export const TokenPairSelectModal: React.FC<TokenPairSelectModalProps> = ({
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                     setSearchKey(e.target.value);
                                 }}
+                                className='relative glass'
                                 placeholder='Search or paste any token'/>
                         </InputGroup>
-                        <ModalCloseButton bg="none" color="white" pos="absolute" top="4px" right="0px"/>
+                        <ModalCloseButton bg="none" color="#aaa" pos="absolute" top="4px" right="0px"/>
                     </div>
 
                     {(Object.keys(symbolToDataMap).length <= 0 || waitFlag) ? (
@@ -196,13 +198,13 @@ export const TokenPairSelectModal: React.FC<TokenPairSelectModalProps> = ({
                             <ThreeDots color={'#444'}/>
                         </div>
                     ) : (
-                        <div className="token-pair-table">
-                            <div className="table-header">
-                                <div className="pair-column">Pair</div>
-                                <div className="networks-column">Networks</div>
-                                <div className="price-column">Last price</div>
-                                <div className="volume-column">Volume</div>
-                                <div className="change-column">Change</div>
+                        <div className="relative token-pair-table glass">
+                            <div className="relative table-header glass">
+                                <div className="relative pair-column glass">Pair</div>
+                                <div className="relative networks-column glass">Networks</div>
+                                <div className="relative price-column glass">Last price</div>
+                                <div className="relative volume-column glass">Volume</div>
+                                <div className="relative change-column glass">Change</div>
                             </div>
                             <div className="table-body">
                                 {(searchKey ? filteredTableData : tableData).map((row, index) => (
@@ -220,7 +222,7 @@ export const TokenPairSelectModal: React.FC<TokenPairSelectModalProps> = ({
                     )}
                 </ModalBody>
             </ModalContent>
-            </div>
+            
         </Modal>
     );
 };

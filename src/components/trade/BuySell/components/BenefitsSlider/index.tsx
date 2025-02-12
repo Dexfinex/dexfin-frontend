@@ -59,12 +59,12 @@ const benefitsSlider = ({ tradeProfits }) => {
                                 );
 
                             })}
-                        // </div>
+                        </div>
                     )
                     : (
                         <div className="empty-container">
                             <div className="w-full mx-auto">
-                                <div className="p-4 text-sm text-gray-300 border rounded-lg bg-zinc-900 border-cyan-500/30">
+                                <div className="relative p-4 text-sm text-gray-300 border rounded-lg bg-zinc-900 border-cyan-500/30 glass">
                                     Enter an amount to see how much you could save by trading on Dexfin
                                 </div>
                             </div>
