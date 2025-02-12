@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -8,19 +8,29 @@ import {
   RefreshCw,
   AlertCircle,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
 
 import { useGetDefillamaPools, useGetDefillamaProtocols } from '../../hooks/useDefillama';
 import useDefillamaStore from '../../store/useDefillamaStore';
+import { mapChainId2ChainName } from '../../config/networks';
+import { getChainIcon } from '../../utils/getChainIcon';
 
 export const DeFiOverview: React.FC = () => {
   const { isLoading: isLoadingPool, error: errorPool, refetch: refetchPool } = useGetDefillamaPools();
   const { isLoading: isLoadingProtocol, error: errorProtocol, refetch: refetchProtocol } = useGetDefillamaProtocols();
 
+  const [selectedChain, setSelectedChain] = useState({ name: "", icon: "" });
+  const [showChainList, setShowChainList] = useState(false);
+
   const { getDeFiStats, pools } = useDefillamaStore();
   const defiStats = getDeFiStats();
-  const yieldData = pools;
+  const yieldData = pools.filter((pool) => pool.chain.toUpperCase().includes(selectedChain.name.toUpperCase())).slice(0,9);
+
+  const chainNameList = [{ name: "", icon: "" }].concat(Object.keys(mapChainId2ChainName).map((key) => ({
+    name: mapChainId2ChainName[Number(key)],
+    icon: getChainIcon(Number(key)) as string
+  })));
 
   const loading = isLoadingPool || isLoadingProtocol;
   const error = errorPool || errorProtocol;
@@ -178,7 +188,66 @@ export const DeFiOverview: React.FC = () => {
             </a>
           </div>
 
-          <div className="space-y-3">
+          <div className='w-full flex'>
+            <div className="top-full left-0 right-0 p-2 glass rounded-lg z-20 w-full">
+              <div className="flex items-center gap-2 p-2 bg-white/5 rounded-lg mb-2">
+                <button
+                  key={selectedChain.name}
+                  type="button"
+                  onClick={() => { setShowChainList(true) }}
+                  className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
+                >
+                  <div className="flex text-left w-full">
+                    {
+                      selectedChain.icon &&
+                      <img
+                        src={selectedChain.icon}
+                        alt={selectedChain.name}
+                        className="w-5 h-5 rounded-full"
+                      />
+                    }
+                    <span className="text-sm text-white/60 ml-2">
+                      {selectedChain.name || "All Networks"}
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              {
+                showChainList &&
+                <div className="max-h-68 overflow-y-auto">
+                  {chainNameList.map((chain, index) => (
+                    <button
+                      key={chain.name}
+                      type="button"
+                      onClick={() => {
+                        setSelectedChain(chain);
+                        setShowChainList(false)
+                      }}
+                      className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                      <div className="flex text-left w-full">
+                        {
+                          chain.icon &&
+                          <img
+                            src={chain.icon}
+                            alt={chain.name}
+                            className="w-5 h-5 rounded-full"
+                          />
+                        }
+                        <span className="text-sm text-white/60 ml-2">
+                          {chain.name || "All"}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              }
+
+            </div>
+          </div>
+
+          <div className="space-y-3 mt-2">
             {(yieldData || []).map((pool) => (
               <div
                 key={`${pool.protocol}-${pool.symbol}`}
@@ -209,6 +278,6 @@ export const DeFiOverview: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };

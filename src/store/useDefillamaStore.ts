@@ -22,6 +22,7 @@ interface DeFiStats1 {
 // Define the store's state and actions
 interface DefillamaStore {
     totalTvl: number,
+    mcap: number,
     totalChange24h: number,
     pools: DefillamaPool[],
     protocols: DefillamaProtocol[],
@@ -34,6 +35,7 @@ interface DefillamaStore {
 // Create the store
 const useDefillamaStore = create<DefillamaStore>((set) => ({
     totalTvl: 0,
+    mcap: 0,
     totalChange24h: 0,
     pools: [], // Initialize with an empty array
     protocols: [], // Initialize with an empty array
@@ -43,6 +45,7 @@ const useDefillamaStore = create<DefillamaStore>((set) => ({
     },
     setProtocols: (protocols: DefillamaProtocol[]) => {
         const totalTvl = protocols.reduce((sum, p) => sum + p.tvl, 0);
+        const mcap = protocols.reduce((sum, p) => sum + (p?.mcap || 0), 0);
         const totalChange24h = protocols.reduce((sum, p) => sum + p.change_1d, 0) / protocols.length;
 
         const categoriesMap = protocols.reduce((acc: Record<string, any>, p) => {
@@ -63,7 +66,7 @@ const useDefillamaStore = create<DefillamaStore>((set) => ({
             }))
             .sort((a: any, b: any) => b.tvl - a.tvl)
 
-        set({ protocols: protocols, totalTvl, totalChange24h, categories })
+        set({ protocols: protocols, totalTvl, totalChange24h, categories, mcap })
     },
     getDeFiStats: () => {
         const state = useDefillamaStore.getState() as DefillamaStore;
@@ -79,7 +82,7 @@ const useDefillamaStore = create<DefillamaStore>((set) => ({
         return {
             totalTvl: state.totalTvl,
             totalChange24h: state.totalChange24h,
-            defiMarketCap: state.totalTvl,
+            defiMarketCap: state.mcap,
             categories: state.categories,
             protocols: protocols
         }

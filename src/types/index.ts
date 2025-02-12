@@ -221,6 +221,7 @@ export interface DefillamaProtocol {
   change_1d: number;
   change_7d: number;
   tokenBreakdowns: Object;
+  mcap?: number;
 }
 
 export interface DefillamaPool {
