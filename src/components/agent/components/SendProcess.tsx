@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, CheckCircle2, Wallet, X } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Wallet, X, ShieldClose } from 'lucide-react';
 
 import { TokenType, Step } from '../../../types/brian.type';
 import { convertCryptoAmount } from '../../../utils/brian';
@@ -19,6 +19,7 @@ interface SendProcessProps {
 export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromAmount, toToken, fromToken, onClose }) => {
   const [step/*, setStep*/] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [failedTransaction, setFailedTransaction] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
   const { data: walletClient } = useWalletClient();
@@ -40,20 +41,22 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           ...transactionStep
         });
         if (tx) {
-          const receipt =  await publicClient?.waitForTransactionReceipt({
+          const receipt = await publicClient?.waitForTransactionReceipt({
             hash: tx,
           })
-          if(receipt) {
-            console.log("All transactions executed successfully.");    
+          if (receipt) {
+            console.log('--success--');
+            console.log(receipt);
+            console.log("All transactions executed successfully.");
             setTransactionProgress(100);
             setTransactionStatus('Transaction confirmed!');
-          } else {
-            
           }
         }
       }
     } catch (error) {
       console.error("Error executing transactions:", error);
+      setShowConfirmation(false);
+      setFailedTransaction(true);
     }
   };
 
@@ -68,7 +71,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
 
       let currentStage = 0;
       const timer = setInterval(() => {
-        if (currentStage < stages.length-1) {
+        if (currentStage < stages.length - 1) {
           setTransactionProgress(stages[currentStage].progress);
           setTransactionStatus(stages[currentStage].status);
           currentStage++;
@@ -183,10 +186,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           </div>
           <h3 className="text-xl font-medium mb-2">Transaction Successful!</h3>
           <p className="text-white/60 mb-2">
-            Successfully sent 100 USDC to vitalik.eth
-          </p>
-          <p className="text-sm text-white/40">
-            Transaction fee: 0.01 USDC
+            Successfully sent {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
           </p>
           <button
             onClick={onClose}
@@ -196,6 +196,24 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           </button>
         </>
       )}
+    </div>
+  );
+
+  const renderFailedTransaction = () => (
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
+        <ShieldClose className="w-8 h-8 text-red-500" />
+      </div>
+      <h3 className="text-xl font-medium mb-2">Failed Transaction</h3>
+      <p className="text-white/60 mb-2">
+        Failed {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
+      </p>
+      <button
+        onClick={onClose}
+        className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg mt-6"
+      >
+        Close
+      </button>
     </div>
   );
 
@@ -217,8 +235,8 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           <X className="w-4 h-4" />
         </button>
       </div>
-
-      {showConfirmation ? renderConfirmation() : (
+      {failedTransaction && renderFailedTransaction()}
+      {showConfirmation && !failedTransaction ? renderConfirmation() : (
         <div className="h-[calc(100%-60px)]">
           {renderPreview()}
         </div>
