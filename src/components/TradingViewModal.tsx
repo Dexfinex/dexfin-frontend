@@ -514,9 +514,9 @@ useEffect(() => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center ">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative glass bg-black border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
+        className={`relative glass  border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
           ? 'w-full h-full rounded-none'
           : 'w-[90%] h-[90%] rounded-xl'
           }`}
