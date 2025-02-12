@@ -1,4 +1,4 @@
-import {Address, type Hex, TypedData, TypedDataDomain} from "viem";
+import { Address, type Hex, TypedData, TypedDataDomain } from "viem";
 
 /**
  * Valid signature types on 0x
@@ -20,20 +20,44 @@ export interface EIP712TypedData {
 }
 
 export type TokenType = {
+    // symbol: string;
+    // name: string;
+    // address: string;
+    // chainId: number;
+    // decimals: number;
+    // logoURI: string;
+    // geckoId?: string;
+    // price?: number;
+    // marketCap?: number;
+    // marketCapRank?: number;
+    // volume24h?: number;
+    // sparkline?: number[];
+    // category?: 'token' | 'meme';
+    // priceChange24h?: number;
+    name: string,
+    address: string,
+    chainId: number,
+    decimals: number,
+    logoURI: string,
+    price: number,
+    priceChange24h: number,
+    marketCap: number,
+    marketCapRank: number,
+    volume24h: number,
+    sparkline: number[];
+    category: string;
+    id: string;
     symbol: string;
-    name: string;
-    address: string;
-    chainId: number;
-    decimals: number;
-    logoURI: string;
-    geckoId?: string;
-    price?: number;
-    marketCap?: number;
-    marketCapRank?: number;
-    volume24h?: number;
-    sparkline?: number[];
-    category?: 'token' | 'meme';
-    priceChange24h?: number;
+    image: string;
+    current_price: number;
+    market_cap: number;
+    market_cap_rank: number;
+    total_volume: number;
+    price_change_percentage_24h: number;
+    sparkline_in_7d: { price: number[] };
+    categories: string;
+    platforms: string[];
+
 };
 
 export type AssetPlatformType = {
@@ -288,8 +312,14 @@ export interface ZeroxGaslessStatusRequestType {
     tradeHash: string
 }
 
+interface GaslessStatusTransaction {
+    hash: string
+    timestamp: string
+}
+
 export interface ZeroxGaslessStatusResponseType {
     status: string
+    transactions?: GaslessStatusTransaction[]
 }
 
 export interface gaslessSubmitResponse {

@@ -21,9 +21,8 @@ export const mapRpcUrls: Record<number, string> = {
 }
 
 export const COINGECKO_API_KEY = import.meta.env.VITE_COINGECKO_API_KEY as string || 'CG-XQa2AKt6eiVgLFnK8Ch7xJV2';
-export const COINGECKO_BASE_URL = 'https://pro-api.coingecko.com/api/v3';
 
-export const COINGECKO_BASE_URL_2 = 'https://dexfinv3-backend-production.up.railway.app/coingecko';
+export const COINGECKO_BASE_URL ="https://dexfinv3-backend-production.up.railway.app/coingecko"
 
 export const DEFILLAMA_BASE_URL = "";
 
@@ -38,6 +37,7 @@ export const CRYPTONEWS_BASE_URL = 'https://dexfinv3-backend-production.up.railw
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 
 export const ZEROX_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/0x';
+// export const ZEROX_BASE_URL = 'http://localhost:3000/0x';
 export const DEXFIN_BACKEND_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app';
 export const ZEROX_AFFILIATE_FEE = 50; // 0.5% affiliate fee. Denoted in Bps.
 

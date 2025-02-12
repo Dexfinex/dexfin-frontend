@@ -94,7 +94,8 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
             >
                 <ModalOverlay backdropFilter="blur(4px)"/>
                 <ModalContent
-                    bg="rgba(0, 0, 0, 0.95)"
+                    className="border border-white/10 shadow-lg transition-all duration-300 ease-in-out"
+                    bg="#0f1012"
                     color="white"
                     borderRadius="xl"
                     p={0}
@@ -104,7 +105,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                 >
                     <Flex h="full">
                         {/* Left Side - Token Info */}
-                        <Box flex={2} p={6} borderRight="1px" borderColor="whiteAlpha.200">
+                        <Box flex={2} p={2} borderRight="1px" borderColor="whiteAlpha.200">
                             <div className="w-full h-full">
                                 <Chart
                                     type={chartType}
@@ -152,7 +153,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                             {/* Tabs */}
                             {/* Swap Interface and Wallet */}
                             <div
-                                className="bg-[#000]/95 p-2.5 border border-white/5 relative z-50 w-full rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
+                                className="p-2.5 border border-white/5 relative z-50 w-full rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
                                 <div className="flex items-center justify-between mb-4 bg-[#1d2837] rounded-lg p-1">
                                     <div className="flex items-center gap-2 w-full me-2">
                                         <button

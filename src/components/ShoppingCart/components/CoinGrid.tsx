@@ -1,15 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import { TrendingUp, TrendingDown, Search } from 'lucide-react';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { coingeckoService } from '../../../services/coingecko.service';
-import { TokenType } from '../../../types/swap.type';
-
-interface CoinGridProps {
-    searchQuery: string;
-    selectedCategory: string;
-    onAddToCart: (coin: any) => void;
-}
+import { TokenTypeB, CoinGridProps } from '../../../types/cart.type';
+import debounce from 'lodash/debounce';
+import Spinner from './Spinner';
 
 const chartOptions = {
     responsive: true,
@@ -25,24 +21,57 @@ const chartOptions = {
     elements: {
         point: { radius: 0 }
     }
-};
+} as const;
+
+// Network to platform mapping
+const networkToplatform: Readonly<Record<string, string>> = {
+    'ethereum': 'ethereum',
+    'bsc': 'binance-smart-chain',
+    'avalanche': 'avalanche',
+    'base': 'base',
+    'optimism': 'optimistic-ethereum',
+    'celo': 'celo'
+} as const;
 
 const CoinGrid: React.FC<CoinGridProps> = React.memo(({
     searchQuery,
     selectedCategory,
-    onAddToCart
+    onAddToCart,
+    walletChainId
 }) => {
     const [loading, setLoading] = useState(false);
-    const [coins, setCoins] = useState<TokenType[]>([]);
+    const [coins, setCoins] = useState<TokenTypeB[]>([]);
+    const coinsRef = useRef<TokenTypeB[]>([]);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
+    const getContractAddress = useCallback((platforms: any, chainId: number): string => {
+        if (!platforms) return 'null';
+        const platformKey = Object.entries(networkToplatform).find(([, platform]) =>
+            platforms[platform]
+        )?.[1];
+        return platformKey ? platforms[platformKey] : 'null';
+    }, []);
+
+    // Fetch coins with abort controller
     useEffect(() => {
         const fetchCoins = async () => {
+            if (coinsRef.current.length > 0) return;
+
+            // Cancel previous request if exists
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+
+            // Create new abort controller
+            abortControllerRef.current = new AbortController();
+
             setLoading(true);
             try {
-                const coinList: TokenType[] = await coingeckoService.getTokenList();
-                // console.log("coinList : ", coinList)
+                const coinList = await coingeckoService.getTokenList();
                 setCoins(coinList);
+                coinsRef.current = coinList;
             } catch (error) {
+                if (error === 'AbortError') return;
                 console.error('Error fetching coins:', error);
             } finally {
                 setLoading(false);
@@ -50,18 +79,42 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
         };
 
         fetchCoins();
+
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
     }, []);
 
+    // Memoized and optimized filtering
     const filteredCoins = useMemo(() => {
+        const searchLower = searchQuery.toLowerCase().trim();
         return coins.filter(coin => {
-            const matchesCategory = selectedCategory === 'All' || coin.category === selectedCategory;
-            const matchesSearch = coin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                coin.symbol.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesCategory && matchesSearch;
+            // Quick exit if coin is invalid
+            if (!coin) return false;
+
+            // Search matching
+            const matchesSearch = searchLower === '' ||
+                coin.name.toLowerCase().includes(searchLower) ||
+                coin.symbol.toLowerCase().includes(searchLower);
+
+            if (!matchesSearch) return false;
+
+            // Category filtering
+            if (selectedCategory === 'All') return true;
+            if (selectedCategory === 'token' || selectedCategory === 'meme') {
+                return coin.category === selectedCategory;
+            }
+
+            // Network-based filtering
+            const platformKey = networkToplatform[selectedCategory.toLowerCase()];
+            return platformKey ? !!coin.platforms?.[platformKey] : false;
         });
     }, [coins, selectedCategory, searchQuery]);
 
-    const generateChartData = (sparklineData: number[] = []) => ({
+    // Memoized chart data generation
+    const generateChartData = useCallback((sparklineData: number[] = []) => ({
         labels: Array.from({ length: sparklineData.length }, (_, i) => i.toString()),
         datasets: [{
             data: sparklineData,
@@ -71,12 +124,20 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
             backgroundColor: 'rgba(16, 185, 129, 0.1)',
             tension: 0.4
         }]
-    });
+    }), []);
+
+    // Debounced add to cart handler
+    const debouncedAddToCart = useCallback(
+        debounce((item: any) => {
+            onAddToCart(item);
+        }, 300),
+        [onAddToCart]
+    );
 
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full">
-                <div className="text-lg">Loading coins...</div>
+                <div className="text-lg"><Spinner /> Loading coins...</div>
             </div>
         );
     }
@@ -94,58 +155,74 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
     return (
         <div className="h-full overflow-y-auto">
             <div className="grid grid-cols-2 gap-4 p-4 overflow-y-auto">
-                {filteredCoins.map((coin) => (
-                    <div
-                        key={coin.address}
-                        className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all hover:scale-[1.02]"
-                    >
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                                <img src={coin.logoURI} alt={coin.name} className="w-8 h-8" loading="lazy" />
-                                <div>
-                                    <div className="font-medium">{coin.name}</div>
-                                    <div className="text-sm text-white/60">{coin.symbol}</div>
+                {filteredCoins.map((coin, index) => {
+                    const contractAddress = getContractAddress(coin.platforms, walletChainId);
+                    return (
+                        <div
+                            key={index}
+                            className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all hover:scale-[1.02]"
+                        >
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <img
+                                        src={coin.logoURI}
+                                        alt={coin.name}
+                                        className="w-8 h-8"
+                                        loading="lazy"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = '/placeholder.png';
+                                        }}
+                                    />
+                                    <div>
+                                        <div className="font-medium">{coin.name}</div>
+                                        <div className="text-sm text-white/60">{coin.symbol}</div>
+                                    </div>
+                                </div>
+                                <div className="px-2 py-1 rounded-full text-xs font-medium bg-white/10">
+                                    {coin.category}
                                 </div>
                             </div>
-                            <div className="px-2 py-1 rounded-full text-xs font-medium bg-white/10">
-                                {coin.category}
-                            </div>
-                        </div>
 
-                        <div className="h-24 mb-3">
-                            <Line data={generateChartData(coin.sparkline)} options={chartOptions} />
-                        </div>
-
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="text-2xl font-bold">
-                                ${formatNumberByFrac(coin.price || 0)}
+                            <div className="h-24 mb-3">
+                                <Line data={generateChartData(coin.sparkline)} options={chartOptions} />
                             </div>
-                            <div className={`text-sm flex items-center gap-1 ${(coin.priceChange24h || 0) >= 0 ? 'text-green-400' : 'text-red-400'
-                                }`}>
-                                {(coin.priceChange24h || 0) >= 0 ?
-                                    <TrendingUp className="w-4 h-4" /> :
-                                    <TrendingDown className="w-4 h-4" />
-                                }
-                                {Math.abs(coin.priceChange24h || 0).toFixed(2)}%
-                            </div>
-                        </div>
 
-                        <button
-                            onClick={() => onAddToCart({
-                                id: coin.address,
-                                name: coin.name,
-                                symbol: coin.symbol,
-                                price: coin.price || 0,
-                                logo: coin.logoURI,
-                                category: coin.category,
-                                quantity: 1
-                            })}
-                            className="w-full py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
-                        >
-                            Add to Cart
-                        </button>
-                    </div>
-                ))}
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="text-2xl font-bold">
+                                    ${formatNumberByFrac(coin.price || 0)}
+                                </div>
+                                <div className={`text-sm flex items-center gap-1 ${(coin.priceChange24h || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                                    }`}>
+                                    {(coin.priceChange24h || 0) >= 0 ?
+                                        <TrendingUp className="w-4 h-4" /> :
+                                        <TrendingDown className="w-4 h-4" />
+                                    }
+                                    {Math.abs(coin.priceChange24h || 0).toFixed(2)}%
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    debouncedAddToCart({
+                                        id: coin.id,
+                                        name: coin.name,
+                                        symbol: coin.symbol,
+                                        price: coin.price || 0,
+                                        logo: coin.logoURI,
+                                        category: coin.category,
+                                        quantity: 1,
+                                        address: contractAddress,
+                                        chainId: walletChainId,
+                                        decimals: coin.decimals
+                                    });
+                                }}
+                                className="w-full py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                            >
+                                Add to Cart
+                            </button>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

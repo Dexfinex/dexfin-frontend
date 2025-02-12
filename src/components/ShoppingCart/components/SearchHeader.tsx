@@ -1,14 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Search } from 'lucide-react';
+import { SearchHeaderProps } from '../../../types/cart.type';
 
-interface SearchHeaderProps {
-    selectedCategory: string;
-    searchQuery: string;
-    onCategoryChange: (category: string) => void;
-    onSearchChange: (query: string) => void;
-}
-
-const categories = ['All', 'token', 'meme'];
+const categories = ['All', 'token', 'meme', 'ethereum', 'base', 'avalanche', 'bsc', 'celo', 'optimism'] as const;
 
 const SearchHeader: React.FC<SearchHeaderProps> = React.memo(({
     selectedCategory,
@@ -20,21 +14,23 @@ const SearchHeader: React.FC<SearchHeaderProps> = React.memo(({
         onSearchChange(e.target.value);
     }, [onSearchChange]);
 
+    const categoryButtons = useMemo(() =>
+        categories.map((category) => (
+            <button
+                key={category}
+                onClick={() => onCategoryChange(category)}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${selectedCategory === category ? 'bg-white/10' : 'hover:bg-white/5'
+                    }`}
+            >
+                {category}
+            </button>
+        )), [selectedCategory, onCategoryChange]);
+
     return (
         <div className="p-4 border-b border-white/10">
             <div className="flex items-center gap-3 mb-4">
-                {categories.map((category) => (
-                    <button
-                        key={category}
-                        onClick={() => onCategoryChange(category)}
-                        className={`px-3 py-1.5 rounded-lg transition-colors ${selectedCategory === category ? 'bg-white/10' : 'hover:bg-white/5'
-                            }`}
-                    >
-                        {category}
-                    </button>
-                ))}
+                {categoryButtons}
             </div>
-
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                 <input

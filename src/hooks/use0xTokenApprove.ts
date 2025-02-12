@@ -27,7 +27,6 @@ export const use0xTokenApprove = ({
 
     const [isConfirmingApproval, setIsConfirmingApproval] = useState(false);
     const [approvalDataToSubmit, setApprovalDataToSubmit] = useState(undefined);
-    const [tradeDataToSubmit, setTradeDataToSubmit] = useState(undefined);
 
 
     const {signer, walletClient} = useContext(Web3AuthContext);
@@ -95,40 +94,6 @@ export const use0xTokenApprove = ({
         }; // Return approval object with split signature
     }
 
-    // Helper functions
-    async function signTradeObject(): Promise<any> {
-        // Logic to sign trade object
-        const tradeSignature = await walletClient!.signTypedData({
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            types: gaslessQuote.trade?.eip712.types,
-            domain: gaslessQuote.trade?.eip712.domain,
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            message: gaslessQuote.trade?.eip712.message,
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            primaryType: gaslessQuote.trade?.eip712.primaryType,
-        });
-        console.log("🖊️ tradeSignature: ", tradeSignature);
-        return tradeSignature;
-    }
-
-    async function tradeSplitSigDataToSubmit(object: any): Promise<any> {
-        // split trade signature and package data to submit
-        const tradeSplitSig = await splitSignature(object);
-        return {
-            type: gaslessQuote.trade!.type,
-            eip712: gaslessQuote.trade!.eip712,
-            signature: {
-                ...tradeSplitSig,
-                v: Number(tradeSplitSig.v),
-                signatureType: SignatureType.EIP712,
-            },
-        }; // Return trade object with split signature
-    }
-
-
     const approve = () => {
         setIsConfirmingApproval(true);
         (async() => {
@@ -141,10 +106,6 @@ export const use0xTokenApprove = ({
                         );
                         setApprovalDataToSubmit(_approvalDataToSubmit)
                     }
-
-                    const tradeSignature = await signTradeObject(); // Function to sign trade object
-                    const _tradeDataToSubmit = await tradeSplitSigDataToSubmit(tradeSignature);
-                    setTradeDataToSubmit(_tradeDataToSubmit)
                     setIsConfirmingApproval(false);
                 } else {
                     mainApproveFunc(ethers.constants.MaxUint256);
@@ -158,8 +119,6 @@ export const use0xTokenApprove = ({
     return {
         isApproved: false, // because we don't use it actually
         approvalDataToSubmit,
-        tradeDataToSubmit,
-        isReadyToSubmit: approvalDataToSubmit && tradeDataToSubmit,
         approve: approve,
         isLoading: isConfirmingApproval,
         isConfirmingApproval,

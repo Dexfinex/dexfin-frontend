@@ -386,105 +386,143 @@ const OrderHistorySection = ({
 
 
 
-const dashboardColumns = useMemo(() => ([
-    {
-        title: <HeaderItem text="Token" description="The Token list refers to the name of a token/coin belonging to that crypto project, along with its logo." />,
-        render: (text, record) => (
-            <div className="flex items-center gap-2">
-                <img 
-                    width="27"
-                    height="27"
-                    src={getAssetIconUrlBySymbolName(record.symbol)}
-                    alt={record.symbol}
-                />
-                <span className="text-sm">{record.symbol}</span>
-            </div>
-        )
-    },
-    {
-        title: <HeaderItem text="Wallet" description="The Wallet column shows the funds available in your connected wallet." />,
-        render: (text, record) => (
-            <div className="text-right text-sm">{record.wallet}</div>
-        )
-    },
-    {
-        title: <HeaderItem text="Contract" description="The Contract section shows the amount of funds in the smart contract." />,
-        render: (text, record) => (
-            <div className="text-right text-sm">{record.contract}</div>
-        )
-    },
-    {
-        title: <HeaderItem text="Available" description="The Available column displays the amount of funds available to trade." />,
-        render: (text, record) => (
-            <div className="text-right text-sm">{record.tradable}</div>
-        )
-    },
-    {
-        title: <HeaderItem text="Locked" description="The Locked section shows your locked crypto assets." />,
-        render: (text, record) => (
-            <div className="text-right text-sm">{record.reserved}</div>
-        )
-    },
-    {
-        title: (
-            <div className="flex items-center justify-end gap-4">
-                <label className="flex items-center cursor-pointer">
-                    <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-600 bg-gray-800"
-                        checked={!visibleZeroTokens}
-                        onChange={(e) => setVisibleZeroTokens(!e.target.checked)}
-                    />
-                    <span className="ml-2 text-sm text-gray-300">Hide zero</span>
-                </label>
-                <div className="w-28">
-                    <input
-                        type="text"
-                        className="h-8 w-full rounded bg-gray-800 px-3 text-sm text-gray-300"
-                        placeholder="Search"
-                        value={dashboardFilterKey}
-                        onChange={(e) => setDashboardFilterKey(e.target.value)}
-                    />
-                </div>
-            </div>
-        ),
-        render: (text, record) => (
-            <div className="flex justify-end gap-4">
-                <Tooltip hasArrow label="Deposit">
-                    <Button 
-                        className="h-8 w-8 rounded bg-gray-800 p-1.5 hover:bg-gray-700"
-                        onClick={() => {
-                            setIsWithdrawWindow(false);
-                            setModalToken({
-                                symbol: record.symbol,
-                                balance: record,
-                            });
-                            setDepositWithdrawModalVisible(true);
-                        }}
-                    >
-                        <FaArrowUp className="h-full w-full" />
-                    </Button>
-                </Tooltip>
+    const dashboardColumns = useMemo(() => ([
+        {
+            title: <HeaderItem text={"Token"} description={'The Token list refers to the name of a token/coin belonging to that crypto project, along with its logo. In certain instances, assets can differ in name in relation to the project, depending on which chain they are using. For example, ETH on the BSC network is WETH, and similarly with BNB.'} />,
+            render: (text, record) => {
+                return (
+                    <div className={'token-header'}>
+                        <img width="27"
+                            height="27"
+                            src={getAssetIconUrlBySymbolName(record.symbol)}
+                        />
+                        <div className="symbol">{record.symbol}</div>
+                    </div>
+                )
+            }
+        },
+        {
+            title: <HeaderItem text={"Wallet"} description={'The Wallet column shows the funds available in your connected wallet for that particularcrypto asset.'} />,
+            render: (text, record) => {
+                return (
+                    <div className="other-headers">
+                        {record.wallet}
+                    </div>
+                )
+            }
+        },
+        {
+            title: <HeaderItem text={"Contract"} description={'The Contract section shows the amount of funds which you currently have deposited into thesmart contract to be able to carry out a trade.'} />,
+            render: (text, record) => {
+                return (
+                    <div className="other-headers">
+                        {record.contract}
+                    </div>
+                )
+            }
+        },
+        {
+            title: <HeaderItem text={"Available"} description={'When creating a trade order, Dexfin locks part of the assets into the smart contract to ensurethe execution is completed successfully. The Available column displays the amount of fundsheld within the contract balance as well as part of the wallet balance that you approved. Thistotal is minus the locked assets which are required in the smart contract to execute a trade.The Available balance can also be referred to as the tradable balance, which is available totrade.'} />,
+            render: (text, record) => {
+                return (
+                    <div className="other-headers">
+                        {record.tradable}
+                    </div>
+                )
+            }
+        },
+        {
+            title: <HeaderItem text={"Locked"} description={'The Locked section shows your locked crypto assets in the smart contract open order thatare awaiting the trade to be carried out. You can unlock these assets simply by cancelingany relevant open orders on Dexfin.'} />,
+            render: (text, record) => {
+                return (
+                    <div className="other-headers">
+                        {record.reserved}
+                    </div>
+                )
+            }
+        },
+        {
+            title: (
+                // <div className='dashboard-action-column-header'>
+                //     <Checkbox
+                //         isChecked={!visibleZeroTokens}
+                //         onChange={(e) => setVisibleZeroTokens(!e.target.checked)}
+                //     >Hide zero</Checkbox>
+                //     <CustomizedInput
+                //         hasRightElement={true}
+                //         rightElement={<BiSearch />}
+                //         placeholder={'Search'}
+                //         value={dashboardFilterKey}
+                //         setValue={setDashboardFilterKey}
+                //     />
+                // </div>
+                <div className="flex items-center gap-5 p-1">
+                    <label className="flex items-center gap-2 text-gray-300">
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-gray-600 bg-gray-800 checked:bg-blue-500"
+                            checked={!visibleZeroTokens}
+                            onChange={(e) => setVisibleZeroTokens(!e.target.checked)}
+                        />
+                        Hide zero
+                    </label>
 
-                <Tooltip hasArrow label="Withdraw">
-                    <Button 
-                        className="h-8 w-8 rounded bg-gray-800 p-1.5 hover:bg-gray-700"
-                        onClick={() => {
-                            setIsWithdrawWindow(true);
-                            setModalToken({
-                                symbol: record.symbol,
-                                balance: record,
-                            });
-                            setDepositWithdrawModalVisible(true);
-                        }}
-                    >
-                        <FaArrowDown className="h-full w-full" />
-                    </Button>
-                </Tooltip>
-            </div>
-        )
-    }
-]));
+                    <div className="relative flex-1">
+                        <CustomizedInput
+                            hasRightElement={true}
+                            rightElement={<BiSearch />}
+                            placeholder={'Search'}
+                            value={dashboardFilterKey}
+                            setValue={setDashboardFilterKey}
+                        />
+                    </div>
+                </div>
+            ),
+            className: 'dashboard-status-header',
+            render: (text, record) => {
+                return (
+                    <div className='flex-center gap-8'>
+                        <Tooltip hasArrow label='Deposit'>
+                            <Button className="dashboard-button" onClick={() => {
+                                setIsWithdrawWindow(false);
+                                setModalToken({
+                                    symbol: record.symbol,
+                                    balance: record,
+                                })
+                                setDepositWithdrawModalVisible(true);
+                            }}>
+                                <FaArrowUp />
+                            </Button>
+                        </Tooltip>
+
+                        <Tooltip hasArrow label='Withdraw'>
+                            <Button className="dashboard-button" onClick={() => {
+                                setIsWithdrawWindow(true);
+                                setModalToken({
+                                    symbol: record.symbol,
+                                    balance: record,
+                                })
+                                setDepositWithdrawModalVisible(true);
+                            }}>
+                                <FaArrowDown />
+                            </Button>
+                        </Tooltip>
+
+                        {/*
+                        <Tooltip hasArrow label='Trade'>
+                            <Button className="dashboard-button" onClick={() => {
+                            }}>
+                                <RxMixerVertical/>
+                            </Button>
+                        </Tooltip>
+*/}
+
+                    </div>
+                )
+            }
+        }
+    ]));
+
     return (
         <div className="bg-black text-white w-full">
             {/* Header Section */}

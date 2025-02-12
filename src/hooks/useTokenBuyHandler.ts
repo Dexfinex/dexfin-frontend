@@ -1,7 +1,7 @@
 import { useContext, useState } from 'react';
 import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
 import { Web3AuthContext } from "../providers/Web3AuthContext";
-import { TokenType } from "../types/swap.type";
+import { TokenTypeB } from "../types/cart.type";
 import { nativeAddress } from '../constants';
 import { zeroxService } from "../services/0x.service";
 import { ethers } from 'ethers';
@@ -10,7 +10,7 @@ import { coingeckoService } from "../services/coingecko.service";
 export const useTokenBuyHandler = () => {
     const [error, setError] = useState<Error | null>(null);
     const [txHash, setTxHash] = useState<string | null>(null);
-    const { address: walletAddress, provider } = useContext(Web3AuthContext);
+    const { address: walletAddress, provider, chainId: walletChainId } = useContext(Web3AuthContext);
     const SLIPPAGE_TOLERANCE = 0.005; // 0.5%
 
     const {
@@ -26,7 +26,7 @@ export const useTokenBuyHandler = () => {
 
     const getEthPrice = async (): Promise<number> => {
         try {
-            console.log("Fetching ETH price...");
+            console.log("Fetching ETH price...", walletChainId);
             const ethPrices = await coingeckoService.getTokenPrices(1, [nativeAddress]);
             const ethPrice = ethPrices[nativeAddress];
             if (!ethPrice) throw new Error('Failed to fetch ETH price');
@@ -38,13 +38,13 @@ export const useTokenBuyHandler = () => {
         }
     };
 
-    const executeBatchBuy = async (tokens: { token: TokenType, amount: string }[]) => {
+    const executeBatchBuy = async (tokens: { token: TokenTypeB, amount: string }[]) => {
         if (!tokens.length || !walletAddress) {
             throw new Error('Missing required parameters');
         }
 
         console.log("Starting batch buy for tokens:", tokens);
-
+        // return;
         let currentIndex = 0;
 
         while (currentIndex < tokens.length) {
@@ -112,7 +112,7 @@ export const useTokenBuyHandler = () => {
                     value: BigInt(transaction.value || '0'),
                     gas: gasLimit,
                     maxFeePerGas: gasPrice.toBigInt(),
-                    chainId: 8453,
+                    chainId: walletChainId || 8453,
                 })
 
                 console.log(currentIndex, { txHash });
