@@ -16,7 +16,7 @@ import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
 import { Spinner, Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverHeader, PopoverBody, Button } from '@chakra-ui/react';
 import { Clipboard } from './common/Clipboard';
-import { extractAddress, getChatHistoryDate, shrinkAddress } from '../utils/common.util';
+import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
 import { LIMIT } from '../utils/chatApi';
 
@@ -27,6 +27,7 @@ interface ChatModalProps {
 
 interface IUser {
   name: string;
+  ensName: string;
   profilePicture: string;
   address: string;
   chatId: string;
@@ -533,8 +534,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             const profile = await getWalletProfile(chatUser, receivedMessage.from)
 
             if (profile) {
-              setRequestUsers([...requestUsers, {
+              const users = [...requestUsers, {
                 name: profile.name,
+                ensName: "",
                 profilePicture: profile.picture,
                 address: extractAddress(receivedMessage.from),
                 chatId: receivedMessage.chatId,
@@ -542,7 +544,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 unreadMessages: 0,
                 lastTimestamp: 0,
                 lastMessage: ""
-              }])
+              }] as Array<IUser>
+              setRequestUsers(users)
+
+              updateEnsName("request", undefined, undefined, users)
             }
           }
         } else if (receivedMessage.event == "chat.message" && receivedMessage.message.type) {
@@ -653,6 +658,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       } else {
         userInformation = [...userInformation, {
           name: data.name,
+          ensName: "",
           profilePicture: data.profilePicture,
           address: extractAddress(data.wallets),
           chatId: data.chatId,
@@ -669,7 +675,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       setGroupList(groupInformation.sort((a, b) => b.lastTimestamp - a.lastTimestamp))
     }
     if (userInformation.length > 0) {
-      setConnectedUsers(userInformation.sort((a, b) => b.lastTimestamp - a.lastTimestamp))
+      const sorted = userInformation.sort((a, b) => b.lastTimestamp - a.lastTimestamp)
+      setConnectedUsers(sorted)
+      updateEnsName("connected", undefined, undefined, sorted)
     }
 
     //get chat request
@@ -683,6 +691,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         if (!request.groupInformation) {
           directRequests = [...directRequests, {
             name: request.name,
+            ensName: "",
             profilePicture: request.profilePicture,
             address: extractAddress(request.wallets),
             chatId: request.chatId,
@@ -711,6 +720,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
       if (directRequests.length > 0) {
         setRequestUsers(directRequests)
+        updateEnsName("request", undefined, undefined, directRequests)
       }
       if (groupRequests.length > 0) {
         setRequestGroups(groupRequests)
@@ -994,8 +1004,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           if (found) {
             handleSelectUser(found)
           } else {
-            setSearchedUser({
+            const user = {
               name: profile.name,
+              ensName: "",
               profilePicture: profile.picture,
               address: searchQuery,
               chatId: "",
@@ -1003,7 +1014,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               unreadMessages: 0,
               lastTimestamp: 0,
               lastMessage: ""
-            })
+            } as IUser
+
+            setSearchedUser(user)
+            updateEnsName("search", address, user)
           }
         }
       } catch (err) {
@@ -1233,6 +1247,37 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     sendMedia(base64, type as ChatType)
   }
 
+  const updateEnsName = async (type: string, address?: string, user?: IUser, userList?: Array<IUser>) => {
+    console.log('update ens name')
+    if (type === "connected" && userList) {
+      const updated = await Promise.all(
+        userList?.map(async (user) => {
+          const ensName: string = await getEnsName(user.address);
+          return ensName ? { ...user, ensName } : user;
+        })
+      );
+
+      setConnectedUsers(updated)
+    } else if (type === "search" && address) {
+      const ensName: string = await getEnsName(address)
+      if (ensName && user) {
+        setSearchedUser({
+          ...user,
+          ensName
+        })
+      }
+    } else if (type === "request" && userList) {
+      const updated = await Promise.all(
+        userList?.map(async (user) => {
+          const ensName: string = await getEnsName(user.address);
+          return ensName ? { ...user, ensName } : user;
+        })
+      );
+
+      setRequestUsers(updated)
+    }
+  }
+
   const updateLastMessageInfo = (address: string, type: ChatType, msg: string, timestamp: number, isGroup: boolean, isRequest: boolean) => {
     console.log('updateLastMessageInfo ')
     const lastMessage = (type === "Text" ? msg : "💻Media")
@@ -1383,7 +1428,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             onClick={() => handleSelectRequestUser(user)}>
             {user?.profilePicture ? <img src={user.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
             <div className='flex flex-col'>
-              <span>{user?.name || shrinkAddress(user.address)}</span>
+              <span>{user.ensName ? user.ensName : user?.name || shrinkAddress(user.address)}</span>
               {/* <span className='text-sm text-gray-400'>Join Group!</span> */}
             </div>
             <Info className='text-red-500' />
@@ -1459,7 +1504,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             onClick={() => setSelectedUser(searchedUser)}>
             {searchedUser?.profilePicture ? <img src={searchedUser.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
             <div className='flex flex-col'>
-              <span>{searchedUser?.name || shrinkAddress(searchedUser.address)}</span>
+              <span>{searchedUser?.ensName ? searchedUser?.ensName : searchedUser?.name || shrinkAddress(searchedUser.address)}</span>
               <span className='text-sm text-white/40'>Start Chat!</span>
             </div>
           </button>
@@ -1479,7 +1524,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             user?.profilePicture ? <img src={user?.profilePicture} className='w-10 h-10 rounded-full' /> : <User className='w-10 h-10' />
           }
           <div className='flex flex-col flex-1'>
-            <span className='text-left'>{user?.name || shrinkAddress(extractAddress(user?.address))}</span>
+            <span className='text-left'>{user.ensName ? user.ensName : user?.name || shrinkAddress(extractAddress(user?.address))}</span>
             <span className='text-left text-sm text-white/40'>{user?.lastMessage ? user?.lastMessage.slice(0, 20) : ""}</span>
           </div>
           {user?.lastTimestamp && <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(user?.lastTimestamp)}</span>}
@@ -1660,7 +1705,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           <div className="flex-1 min-w-0">
             <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
               {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-              <span className="font-medium">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+              <span className="font-medium text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
             {
@@ -1682,7 +1727,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           <div className="flex-1 min-w-0">
             <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
               {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-              <span className="font-medium">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+              <span className="font-medium text-white/70">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
               <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
             </div>
             {
@@ -2028,10 +2073,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                         selectedUser?.name ?
                           <div className='flex flex-col'>
                             <div>{selectedUser?.name}</div>
-                            <Clipboard address={selectedUser.address} />
+                            <Clipboard address={selectedUser.address} ensName={selectedUser.ensName} />
                           </div>
                           :
-                          <Clipboard address={selectedUser.address} />
+                          <Clipboard address={selectedUser.address} ensName={selectedUser.ensName} />
                       }
                     </div>
                     {/* <div>
@@ -2046,7 +2091,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     <img src={selectedGroup?.image} className='w-10 h-10 mr-2 rounded-lg' />
                     <div className='flex flex-col'>
                       {selectedGroup?.name}
-                      <Clipboard address={selectedGroup.groupId} />
+                      <Clipboard address={selectedGroup.groupId} ensName='' />
                     </div>
                     {/* {selectedGroup.id === 'wow' ? (
                       <img src={selectedGroup.icon} alt="WOW" className="w-10 h-10" />

@@ -1,6 +1,6 @@
 import moment from 'moment/moment';
-import {ethers} from 'ethers';
-import {mapChainId2NativeAddress} from "../config/networks.ts";
+import { ethers } from 'ethers';
+import { mapChainId2NativeAddress } from "../config/networks.ts";
 
 const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
 
@@ -12,33 +12,27 @@ export const isNativeTokenAddress = (chainId: number, address: string): boolean 
     return mapChainId2NativeAddress[chainId]?.toLowerCase() === address?.toLowerCase()
 }
 
-export const checkIfAddressExists = async (address: string): Promise<boolean> => {
-    try {
-        // Connect to an EVM chain (e.g., Ethereum mainnet, or any other network)
-        const provider = new ethers.providers.JsonRpcProvider("https://mainnet.base.org");
-
-        // Check if the address has a non-zero balance
-        const balance = await provider.getBalance(address);
-
-        // If the balance is greater than 0, the address exists (has funds)
-        if (balance.isZero()) {
-            // console.log("Address exists but has no balance.");
-            return true;
-        } else {
-            // console.log("Address exists and has a balance.");
-            return true;
-        }
-    } catch (error) {
-        console.error("Error checking address:", error);
-        // return 0;
-        return false;
-    }
-}
 export const extractAddress = (fullAddress: string): string => {
     if (!fullAddress) return ""
     const match = fullAddress.match(/0x[a-fA-F0-9]{40}/);
     const address = match ? match[0] : "";
     return address;
+}
+
+export const getEnsName = async (address: string): Promise<string> => {
+    const provider = new ethers.providers.JsonRpcProvider("https://eth-mainnet.g.alchemy.com/v2/YhklBkpnW3RdeoL0fw-I6CRkGG1cu2-z");
+
+    try {
+        const ensName = await provider.lookupAddress(address);
+        console.log("ENS Name:", ensName || "No ENS name found");
+        const result = (ensName ? ensName : "");
+        
+        return result
+    } catch (error) {
+        console.error("Error fetching ENS name:", error);
+    }
+
+    return "";
 }
 
 export const getChatHistoryDate = (timestamp: number) => {
@@ -69,7 +63,7 @@ export const compareWalletAddresses = (
     address1: string,
     address2: string,
 ): boolean => {
-    if(!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
+    if (!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
         return false;
     }
     // Convert both addresses to uppercase.
