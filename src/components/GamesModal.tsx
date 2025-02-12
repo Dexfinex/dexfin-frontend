@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { 
   X, Maximize2, Minimize2, Brain, Trophy, Gift, 
   Swords, Target, Star, BarChart2, Users, Award,
-  Gamepad2, Clock, Coins, ArrowLeft, Lock, BarChart
+  Gamepad2, Clock, Coins, ArrowLeft, Lock, BarChart,
+  Grid
 } from 'lucide-react';
 import { CryptoTrivia } from './games/CryptoTrivia';
 import { MemeArena } from './games/MemeArena';
+import { CryptoPexeso } from './games/CryptoPexeso';
 import { GameStats } from './games/GameStats';
 import { useStore } from '../store/useStore';
 
@@ -39,11 +41,11 @@ const games: Game[] = [
     component: MemeArena
   },
   {
-    id: 'nft-gallery',
-    name: 'NFT Gallery',
-    description: 'Showcase and trade your NFT collection',
-    icon: <Gift className="w-6 h-6" />,
-    comingSoon: true
+    id: 'crypto-pexeso',
+    name: 'Crypto Pexeso',
+    description: 'Match crypto pairs in this memory game',
+    icon: <Grid className="w-6 h-6" />,
+    component: CryptoPexeso
   },
   {
     id: 'trading-simulator',
@@ -98,7 +100,7 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
                   setActiveGame(null);
                   setShowStats(false);
                 }}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 transition-colors rounded-lg hover:bg-white/10"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
@@ -113,7 +115,7 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
             >
               <BarChart className="w-4 h-4" />
               <span>Statistics</span>
-              <div className="flex items-center gap-1 text-sm text-yellow-400 ml-2">
+              <div className="flex items-center gap-1 ml-2 text-sm text-yellow-400">
                 <Coins className="w-3.5 h-3.5" />
                 <span>{gameStats.totalTokens}</span>
               </div>
@@ -123,7 +125,7 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleFullscreen}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 transition-colors rounded-lg hover:bg-white/10"
             >
               {isFullscreen ? (
                 <Minimize2 className="w-4 h-4" />
@@ -133,7 +135,7 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 transition-colors rounded-lg hover:bg-white/10"
             >
               <X className="w-4 h-4" />
             </button>
@@ -159,7 +161,7 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
                         : 'bg-white/5 hover:bg-white/10 hover:scale-[1.02]'
                     }`}
                   >
-                    <div className="w-16 h-16 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-500">
+                    <div className="flex items-center justify-center w-16 h-16 text-blue-500 rounded-2xl bg-blue-500/20">
                       {game.icon}
                     </div>
                     <div className="text-center">
@@ -169,9 +171,9 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
                           <Lock className="w-4 h-4 text-white/40" />
                         )}
                       </div>
-                      <p className="text-sm text-white/60 mt-1">{game.description}</p>
+                      <p className="mt-1 text-sm text-white/60">{game.description}</p>
                       {game.comingSoon && (
-                        <span className="inline-block px-3 py-1 bg-white/10 rounded-full text-xs font-medium mt-2">
+                        <span className="inline-block px-3 py-1 mt-2 text-xs font-medium rounded-full bg-white/10">
                           Coming Soon
                         </span>
                       )}
