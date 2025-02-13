@@ -1,23 +1,23 @@
 import { brianApi } from "./api.service.ts";
 
-import { BrianData } from '../types/index.ts';
+import { BrianTransactionData, BrianKnowledgeData } from '../types/index.ts';
 
 export const brianService = {
-	getBrianTransactionData: async (command: string, address: string, chainId: number): Promise<BrianData> => {
+	getBrianTransactionData: async (command: string, address: string, chainId: number | undefined): Promise<BrianTransactionData> => {
 		try {
-			const { data } = await brianApi.get<BrianData>(`transaction?command=${command}&address=${address}&chainId=${chainId}`);
+			const { data } = await brianApi.get<BrianTransactionData>(`transaction?command=${command}&address=${address}&chainId=${chainId}`);
 			return data;
 		} catch (error) {
-			console.error('Failed to fetch fear & greed:', error);
+			console.error('Failed to fetch brian transaction data:', error);
 			throw error;
 		}
 	},
-	getBrianKnowledgeData: async (command: string): Promise<BrianData> => {
+	getBrianKnowledgeData: async (command: string): Promise<BrianKnowledgeData> => {
 		try {
-			const { data } = await brianApi.get<BrianData>(`knowledge?command=${command}`);
+			const { data } = await brianApi.get<BrianKnowledgeData>(`knowledge?command=${command}`);
 			return data;
 		} catch (error) {
-			console.error('Failed to fetch fear & greed:', error);
+			console.error('Failed to brian knowledge data:', error);
 			throw error;
 		}
 	},

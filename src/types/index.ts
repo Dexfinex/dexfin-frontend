@@ -21,6 +21,7 @@ export interface SearchResult {
 export interface Message {
   role: string;
   content: string;
+  tip?: string;
   data?: CoinData;
   trending?: TrendingCoin[];
   news?: NewsItem[];
@@ -213,8 +214,10 @@ export interface Token {
 export interface TransactionError extends Error {
   code?: string;
 }
-export interface BrianData {
-  message: string
+export interface BrianTransactionData {
+  message: string;
+  type:string;
+  data: {};
 }
 
 export interface Network {
@@ -248,4 +251,7 @@ export interface DefillamaCategory {
   name: string;
   tvl: number;
   change24h: number;
+}
+export interface BrianKnowledgeData {
+  message: string;
 }

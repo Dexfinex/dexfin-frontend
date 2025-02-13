@@ -1,15 +1,68 @@
-import React, {useEffect, useState} from 'react';
-import {ArrowRight, CheckCircle2, Wallet, X} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowRight, CheckCircle2, Wallet, X, ShieldClose } from 'lucide-react';
+import { Link } from '@chakra-ui/react';
+
+import { TokenType, Step } from '../../../types/brian.type';
+import { convertCryptoAmount } from '../../../utils/brian';
+import { shrinkAddress } from '../../../utils/common.util';
+import { mapChainId2ViemChain } from '../../../config/networks';
+import { useWalletClient, usePublicClient } from "wagmi";
+import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
 
 interface SendProcessProps {
   onClose: () => void;
+  fromToken: TokenType;
+  toToken: TokenType;
+  fromAmount: string;
+  receiver: string;
+  steps: Step[];
 }
 
-export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
+export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromAmount, toToken, fromToken, onClose }) => {
   const [step/*, setStep*/] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [failedTransaction, setFailedTransaction] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
+  const { data: walletClient } = useWalletClient();
+  const [scan, setScan] = useState<string>('https://etherscan.io/');
+  const publicClient = usePublicClient();
+  const { mutate: sendTransactionMutate } = useBrianTransactionMutation();
+
+  const handleTransaction = async (data: any) => {
+    try {
+      if (!walletClient) {
+        console.error("Wallet client not found");
+        return;
+      }
+      if (steps.length === 0) {
+        console.error("No transaction details available");
+        return;
+      }
+      setShowConfirmation(true);
+
+      sendTransactionMutate(
+        {transactions: data},
+        {
+          onSuccess: (receipt) => {
+            setTransactionProgress(100);
+            setTransactionStatus('Transaction confirmed!');
+            setScan(receipt??'');
+          },
+          onError: (error) => {
+            console.log(error);
+            setShowConfirmation(false);
+            setFailedTransaction(true);
+          },
+        },
+      );
+
+    } catch (error) {
+      console.error("Error executing transactions:", error);
+      setShowConfirmation(false);
+      setFailedTransaction(true);
+    }
+  };
 
   useEffect(() => {
     if (showConfirmation) {
@@ -22,7 +75,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
 
       let currentStage = 0;
       const timer = setInterval(() => {
-        if (currentStage < stages.length) {
+        if (currentStage < stages.length - 1) {
           setTransactionProgress(stages[currentStage].progress);
           setTransactionStatus(stages[currentStage].status);
           currentStage++;
@@ -42,7 +95,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
           <Wallet className="w-6 h-6 text-blue-500" />
         </div>
         <div>
-          <h3 className="text-xl font-medium">Send USDC</h3>
+          <h3 className="text-xl font-medium">Send {fromToken?.symbol}</h3>
           <p className="text-white/60">Review transaction details</p>
         </div>
       </div>
@@ -51,26 +104,26 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
         <div className="space-y-6">
           <div className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
-              <img 
-                src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" 
-                alt="USDC" 
+              <img
+                src={fromToken.logoURI}
+                alt="USDC"
                 className="w-10 h-10"
               />
               <div>
                 <div className="text-sm text-white/60">Amount</div>
-                <div className="text-xl font-medium">100 USDC</div>
+                <div className="text-xl font-medium">{fromToken ? convertCryptoAmount(fromAmount, fromToken.decimals) : ''} {fromToken?.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
             <div className="flex items-center gap-3">
-              <img 
+              <img
                 src="https://api.dicebear.com/7.x/avataaars/svg?seed=vitalik"
-                alt="Vitalik" 
+                alt="Vitalik"
                 className="w-10 h-10 rounded-full"
               />
               <div>
                 <div className="text-sm text-white/60">Recipient</div>
-                <div className="text-xl font-medium">vitalik.eth</div>
+                <div className="text-xl font-medium">{shrinkAddress(receiver)}</div>
               </div>
             </div>
           </div>
@@ -78,21 +131,17 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
           <div className="p-4 bg-white/5 rounded-lg space-y-3">
             <div className="flex justify-between">
               <span className="text-white/60">Network</span>
-              <span className="font-medium">Ethereum</span>
+              <span className="font-medium">{mapChainId2ViemChain[fromToken.chainId].name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-white/60">Transaction Fee</span>
-              <span className="font-medium">~0.01 USDC</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/60">Total Amount</span>
-              <span className="font-medium">100.01 USDC</span>
+              <span className="text-white/60">Amount</span>
+              <span className="font-medium">{convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol}</span>
             </div>
           </div>
         </div>
 
         <button
-          onClick={() => setShowConfirmation(true)}
+          onClick={() => handleTransaction(steps)}
           className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
         >
           Confirm Send
@@ -111,27 +160,27 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
               <span className="text-sm text-white/60">{transactionProgress}%</span>
             </div>
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-blue-500 transition-all duration-500"
                 style={{ width: `${transactionProgress}%` }}
               />
             </div>
           </div>
           <div className="flex items-center gap-4 animate-pulse">
-            <img 
-              src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" 
-              alt="USDC" 
+            <img
+              src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
+              alt="USDC"
               className="w-12 h-12"
             />
             <ArrowRight className="w-6 h-6 text-white/40" />
-            <img 
+            <img
               src="https://api.dicebear.com/7.x/avataaars/svg?seed=vitalik"
-              alt="Vitalik" 
+              alt="Vitalik"
               className="w-12 h-12 rounded-full"
             />
           </div>
           <p className="mt-4 text-white/60">
-            Sending 100 USDC to vitalik.eth
+            Sending {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
           </p>
         </>
       ) : (
@@ -141,11 +190,16 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
           </div>
           <h3 className="text-xl font-medium mb-2">Transaction Successful!</h3>
           <p className="text-white/60 mb-2">
-            Successfully sent 100 USDC to vitalik.eth
+            Successfully sent {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
           </p>
-          <p className="text-sm text-white/40">
-            Transaction fee: 0.01 USDC
-          </p>
+          <Link
+            href={scan}
+            isExternal
+            color="blue.500"
+            _hover={{ textDecoration: 'underline' }}
+          >
+            View Transaction
+          </Link>
           <button
             onClick={onClose}
             className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg mt-6"
@@ -157,14 +211,31 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
     </div>
   );
 
+  const renderFailedTransaction = () => (
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
+        <ShieldClose className="w-8 h-8 text-red-500" />
+      </div>
+      <h3 className="text-xl font-medium mb-2">Failed Transaction</h3>
+      <p className="text-white/60 mb-2">
+        Failed {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
+      </p>
+      <button
+        onClick={onClose}
+        className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg mt-6"
+      >
+        Close
+      </button>
+    </div>
+  );
+
   return (
     <div className="h-full p-6">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
           <div className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              step >= 1 ? 'bg-blue-500' : 'bg-white/10'
-            }`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-blue-500' : 'bg-white/10'
+              }`}>
               <span>1</span>
             </div>
           </div>
@@ -176,8 +247,8 @@ export const SendProcess: React.FC<SendProcessProps> = ({ onClose }) => {
           <X className="w-4 h-4" />
         </button>
       </div>
-
-      {showConfirmation ? renderConfirmation() : (
+      {failedTransaction && renderFailedTransaction()}
+      {showConfirmation && !failedTransaction ? renderConfirmation() : (
         <div className="h-[calc(100%-60px)]">
           {renderPreview()}
         </div>
