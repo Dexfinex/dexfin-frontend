@@ -216,7 +216,7 @@ export interface TransactionError extends Error {
 }
 export interface BrianTransactionData {
   message: string;
-  type:string;
+  type: string;
   data: {};
 }
 
@@ -254,4 +254,15 @@ export interface DefillamaCategory {
 }
 export interface BrianKnowledgeData {
   message: string;
+}
+
+export interface Ganiner {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  usd24hChange: number;
+  usd24hVol: number;
 }

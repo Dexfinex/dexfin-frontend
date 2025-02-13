@@ -1,9 +1,9 @@
-import {coinGeckoApi} from "./api.service.ts";
-import {CoinData, CoinGeckoToken, SearchResult, TrendingCoin} from "../types";
-import {ChartDataPoint, TokenType} from "../types/swap.type.ts";
-import {TokenTypeB} from "../types/cart.type.ts";
+import { coinGeckoApi } from "./api.service.ts";
+import { CoinData, CoinGeckoToken, Ganiner, SearchResult, TrendingCoin } from "../types";
+import { ChartDataPoint, TokenType } from "../types/swap.type.ts";
+import { TokenTypeB } from "../types/cart.type.ts";
 import axios from "axios";
-import {MarketCapToken} from "../components/market/MarketCap.tsx";
+import { MarketCapToken } from "../components/market/MarketCap.tsx";
 
 export const coingeckoService = {
     getMemecoins: async () => {
@@ -122,6 +122,16 @@ export const coingeckoService = {
             return data;
         } catch (error) {
             console.error('Failed to fetch trending coins:', error);
+            throw error;
+        }
+    },
+
+    getTopGainers: async (): Promise<Ganiner[]> => {
+        try {
+            const { data } = await coinGeckoApi.get<Ganiner[]>('/top_gainers/');
+            return data;
+        } catch (error) {
+            console.error('Failed to fetch top gainers:', error);
             throw error;
         }
     },

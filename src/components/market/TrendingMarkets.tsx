@@ -1,13 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RefreshCw, AlertCircle } from 'lucide-react';
-import { useGetTrendingCoins } from '../../hooks/useTrendingCoins';
+import { useGetTrendingCoins, useGetTopGainers } from '../../hooks/useMarketTrend';
 
 export const TrendingMarkets: React.FC = () => {
 
-  const { data: coins, isLoading, refetch, error } = useGetTrendingCoins();
+  const { data: coins, isLoading: isLoadingTrend, refetch: refetchTrend, error: errorTrend } = useGetTrendingCoins();
+  const { data: gainer, isLoading: isLoadingGainer, error: errorGainer, refetch: refetchGainer } = useGetTopGainers();
+
+  const error = errorTrend || errorGainer;
+  const isLoading = isLoadingTrend || isLoadingGainer;
+
+  const [selectedTab, setSelectedTab] = useState('Trending Tokens');
 
   const handleRefresh = async () => {
-    await refetch();
+    switch (selectedTab) {
+      case "Trending Tokens":
+        await refetchTrend();
+        break;
+      case "Top Gainers":
+        await refetchGainer();
+        break;
+      case "Top Losers":
+
+        break;
+      default:
+        break;
+    }
   };
 
   if (isLoading) {
@@ -39,7 +57,36 @@ export const TrendingMarkets: React.FC = () => {
 
   return (
     <div className="p-6 h-full">
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSelectedTab('Trending Tokens')}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'Trending Tokens'
+              ? 'bg-white/10'
+              : 'hover:bg-white/5'
+              }`}
+          >
+            Trending Tokens
+          </button>
+          <button
+            onClick={() => setSelectedTab('Top Gainers')}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'Top Gainers'
+              ? 'bg-white/10'
+              : 'hover:bg-white/5'
+              }`}
+          >
+            Top Gainers
+          </button>
+          <button
+            onClick={() => setSelectedTab('Top Losers')}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'Top Losers'
+              ? 'bg-white/10'
+              : 'hover:bg-white/5'
+              }`}
+          >
+            Top Losers
+          </button>
+        </div>
         <button
           onClick={handleRefresh}
           disabled={isLoading}
