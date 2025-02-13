@@ -1,143 +1,149 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ChevronDown, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ChevronDown, ArrowDownUp } from 'lucide-react';
 import { TokenSelectorModal } from '../swap/components/TokenSelectorModal';
 import { TokenType } from '../../types/swap.type';
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import { NULL_ADDRESS } from "../../constants";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
-import { formatNumberByFrac } from '../../utils/common.util.ts';
 
-const DEFAULT_FROM_CURRENCY: TokenType = {
-  symbol: 'USDT',
-  name: 'Tether USD',
-  address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-  chainId: 1,
-  decimals: 6,
-  logoURI: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
+const formatSpecialNumber = (num: number): string => {
+  if (num === 0) return '0.00';
+
+  // Convert to string and remove scientific notation
+  let str = num.toFixed(20).replace(/\.?0+$/, '');
+
+  // Find the first non-zero decimal digit
+  const match = str.match(/^0\.0+[1-9]/);
+  if (match) {
+    const leadingZeros = (match[0].match(/0/g) || []).length - 1;
+    const firstNonZero = str.replace(/^0\.0+/, '');
+    return `0.0₁₀${firstNonZero.slice(0, 4)}`;
+  }
+
+  // For normal numbers, show regular format with up to 4 decimal places
+  return Number(str).toFixed(4).replace(/\.?0+$/, '');
 };
-
-const DEFAULT_TO_CURRENCY: TokenType = {
-  symbol: 'ETH',
-  name: 'Ethereum',
-  address: NULL_ADDRESS,
-  chainId: 1,
-  decimals: 18,
-  logoURI: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
-};
-
-const UPDATE_INTERVAL = 10000; // 10 seconds
 
 export const PriceConverterWidget: React.FC = () => {
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
-  const [lastUpdated, setLastUpdated] = useState('');
+  const [lastUpdated, setLastUpdated] = useState<string>('');
   const [showFromSelector, setShowFromSelector] = useState(false);
   const [showToSelector, setShowToSelector] = useState(false);
-  const [fromRealCurrency, setFromRealCurrency] = useState<TokenType | null>(DEFAULT_FROM_CURRENCY);
-  const [toRealCurrency, setToRealCurrency] = useState<TokenType | null>(DEFAULT_TO_CURRENCY);
+
+  const [toRealCurrency, setToRealCurrency] = useState<TokenType | null>({
+    symbol: 'ETH',
+    name: 'Ethereum',
+    address: NULL_ADDRESS,
+    chainId: 1,
+    decimals: 18,
+    logoURI: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+  });
+
+  const [fromRealCurrency, setFromRealCurrency] = useState<TokenType | null>({
+    symbol: 'USDT',
+    name: 'Tether USD',
+    address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+    chainId: 1,
+    decimals: 6,
+    logoURI: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
+  });
 
   const tokenChainId = fromRealCurrency?.chainId ?? toRealCurrency!.chainId;
   const nativeTokenAddress = mapChainId2NativeAddress[tokenChainId];
 
   const tokenAddresses = useMemo(() => {
-    if (!fromRealCurrency?.address || !toRealCurrency?.address || !nativeTokenAddress) {
+    try {
+      const _tokenAddresses = [
+        (fromRealCurrency?.address || "").toLowerCase(),
+        (toRealCurrency?.address || "").toLowerCase(),
+        nativeTokenAddress.toLowerCase()
+      ];
+      return [...new Set(_tokenAddresses.filter(addr => addr))];
+    } catch (e) {
       return [];
     }
+  }, [fromRealCurrency, toRealCurrency, nativeTokenAddress]);
 
-    return [...new Set([
-      fromRealCurrency.address.toLowerCase(),
-      toRealCurrency.address.toLowerCase(),
-      nativeTokenAddress.toLowerCase()
-    ])];
-  }, [fromRealCurrency?.address, toRealCurrency?.address, nativeTokenAddress]);
-
-  const { 
-    isLoading: isLoadingTokenPrices, 
-    refetch: refetchTokenPrices, 
-    data: tokenPrices 
-  } = useGetTokenPrices({
-    tokenAddresses,
+  const { isLoading: isLoadingTokenPrices, refetch: refetchTokenPrices, data: tokenPrices } = useGetTokenPrices({
+    tokenAddresses: tokenAddresses,
     chainId: tokenChainId,
   });
 
   const rate = useMemo(() => {
     if (!fromRealCurrency || !toRealCurrency || !tokenPrices) return 0;
 
-    const fromTokenPrice = Number(tokenPrices[`${tokenChainId}:${fromRealCurrency.address.toLowerCase()}`]);
-    const toTokenPrice = Number(tokenPrices[`${tokenChainId}:${toRealCurrency.address.toLowerCase()}`]);
+    const fromTokenPrice = Number(tokenPrices[`${tokenChainId}:${fromRealCurrency.address.toLowerCase()}`]) || 0;
+    const toTokenPrice = Number(tokenPrices[`${tokenChainId}:${toRealCurrency.address.toLowerCase()}`]) || 0;
 
-    if (!fromTokenPrice || !toTokenPrice) return 0;
-    return fromTokenPrice / toTokenPrice;
+    if (fromTokenPrice && toTokenPrice) {
+      const calculatedRate = fromTokenPrice / toTokenPrice;
+      return calculatedRate;
+    }
+    return 0;
   }, [fromRealCurrency, toRealCurrency, tokenPrices, tokenChainId]);
 
-  const handleFromAmountChange = useCallback((value: string) => {
+  const calculateToAmount = (fromValue: string, currentRate: number) => {
+    if (!fromValue || !currentRate) return '0.00';
+    const calculated = parseFloat(fromValue) * currentRate;
+    return formatSpecialNumber(calculated);
+  };
+
+  const calculateFromAmount = (toValue: string, currentRate: number) => {
+    if (!toValue || !currentRate) return '0.00';
+    const calculated = parseFloat(toValue) / currentRate;
+    return formatSpecialNumber(calculated);
+  };
+
+  const handleFromAmountChange = (value: string) => {
     setFromAmount(value);
-    if (rate && value) {
-      const newToAmount = (parseFloat(value) * rate) || 0;
-      setToAmount(formatNumberByFrac(newToAmount));
-    } else {
-      setToAmount('0');
-    }
-  }, [rate]);
+    setToAmount(calculateToAmount(value, rate));
+  };
 
-  const handleToAmountChange = useCallback((value: string) => {
+  const handleToAmountChange = (value: string) => {
     setToAmount(value);
-    if (rate && value) {
-      const newFromAmount = (parseFloat(value) / rate) || 0;
-      setFromAmount(formatNumberByFrac(newFromAmount));
-    } else {
-      setFromAmount('0');
-    }
-  }, [rate]);
+    setFromAmount(calculateFromAmount(value, rate));
+  };
 
-  const updateFetchedTime = useCallback(() => {
+  const handleSwitch = () => {
+    const tempToken = fromRealCurrency;
+    const tempAmount = fromAmount;
+    setFromRealCurrency(toRealCurrency);
+    setToRealCurrency(tempToken);
+    setFromAmount(toAmount);
+    setToAmount(tempAmount);
+  };
+
+  const updateFetchedTime = async () => {
     setLastUpdated(new Date().toLocaleTimeString());
-  }, []);
-
-  const refetchHandler = useCallback(async () => {
-    await refetchTokenPrices();
-    updateFetchedTime();
-  }, [refetchTokenPrices, updateFetchedTime]);
-
-  const handleFromTokenSelect = useCallback((token: TokenType | null) => {
-    setFromRealCurrency(token);
-    setShowFromSelector(false);
-  }, []);
-
-  const handleToTokenSelect = useCallback((token: TokenType | null) => {
-    setToRealCurrency(token);
-    setShowToSelector(false);
-  }, []);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
-      updateFetchedTime();
       refetchTokenPrices();
-    }, UPDATE_INTERVAL);
+      updateFetchedTime();
+    }, 10000);
     return () => clearInterval(interval);
-  }, [refetchTokenPrices, updateFetchedTime]);
+  }, [refetchTokenPrices]);
 
   useEffect(() => {
-    if (rate && fromAmount) {
-      const newToAmount = (parseFloat(fromAmount) * rate) || 0;
-      setToAmount(formatNumberByFrac(newToAmount));
-    } else {
-      setToAmount('');
+    if (fromAmount) {
+      setToAmount(calculateToAmount(fromAmount, rate));
     }
-  }, [fromRealCurrency, toRealCurrency, rate, fromAmount]);
+  }, [rate]);
 
   return (
     <div className="p-2 h-full flex flex-col">
       <TokenSelectorModal
         isOpen={showFromSelector}
         onClose={() => setShowFromSelector(false)}
-        onSelect={handleFromTokenSelect}
+        onSelect={setFromRealCurrency}
         selectedToken={fromRealCurrency}
       />
       <TokenSelectorModal
         isOpen={showToSelector}
         onClose={() => setShowToSelector(false)}
-        onSelect={handleToTokenSelect}
+        onSelect={setToRealCurrency}
         selectedToken={toRealCurrency}
       />
       <div className="space-y-2">
@@ -146,7 +152,10 @@ export const PriceConverterWidget: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="relative">
               <button
-                onClick={() => setShowFromSelector(true)}
+                onClick={() => {
+                  setShowFromSelector(true);
+                  setShowToSelector(false);
+                }}
                 className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
               >
                 <img src={fromRealCurrency?.logoURI} alt={fromRealCurrency?.symbol} className="w-4 h-4" />
@@ -166,16 +175,15 @@ export const PriceConverterWidget: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex justify-center -my-1 relative z-[1]">
-          <button
-            onClick={refetchHandler}
-            className={`p-1 rounded-lg bg-blue-500 hover:bg-blue-600 transition-colors ${
-              isLoadingTokenPrices ? 'opacity-50' : ''
-            }`}
-            disabled={isLoadingTokenPrices}
-          >
-            <RefreshCw className={`w-3 h-3 ${isLoadingTokenPrices ? 'animate-spin' : ''}`} />
-          </button>
+        <div className="relative h-8 flex items-center justify-center">
+          <div className="z-30 flex gap-2">
+            <button
+              onClick={handleSwitch}
+              className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
+            >
+              <ArrowDownUp className="w-3 h-3" />
+            </button>
+          </div>
         </div>
 
         <div className="bg-white/5 rounded-xl p-2">
@@ -183,7 +191,10 @@ export const PriceConverterWidget: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="relative">
               <button
-                onClick={() => setShowToSelector(true)}
+                onClick={() => {
+                  setShowToSelector(true);
+                  setShowFromSelector(false);
+                }}
                 className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
               >
                 <img src={toRealCurrency?.logoURI} alt={toRealCurrency?.symbol} className="w-4 h-4" />
@@ -191,15 +202,9 @@ export const PriceConverterWidget: React.FC = () => {
                 <ChevronDown className="w-3 h-3 text-white/60" />
               </button>
             </div>
-            <input
-              type="number"
-              disabled={isLoadingTokenPrices}
-              value={toAmount}
-              onChange={(e) => handleToAmountChange(e.target.value)}
-              className="flex-1 bg-transparent text-right outline-none text-sm"
-              placeholder="0.00"
-              min="0"
-            />
+            <div className="flex-1 text-right text-sm">
+              {toAmount || '0.00'}
+            </div>
           </div>
         </div>
 
@@ -208,7 +213,7 @@ export const PriceConverterWidget: React.FC = () => {
             Last updated: {lastUpdated} • Rate refreshes every 10 seconds
           </div>
           <div className="text-[10px] text-white/60 mt-0.5">
-            1 {fromRealCurrency?.symbol} = {formatNumberByFrac(rate)} {toRealCurrency?.symbol}
+            1 {fromRealCurrency?.symbol} = {formatSpecialNumber(rate)} {toRealCurrency?.symbol}
           </div>
         </div>
       </div>
