@@ -39,24 +39,24 @@ export type TokenType = {
     chainId: number,
     decimals: number,
     logoURI: string,
-    price: number,
-    priceChange24h: number,
-    marketCap: number,
-    marketCapRank: number,
-    volume24h: number,
-    sparkline: number[];
-    category: string;
-    id: string;
-    symbol: string;
-    image: string;
-    current_price: number;
-    market_cap: number;
-    market_cap_rank: number;
-    total_volume: number;
-    price_change_percentage_24h: number;
-    sparkline_in_7d: { price: number[] };
-    categories: string;
-    platforms: string[];
+    price?: number,
+    priceChange24h?: number,
+    marketCap?: number,
+    marketCapRank?: number,
+    volume24h?: number,
+    sparkline?: number[];
+    category?: string;
+    id?: string;
+    symbol?: string;
+    image?: string;
+    current_price?: number;
+    market_cap?: number;
+    market_cap_rank?: number;
+    total_volume?: number;
+    price_change_percentage_24h?: number;
+    sparkline_in_7d?: { price: number[] };
+    categories?: string;
+    platforms?: string[];
 
 };
 
