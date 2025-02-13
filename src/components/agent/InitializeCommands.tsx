@@ -14,17 +14,17 @@ interface InitializeCommands {
 export function InitializeCommands({ processCommand, address, chainId, setInput }: InitializeCommands) {
 
   return (
-    <div className="flex flex-col items-center justify-center h-full">
+    <div className="flex flex-col items-center justify-center h-full p-4">
       <div className="w-24 h-24 rounded-full bg-blue-500/20 flex items-center justify-center mb-8">
         <Brain className="w-12 h-12 text-blue-500" />
       </div>
 
-      <h1 className="text-4xl font-bold mb-4">Crypto Companion</h1>
+      <h1 className="text-4xl font-bold mb-4 text-center">Crypto Companion</h1>
       <p className="text-white/60 text-center max-w-md mb-8">
         Your AI assistant for crypto market insights and DeFi operations
       </p>
 
-      <div className="grid grid-cols-2 gap-8 w-[800px] max-w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
         {/* Market Data Section */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
