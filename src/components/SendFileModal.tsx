@@ -1,5 +1,5 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { X, Camera, MoveLeft, Plus, Search, File } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, File } from 'lucide-react';
 import { Button } from '@chakra-ui/react';
 
 interface SendFileModalProps {
