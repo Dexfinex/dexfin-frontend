@@ -92,11 +92,8 @@ export const FearGreedWidget: React.FC = () => {
             <div className="flex items-center gap-1.5 text-sm">
               <span className="text-white/60">24h Change:</span>
               <div className={`flex items-center gap-0.5 ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {change >= 0 ? (
-                  <TrendingUp className="w-4 h-4" />
-                ) : (
-                  <TrendingDown className="w-4 h-4" />
-                )}
+                {change > 0 && <TrendingUp className="w-4 h-4" />}
+                {change < 0 && <TrendingDown className="w-4 h-4" />}
                 <span>{Math.abs(change)}</span>
               </div>
             </div>
