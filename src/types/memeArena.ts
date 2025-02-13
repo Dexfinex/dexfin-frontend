@@ -8,6 +8,13 @@ export interface Character {
     defense: number;
     speed: number;
   };
+  specialAbility: {
+    name: string;
+    description: string;
+    damage: number;
+    mpCost: number;
+    statusEffect?: StatusEffect;
+  };
 }
 
 export interface GameState {
@@ -22,9 +29,15 @@ export interface GameState {
   battleLogs: BattleLog[];
   tokens: number;
   isGameOver: boolean;
-  combo: number; // Track combo hits
-  lastAction: string | null; // Track last action for combo system
-  criticalHit: boolean; // Track critical hits
+  combo: number;
+  lastAction: string | null;
+  criticalHit: boolean;
+  playerStatusEffects: StatusEffect[];
+  aiStatusEffects: StatusEffect[];
+  battleStats: BattleStats;
+  tournamentMode: boolean;
+  tournamentRound: number;
+  tournamentWins: number;
 }
 
 export interface Action {
@@ -32,6 +45,24 @@ export interface Action {
 }
 
 export interface BattleLog {
-  type: 'BATTLE_START' | 'PLAYER_ATTACK' | 'AI_ATTACK' | 'PLAYER_DEFEND' | 'AI_DEFEND' | 'GAME_OVER' | 'ERROR';
+  type: 'BATTLE_START' | 'PLAYER_ATTACK' | 'AI_ATTACK' | 'PLAYER_DEFEND' | 'AI_DEFEND' | 'GAME_OVER' | 'ERROR' | 'SPECIAL_ABILITY' | 'STATUS_EFFECT' | 'COMBO' | 'CRITICAL';
   text: string;
+  highlight?: boolean;
+}
+
+export interface StatusEffect {
+  type: 'BURN' | 'STUN' | 'POISON' | 'BUFF_ATTACK' | 'BUFF_DEFENSE' | 'BUFF_SPEED';
+  duration: number;
+  value: number;
+  name: string;
+  description: string;
+}
+
+export interface BattleStats {
+  totalDamageDealt: number;
+  criticalHits: number;
+  maxCombo: number;
+  specialsUsed: number;
+  perfectBlocks: number;
+  statusEffectsApplied: number;
 }

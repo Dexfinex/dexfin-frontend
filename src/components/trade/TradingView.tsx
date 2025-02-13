@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Datafeeds from "./DataFeed";
-import { useStore } from "../../store/useStore";
+
 declare global {
     interface Window {
         TradingView?: {
@@ -55,12 +55,11 @@ interface TradeChartProps {
     theme: 'dark' | 'light';
 }
 
-const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol,theme }) => {
+const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol, theme }) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const [tvWidget, setTvWidget] = useState<TradingViewWidget | null>(null);
     const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
-    // Load TradingView script
     useEffect(() => {
         const loadScript = async () => {
             if (!window.TradingView) {
@@ -94,7 +93,6 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol,theme }) => {
         loadScript();
     }, []);
 
-    // Initialize widget
     useEffect(() => {
         if (!isScriptLoaded || !window.TradingView) {
             return;
@@ -103,18 +101,16 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol,theme }) => {
         try {
             const widgetOptions: WidgetConfig = {
                 autosize: true,
-                toolbar_bg: '#000',
+                toolbar_bg: theme === 'dark' ? '#000000' : '#ffffff',
                 symbol: pairSymbol,
                 interval: "1D",
                 fullscreen: false,
                 container: "tv_chart_container",
                 datafeed: Datafeeds,
                 library_path: "/charting_library/",
-                // custom_css_url: 'https://assets.staticimg.com/trade-web/4.2.28/charting_library_24/custom.css',
                 custom_css_url: theme === 'dark'
                     ? 'https://assets.staticimg.com/trade-web/4.2.28/charting_library_24/custom.css'
                     : 'https://assets.staticimg.com/trade-web/4.2.28/charting_library_24/custom_light.css',
-                
                 theme: theme,
                 charts_storage_url: 'https://saveload.tradingview.com',
                 disabled_features: [
@@ -135,34 +131,60 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol,theme }) => {
                 ],
                 enabled_features: ["study_templates"],
                 overrides: {
+                    // Background and Grid
                     "paneProperties.backgroundType": "solid",
-                    // "paneProperties.background": "#000",
                     "paneProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
                     "paneProperties.vertGridProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
                     "paneProperties.horzGridProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
+                    
+                    // Scales and Text
                     "scalesProperties.backgroundColor": theme === 'dark' ? '#000000' : '#ffffff',
                     "scalesProperties.lineColor": theme === 'dark' ? '#363c4e' : '#e1e3eb',
                     "scalesProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000',
+                    
+                    // Candle Colors - Keep consistent regardless of theme
                     "mainSeriesProperties.candleStyle.upColor": "#26a69a",
                     "mainSeriesProperties.candleStyle.downColor": "#ef5350",
                     "mainSeriesProperties.candleStyle.wickUpColor": "#26a69a",
                     "mainSeriesProperties.candleStyle.wickDownColor": "#ef5350",
                     "mainSeriesProperties.candleStyle.borderUpColor": "#26a69a",
-                    "mainSeriesProperties.candleStyle.borderDownColor": "#ef5350"
-
+                    "mainSeriesProperties.candleStyle.borderDownColor": "#ef5350",
+                    
+                    // Additional UI Elements
+                    "symbolWatermarkProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
+                    "chartProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
+                    "chartProperties.lineColor": theme === 'dark' ? '#363c4e' : '#e1e3eb',
+                    "chartProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000',
+                    
+                    // Navigation Buttons and Toolbar
+                    "toolbarBg": theme === 'dark' ? '#000000' : '#ffffff',
+                    "toolbarIconColor": theme === 'dark' ? '#B2B5BE' : '#000000',
+                    "toolbarIconHoverBg": theme === 'dark' ? '#363c4e' : '#e1e3eb',
+                    
+                    // Left Toolbar Specific
+                    "paneProperties.leftAxisProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
+                    "paneProperties.leftAxisProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000',
+                    "paneProperties.legendProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
+                    "paneProperties.legendProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000'
                 },
                 loading_screen: {
-                    // backgroundColor: "#000",
-                    // foregroundColor: "#000"
                     backgroundColor: theme === 'dark' ? '#000000' : '#ffffff',
                     foregroundColor: theme === 'dark' ? '#363c4e' : '#e1e3eb'
                 }
             };
 
             const tvWidget_ = new window.TradingView.widget(widgetOptions);
-            // setTvWidget(tvWidget_);
+            
             tvWidget_.onChartReady(() => {
                 console.log('Chart is ready');
+                // Apply additional theme-specific styles to the DOM
+                const chartContainer = document.getElementById('tv_chart_container');
+                if (chartContainer) {
+                    const toolbars = chartContainer.querySelectorAll('.toolbar');
+                    toolbars.forEach(toolbar => {
+                        toolbar.setAttribute('style', `background-color: ${theme === 'dark' ? '#000000' : '#ffffff'} !important`);
+                    });
+                }
             });
 
             setTvWidget(tvWidget_);
@@ -175,9 +197,8 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol,theme }) => {
         } catch (error) {
             console.error('Error initializing TradingView widget:', error);
         }
-    }, [isScriptLoaded, pairSymbol]);
+    }, [isScriptLoaded, pairSymbol, theme]);
 
-    // Handle symbol changes
     useEffect(() => {
         if (pairSymbol && tvWidget) {
             try {
@@ -198,11 +219,10 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol,theme }) => {
             ref={chartContainerRef}
             className="w-full h-full trade-chart-container"
             style={{
-                backgroundColor: theme === 'dark' ? '#131722' : '#ffffff'
+                backgroundColor: theme === 'dark' ? '#000000' : '#ffffff'
             }}
         />
     );
 };
 
 export default TradeChart;
-

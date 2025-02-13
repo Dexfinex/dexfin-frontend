@@ -115,7 +115,8 @@ const findFallbackResponse = async (message: string) => {
   return null;
 };
 
-function convertToPlainText(text: any) {
+
+function convertToPlainText(text: string) {
   return text
     .replace(/"\n+/g, '')            // Remove unnecessary quote marks and new lines
     .replace(/###?.*?\n/g, '')       // Remove headings (### Title)
@@ -128,7 +129,7 @@ function convertToPlainText(text: any) {
 }
 
 // Process a single command
-const processCommand = async (command: string, address: string, chainId: number) => {
+const processCommand = async (command: string, address: string, chainId: number | undefined) => {
   // Try fallback response first
   const fallbackResponse = await findFallbackResponse(command);
   if (fallbackResponse) {
@@ -242,7 +243,7 @@ const processCommand = async (command: string, address: string, chainId: number)
   }
 };
 
-export async function generateResponse(userMessage: string, address: string, chainId: number) {
+export async function generateResponse(userMessage: string, address: string, chainId: number | undefined) {
   try {
     // Parse chained commands
     console.log(address);
