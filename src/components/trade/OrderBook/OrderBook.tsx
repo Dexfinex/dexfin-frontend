@@ -72,7 +72,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
         if (!container) return;
         const rect = container.getBoundingClientRect();
         setTooltipPosition({
-            x: rect.right,
+            x: rect.left,
             y: e.clientY
         });
         setIsTooltipVisible(true);
@@ -96,7 +96,7 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
             return (
                 <div 
                     key={`${idx}-${level.depth}`}
-                    className={`relative flex w-full h-6 items-center ${isSelected ? 'bg-gray-800/50 dark:bg-gray-800/50' : ''}`}
+                    className={`relative flex w-full h-6 items-center ${isSelected ? 'bg-gray-200 dark:bg-gray-800/50' : ''}`}
                     onMouseEnter={() => {
                         if (orderType === OrderType.ASKS) {
                             setAsksSelectedIndex(idx);
@@ -110,22 +110,22 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
                     {!isSelected && (
                         <div className="absolute inset-0" style={{
                             background: orderType === OrderType.ASKS ? 
-                                `linear-gradient(to left, rgba(239, 68, 68, 0.02) ${level.depth}%, transparent ${level.depth}%)` :
-                                `linear-gradient(to left, rgba(34, 197, 94, 0.02) ${level.depth}%, transparent ${level.depth}%)`
+                                `linear-gradient(to left, rgba(239, 68, 68, 0.1) ${level.depth}%, transparent ${level.depth}%)` :
+                                `linear-gradient(to left, rgba(34, 197, 94, 0.1) ${level.depth}%, transparent ${level.depth}%)`
                         }} />
                     )}
                     <div className="grid w-full grid-cols-4 px-2 font-mono text-xs">
-                        <div className={`text-right ${
+                        <div className={
                             orderType === OrderType.ASKS 
-                            ? 'text-red-600 dark:text-red-500' 
-                            : 'text-green-600 dark:text-green-500'
-                        }`}>
+                            ? 'text-right text-[#d00] dark:text-red-500' 
+                            : 'text-right text-[#090] dark:text-green-500'
+                        }>
                             {toFixedFloat(level.price, 2)}
                         </div>
-                        <div className="text-right text-gray-900 dark:text-gray-300">
+                        <div className="text-right text-[#000] dark:text-gray-100">
                             {Number(level.size).toFixed(2)}
                         </div>
-                        <div className="text-right text-gray-900 dark:text-gray-300">
+                        <div className="text-right text-[#000] dark:text-gray-100">
                             {level.total > 1000 ? `${(level.total / 1000).toFixed(2)}k` : level.total.toFixed(2)}
                         </div>
                         <div className="flex justify-end gap-0.5">
@@ -149,25 +149,25 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
 
         return (
             <div 
-                className="fixed z-50 p-2 text-xs bg-gray-900 border border-gray-700 rounded"
+                className="fixed z-50 p-2 text-xs bg-gray-900/90 rounded"
                 style={{
-                    top: tooltipPosition.y,
-                    right: '28rem',
-                    transform: 'translate(20px, -50%)'
+                    top: tooltipPosition.y - 50,
+                    left: '0',
+                    width: '180px',
                 }}
             >
                 <div className="space-y-1">
-                    <div className="flex justify-between gap-4">
-                        <span className="text-gray-400">Avg. Price:</span>
-                        <span className="text-gray-900 dark:text-white">{toFixedFloat(avgPrice, 2)}</span>
+                    <div className="flex justify-between text-gray-400">
+                        <span>Avg price:</span>
+                        <span className="text-white">{toFixedFloat(avgPrice, 2)}</span>
                     </div>
-                    <div className="flex justify-between gap-4">
-                        <span className="text-gray-400">Total {symbolAssetIn}:</span>
-                        <span className="text-gray-900 dark:text-white">{convertNumberIntoFormat(totalAmountIn)}</span>
+                    <div className="flex justify-between text-gray-400">
+                        <span>Total {symbolAssetIn}:</span>
+                        <span className="text-white">{toFixedFloat(totalAmountIn, 2)}</span>
                     </div>
-                    <div className="flex justify-between gap-4">
-                        <span className="text-gray-400">Total {symbolAssetOut}:</span>
-                        <span className="text-gray-900 dark:text-white">{convertNumberIntoFormat(totalAmountOut)}</span>
+                    <div className="flex justify-between text-gray-400">
+                        <span>Total {symbolAssetOut}:</span>
+                        <span className="text-white">{convertNumberIntoFormat(totalAmountOut)}</span>
                     </div>
                 </div>
             </div>
@@ -183,8 +183,8 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
     }
 
     return (
-        <div className="relative isolate h-[600px] flex flex-col text-gray-900 dark:text-white bg-white dark:bg-black glass">
-            <div className="sticky top-0 z-10 bg-white dark:bg-black px-2 py-1 grid grid-cols-4 text-[10px] text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 glass">
+        <div className="relative isolate h-[600px] flex flex-col text-[#000] dark:text-white bg-white dark:bg-black glass scrollbar-none">
+            <div className="sticky top-0 z-10 bg-white dark:bg-black px-2 py-1 grid grid-cols-4 text-[10px] text-[#000] dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 glass font-semibold">
                 <div className="text-center">PRICE</div>
                 <div className="text-center">SIZE</div>
                 <div className="text-center">TOTAL</div>
@@ -201,18 +201,18 @@ const OrderBook: FunctionComponent<OrderBookProps> = ({
             </div>
             
             <div className="grid grid-cols-2 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-900 glass">
-                <div className="text-gray-600 dark:text-gray-400">
-                    Last Price: <span className="text-gray-900 dark:text-white">{Number(lastPrice).toFixed(2)}</span>
+                <div className="text-[#000] dark:text-gray-400">
+                    Last Price: <span className="text-[#000] dark:text-white font-semibold">{Number(lastPrice).toFixed(2)}</span>
                 </div>
-                <div className="text-right text-gray-600 dark:text-gray-400">
-                    Spread: <span className="text-gray-900 dark:text-white">
+                <div className="text-right text-[#000] dark:text-gray-400">
+                    Spread: <span className="text-[#000] dark:text-white font-semibold">
                         {((asks[0]?.price - bids[0]?.price) / asks[0]?.price * 100).toFixed(2)}%
                     </span>
                 </div>
             </div>
             
             <div 
-                className="flex-1 h-[250px] overflow-y-auto ai-chat-scrollbar bg-green-50/30 dark:bg-[#121a12] glass"
+                className="flex-1 h-[250px] overflow-y-auto ai-chat-scrollbar bg-red-50/30 dark:bg-[#1a1212]] glass"
                 onMouseLeave={() => handleMouseLeave(false)}
                 onMouseMove={(e) => handleMouseMove(e, asksContainer.current)}
             >
