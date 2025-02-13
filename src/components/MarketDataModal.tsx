@@ -22,7 +22,7 @@ import {DexExplorer} from './market/DexExplorer';
 import {DeFiOverview} from './market/DeFiOverview';
 import {MarketNews} from './market/MarketNews';
 import {MarketAlerts} from './market/MarketAlerts';
-import {TechnicalAnalysis} from './market/TechnicalAnalysis';
+import {TechnicalAnalysis} from './market/Technical/TechnicalAnalysis';
 import {MarketCalendar} from './market/MarketCalendar';
 import {MarketFeed} from './market/MarketFeed';
 import {MarketCap} from './market/MarketCap';
