@@ -3,8 +3,11 @@ import { Activity, BarChart2, Brain, Hash, MessageSquare, TrendingDown, Trending
 
 import useFearGreedStore from '../../store/useFearGreedStore';
 import useDefillamaStore from '../../store/useDefillamaStore';
+import { useGetDefillamaProtocols } from '../../hooks/useDefillama';
+import { formatNumberByFrac } from '../../utils/common.util';
 
 export const MarketOverview: React.FC = () => {
+  useGetDefillamaProtocols();
 
   const { data } = useFearGreedStore();
   const { getDeFiStats } = useDefillamaStore();
@@ -30,7 +33,7 @@ export const MarketOverview: React.FC = () => {
     },
     marketCap: {
       value: defiStats.defiMarketCap,
-      change: 1.8,
+      change: formatNumberByFrac(defiStats.totalChange24h),
       label: 'B'
     }
   };
@@ -177,7 +180,7 @@ export const MarketOverview: React.FC = () => {
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
               <div
                 className="h-full bg-green-400 transition-all"
-                style={{ width: '75%' }}
+                style={{ width: `${100 - (Number(marketMetrics.marketCap.change) || 0)}%` }}
               />
             </div>
           </div>
