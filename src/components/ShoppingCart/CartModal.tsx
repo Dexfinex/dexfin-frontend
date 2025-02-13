@@ -6,7 +6,7 @@ import { CartModalProps, TokenPurchaseDetails } from '../../types/cart.type';
 import { useTokenBuyHandler } from '../../hooks/useTokenBuyHandler';
 import { useStore } from '../../store/useStore';
 import useTokenStore from '../../store/useTokenStore';
-import { X } from 'lucide-react';
+import { X, ShoppingCart } from 'lucide-react';
 import Spinner from './components/Spinner';
 import SearchHeader from './components/SearchHeader';
 import CoinGrid from './components/CoinGrid';
@@ -160,17 +160,19 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     }
   }, [walletAddress, cartItems, executeBatchBuy]);
 
+  const [showCart, setShowCart] = useState(false)
+
+  const toggleCart = useCallback(() => {
+    setShowCart((prev) => !prev)
+  }, [])
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <div className="relative glass border border-white/10 shadow-lg w-[90%] h-[90%] rounded-xl">
+      <div className="relative glass border border-white/10 shadow-lg w-[95%] md:w-[90%] h-[95%] md:h-[90%] rounded-xl overflow-hidden">
         <span className="flex justify-end p-2">
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <X className="w-4 h-4" />
           </button>
         </span>
@@ -180,26 +182,28 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
             <Spinner />
           </div>
         ) : showCheckout ? (
-          <CheckoutSection
-            cartItems={cartItems}
-            tokenPrices={formattedTokenPrices}
-            walletAddress={walletAddress}
-            buyError={buyError}
-            processingBuy={processingBuy}
-            isBuyPending={isBuyPending}
-            onClose={() => setShowCheckout(false)}
-            onExecuteBuy={handleBuyExecution}
-          />
+          <div className="h-[calc(100%-48px)] overflow-auto">
+            <CheckoutSection
+              cartItems={cartItems}
+              tokenPrices={formattedTokenPrices}
+              walletAddress={walletAddress}
+              buyError={buyError}
+              processingBuy={processingBuy}
+              isBuyPending={isBuyPending}
+              onClose={() => setShowCheckout(false)}
+              onExecuteBuy={handleBuyExecution}
+            />
+          </div>
         ) : (
-          <div className="flex h-[calc(100%-48px)]">
-            <div className="flex-1 flex -mt-9 flex-col border-r border-white/10">
+          <div className="flex flex-col md:flex-row h-[calc(100%-48px)]">
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
               <SearchHeader
                 selectedCategory={selectedCategory}
                 searchQuery={searchQuery}
                 onCategoryChange={handleCategoryChange}
                 onSearchChange={handleSearchChange}
               />
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 min-h-0">
                 <CoinGrid
                   searchQuery={searchQuery}
                   selectedCategory={selectedCategory}
@@ -208,13 +212,41 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                 />
               </div>
             </div>
-            <div className="w-[400px] flex flex-col h-full">
+
+            {/* Mobile Cart Toggle Button */}
+            <button
+              onClick={toggleCart}
+              className="fixed bottom-4 right-4 md:hidden z-[60] bg-blue-500 p-4 rounded-full shadow-lg"
+            >
+              <ShoppingCart className="w-6 h-6" />
+              {cartItems.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
+                  {cartItems.length}
+                </span>
+              )}
+            </button>
+
+            {/* Cart Section */}
+            <div
+              className={`
+                fixed md:relative inset-0 md:inset-auto z-50
+                w-full md:w-[400px] h-full md:h-full
+                bg-[#0e0e0e] md:bg-[#0e0e0e]
+                transform transition-transform duration-300 ease-in-out
+                border-l border-white/10
+                ${showCart ? "translate-y-0" : "translate-y-full md:translate-y-0"}
+              `}
+            >
               <CartList
                 cartItems={cartItems}
                 tokenPrices={formattedTokenPrices}
                 onRemove={removeFromCart}
                 onUpdateQuantity={updateQuantity}
-                onCheckout={() => setShowCheckout(true)}
+                onCheckout={() => {
+                  setShowCheckout(true)
+                  setShowCart(false)
+                }}
+                onClose={() => setShowCart(false)}
               />
             </div>
           </div>
@@ -231,7 +263,8 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
         />
       )}
     </div>
-  );
+  )
+
 };
 
 export default React.memo(CartModal);

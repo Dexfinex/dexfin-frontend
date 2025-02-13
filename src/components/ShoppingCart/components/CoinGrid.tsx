@@ -170,10 +170,10 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
     }
 
     return (
-        <div className="h-full overflow-y-auto">
-            <div className="grid grid-cols-2 gap-4 p-4 overflow-y-auto">
+        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
                 {filteredCoins.map((coin, index) => {
-                    const contractAddress = getContractAddress(coin.platforms, walletChainId, selectedCategory);
+                    const contractAddress = getContractAddress(coin.platforms, walletChainId, selectedCategory)
                     return (
                         <div
                             key={index}
@@ -182,12 +182,12 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-3">
                                     <img
-                                        src={coin.logoURI}
+                                        src={coin.logoURI || "/placeholder.svg"}
                                         alt={coin.name}
                                         className="w-8 h-8"
                                         loading="lazy"
                                         onError={(e) => {
-                                            (e.target as HTMLImageElement).src = '/placeholder.png';
+                                            ; (e.target as HTMLImageElement).src = "/placeholder.png"
                                         }}
                                     />
                                     <div>
@@ -195,31 +195,29 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
                                         <div className="text-sm text-white/60">{coin.symbol}</div>
                                     </div>
                                 </div>
-                                <div className="px-2 py-1 rounded-full text-xs font-medium bg-white/10">
-                                    {coin.category}
-                                </div>
+                                <div className="px-2 py-1 rounded-full text-xs font-medium bg-white/10">{coin.category}</div>
                             </div>
 
-                            <div className="h-24 mb-3">
+                            <div className="h-16 sm:h-24 mb-3">
                                 <Line data={generateChartData(coin.sparkline)} options={chartOptions} />
                             </div>
 
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="text-2xl font-bold">
-                                    ${formatNumberByFrac(coin.price || 0)}
-                                </div>
-                                <div className={`text-sm flex items-center gap-1 ${(coin.priceChange24h || 0) >= 0 ? 'text-green-400' : 'text-red-400'
-                                    }`}>
-                                    {(coin.priceChange24h || 0) >= 0 ?
-                                        <TrendingUp className="w-4 h-4" /> :
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+                                <div className="text-xl sm:text-2xl font-bold">${formatNumberByFrac(coin.price || 0)}</div>
+                                <div
+                                    className={`text-sm flex items-center gap-1 ${(coin.priceChange24h || 0) >= 0 ? "text-green-400" : "text-red-400"}`}
+                                >
+                                    {(coin.priceChange24h || 0) >= 0 ? (
+                                        <TrendingUp className="w-4 h-4" />
+                                    ) : (
                                         <TrendingDown className="w-4 h-4" />
-                                    }
+                                    )}
                                     {Math.abs(coin.priceChange24h || 0).toFixed(2)}%
                                 </div>
                             </div>
 
                             <button
-                                onClick={() => {
+                                onClick={() =>
                                     debouncedAddToCart({
                                         id: coin.id,
                                         name: coin.name,
@@ -230,19 +228,20 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
                                         quantity: 1,
                                         address: contractAddress,
                                         chainId: walletChainId,
-                                        decimals: coin.decimals
-                                    });
-                                }}
+                                        decimals: coin.decimals,
+                                    })
+                                }
                                 className="w-full py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
                             >
                                 Add to Cart
                             </button>
                         </div>
-                    );
+                    )
                 })}
             </div>
         </div>
-    );
+    )
+
 });
 
 CoinGrid.displayName = 'CoinGrid';
