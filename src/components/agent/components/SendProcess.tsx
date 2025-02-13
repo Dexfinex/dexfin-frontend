@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, CheckCircle2, Wallet, X, ShieldClose } from 'lucide-react';
-import { Link } from '@chakra-ui/react';
+import { ArrowRight, Wallet, X } from 'lucide-react';
 
 import { TokenType, Step } from '../../../types/brian.type';
 import { convertCryptoAmount } from '../../../utils/brian';
 import { shrinkAddress } from '../../../utils/common.util';
 import { mapChainId2ViemChain } from '../../../config/networks';
 import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
+import { FailedTransaction } from '../modals/FailedTransaction.tsx';
+import { SuccessModal } from '../modals/SuccessModal.tsx';
 
 interface SendProcessProps {
   onClose: () => void;
@@ -162,8 +163,8 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           </div>
           <div className="flex items-center gap-4 animate-pulse">
             <img
-              src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
-              alt="USDC"
+              src={fromToken.logoURI}
+              alt={fromToken.symbol}
               className="w-12 h-12"
             />
             <ArrowRight className="w-6 h-6 text-white/40" />
@@ -178,48 +179,8 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           </p>
         </>
       ) : (
-        <>
-          <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-6">
-            <CheckCircle2 className="w-8 h-8 text-green-500" />
-          </div>
-          <h3 className="text-xl font-medium mb-2">Transaction Successful!</h3>
-          <p className="text-white/60 mb-2">
-            Successfully sent {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
-          </p>
-          <Link
-            href={scan}
-            isExternal
-            color="blue.500"
-            _hover={{ textDecoration: 'underline' }}
-          >
-            View Transaction
-          </Link>
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg mt-6"
-          >
-            Close
-          </button>
-        </>
+        <SuccessModal onClose={onClose} scan={scan} description={`Successfully sent ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
       )}
-    </div>
-  );
-
-  const renderFailedTransaction = () => (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-      <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
-        <ShieldClose className="w-8 h-8 text-red-500" />
-      </div>
-      <h3 className="text-xl font-medium mb-2">Failed Transaction</h3>
-      <p className="text-white/60 mb-2">
-        Send {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
-      </p>
-      <button
-        onClick={onClose}
-        className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg mt-6"
-      >
-        Close
-      </button>
     </div>
   );
 
@@ -241,7 +202,9 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           <X className="w-4 h-4" />
         </button>
       </div>
-      {failedTransaction && renderFailedTransaction()}
+      {failedTransaction && 
+        <FailedTransaction onClose={onClose} description={`Send ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
+      }
       {showConfirmation && !failedTransaction ? renderConfirmation() : (
         <div className="h-[calc(100%-60px)]">
           {renderPreview()}
