@@ -1145,8 +1145,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setChatHistory([])
     setSelectedGroup(group)
 
+    console.log('selected group = ', group)
     const history = await chatUser.chat.history(group.groupId, { limit: LIMIT })
-    console.log('group history = ', history)
+    // console.log('group history = ', history)
     if (history.length > 0) {
       let chats: IChat[] = []
       let reactions: any[] = []

@@ -52,11 +52,11 @@ const AddWalletModal: React.FC<AddWalletModalProps> = ({ isOpen, onClose, groupI
                     role: 'MEMBER', // 'ADMIN' or 'MEMBER'
                     accounts: members
                 })
-    
+
                 console.log('added ', added)
                 addPendings(added.pendingMembers)
                 onClose()
-            } catch(err) {
+            } catch (err) {
                 console.log('add peding members err: ', err)
             }
         }
@@ -184,9 +184,17 @@ export const ChatGroupModal: React.FC<ChatGroupModalProps> = ({ isOpen, onClose,
             })
 
             console.log('make Admins = ', makeAdmins)
+
+            const newGroup: IGroup = {
+                ...group,
+                members: group?.members ? group?.members.map(member => member.wallet == address ? {...member, isAdmin: true} : member) : []
+            } as IGroup
+
+            updateOneGroup(newGroup)
         } catch (err) {
             console.log('make member admin err: err')
         }
+
         setIsHandling(false)
     }
 
