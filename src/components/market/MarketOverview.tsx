@@ -2,10 +2,14 @@ import React from 'react';
 import { Activity, BarChart2, Brain, Hash, MessageSquare, TrendingDown, TrendingUp, Zap } from 'lucide-react';
 
 import useFearGreedStore from '../../store/useFearGreedStore';
+import useDefillamaStore from '../../store/useDefillamaStore';
 
 export const MarketOverview: React.FC = () => {
 
   const { data } = useFearGreedStore();
+  const { getDeFiStats } = useDefillamaStore();
+
+  const defiStats = getDeFiStats();
 
   // Mock data for demonstration
   const marketMetrics = {
@@ -25,9 +29,9 @@ export const MarketOverview: React.FC = () => {
       label: 'B'
     },
     marketCap: {
-      value: 2.52,
+      value: defiStats.defiMarketCap,
       change: 1.8,
-      label: 'T'
+      label: 'B'
     }
   };
 
@@ -161,7 +165,9 @@ export const MarketOverview: React.FC = () => {
             <span className="text-sm text-white/60">Market Cap</span>
           </div>
           <div className="flex items-baseline justify-between">
-            <div className="text-2xl font-bold">${marketMetrics.marketCap.value}{marketMetrics.marketCap.label}</div>
+            <div className="text-2xl font-bold">
+              ${(marketMetrics.marketCap.value / 1e9).toFixed(2)}
+              {marketMetrics.marketCap.label}</div>
             <div className="flex items-center gap-1 text-sm">
               <TrendingUp className="w-4 h-4 text-green-400" />
               <span className="text-green-400">{marketMetrics.marketCap.change}%</span>
