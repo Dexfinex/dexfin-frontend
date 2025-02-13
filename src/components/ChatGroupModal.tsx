@@ -18,6 +18,7 @@ interface ChatGroupModalProps {
 interface AddWalletModalProps {
     isOpen: boolean;
     onClose: () => void;
+    addPendings: (members: IMember[]) => void;
     groupId: string;
 }
 
@@ -26,7 +27,7 @@ type SubMemberType = {
     image: string
 }
 
-const AddWalletModal: React.FC<AddWalletModalProps> = ({ isOpen, onClose, groupId }) => {
+const AddWalletModal: React.FC<AddWalletModalProps> = ({ isOpen, onClose, groupId, addPendings }) => {
     const [members, setMembers] = useState<Array<string>>([]);
     const [subMembers, setSumbMembers] = useState<Array<SubMemberType>>([]);
     const [isSearch, setIsSearch] = useState(false);
@@ -46,12 +47,18 @@ const AddWalletModal: React.FC<AddWalletModalProps> = ({ isOpen, onClose, groupI
         // await createGroup()
         if (groupId) {
             console.log('added members = ', members)
-            const added = await chatUser.chat.group.add(groupId, {
-                role: 'MEMBER', // 'ADMIN' or 'MEMBER'
-                accounts: members
-            })
-
-            console.log('added ', added)
+            try {
+                const added = await chatUser.chat.group.add(groupId, {
+                    role: 'MEMBER', // 'ADMIN' or 'MEMBER'
+                    accounts: members
+                })
+    
+                console.log('added ', added)
+                addPendings(added.pendingMembers)
+                onClose()
+            } catch(err) {
+                console.log('add peding members err: ', err)
+            }
         }
         setCreating(false)
     }
@@ -204,6 +211,15 @@ export const ChatGroupModal: React.FC<ChatGroupModalProps> = ({ isOpen, onClose,
         setIsHandling(false)
     }
 
+    const addPendings = (pendings: IMember[]) => {
+        const newGroup: IGroup = {
+            ...group,
+            pendingMembers: pendings
+        } as IGroup
+
+        updateOneGroup(newGroup)
+    }
+
     if (!isOpen) return null;
 
     return (
@@ -253,13 +269,22 @@ export const ChatGroupModal: React.FC<ChatGroupModalProps> = ({ isOpen, onClose,
                         </Button>
                     </div>}
 
-                    <div className='w-full mt-4 overflow-y-auto ai-chat-scrollbar max-h-[480px]'>
+                    <div className='w-full mt-4 overflow-y-auto ai-chat-scrollbar max-h-[200px]'>
                         {group.pendingMembers.length > 0 && <>
                             <p className='text-white/80'>Pending Members</p>
+                            {
+                                group.pendingMembers.map(member => <div key={member.wallet} className='border-b border-white/20 p-2 flex items-center gap-4 justify-between'>
+                                    <div className='flex items-center gap-4'>
+                                        <img src={member.image} className='w-10 h-10 rounded-full' />
+                                        <span className='text-white/80'>{shrinkAddress(extractAddress(member.wallet))}</span>
+                                    </div>
+                                    <span></span>
+                                </div>)
+                            }
                         </>}
                     </div>
 
-                    <div className='w-full mt-4 overflow-y-auto ai-chat-scrollbar max-h-[480px]'>
+                    <div className='w-full mt-4 overflow-y-auto ai-chat-scrollbar max-h-[320px]'>
                         <p className='text-white/80'>Members</p>
                         {
                             group.members.length > 0 && group.members.map(member => <div key={member.wallet} className='border-b border-white/20 p-2 flex items-center gap-4 justify-between'>
@@ -289,6 +314,7 @@ export const ChatGroupModal: React.FC<ChatGroupModalProps> = ({ isOpen, onClose,
                 isOpen={addWalletActive}
                 onClose={() => setAddWalletActive(false)}
                 groupId={group?.groupId || ""}
+                addPendings={addPendings}
             />
         </div >
     )
