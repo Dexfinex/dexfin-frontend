@@ -5,12 +5,14 @@ export interface FearGreedData {
 	valueClassification: string;
 	timestamp: string;
 	previousClose: number;
+	dailyChange: number;
+	formattedTime: string;
 }
 
 export const fearGreedService = {
 	getFearGreedIndex: async (): Promise<FearGreedData> => {
 		try {
-			const { data } = await fearGreedApi.get<{ "value": 65, "valueClassification": "Greed", "timestamp": "1644237600", "previousClose": 62 }>('');
+			const { data } = await fearGreedApi.get<FearGreedData>('');
 
 			return data;
 		} catch (error) {
