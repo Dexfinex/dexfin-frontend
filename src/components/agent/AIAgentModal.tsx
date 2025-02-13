@@ -26,7 +26,6 @@ import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { useEvmWalletBalance } from '../../hooks/useBalance.tsx';
 import { convertCryptoAmount } from '../../utils/brian.tsx';
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -47,11 +46,9 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [showSendProcess, setShowSendProcess] = useState(false);
   const [showStakeProcess, setShowStakeProcess] = useState(false);
   const [showProjectAnalysis, setShowProjectAnalysis] = useState(false);
-  const [projectName, setProjectName] = useState('');
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
   const { address, chainId, switchChain } = useContext(Web3AuthContext);
-  const { isLoading: isLoadingBalance } = useEvmWalletBalance();
-  const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
+  const { tokenBalances } = useTokenBalanceStore();
 
   const [fromToken, setFromToken] = useState<TokenType>();
   const [protocol, setProtocol] = useState<Protocol>();
@@ -277,8 +274,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             await switchChain(data.fromToken.chainId);
 
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
-            const token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
-
+            let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+            if(data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
             if (token && token.balance > amount) {
               setFromToken(data.fromToken);
               setToToken(data.toToken);
@@ -296,7 +293,10 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             await switchChain(data.fromToken.chainId);
 
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
-            const token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+            let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+            if(data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
+
+            
             if (token && token.balance > amount) {
               setFromToken(data.fromToken);
               setProtocol(data.protocol);
@@ -334,7 +334,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           content: text
         }, {
           role: 'assistant',
-          content: "I'm not sure how to help with that. Try asking about prices, trending tokens, latest news, or use commands like 'stake ETH', 'send 100 USDC to vitalik', or 'analyze project wayfinder'."
+          content: "I'm not sure how to help with that. Try asking about prices, trending tokens, latest news, or use commands like 'stake ETH', 'send 100 USDC to vitalik', or 'analyze project'."
         }]);
       }
     } catch (error) {
@@ -476,7 +476,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
               setShowProjectAnalysis(false);
               setMessages([]);
             }}
-            projectName={projectName}
+            projectName={''}
           />
         ) : (
           <div className="flex flex-col h-full">
@@ -601,7 +601,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           { command: "What is the Bitcoin price?", description: "Get real-time BTC price" },
           { command: "Show me trending tokens", description: "View trending cryptocurrencies" },
           { command: "Show me the latest news", description: "Get latest crypto news" },
-          { command: "Evaluate project wayfinder", description: "Analyze project potential" }
+          { command: "Evaluate project", description: "Analyze project potential" }
         ]}
       />
     </div>

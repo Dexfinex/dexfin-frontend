@@ -24,7 +24,6 @@ import {
   DrawerContent,
   DrawerCloseButton,
   useDisclosure,
-  IconButton,
 } from '@chakra-ui/react';
 
 
@@ -52,6 +51,9 @@ export function TopBar({ processCommand, address, chainId, isFullscreen, setIsFu
           <MenuButton
             as={Button}
             variant="ghost"
+            color="glass"
+            _hover={{ bg: 'whiteAlpha.100' }}
+            _active={{ bg: 'whiteAlpha.100' }}
             rightIcon={<ChevronDown size={16} />}
             leftIcon={<LineChart size={16} />}
             fontWeight="normal"
@@ -90,6 +92,9 @@ export function TopBar({ processCommand, address, chainId, isFullscreen, setIsFu
 
         <Menu>
           <MenuButton
+            color="glass"
+            _hover={{ bg: 'whiteAlpha.100' }}
+            _active={{ bg: 'whiteAlpha.100' }}
             as={Button}
             variant="ghost"
             rightIcon={<ChevronDown size={16} />}
@@ -162,6 +167,9 @@ export function TopBar({ processCommand, address, chainId, isFullscreen, setIsFu
             <DrawerBody>
               <Menu>
                 <MenuButton
+                  color="glass"
+                  _hover={{ bg: 'whiteAlpha.100' }}
+                  _active={{ bg: 'whiteAlpha.100' }}
                   as={Button}
                   variant="ghost"
                   rightIcon={<ChevronDown size={16} />}
@@ -202,6 +210,9 @@ export function TopBar({ processCommand, address, chainId, isFullscreen, setIsFu
 
               <Menu>
                 <MenuButton
+                  color="glass"
+                  _hover={{ bg: 'whiteAlpha.100' }}
+                  _active={{ bg: 'whiteAlpha.100' }}
                   as={Button}
                   variant="ghost"
                   rightIcon={<ChevronDown size={16} />}

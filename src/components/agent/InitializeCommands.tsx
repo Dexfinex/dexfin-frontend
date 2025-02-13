@@ -36,7 +36,7 @@ export function InitializeCommands({ processCommand, address, chainId, setInput 
               { command: "What is the Bitcoin price?", description: "Get real-time BTC price" },
               { command: "Show me trending tokens", description: "View trending cryptocurrencies" },
               { command: "Show me the latest news", description: "Get latest crypto news" },
-              { command: "Evaluate project wayfinder", description: "Analyze project potential" }
+              { command: "Evaluate project", description: "Analyze project potential" }
             ].map((cmd) => (
               <button
                 key={cmd.command}
