@@ -179,6 +179,7 @@ export interface CartListProps {
   onRemove: (id: string) => void;
   onUpdateQuantity: (id: string, quantity: number) => void;
   onCheckout: () => void;
+  onClose: () => void;
 }
 
 export interface CartItemProps {

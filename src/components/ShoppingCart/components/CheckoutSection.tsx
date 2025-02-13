@@ -85,20 +85,17 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
         <>
             <div className="flex items-center justify-between p-4 border-b border-white/10">
                 <h2 className="text-xl font-semibold">Checkout</h2>
-                <button
-                    onClick={onClose}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
+                <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                     <X className="w-4 h-4" />
                 </button>
             </div>
 
-            <div className="p-6">
-                <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 md:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Order Summary */}
-                    <div className="mb-8">
+                    <div className="mb-6 md:mb-8">
                         <h3 className="text-lg font-medium mb-4">Order Summary</h3>
-                        <div className="space-y-3">
+                        <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                             {cartItems.map((item) => (
                                 <OrderSummaryItem
                                     key={item.id}
@@ -110,25 +107,17 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                     </div>
 
                     {/* Payment Section */}
-                    <div>
-                        <div className="mb-8">
+                    <div className="space-y-6">
+                        <div>
                             <h3 className="text-lg font-medium mb-4">Payment Method</h3>
                             <div className="space-y-3">
-                                <PaymentMethodButton
-                                    method="wallet"
-                                    selectedMethod={paymentMethod}
-                                    onSelect={setPaymentMethod}
-                                />
-                                <PaymentMethodButton
-                                    method="card"
-                                    selectedMethod={paymentMethod}
-                                    onSelect={setPaymentMethod}
-                                />
+                                <PaymentMethodButton method="wallet" selectedMethod={paymentMethod} onSelect={setPaymentMethod} />
+                                <PaymentMethodButton method="card" selectedMethod={paymentMethod} onSelect={setPaymentMethod} />
                             </div>
                         </div>
 
                         {/* Total Section */}
-                        <div className="space-y-4">
+                        <div className="space-y-4 sticky bottom-0 bg-background pt-4">
                             <div className="p-4 bg-white/5 rounded-lg space-y-2">
                                 <div className="flex justify-between">
                                     <span className="text-white/60">Subtotal</span>
@@ -145,45 +134,36 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                                 </div>
                             </div>
 
-                            {/* Error Display */}
                             {buyError && (
-                                <Alert
-                                    status="error"
-                                    variant="subtle"
-                                    bg="#511414"
-                                    borderRadius="md"
-                                    fontSize="sm"
-                                    padding="2"
-                                >
+                                <Alert status="error" variant="subtle" bg="#511414" borderRadius="md" fontSize="sm" padding="2">
                                     <AlertIcon boxSize="4" />
-                                    <div className="overflow-x-hidden text-ellipsis overflow-y-auto h-24">
-
-                                        {buyError}
-                                    </div>
+                                    <div className="overflow-x-hidden text-ellipsis overflow-y-auto max-h-24">{buyError}</div>
                                 </Alert>
                             )}
 
-                            {/* Confirm Payment Button */}
                             <Button
                                 width="full"
                                 colorScheme="blue"
                                 onClick={onExecuteBuy}
                                 isLoading={processingBuy || isBuyPending}
                                 loadingText={
-                                    isBuyPending ? "Confirming Transaction..." :
-                                        processingBuy ? "Processing Purchase..." :
-                                            "Preparing Transaction..."
+                                    isBuyPending
+                                        ? "Confirming Transaction..."
+                                        : processingBuy
+                                            ? "Processing Purchase..."
+                                            : "Preparing Transaction..."
                                 }
                                 isDisabled={!walletAddress || processingBuy || isBuyPending}
                             >
-                                {walletAddress ? 'Confirm Payment' : 'Connect Wallet to Continue'}
+                                {walletAddress ? "Confirm Payment" : "Connect Wallet to Continue"}
                             </Button>
                         </div>
                     </div>
                 </div>
             </div>
         </>
-    );
+    )
+
 });
 
 OrderSummaryItem.displayName = 'OrderSummaryItem';

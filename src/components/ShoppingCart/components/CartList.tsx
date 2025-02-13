@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { Minus, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { Input } from '@chakra-ui/react';
 import debounce from 'lodash/debounce';
@@ -133,7 +133,8 @@ const CartList: React.FC<CartListProps> = React.memo(({
     tokenPrices,
     onRemove,
     onUpdateQuantity,
-    onCheckout
+    onCheckout,
+    onClose,
 }) => {
     const total = useMemo(() => {
         return cartItems.reduce((total, item) => {
@@ -144,45 +145,52 @@ const CartList: React.FC<CartListProps> = React.memo(({
 
     if (cartItems.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-                <ShoppingCart className="w-12 h-12 text-white/40 mb-4" />
-                <p className="text-lg font-medium mb-2">Your cart is empty</p>
-                <p className="text-white/60">Add some coins to get started</p>
+            <div className="flex flex-col h-full">
+                <div className="md:hidden flex justify-end p-2 pt-4">
+                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+                <div className="flex flex-col items-center justify-center flex-1 text-center p-8">
+                    <ShoppingCart className="w-12 h-12 text-white/40 mb-4" />
+                    <p className="text-lg font-medium mb-2">Your cart is empty</p>
+                    <p className="text-white/60">Add some coins to get started</p>
+                </div>
             </div>
-        );
+        )
     }
 
     return (
-        <div className='flex flex-col h-full'>
+        <div className="flex flex-col h-full bg-[#0e0e0e]">
+            <div className="md:hidden flex justify-end p-2 pt-4">
+                <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg">
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
             <div className="flex-1 p-4 overflow-y-auto">
                 <div className="space-y-3">
-                    {cartItems.map((item) => {
-                        const coinPrice = tokenPrices[`1:${item.id.toLowerCase()}`] || item.price;
-                        return (
-                            <CartItem
-                                key={item.id}
-                                item={item}
-                                coinPrice={coinPrice}
-                                onRemove={onRemove}
-                                onUpdateQuantity={onUpdateQuantity}
-                            />
-                        );
-                    })}
+                    {cartItems.map((item) => (
+                        <CartItem
+                            key={item.id}
+                            item={item}
+                            coinPrice={tokenPrices[`1:${item.id.toLowerCase()}`] || item.price}
+                            onRemove={onRemove}
+                            onUpdateQuantity={onUpdateQuantity}
+                        />
+                    ))}
                 </div>
             </div>
-            <div className="mt-auto p-4 border-t border-white/10">
-                <div className="text-lg font-semibold">
-                    Total: ${formatNumberByFrac(total)}
-                </div>
+            <div className="p-4 border-t border-white/10 bg-[#0e0e0e]">
+                <div className="text-lg font-semibold mb-4">Total: ${formatNumberByFrac(total)}</div>
                 <button
                     onClick={onCheckout}
-                    className="w-full py-2 mt-4 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                    className="w-full py-3 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors text-white font-medium"
                 >
                     Proceed to Checkout
                 </button>
             </div>
         </div>
-    );
+    )
 });
 
 CartList.displayName = 'CartList';
