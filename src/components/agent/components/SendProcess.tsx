@@ -7,6 +7,7 @@ import { convertCryptoAmount } from '../../../utils/brian';
 import { shrinkAddress } from '../../../utils/common.util';
 import { mapChainId2ViemChain } from '../../../config/networks';
 import { useWalletClient, usePublicClient } from "wagmi";
+import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
 
 interface SendProcessProps {
   onClose: () => void;
@@ -24,8 +25,9 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
   const { data: walletClient } = useWalletClient();
-  const [scan, setScan] = useState('https://etherscan.io/');
+  const [scan, setScan] = useState<string>('https://etherscan.io/');
   const publicClient = usePublicClient();
+  const { mutate: sendTransactionMutate } = useBrianTransactionMutation();
 
   const handleTransaction = async (data: any) => {
     try {
@@ -38,22 +40,23 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
         return;
       }
       setShowConfirmation(true);
-      for (const transactionStep of data) {
-        const tx = await walletClient.sendTransaction({
-          ...transactionStep
-        });
-        if (tx) {
-          const receipt = await publicClient?.waitForTransactionReceipt({
-            hash: tx,
-          })
-          if (receipt) {
-            console.log(receipt);
+
+      sendTransactionMutate(
+        {transactions: data},
+        {
+          onSuccess: (receipt) => {
             setTransactionProgress(100);
             setTransactionStatus('Transaction confirmed!');
-            setScan(`${mapChainId2ViemChain[fromToken.chainId].blockExplorers?.default.url}/tx/${tx}`);
-          }
-        }
-      }
+            setScan(receipt??'');
+          },
+          onError: (error) => {
+            console.log(error);
+            setShowConfirmation(false);
+            setFailedTransaction(true);
+          },
+        },
+      );
+
     } catch (error) {
       console.error("Error executing transactions:", error);
       setShowConfirmation(false);

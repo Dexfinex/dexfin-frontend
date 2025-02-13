@@ -263,7 +263,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         const normalizedCommand = command.trim();
 
         response = await generateResponse(normalizedCommand, address, chainId);
-        console.log(response);        
         if (response.type == "action") {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
