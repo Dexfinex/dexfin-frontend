@@ -102,12 +102,8 @@ export const coingeckoService = {
     },
     getCoinGeckoIdFrom: async (token: TokenType, chainId: number): Promise<string> => {
         try {
-            if (token.address === NULL_ADDRESS) {
-                return mapCoingeckoAssetPlatforms[chainId].native_coin_id;
-            }
-            const assetId = mapCoingeckoAssetPlatforms[chainId].id;
-            const { data } = await coinGeckoApi.get<{ id: string }>(`/coins/${assetId}/contract/${token.address}`);
-            return data.id;
+            const { data } = await coinGeckoApi.get<string>(`/token-id/${chainId}?addresses=${token.address}`);
+            return data;
         } catch (e) {
             console.log(e);
         }
