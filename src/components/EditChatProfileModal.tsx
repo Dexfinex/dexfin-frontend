@@ -2,12 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, File, Camera } from 'lucide-react';
 import { Button, Spinner } from '@chakra-ui/react';
 import { useStore } from '../store/useStore';
-
-type ProfileType = {
-    desc: string,
-    name: string,
-    picture: string,
-}
+import { ProfileType } from '../types/chat.type';
 
 interface EditChatProfileModalProps {
     isOpen: boolean;
