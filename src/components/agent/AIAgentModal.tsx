@@ -25,7 +25,9 @@ import { WalletPanel } from './WalletPanel.tsx';
 import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
 import { TokenType, Step } from '../../types/brian.type.ts';
-
+import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
+import { useEvmWalletBalance } from '../../hooks/useBalance.tsx';
+import { convertCryptoAmount } from '../../utils/brian.tsx';
 interface AIAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -48,10 +50,14 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [projectName, setProjectName] = useState('');
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
   const { address, chainId, switchChain } = useContext(Web3AuthContext);
+  
+  const { isLoading: isLoadingBalance } = useEvmWalletBalance();
+  const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
 
   const [fromToken, setFromToken] = useState<TokenType>();
   const [toToken, setToToken] = useState<TokenType>();
-  const [fromAmount, setFromAmount] = useState('0');
+  const [
+    fromAmount, setFromAmount] = useState('0');
   const [receiver, setReceiver] = useState('');
   const [steps, setSteps] = useState<Step[]>([]);
 
@@ -263,19 +269,28 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         const normalizedCommand = command.trim();
 
         response = await generateResponse(normalizedCommand, address, chainId);
+        console.log(response);
         if (response.type == "action") {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
             resetProcessStates();
             await switchChain(data.fromToken.chainId);
-            setFromToken(data.fromToken);
 
-            setToToken(data.toToken);
-            setFromAmount(data.fromAmount);
-            setReceiver(data.receiver);
-            setSteps(data.steps);
-            setShowSendProcess(true);
-            response = { text: 'Opening swap interface...' };
+            
+            const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
+            const token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+
+            if (token && token.balance > amount) {
+              setFromToken(data.fromToken);
+              setToToken(data.toToken);
+              setFromAmount(data.fromAmount);
+              setReceiver(data.receiver);
+              setSteps(data.steps);
+              setShowSendProcess(true);   
+            }
+            else {
+                response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };  
+            }
           }
         }
 
@@ -286,6 +301,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           }, {
             role: 'assistant',
             content: response.text,
+            tip: response.insufficient,
             data: response.data,
             trending: response.trending,
             news: response.news
@@ -425,7 +441,9 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setMessages([]);
           }} />
         ) : showSendProcess ? (
-          <SendProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} onClose={() => {
+          <SendProcess steps={steps} receiver={receiver} 
+          fromAmount={
+            fromAmount} toToken={toToken} fromToken={fromToken} onClose={() => {
             setShowSendProcess(false);
             setMessages([]);
           }} />
@@ -468,6 +486,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                               }`}
                           >
                             <p className="whitespace-pre-wrap">{message.content}</p>
+                            <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
                             {message.data && (
                               <div className="w-[800px] mt-4">
                                 <PriceChart data={message.data} />

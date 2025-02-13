@@ -21,6 +21,7 @@ export interface SearchResult {
 export interface Message {
   role: string;
   content: string;
+  tip?: string;
   data?: CoinData;
   trending?: TrendingCoin[];
   news?: NewsItem[];
