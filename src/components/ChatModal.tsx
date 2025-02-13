@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useRef } from 'react';
+import React, { useContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import {
   X, Maximize2, Minimize2, Search, Smile, Download,
   MessageSquare, Share2, Users, ArrowRight, Plus,
@@ -15,7 +15,7 @@ import { SendFileModal } from './SendFileModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
-import { Spinner, Popover, PopoverTrigger, PopoverContent, Tooltip } from '@chakra-ui/react';
+import { Spinner, Popover, PopoverTrigger, PopoverContent, Tooltip, useToast } from '@chakra-ui/react';
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
@@ -207,6 +207,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSendModalActive, setIsSendModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
+  const toast = useToast()
 
   const [loading, setLoading] = useState(false);
   const [ownProfile, setOwnProfile] = useState<ProfileType | null>(null);
@@ -228,7 +229,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isJoiningGroup, setIsJoiningGroup] = useState(false);
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [isGifOpen, setIsGifOpen] = useState(false);
-  const [receivedMessage, setReceivedMessage] = useState<any>([]);
+  const [receivedMessage, setReceivedMessage] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<any>();
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const emojiPickRef = useRef<HTMLDivElement>(null);
@@ -246,174 +247,24 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   //   }
   // ]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (chatScrollRef.current) {
-        setIsScrollTop(chatScrollRef.current.scrollTop === 0);
-      }
-    };
-
-    const scrollElement = chatScrollRef.current;
-    if (scrollElement) {
-      scrollElement.addEventListener("scroll", handleScroll);
+  const handleScroll = useCallback(() => {
+    if (chatScrollRef.current) {
+      setIsScrollTop(chatScrollRef.current.scrollTop === 0);
     }
-
-    // return () => {
-    //   if (scrollElement) {
-    //     scrollElement.removeEventListener("scroll", handleScroll);
-    //   }
-    // };
   }, []);
 
-
   useEffect(() => {
-    if (isOpen && chatUser?.uid) {
-      console.log('get chat user')
-      setProfile()
-      getChatInformation()
-      // const profile = await getWalletProfile(chatUser, searchQuery)
-    } else {
-      clearValues()
-    }
-  }, [isOpen, chatUser])
+    const scrollElement = chatScrollRef.current;
+    if (!scrollElement) return;
 
-  useEffect(() => {
-    clearValues()
-  }, [chatMode])
+    scrollElement.addEventListener("scroll", handleScroll);
 
-  useEffect(() => {
-    console.log('isScrollTop')
-    if (isScrollTop) {
-      console.log('selected user = ', selectedUser)
-      console.log('selected group = ', selectedGroup)
-      console.log('chat history = ', chatHistory)
+    // return () => {
+    //   scrollElement.removeEventListener("scroll", handleScroll);
+    // };
+  }, [handleScroll]);
 
-      if (selectedUser && chatHistory.length > 0 && chatHistory[0].link) {
-        getPrevChatHistory(selectedUser.address, chatHistory[0].chatId)
-      } else if ((selectedGroup && chatHistory.length > 0 && chatHistory[0].link)) {
-        getPrevChatHistory(selectedGroup.groupId, chatHistory[0].chatId)
-      }
-    }
-  }, [isScrollTop])
-
-  useEffect(() => {
-    if (!message) {
-      const textarea = textareaRef.current;
-      if (textarea) {
-        textarea.style.height = "40px";
-      }
-    }
-  }, [message])
-
-  const clearValues = () => {
-    setSearchQuery("")
-    setChatHistory([])
-    setRequestUsers([])
-    setRequestGroups([])
-    setSelectedUser(null)
-    setSearchedUser(null)
-    setSelectedGroup(null)
-    setSearchedGroup(null)
-    setIsEmojiOpen(false)
-    setIsGifOpen(false)
-  }
-
-  useEffect(() => {
-    setMessage("")
-  }, [selectedUser, selectedGroup])
-
-  useEffect(() => {
-    console.log('chat history = ', chatHistory)
-    if (toBottom) {
-      scrollBottom()
-      setToBottom(false)
-    }
-  }, [chatHistory])
-
-  useEffect(() => {
-    handleReceiveMsg()
-  }, [receivedMessage])
-
-  // useEffect(() => {
-  //   console.log('request users = ', requestUsers)
-  // }, [requestUsers])
-
-  const initStream = async (user: any) => {
-    const stream = await user.initStream(
-      [
-        CONSTANTS.STREAM.CHAT, // Listen for chat messages
-        CONSTANTS.STREAM.NOTIF, // Listen for notifications
-        CONSTANTS.STREAM.CONNECT, // Listen for connection events
-        CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
-      ],
-      {
-        // Filter options:
-        filter: {
-          // Listen to all channels and chats (default):
-          channels: ['*'],
-          chats: ['*'],
-
-          // Listen to specific channels and chats:
-          // channels: ['channel-id-1', 'channel-id-2'],
-          // chats: ['chat-id-1', 'chat-id-2'],
-
-          // Listen to events with a specific recipient:
-          // recipient: '0x...' (replace with recipient wallet address)
-        },
-        // Connection options:
-        connection: {
-          retries: 3, // Retry connection 3 times if it fails
-        },
-        raw: false, // Receive events in structured format
-      }
-    );
-
-    // Stream connection established:
-    stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
-      console.log('Stream Connected ', a);
-
-      // // Send initial message to PushAI Bot:
-      // console.log('Sending message to PushAI Bot');
-
-      // await userAlice.chat.send(pushAIWalletAddress, {
-      //   content: 'Hello, from Alice',
-      //   type: 'Text',
-      // });
-
-      // console.log('Message sent to PushAI Bot');
-    });
-
-    stream.on(CONSTANTS.STREAM.CHAT, (message: any) => {
-      console.log('Encrypted Message Received');
-      console.log(message); // Log the message payload
-      setReceivedMessage(message)
-    });
-
-    // Setup event handling
-    stream.on(CONSTANTS.STREAM.NOTIF, (data: any) => {
-      console.log('notify data = ', data);
-    });
-
-    // Chat operation received:
-    stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
-      console.log('Chat operation received.');
-      console.log(data); // Log the chat operation data
-    });
-
-    await stream.connect(); // Establish the connection after setting up listeners
-    // Stream disconnection:
-    stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
-      console.log('Stream Disconnected');
-    });
-  }
-
-  const scrollBottom = () => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
-  }
-
-  const setProfile = async () => {
+  const setProfile = useCallback(async () => {
     const profile = await chatUser.profile.info()
 
     setOwnProfile({
@@ -421,254 +272,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       desc: profile?.desc || "",
       picture: profile.picture
     })
-  }
+  }, [chatUser])
 
-  const handleReceiveMsg = async () => {
-    if (receivedMessage.meta?.group == true) {
-      if (receivedMessage.origin == "other") {
-        if (receivedMessage.event == "chat.request") {
-          const found = requestGroups.find((group: IGroup) => group.groupId == receivedMessage.chatId)
-
-          if (!found) {
-            const profile = await chatUser.chat.group.info(receivedMessage.chatId)
-            console.log('group profile = ', profile)
-
-            setRequestGroups(
-              [...requestGroups, {
-                groupId: profile.chatId,
-                name: profile.groupName,
-                description: profile.groupDescription,
-                public: profile.isPublic,
-                image: profile.groupImage,
-                erc20: profile.contractAddressERC20,
-                nft: profile.contractAddressNFT,
-                members: profile.members,
-                pendingMembers: profile.pendingMembers,
-                type: "Request",
-                lastTimestamp: receivedMessage?.timestamp ? Number(receivedMessage.timestamp) : 0,
-                lastMessage: receivedMessage.message?.content ? receivedMessage.message.content : ""
-              }]
-            )
-          }
-
-          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, true)
-        } else if (receivedMessage.event == "chat.message") {
-          if (selectedGroup?.groupId == receivedMessage.chatId) {
-            const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == extractAddress(receivedMessage.from))
-
-            if (receivedMessage.message.type == "Reaction") {
-              setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
-            } else {
-              setToBottom(true)
-              setChatHistory(
-                [...chatHistory, {
-                  timestamp: Number(receivedMessage.timestamp),
-                  type: receivedMessage.message.type,
-                  content: receivedMessage.message.content,
-                  fromAddress: extractAddress(receivedMessage.from),
-                  toAddress: "",
-                  chatId: receivedMessage.reference,
-                  link: null,
-                  image: found?.image || "",
-                  reaction: ""
-                }]
-              )
-            }
-          }
-
-          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
-        } else if (receivedMessage.event == "chat.accept") {
-          // add a member
-          const profile = await getWalletProfile(chatUser, receivedMessage.from)
-          console.log('received message from = ', receivedMessage.from)
-          console.log('chat accept profile = ', profile)
-          const newMember = {
-            image: profile.picture,
-            isAdmin: false,
-            wallet: receivedMessage.from
-          }
-
-          if (selectedGroup && selectedGroup?.groupId == receivedMessage.chatId) {
-            setSelectedGroup({
-              ...selectedGroup,
-              members: [...selectedGroup.members, newMember],
-              pendingMembers: selectedGroup.pendingMembers.length > 0 ? selectedGroup.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
-            });
-          }
-          if (requestGroups.find(group => group.groupId == receivedMessage.chatId)) {
-            setRequestGroups(requestGroups.map(group => group.groupId == receivedMessage.chatId ?
-              { ...group, members: [...group.members, newMember], pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : [] }
-              : group))
-          } else {
-            setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ?
-              { ...group, members: [...group.members, newMember], pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : [] }
-              : group))
-          }
-        } else if (receivedMessage.event == "chat.reject") {
-          if (selectedGroup && selectedGroup.groupId == receivedMessage.chatId) {
-            setSelectedGroup({
-              ...selectedGroup,
-              pendingMembers: selectedGroup.pendingMembers.length > 0 ? selectedGroup.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
-            })
-          }
-
-          setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? {
-            ...group, pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
-          } : group))
-        }
-      } else if (receivedMessage.origin == "self") {
-        if (receivedMessage.event == "chat.message") {
-          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
-        }
-      }
-    } else if (receivedMessage.meta?.group == false) {
-      if (receivedMessage.origin == "other") {
-        console.log('receive other')
-        if (receivedMessage.event == "chat.request") {
-          const found = requestUsers.find(user => user.chatId == receivedMessage.from)
-
-          if (!found) {
-            const profile = await getWalletProfile(chatUser, receivedMessage.from)
-
-            if (profile) {
-              const users = [...requestUsers, {
-                name: profile.name,
-                ensName: "",
-                profilePicture: profile.picture,
-                address: extractAddress(receivedMessage.from),
-                chatId: receivedMessage.chatId,
-                type: "Request",
-                unreadMessages: 0,
-                lastTimestamp: 0,
-                lastMessage: ""
-              }] as Array<IUser>
-              setRequestUsers(users)
-
-              updateEnsName("request", undefined, undefined, users)
-            }
-          }
-        } else if (receivedMessage.event == "chat.message") {
-          console.log('chat.message')
-          if (extractAddress(receivedMessage.from) == selectedUser?.address) {
-            if (receivedMessage.message.type == "Reaction") {
-              setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
-            } else {
-              setToBottom(true)
-              setChatHistory(
-                [...chatHistory, {
-                  timestamp: Number(receivedMessage.timestamp),
-                  type: receivedMessage.message.type,
-                  content: receivedMessage.message.content,
-                  fromAddress: extractAddress(receivedMessage.from),
-                  toAddress: extractAddress(receivedMessage.to[0]),
-                  chatId: receivedMessage.chatId,
-                  link: null,
-                  reaction: ""
-                }]
-              )
-            }
-
-            updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
-          } else {
-            addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp))
-          }
-        }
-      } else if (receivedMessage.origin == "self") {
-        if (receivedMessage.event == "chat.message" || receivedMessage.even == "chat.request") {
-          updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
-        }
-      }
-    }
-
-    if (receivedMessage.event == "chat.group.participant.join" && receivedMessage.origin == "other") {
-      console.log('chat.group.participant.join------------')
-      // add a member
-      const profile = await getWalletProfile(chatUser, receivedMessage.from)
-      const newMember = {
-        image: profile.picture,
-        isAdmin: false,
-        wallet: receivedMessage.from
-      }
-
-      console.log('participate profile = ', profile)
-      if (selectedGroup && selectedGroup?.groupId == receivedMessage.chatId) {
-        setSelectedGroup({
-          ...selectedGroup,
-          members: [...selectedGroup.members, newMember],
-          pendingMembers: selectedGroup.pendingMembers.length > 0 ? selectedGroup.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
-        });
-      }
-      
-      setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
-    } else if (receivedMessage.event == "chat.group.participant.remove" && receivedMessage.origin == "other") {
-      if (selectedGroup?.groupId == receivedMessage.chatId) {
-        setSearchedGroup(null)
-        setChatHistory([])
-      }
-
-      setGroupList(groupList.filter(group => group.groupId != receivedMessage.chatId))
-    }
-  }
-
-  const getPrevChatHistory = async (address: string, chatId: string) => {
-    setLoadingPrevChat(true)
-    const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
-    console.log('prev history = ', prevHistory)
-
-    if (prevHistory.length > 0) {
-      let chats: IChat[] = []
-      let reactions: any[] = []
-
-      // todo should add reactions more
-      prevHistory.forEach((data: any) => {
-        if (data.messageType == "Reaction") {
-          reactions = [...reactions, data.messageObj]
-        } else {
-          chats = [...chats, {
-            timestamp: data.timestamp,
-            type: data.messageType,
-            content: data.messageContent,
-            fromAddress: extractAddress(data.fromDID),
-            toAddress: extractAddress(data.toDID),
-            chatId: data.cid,
-            link: data.link,
-            image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
-          } as IChat]
-        }
-      })
-
-      if (reactions.length > 0) {
-        chats = chats.map(chat => {
-          const found = reactions.find(e => e.reference == chat.chatId)
-          if (found) {
-            return {
-              ...chat,
-              reaction: found.content
-            }
-          }
-          return chat
-        })
-      }
-
-      chats.shift()
-
-      if (chats.length > 0) {
-        setChatHistory([...chats.reverse(), ...chatHistory])
-      }
-    }
-
-    setLoadingPrevChat(false)
-  }
-
-  const setLastMessage = (type: ChatType, content: string) => {
-    if (type === "Text" || type === "Reaction") {
-      return content
-    } else {
-      return "💻Media"
-    }
-  }
-
-  const getChatInformation = async () => {
+  const getChatInformation = useCallback(async () => {
     setLoading(true)
     setGroupList([])
     setConnectedUsers([])
@@ -768,6 +374,434 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
 
     setLoading(false)
+  }, [chatUser])
+
+  const clearValues = useCallback(() => {
+    setSearchQuery("")
+    setChatHistory([])
+    setRequestUsers([])
+    setRequestGroups([])
+    setSelectedUser(null)
+    setSearchedUser(null)
+    setSelectedGroup(null)
+    setSearchedGroup(null)
+    setIsEmojiOpen(false)
+    setIsGifOpen(false)
+  }, [])
+
+  useEffect(() => {
+    if (isOpen && chatUser?.uid) {
+      console.log('get chat user')
+      setProfile()
+      getChatInformation()
+      // const profile = await getWalletProfile(chatUser, searchQuery)
+    } else {
+      clearValues()
+    }
+  }, [isOpen, chatUser, setProfile, getChatInformation, clearValues])
+
+  useEffect(() => {
+    setSearchQuery("")
+    setChatHistory([])
+    setSelectedUser(null)
+    setSearchedUser(null)
+    setSelectedGroup(null)
+    setSearchedGroup(null)
+    setIsEmojiOpen(false)
+    setIsGifOpen(false)
+  }, [chatMode])
+
+  useEffect(() => {
+    console.log('isScrollTop')
+    if (isScrollTop) {
+      console.log('selected user = ', selectedUser)
+      console.log('selected group = ', selectedGroup)
+      console.log('chat history = ', chatHistory)
+
+      if (selectedUser && chatHistory.length > 0 && chatHistory[0].link) {
+        getPrevChatHistory(selectedUser.address, chatHistory[0].chatId)
+      } else if ((selectedGroup && chatHistory.length > 0 && chatHistory[0].link)) {
+        getPrevChatHistory(selectedGroup.groupId, chatHistory[0].chatId)
+      }
+    }
+  }, [isScrollTop])
+
+  useEffect(() => {
+    if (!message) {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.style.height = "40px";
+      }
+    }
+  }, [message])
+
+  useEffect(() => {
+    setMessage("")
+  }, [selectedUser, selectedGroup])
+
+  const scrollBottom = useCallback(() => {
+    if (chatScrollRef.current) {
+      // chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" })
+    }
+  }, [])
+
+  useEffect(() => {
+    console.log('chat history = ', chatHistory)
+    if (toBottom) {
+      scrollBottom()
+      setToBottom(false)
+    }
+  }, [chatHistory, toBottom, scrollBottom])
+
+  useEffect(() => {
+    handleReceiveMsg()
+  }, [receivedMessage])
+
+  useEffect(() => {
+    if (isFailedSent) {
+      toast({
+        status: 'error',
+        description: `Can't send a message. Please try again.`,
+        duration: 3500
+      })
+    }
+  }, [isFailedSent])
+
+  // useEffect(() => {
+  //   console.log('request users = ', requestUsers)
+  // }, [requestUsers])
+
+  const initStream = async (user: any) => {
+    const stream = await user.initStream(
+      [
+        CONSTANTS.STREAM.CHAT, // Listen for chat messages
+        CONSTANTS.STREAM.NOTIF, // Listen for notifications
+        CONSTANTS.STREAM.CONNECT, // Listen for connection events
+        CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
+      ],
+      {
+        // Filter options:
+        filter: {
+          // Listen to all channels and chats (default):
+          channels: ['*'],
+          chats: ['*'],
+
+          // Listen to specific channels and chats:
+          // channels: ['channel-id-1', 'channel-id-2'],
+          // chats: ['chat-id-1', 'chat-id-2'],
+
+          // Listen to events with a specific recipient:
+          // recipient: '0x...' (replace with recipient wallet address)
+        },
+        // Connection options:
+        connection: {
+          retries: 3, // Retry connection 3 times if it fails
+        },
+        raw: false, // Receive events in structured format
+      }
+    );
+
+    // Stream connection established:
+    stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
+      console.log('Stream Connected ', a);
+
+      // // Send initial message to PushAI Bot:
+      // console.log('Sending message to PushAI Bot');
+
+      // await userAlice.chat.send(pushAIWalletAddress, {
+      //   content: 'Hello, from Alice',
+      //   type: 'Text',
+      // });
+
+      // console.log('Message sent to PushAI Bot');
+    });
+
+    stream.on(CONSTANTS.STREAM.CHAT, (message: any) => {
+      console.log('Encrypted Message Received');
+      console.log(message); // Log the message payload
+      setReceivedMessage(message)
+    });
+
+    // Setup event handling
+    stream.on(CONSTANTS.STREAM.NOTIF, (data: any) => {
+      console.log('notify data = ', data);
+    });
+
+    // Chat operation received:
+    stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
+      console.log('Chat operation received.');
+      console.log(data); // Log the chat operation data
+    });
+
+    await stream.connect(); // Establish the connection after setting up listeners
+    // Stream disconnection:
+    stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
+      console.log('Stream Disconnected');
+    });
+  }
+
+  const handleReceiveMsg = async () => {
+    if (receivedMessage?.meta?.group == true) {
+      if (receivedMessage.origin == "other") {
+        if (receivedMessage.event == "chat.request") {
+          const found = requestGroups.find((group: IGroup) => group.groupId == receivedMessage.chatId)
+
+          if (!found) {
+            const profile = await chatUser.chat.group.info(receivedMessage.chatId)
+            console.log('group profile = ', profile)
+
+            setRequestGroups(prev =>
+              [...prev, {
+                groupId: profile.chatId,
+                name: profile.groupName,
+                description: profile.groupDescription,
+                public: profile.isPublic,
+                image: profile.groupImage,
+                erc20: profile.contractAddressERC20,
+                nft: profile.contractAddressNFT,
+                members: profile.members,
+                pendingMembers: profile.pendingMembers,
+                type: "Request",
+                lastTimestamp: receivedMessage?.timestamp ? Number(receivedMessage.timestamp) : 0,
+                lastMessage: receivedMessage.message?.content ? receivedMessage.message.content : ""
+              }]
+            )
+          }
+
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, true)
+        } else if (receivedMessage.event == "chat.message") {
+          if (selectedGroup?.groupId == receivedMessage.chatId) {
+            const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == extractAddress(receivedMessage.from))
+
+            if (receivedMessage.message.type == "Reaction") {
+              setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
+            } else {
+              setToBottom(true)
+              setChatHistory(prevChat =>
+                [...prevChat, {
+                  timestamp: Number(receivedMessage.timestamp),
+                  type: receivedMessage.message.type,
+                  content: receivedMessage.message.content,
+                  fromAddress: extractAddress(receivedMessage.from),
+                  toAddress: "",
+                  chatId: receivedMessage.reference,
+                  link: null,
+                  image: found?.image || "",
+                  reaction: ""
+                }]
+              )
+            }
+          }
+
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
+        } else if (receivedMessage.event == "chat.accept") {
+          // add a member
+          const profile = await getWalletProfile(chatUser, receivedMessage.from)
+          console.log('received message from = ', receivedMessage.from)
+          console.log('chat accept profile = ', profile)
+          const newMember = {
+            image: profile.picture,
+            isAdmin: false,
+            wallet: receivedMessage.from
+          }
+
+          if (selectedGroup && selectedGroup?.groupId == receivedMessage.chatId) {
+            setSelectedGroup({
+              ...selectedGroup,
+              members: [...selectedGroup.members, newMember],
+              pendingMembers: selectedGroup.pendingMembers.length > 0 ? selectedGroup.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
+            });
+          }
+          if (requestGroups.find(group => group.groupId == receivedMessage.chatId)) {
+            setRequestGroups(prev => {
+              const updated = prev.map(group => group.groupId == receivedMessage.chatId ?
+                { ...group, members: [...group.members, newMember], pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : [] }
+                : group)
+
+              return [...updated]
+            })
+          } else {
+            setGroupList(prev => {
+              const updated = prev.map(group => group.groupId == receivedMessage.chatId ?
+                { ...group, members: [...group.members, newMember], pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : [] }
+                : group)
+
+              return [...updated]
+            })
+          }
+        } else if (receivedMessage.event == "chat.reject") {
+          if (selectedGroup && selectedGroup.groupId == receivedMessage.chatId) {
+            setSelectedGroup({
+              ...selectedGroup,
+              pendingMembers: selectedGroup.pendingMembers.length > 0 ? selectedGroup.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
+            })
+          }
+
+          setGroupList(prev => {
+            const updated = prev.map(group => group.groupId == receivedMessage.chatId ? {
+              ...group, pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
+            } : group)
+
+            return [...updated]
+          })
+        }
+      } else if (receivedMessage.origin == "self") {
+        if (receivedMessage.event == "chat.message") {
+          updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
+        }
+      }
+    } else if (receivedMessage?.meta?.group == false) {
+      if (receivedMessage.origin == "other") {
+        console.log('receive other')
+        if (receivedMessage.event == "chat.request") {
+          const found = requestUsers.find(user => user.chatId == receivedMessage.from)
+
+          if (!found) {
+            const profile = await getWalletProfile(chatUser, receivedMessage.from)
+
+            if (profile) {
+              const users = [...requestUsers, {
+                name: profile.name,
+                ensName: "",
+                profilePicture: profile.picture,
+                address: extractAddress(receivedMessage.from),
+                chatId: receivedMessage.chatId,
+                type: "Request",
+                unreadMessages: 0,
+                lastTimestamp: 0,
+                lastMessage: ""
+              }] as Array<IUser>
+              setRequestUsers(users)
+
+              updateEnsName("request", undefined, undefined, users)
+            }
+          }
+        } else if (receivedMessage.event == "chat.message") {
+          console.log('chat.message')
+          if (extractAddress(receivedMessage.from) == selectedUser?.address) {
+            if (receivedMessage.message.type == "Reaction") {
+              setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
+            } else {
+              setToBottom(true)
+              setChatHistory(prev =>
+                [...prev, {
+                  timestamp: Number(receivedMessage.timestamp),
+                  type: receivedMessage.message.type,
+                  content: receivedMessage.message.content,
+                  fromAddress: extractAddress(receivedMessage.from),
+                  toAddress: extractAddress(receivedMessage.to[0]),
+                  chatId: receivedMessage.chatId,
+                  link: null,
+                  reaction: ""
+                }]
+              )
+            }
+
+            updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
+          } else {
+            addUnreadMessagesCount(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp))
+          }
+        }
+      } else if (receivedMessage.origin == "self") {
+        if (receivedMessage.event == "chat.message" || receivedMessage.even == "chat.request") {
+          updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
+        }
+      }
+    }
+
+    if (receivedMessage?.event == "chat.group.participant.join" && receivedMessage.origin == "other") {
+      console.log('chat.group.participant.join------------')
+      // add a member
+      const profile = await getWalletProfile(chatUser, receivedMessage.from)
+      const newMember = {
+        image: profile.picture,
+        isAdmin: false,
+        wallet: receivedMessage.from
+      }
+
+      console.log('participate profile = ', profile)
+      if (selectedGroup && selectedGroup?.groupId == receivedMessage.chatId) {
+        setSelectedGroup({
+          ...selectedGroup,
+          members: [...selectedGroup.members, newMember],
+          pendingMembers: selectedGroup.pendingMembers.length > 0 ? selectedGroup.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
+        });
+      }
+
+      setGroupList(prev => {
+        const updated = prev.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group)
+        return [...updated]
+      })
+    } else if (receivedMessage?.event == "chat.group.participant.remove" && receivedMessage.origin == "other") {
+      if (selectedGroup?.groupId == receivedMessage.chatId) {
+        setSearchedGroup(null)
+        setChatHistory([])
+      }
+
+      setGroupList(prev => {
+        const updated = prev.filter(group => group.groupId != receivedMessage.chatId)
+        return [...updated]
+      })
+    }
+  }
+
+  const getPrevChatHistory = async (address: string, chatId: string) => {
+    setLoadingPrevChat(true)
+    const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
+    console.log('prev history = ', prevHistory)
+
+    if (prevHistory.length > 0) {
+      let chats: IChat[] = []
+      let reactions: any[] = []
+
+      // todo should add reactions more
+      prevHistory.forEach((data: any) => {
+        if (data.messageType == "Reaction") {
+          reactions = [...reactions, data.messageObj]
+        } else {
+          chats = [...chats, {
+            timestamp: data.timestamp,
+            type: data.messageType,
+            content: data.messageContent,
+            fromAddress: extractAddress(data.fromDID),
+            toAddress: extractAddress(data.toDID),
+            chatId: data.cid,
+            link: data.link,
+            image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
+          } as IChat]
+        }
+      })
+
+      if (reactions.length > 0) {
+        chats = chats.map(chat => {
+          const found = reactions.find(e => e.reference == chat.chatId)
+          if (found) {
+            return {
+              ...chat,
+              reaction: found.content
+            }
+          }
+          return chat
+        })
+      }
+
+      chats.shift()
+
+      if (chats.length > 0) {
+        setChatHistory(prev => [...chats.reverse(), ...prev])
+      }
+    }
+
+    setLoadingPrevChat(false)
+  }
+
+  const setLastMessage = (type: ChatType, content: string) => {
+    if (type === "Text" || type === "Reaction") {
+      return content
+    } else {
+      return "💻Media"
+    }
   }
 
   const toggleFullscreen = () => {
@@ -775,7 +809,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   };
 
   const updateOneGroup = (group: IGroup) => {
-    setGroupList(groupList.map(e => e.groupId == group.groupId ? group : e))
+    setGroupList(prev => {
+      const updated = prev.map(e => e.groupId == group.groupId ? group : e)
+      return updated
+    })
     setSelectedGroup(group)
   }
 
@@ -792,7 +829,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const onMakeGroup = (group: any) => {
     console.log('on make group : ', group)
-    setGroupList([{
+    setGroupList(prev => [{
       groupId: group.chatId,
       name: group.groupName,
       description: group.groupDescription,
@@ -805,17 +842,20 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       type: "Connected",
       lastTimestamp: 0,
       lastMessage: ""
-    }, ...groupList])
+    }, ...prev])
   }
 
   const handleAcceptChat = async () => {
     try {
       setIsHandlingRequest(true)
       const acceptRequest = await chatUser.chat.accept(selectedUser?.address)
-      setRequestUsers(requestUsers.filter((item) => item.chatId !== selectedUser?.chatId))
+      setRequestUsers(prev => {
+        const updated = prev.filter((item) => item.chatId !== selectedUser?.chatId)
+        return [...updated]
+      })
 
       if (selectedUser) {
-        setConnectedUsers([{ ...selectedUser, unreadMessages: 0 }, ...connectedUsers])
+        setConnectedUsers(prev => [{ ...selectedUser, unreadMessages: 0 }, ...prev])
       }
 
       setSelectedUser({
@@ -837,7 +877,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
       console.log('rejectRequest = ', rejectRequest)
 
-      setRequestUsers(requestUsers.filter((item) => item.chatId !== selectedUser?.chatId))
+      setRequestUsers(prev => {
+        const updated = prev.filter((item) => item.chatId !== selectedUser?.chatId)
+        return [...updated]
+      })
       setSelectedUser(null)
     } catch (err) {
       console.log('request reject error: ', err)
@@ -854,8 +897,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       console.log('acceptGroup = ', acceptGroup)
 
       if (selectedGroup) {
-        setRequestGroups(requestGroups.filter(group => group.groupId != selectedGroup.groupId))
-        setGroupList([{ ...selectedGroup, type: "Connected" }, ...groupList])
+        setRequestGroups(prev => {
+          const updated = prev.filter(group => group.groupId != selectedGroup.groupId)
+          return [...updated]
+        })
+        setGroupList(prev => [{ ...selectedGroup, type: "Connected" }, ...prev])
         setSelectedGroup({
           ...selectedGroup,
           type: "Connected",
@@ -877,7 +923,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       console.log('rejectGroup = ', rejectGroup)
 
       if (selectedGroup) {
-        setRequestGroups(requestGroups.filter(group => group.groupId != selectedGroup.groupId))
+        setRequestGroups(prev => {
+          const updated = prev.filter(group => group.groupId != selectedGroup.groupId)
+          return [...updated]
+        })
         setSelectedGroup(null)
       }
     } catch (err) {
@@ -897,7 +946,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     if (!receipient) return
 
     try {
-      setChatHistory(prev => prev.map(chat => chat.chatId == chatId ? { ...chat, reaction: content } : chat))
+      setChatHistory(prev => {
+        const updated = prev.map(chat => chat.chatId == chatId ? { ...chat, reaction: content } : chat)
+        return [...updated]
+      })
 
       const sentReaction = await chatUser.chat.send(receipient, {
         type: 'Reaction',
@@ -908,7 +960,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       console.log('sent reaction = ', sentReaction)
     } catch (err) {
       console.log('reaction err: ', err)
-      setChatHistory(prev => prev.map(chat => chat.chatId == chatId ? { ...chat, reaction: "" } : chat))
+      setChatHistory(prev => {
+        const updated = prev.map(chat => chat.chatId == chatId ? { ...chat, reaction: "" } : chat)
+        return [...updated]
+      })
     }
   }
 
@@ -946,14 +1001,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setMessage("")
         if (searchedUser?.address == selectedUser.address) {
           setSearchedUser(null)
-          setConnectedUsers([{ ...searchedUser, unreadMessages: 0 }, ...connectedUsers])
+          setConnectedUsers(prev => [{ ...searchedUser, unreadMessages: 0 }, ...prev])
         }
         // console.log('sent msg = ', sentMsg)
 
         setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
         setIsFailedSent(true)
-        setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
+        setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
         console.log('sent msg err: ', err)
       }
     } else if (chatMode === "group") {
@@ -983,7 +1038,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
         setIsFailedSent(true)
-        setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
+        setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
         console.log('sent msg err: ', err)
       }
     }
@@ -1226,7 +1281,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           type: "Connected",
           members: joinGroup.members
         }
-        setGroupList([{ ...newGroup, type: "Connected" }, ...groupList])
+        setGroupList(prev => [{ ...newGroup, type: "Connected" }, ...prev])
         setSelectedGroup(newGroup)
       }
     } catch (err) {
@@ -1272,7 +1327,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     try {
       if (chatMode === "group" && selectedGroup) {
         const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == address)
-        setChatHistory([...chatHistory, {
+        setChatHistory(prev => [...prev, {
           timestamp: Math.floor(Date.now()),
           type,
           content,
@@ -1292,7 +1347,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setMessage("")
         console.log('sent media: ', sentMedia)
       } else if (chatMode === "p2p" && selectedUser) {
-        setChatHistory([...chatHistory, {
+        setChatHistory(prev => [...prev, {
           timestamp: Math.floor(Date.now()),
           type,
           content,
@@ -1311,13 +1366,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setMessage("")
         if (searchedUser?.address == selectedUser.address) {
           setSearchedUser(null)
-          setConnectedUsers([{ ...searchedUser, unreadMessages: 0 }, ...connectedUsers])
+          setConnectedUsers(prev => [{ ...searchedUser, unreadMessages: 0 }, ...prev])
         }
         console.log('sent media: ', sentMedia)
       }
     } catch (err) {
       console.log('send gif err: ', err)
-      setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
+      setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
     }
   }
 
@@ -1846,8 +1901,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }
 
+  const isUserRequest = useMemo(() => selectedUser?.type === "Request", [selectedUser])
+  const isGroupRequest = useMemo(() => selectedGroup?.type === "Request", [selectedGroup])
+  const isGroupSearch = useMemo(() => selectedGroup?.type === "Searched", [selectedGroup])
+
   const renderButtonsInHistory = () => {
-    if (selectedUser?.type === "Request") {
+    if (isUserRequest) {
       return <div className='w-full flex justify-center'>
         <div className='w-[320px] rounded-lg p-3 bg-white/5'>
           <span className='text-white/40'>This wallet wants to chat with you! Please accept to continue or reject to decline.</span>
@@ -1867,7 +1926,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       </div>
     }
 
-    if (selectedGroup?.type === "Request") {
+    if (isGroupRequest) {
       console.log('group request')
       return <div className='w-full flex justify-center'>
         <div className='w-[320px] rounded-lg py-5 px-3 bg-white/5'>
@@ -1888,7 +1947,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       </div>
     }
 
-    if (selectedGroup?.type === "Searched") {
+    if (isGroupSearch) {
       return <div className='w-full flex justify-center'>
         <div className='w-[320px] rounded-lg py-5 px-3 bg-white/5'>
           <div className='text-white/40 text-center'>Click on the button to join the group.</div>
@@ -1955,10 +2014,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         </div>
       )
     }
-
-    // if (isFailedSent) {
-    //   return <div className='text-red-500 text-sm absolute bottom-[76px] right-[8px]'>Can't send message. Please try again.</div>
-    // }
 
     // // Check access before showing messages
     // if (!canAccessChat(selectedUser, selectedGroup)) {
