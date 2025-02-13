@@ -1,16 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
+import { TokenType, Step, Protocol } from '../../../types/brian.type';
+import { convertCryptoAmount } from '../../../utils/brian';
+import { formatNumberByFrac } from '../../../utils/common.util';
+import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
 
+import { FailedTransaction } from '../modals/FailedTransaction.tsx';
+import { SuccessModal } from '../modals/SuccessModal.tsx';
 interface SwapProcessProps {
   onClose: () => void;
+  fromToken: TokenType;
+  toToken: TokenType;
+  fromAmount: string;
+  receiver: string;
+  steps: Step[];
+  protocol: Protocol;
 }
 
-export const SwapProcess: React.FC<SwapProcessProps> = ({ onClose }) => {
+export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, receiver, fromAmount, toToken, fromToken, protocol, onClose }) => {
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [failedTransaction, setFailedTransaction] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
+  const { mutate: sendTransactionMutate } = useBrianTransactionMutation();
+  const [scan, setScan] = useState<string>('https://etherscan.io/');
+
+  const handleTransaction = async (data: any) => {
+    try {
+      if (steps.length === 0) {
+        console.error("No transaction details available");
+        return;
+      }
+      setShowConfirmation(true);
+
+      sendTransactionMutate(
+        { transactions: data },
+        {
+          onSuccess: (receipt) => {
+            setTransactionProgress(100);
+            setTransactionStatus('Transaction confirmed!');
+            setScan(receipt ?? '');
+          },
+          onError: (error) => {
+            console.log(error);
+            setShowConfirmation(false);
+            setFailedTransaction(true);
+          },
+        },
+      );
+
+    } catch (error) {
+      console.error("Error executing transactions:", error);
+      setShowConfirmation(false);
+      setFailedTransaction(true);
+    }
+  };
+
 
   useEffect(() => {
     if (step === 1) {
@@ -32,14 +79,14 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ onClose }) => {
     if (showConfirmation) {
       const stages = [
         { progress: 25, status: 'Preparing transaction...' },
-        { progress: 50, status: 'Submitting to Uniswap V3...' },
+        { progress: 50, status: 'Submitting to Protocol...' },
         { progress: 75, status: 'Waiting for confirmation...' },
         { progress: 100, status: 'Transaction confirmed!' }
       ];
 
       let currentStage = 0;
       const timer = setInterval(() => {
-        if (currentStage < stages.length) {
+        if (currentStage < stages.length - 1) {
           setTransactionProgress(stages[currentStage].progress);
           setTransactionStatus(stages[currentStage].status);
           currentStage++;
@@ -83,7 +130,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ onClose }) => {
       </div>
       <h3 className="mt-8 text-xl font-medium">Finding Best Rate</h3>
       <p className="mt-2 text-white/60 text-center max-w-md">
-        Scanning DEXs for the best USDC to ANON swap rate...
+        Scanning DEXs for the best {fromToken.symbol} to {toToken.symbol} swap rate...
       </p>
     </div>
   );
@@ -91,14 +138,14 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ onClose }) => {
   const renderStep2 = () => (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 mb-6">
-        <img 
-          src="https://cryptologos.cc/logos/uniswap-uni-logo.png"
-          alt="Uniswap"
+        {/* <img 
+          src={protocol.logoURI??''}
+          alt={protocol?.name}
           className="w-12 h-12"
-        />
+        /> */}
         <div>
           <h3 className="text-xl font-medium">Best Rate Found</h3>
-          <p className="text-white/60">Uniswap V3 offers the best rate</p>
+          <p className="text-white/60">{protocol?.name} offers the best rate</p>
         </div>
       </div>
 
@@ -106,26 +153,26 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ onClose }) => {
         <div className="space-y-6">
           <div className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
-              <img 
-                src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" 
-                alt="USDC" 
+              <img
+                src={fromToken.logoURI}
+                alt={fromToken.symbol}
                 className="w-10 h-10"
               />
               <div>
                 <div className="text-sm text-white/60">You pay</div>
-                <div className="text-xl font-medium">500 USDC</div>
+                <div className="text-xl font-medium">{convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
             <div className="flex items-center gap-3">
-              <img 
-                src="https://assets.coingecko.com/coins/images/52961/standard/ICON.png?1734862960" 
-                alt="ANON" 
+              <img
+                src={toToken.logoURI}
+                alt={toToken.symbol}
                 className="w-10 h-10"
               />
               <div>
                 <div className="text-sm text-white/60">You receive</div>
-                <div className="text-xl font-medium">23.201 ANON</div>
+                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol}</div>
               </div>
             </div>
           </div>
@@ -133,21 +180,13 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ onClose }) => {
           <div className="p-4 bg-white/5 rounded-lg space-y-3">
             <div className="flex justify-between">
               <span className="text-white/60">Rate</span>
-              <span className="font-medium">1 ANON = $21.55</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/60">Price Impact</span>
-              <span className="text-green-400 font-medium">0.1%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/60">Network Fee</span>
-              <span className="font-medium">~$2.50</span>
+              <span className="font-medium">1 {toToken.symbol} = ${formatNumberByFrac(Number(toToken.priceUSD), 2)}</span>
             </div>
           </div>
         </div>
 
         <button
-          onClick={() => setShowConfirmation(true)}
+          onClick={() => handleTransaction(steps)}
           className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
         >
           Confirm Swap
@@ -166,45 +205,31 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ onClose }) => {
               <span className="text-sm text-white/60">{transactionProgress}%</span>
             </div>
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-blue-500 transition-all duration-500"
                 style={{ width: `${transactionProgress}%` }}
               />
             </div>
           </div>
           <div className="flex items-center gap-4 animate-pulse">
-            <img 
-              src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" 
-              alt="USDC" 
+            <img
+              src={fromToken.logoURI}
+              alt={fromToken.symbol}
               className="w-12 h-12"
             />
             <ArrowRight className="w-6 h-6 text-white/40" />
-            <img 
-              src="https://assets.coingecko.com/coins/images/52961/standard/ICON.png?1734862960" 
-              alt="ANON" 
+            <img
+              src={toToken.logoURI}
+              alt={toToken.symbol}
               className="w-12 h-12"
             />
           </div>
           <p className="mt-4 text-white/60">
-            Swapping 500 USDC for 23.201 ANON via Uniswap V3
+            Swapping {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol} for {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} via {protocol.name}
           </p>
         </>
       ) : (
-        <>
-          <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-6">
-            <CheckCircle2 className="w-8 h-8 text-green-500" />
-          </div>
-          <h3 className="text-xl font-medium mb-2">Swap Successful!</h3>
-          <p className="text-white/60 mb-6">
-            You've successfully swapped 500 USDC for 23.201 ANON
-          </p>
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg"
-          >
-            Close
-          </button>
-        </>
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol}`} />
       )}
     </div>
   );
@@ -216,9 +241,8 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ onClose }) => {
           <div className="flex items-center">
             {[1, 2].map((s) => (
               <React.Fragment key={s}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  step >= s ? 'bg-blue-500' : 'bg-white/10'
-                }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= s ? 'bg-blue-500' : 'bg-white/10'
+                  }`}>
                   {step > s ? (
                     <CheckCircle2 className="w-4 h-4" />
                   ) : (
@@ -226,9 +250,8 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ onClose }) => {
                   )}
                 </div>
                 {s < 2 && (
-                  <div className={`w-12 h-0.5 ${
-                    step > s ? 'bg-blue-500' : 'bg-white/10'
-                  }`} />
+                  <div className={`w-12 h-0.5 ${step > s ? 'bg-blue-500' : 'bg-white/10'
+                    }`} />
                 )}
               </React.Fragment>
             ))}
@@ -241,8 +264,12 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ onClose }) => {
           <X className="w-4 h-4" />
         </button>
       </div>
-
-      {showConfirmation ? renderConfirmation() : (
+      {failedTransaction &&
+        <FailedTransaction
+          description={`Swap ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} via ${protocol.name}`}
+          onClose={onClose}
+        />}
+      {showConfirmation && !failedTransaction ? renderConfirmation() : (
         <div className="h-[calc(100%-60px)]">
           {step === 1 && renderStep1()}
           {step === 2 && renderStep2()}

@@ -24,7 +24,7 @@ import { ProjectAnalysisProcess } from '../ProjectAnalysisProcess.tsx';
 import { WalletPanel } from './WalletPanel.tsx';
 import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
-import { TokenType, Step } from '../../types/brian.type.ts';
+import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 import { useEvmWalletBalance } from '../../hooks/useBalance.tsx';
 import { convertCryptoAmount } from '../../utils/brian.tsx';
@@ -50,11 +50,12 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [projectName, setProjectName] = useState('');
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
   const { address, chainId, switchChain } = useContext(Web3AuthContext);
-  
+
   const { isLoading: isLoadingBalance } = useEvmWalletBalance();
   const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
 
   const [fromToken, setFromToken] = useState<TokenType>();
+  const [protocol, setProtocol] = useState<Protocol>();
   const [toToken, setToToken] = useState<TokenType>();
   const [
     fromAmount, setFromAmount] = useState('0');
@@ -276,7 +277,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             resetProcessStates();
             await switchChain(data.fromToken.chainId);
 
-            
+
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             const token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
 
@@ -286,10 +287,29 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
               setFromAmount(data.fromAmount);
               setReceiver(data.receiver);
               setSteps(data.steps);
-              setShowSendProcess(true);   
+              setShowSendProcess(true);
             }
             else {
-                response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };  
+              response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
+            }
+          } else if (response.brianData.action == 'swap') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+
+            const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
+            const token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+            if (token && token.balance > amount) {
+              setFromToken(data.fromToken);
+              setProtocol(data.protocol);
+              setToToken(data.toToken);
+              setFromAmount(data.fromAmount);
+              setReceiver(data.receiver);
+              setSteps(data.steps);
+              setShowSwapProcess(true);
+            }
+            else {
+              response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
             }
           }
         }
@@ -425,11 +445,12 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setShowYieldProcess(false);
             setMessages([]);
           }} />
-        ) : showSwapProcess ? (
-          <SwapProcess onClose={() => {
-            setShowSwapProcess(false);
-            setMessages([]);
-          }} />
+        ) : showSwapProcess && fromToken && toToken && protocol ? (
+          <SwapProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol = {protocol}
+            onClose={() => {
+              setShowSwapProcess(false);
+              setMessages([]);
+            }} />
         ) : showBridgeProcess ? (
           <BridgeProcess onClose={() => {
             setShowBridgeProcess(false);
@@ -440,13 +461,12 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setShowPortfolioProcess(false);
             setMessages([]);
           }} />
-        ) : showSendProcess ? (
-          <SendProcess steps={steps} receiver={receiver} 
-          fromAmount={
-            fromAmount} toToken={toToken} fromToken={fromToken} onClose={() => {
-            setShowSendProcess(false);
-            setMessages([]);
-          }} />
+        ) : showSendProcess && fromToken && toToken  ? (
+          <SendProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} 
+            onClose={() => {
+              setShowSendProcess(false);
+              setMessages([]);
+            }} />
         ) : showStakeProcess ? (
           <StakeProcess onClose={() => {
             setShowStakeProcess(false);
