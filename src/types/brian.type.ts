@@ -9,6 +9,12 @@ export type TokenType = {
   coinKey: string;
 };
 
+export type Protocol = {
+  key: string;
+  logoURI: string;
+  name: string;
+}
+
 export type Step = {
   blockNumber: number;
   chainId: number;
