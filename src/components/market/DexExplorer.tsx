@@ -90,12 +90,12 @@ export const DexExplorer: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6 h-full flex flex-col items-center justify-center text-center">
-        <AlertCircle className="w-8 h-8 text-red-400 mb-2" />
-        <p className="text-white/60 mb-4">{error.message}</p>
+      <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+        <AlertCircle className="w-8 h-8 mb-2 text-red-400" />
+        <p className="mb-4 text-white/60">{error.message}</p>
         <button
           onClick={handleRefresh}
-          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+          className="px-4 py-2 transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
         >
           Try Again
         </button>
@@ -104,7 +104,7 @@ export const DexExplorer: React.FC = () => {
   }
 
   return (
-    <div className="p-6 h-full">
+    <div className="h-full p-6">
       {/* Header Controls */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
@@ -112,7 +112,7 @@ export const DexExplorer: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setShowNetworkSelector(!showNetworkSelector)}
-              className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-2 transition-colors rounded-lg bg-white/5 hover:bg-white/10"
             >
               {selectedNetwork && (
                 <img
@@ -139,7 +139,7 @@ export const DexExplorer: React.FC = () => {
                   className="fixed inset-0 z-10"
                   onClick={() => setShowNetworkSelector(false)}
                 />
-                <div className="absolute top-full left-0 mt-2 w-48 py-2 glass rounded-lg z-20">
+                <div className="absolute left-0 z-20 w-48 py-2 mt-2 rounded-lg top-full glass">
                   {networks.map((n) => (
                     <button
                       key={n.id}
@@ -181,13 +181,13 @@ export const DexExplorer: React.FC = () => {
           </div>
 
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <Search className="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-white/40" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search pools..."
-              className="w-64 bg-white/5 pl-10 pr-4 py-2 rounded-lg outline-none placeholder:text-white/40"
+              className="w-64 py-2 pl-10 pr-4 rounded-lg outline-none bg-white/5 placeholder:text-white/40"
             />
           </div>
         </div>
@@ -202,7 +202,7 @@ export const DexExplorer: React.FC = () => {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+          <button className="p-2 transition-colors rounded-lg hover:bg-white/10">
             <Filter className="w-4 h-4" />
           </button>
         </div>
@@ -213,13 +213,17 @@ export const DexExplorer: React.FC = () => {
         <table className="w-full">
           <thead>
             <tr className="text-left text-white/60">
-              <th className="py-3 px-4 whitespace-nowrap">Pool</th>
-              <th className="py-3 px-4 whitespace-nowrap">Price</th>
-              <th className="py-3 px-4 whitespace-nowrap">24h %</th>
-              <th className="py-3 px-4 whitespace-nowrap">Volume (24h)</th>
-              <th className="py-3 px-4 whitespace-nowrap">TVL</th>
-              <th className="py-3 px-4 whitespace-nowrap">Transactions (24h)</th>
-              <th className="py-3 px-4 whitespace-nowrap">Age</th>
+              <th className="px-4 py-3 whitespace-nowrap">Pool</th>
+              <th className="px-4 py-3 whitespace-nowrap">Price</th>
+              <th className="px-4 py-3 whitespace-nowrap">5M %</th>
+              <th className="px-4 py-3 whitespace-nowrap">1h %</th>
+              <th className="px-4 py-3 whitespace-nowrap">6h %</th>
+              <th className="px-4 py-3 whitespace-nowrap">24h %</th>              
+              <th className="px-4 py-3 whitespace-nowrap">Volume (24h)</th>
+              <th className="px-4 py-3 whitespace-nowrap">TVL</th>
+              <th className="px-4 py-3 whitespace-nowrap">Transactions (24h)</th>
+              <th className="px-4 py-3 whitespace-nowrap">Age</th>
+
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -227,34 +231,44 @@ export const DexExplorer: React.FC = () => {
               // Loading skeletons
               [...Array(10)].map((_, i) => (
                 <tr key={i} className="animate-pulse">
-                  <td className="py-4 px-4">
-                    <div className="h-8 w-32 bg-white/10 rounded" />
+                  <td className="px-4 py-4">
+                    <div className="w-32 h-8 rounded bg-white/10" />
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="h-4 w-24 bg-white/10 rounded" />
+                  <td className="px-4 py-4">
+                    <div className="w-24 h-4 rounded bg-white/10" />
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="h-4 w-16 bg-white/10 rounded" />
+                  <td className="px-4 py-4">
+                    <div className="w-16 h-4 rounded bg-white/10" />
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="h-4 w-28 bg-white/10 rounded" />
+                  <td className="px-4 py-4">
+                    <div className="w-16 h-4 rounded bg-white/10" />
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="h-4 w-28 bg-white/10 rounded" />
+                  <td className="px-4 py-4">
+                    <div className="w-16 h-4 rounded bg-white/10" />
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="h-4 w-20 bg-white/10 rounded" />
+                  <td className="px-4 py-4">
+                    <div className="w-16 h-4 rounded bg-white/10" />
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="h-4 w-16 bg-white/10 rounded" />
+                  <td className="px-4 py-4">
+                    <div className="h-4 rounded w-28 bg-white/10" />
                   </td>
+                  <td className="px-4 py-4">
+                    <div className="h-4 rounded w-28 bg-white/10" />
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="w-20 h-4 rounded bg-white/10" />
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="w-16 h-4 rounded bg-white/10" />
+                  </td>
+
                 </tr>
               ))
             ) : filteredPools.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center">
-                  <Search className="w-12 h-12 text-white/40 mb-4 mx-auto" />
-                  <p className="text-lg font-medium mb-2">No pools found</p>
+                <td colSpan={10} className="py-12 text-center">
+                  <Search className="w-12 h-12 mx-auto mb-4 text-white/40" />
+                  <p className="mb-2 text-lg font-medium">No pools found</p>
                   <p className="text-white/60">
                     Try adjusting your search or filter criteria
                   </p>
@@ -268,15 +282,19 @@ export const DexExplorer: React.FC = () => {
                 const quoteToken = pool.included?.tokens.find(t =>
                   t.id === pool.relationships.quote_token.data.id
                 );
-
+                const priceChange5m = parseFloat(pool.attributes.price_change_percentage?.m5 || '0');
+                const priceChange1h = parseFloat(pool.attributes.price_change_percentage?.h1 || '0');
+                const priceChange6h = parseFloat(pool.attributes.price_change_percentage?.h6 || '0');
                 const priceChange24h = parseFloat(pool.attributes.price_change_percentage?.h24 || '0');
                 const volume24h = parseFloat(pool.attributes.volume_usd?.h24 || '0');
                 const transactions24h = pool.attributes.transactions?.h24 || 0;
                 const tvl = parseFloat(pool.attributes.reserve_in_usd || '0');
 
+
+
                 return (
-                  <tr key={pool.id} className="hover:bg-white/5 transition-colors">
-                    <td className="py-4 px-4">
+                  <tr key={pool.id} className="transition-colors hover:bg-white/5">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex -space-x-2">
                           {baseToken?.attributes.logo_url ? (
@@ -312,10 +330,43 @@ export const DexExplorer: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="px-4 py-4">
                       ${formatNumber(pool.attributes.base_token_price_usd || '0')}
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="px-4 py-4">
+                      <div className={`flex items-center gap-1 ${priceChange5m >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                        {priceChange5m >= 0 ? (
+                          <TrendingUp className="w-4 h-4" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4" />
+                        )}
+                        <span>{Math.abs(priceChange5m).toFixed(2)}%</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className={`flex items-center gap-1 ${priceChange1h >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                        {priceChange1h >= 0 ? (
+                          <TrendingUp className="w-4 h-4" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4" />
+                        )}
+                        <span>{Math.abs(priceChange1h).toFixed(2)}%</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className={`flex items-center gap-1 ${priceChange6h >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                        {priceChange6h >= 0 ? (
+                          <TrendingUp className="w-4 h-4" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4" />
+                        )}
+                        <span>{Math.abs(priceChange6h).toFixed(2)}%</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
                       <div className={`flex items-center gap-1 ${priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
                         }`}>
                         {priceChange24h >= 0 ? (
@@ -326,12 +377,13 @@ export const DexExplorer: React.FC = () => {
                         <span>{Math.abs(priceChange24h).toFixed(2)}%</span>
                       </div>
                     </td>
-                    <td className="py-4 px-4">${formatNumber(volume24h)}</td>
-                    <td className="py-4 px-4">${formatNumber(tvl)}</td>
-                    <td className="py-4 px-4">{formatNumber(transactions24h)}</td>
-                    <td className="py-4 px-4 text-white/60">
+                    <td className="px-4 py-4">${formatNumber(volume24h)}</td>
+                    <td className="px-4 py-4">${formatNumber(tvl)}</td>
+                    <td className="px-4 py-4">{formatNumber(transactions24h)}</td>
+                    <td className="px-4 py-4 text-white/60">
                       {formatAge(pool.attributes.pool_created_at)}
                     </td>
+                    
                   </tr>
                 );
               })
