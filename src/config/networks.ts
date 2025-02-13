@@ -87,7 +87,7 @@ export const mapChainId2ChainName: Record<number, string> = {
     1: 'Ethereum', // Ethereum Mainnet (ETH)
     56: 'BNB Chain', // Binance Smart Chain (BNB)
     137: 'Polygon', // Polygon Mainnet (MATIC)
-    43114: 'Avalance', // Avalanche C-Chain (AVAX)
+    43114: 'Avalanche', // Avalanche C-Chain (AVAX)
     10: 'Optimism', // Optimism (ETH)
     42161: 'Arbitrum', // Arbitrum (ETH)
     8453: 'Base', // Base Mainnet (ETH placeholder)

@@ -27,6 +27,7 @@ interface DefillamaStore {
     pools: DefillamaPool[],
     protocols: DefillamaProtocol[],
     categories: DefillamaCategory[],
+    getPools: (chainName: string) => DefillamaPool[],
     setPools: (pools: DefillamaPool[]) => void
     setProtocols: (protocols: DefillamaProtocol[]) => void,
     getDeFiStats: () => DeFiStats,
@@ -40,8 +41,15 @@ const useDefillamaStore = create<DefillamaStore>((set) => ({
     pools: [], // Initialize with an empty array
     protocols: [], // Initialize with an empty array
     categories: [], // Initialize with an empty array
+    getPools: (chainName: string, limitNumber: number = 9) => {
+        const state = useDefillamaStore.getState() as DefillamaStore;
+        const filteredPools = state.pools.filter((pool) => chainName ? pool.chain.toUpperCase() === chainName.toUpperCase() : true);
+        filteredPools.sort((a, b) => Number(a.apy) > Number(b.apy) ? -1 : 1);
+        const data = filteredPools.slice(0, Math.min(filteredPools.length, limitNumber));
+        return data;
+    },
     setPools: (pools: DefillamaPool[]) => {
-        set({ pools: pools.sort((a, b) => a.apy > b.apy ? -1 : 1) })
+        set({ pools })
     },
     setProtocols: (protocols: DefillamaProtocol[]) => {
         const totalTvl = protocols.reduce((sum, p) => sum + p.tvl, 0);

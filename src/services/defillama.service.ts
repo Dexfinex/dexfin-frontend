@@ -12,9 +12,9 @@ export const defillamaService = {
 		}
 	},
 
-	getPools: async (): Promise<DefillamaPool[]> => {
+	getPools: async ({ chain }: { chain: string }): Promise<DefillamaPool[]> => {
 		try {
-			const { data } = await defillamaApi.get<DefillamaPool[]>(`/yields/pools`);
+			const { data } = await defillamaApi.get<DefillamaPool[]>(`/yields/pools?chain=${chain}`);
 			return data;
 		} catch (error) {
 			console.error('Failed to fetch defillama pools:', error);
