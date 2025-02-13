@@ -1,11 +1,11 @@
-import { coinGeckoApi } from "./api.service.ts";
-import { CoinGeckoToken, TrendingCoin, SearchResult, CoinData, CoinGeckoNativeToken } from "../types";
-import { ChartDataPoint, TokenType } from "../types/swap.type.ts";
-import { TokenTypeB } from "../types/cart.type.ts";
+import {coinGeckoApi} from "./api.service.ts";
+import {CoinData, CoinGeckoToken, SearchResult, TrendingCoin} from "../types";
+import {ChartDataPoint, TokenType} from "../types/swap.type.ts";
+import {TokenTypeB} from "../types/cart.type.ts";
 import axios from "axios";
-import { mapCoingeckoAssetPlatforms } from "../constants/mock/coingeckoAssetPlatforms.ts";
-import { NULL_ADDRESS } from "../constants";
-import { MarketCapToken } from "../components/market/MarketCap.tsx";
+import {mapCoingeckoAssetPlatforms} from "../constants/mock/coingeckoAssetPlatforms.ts";
+import {NULL_ADDRESS} from "../constants";
+import {MarketCapToken} from "../components/market/MarketCap.tsx";
 
 export const coingeckoService = {
     getMemecoins: async () => {
@@ -72,7 +72,7 @@ export const coingeckoService = {
             // Ensure days is a valid number
             const validDays = Math.max(1, Math.min(365, days));
 
-            const response = await coinGeckoApi.get(`/coins/${tokenId}/ohlc`, {
+            const response = await coinGeckoApi.get(`/ohlcv/${tokenId}`, {
                 params: {
                     vs_currency: 'usd',
                     days: validDays.toString(),
@@ -85,16 +85,7 @@ export const coingeckoService = {
             }
 
             // CoinGecko OHLC format: [timestamp, open, high, low, close]
-            const chartData: ChartDataPoint[] = response.data.map(
-                ([timestamp, open, high, low, close]: number[]) => ({
-                    time: timestamp,
-                    open,
-                    high,
-                    low,
-                    close,
-                })
-            );
-
+            const chartData: ChartDataPoint[] = response.data
             return chartData.sort((a, b) => a.time - b.time);
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 429) {
