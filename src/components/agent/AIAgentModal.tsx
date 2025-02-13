@@ -47,7 +47,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [showProjectAnalysis, setShowProjectAnalysis] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
-  const { address, chainId } = useContext(Web3AuthContext);
+  const { address, chainId, switchChain } = useContext(Web3AuthContext);
 
   const [fromToken, setFromToken] = useState<TokenType>();
   const [toToken, setToToken] = useState<TokenType>();
@@ -263,15 +263,18 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         const normalizedCommand = command.trim();
 
         response = await generateResponse(normalizedCommand, address, chainId);
-
+        console.log(response);        
         if (response.type == "action") {
           if (response.brianData.action == 'transfer') {
+            const data = response.brianData.data;
             resetProcessStates();
-            setFromToken(response.brianData.data.fromToken);
-            setToToken(response.brianData.data.toToken);
-            setFromAmount(response.brianData.data.fromAmount);
-            setReceiver(response.brianData.data.receiver);
-            setSteps(response.brianData.data.steps);
+            await switchChain(data.fromToken.chainId);
+            setFromToken(data.fromToken);
+
+            setToToken(data.toToken);
+            setFromAmount(data.fromAmount);
+            setReceiver(data.receiver);
+            setSteps(data.steps);
             setShowSendProcess(true);
             response = { text: 'Opening swap interface...' };
           }

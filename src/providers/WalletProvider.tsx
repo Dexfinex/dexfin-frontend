@@ -5,7 +5,7 @@ import {mainnet, polygon, arbitrum, base, linea, optimism, bsc, avalanche} from 
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 const config = createConfig({
-    chains: [mainnet, polygon, arbitrum, base, linea, optimism],
+    chains: [mainnet, polygon, arbitrum, base, linea, optimism, bsc],
     connectors: [
         injected({target: 'metaMask'}),
         coinbaseWallet(),

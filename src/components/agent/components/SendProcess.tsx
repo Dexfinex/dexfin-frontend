@@ -43,15 +43,15 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           ...transactionStep
         });
         if (tx) {
-            const receipt = await publicClient?.waitForTransactionReceipt({
+          const receipt = await publicClient?.waitForTransactionReceipt({
             hash: tx,
-            })
-            if (receipt) {
+          })
+          if (receipt) {
             console.log(receipt);
             setTransactionProgress(100);
             setTransactionStatus('Transaction confirmed!');
             setScan(`${mapChainId2ViemChain[fromToken.chainId].blockExplorers?.default.url}/tx/${tx}`);
-            }
+          }
         }
       }
     } catch (error) {
@@ -131,7 +131,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
               <span className="font-medium">{mapChainId2ViemChain[fromToken.chainId].name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-white/60">Total Amount</span>
+              <span className="text-white/60">Amount</span>
               <span className="font-medium">{convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol}</span>
             </div>
           </div>
