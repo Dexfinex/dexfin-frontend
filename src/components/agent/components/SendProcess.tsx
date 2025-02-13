@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Wallet, X } from 'lucide-react';
+import { ArrowRight, Wallet, X, ShieldClose } from 'lucide-react';
 
 import { TokenType, Step } from '../../../types/brian.type';
 import { convertCryptoAmount } from '../../../utils/brian';
@@ -29,7 +29,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
 
   const handleTransaction = async (data: any) => {
     try {
-      
+
       if (steps.length === 0) {
         console.error("No transaction details available");
         return;
@@ -37,12 +37,12 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
       setShowConfirmation(true);
 
       sendTransactionMutate(
-        {transactions: data},
+        { transactions: data },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);
             setTransactionStatus('Transaction confirmed!');
-            setScan(receipt??'');
+            setScan(receipt ?? '');
           },
           onError: (error) => {
             console.log(error);
@@ -184,6 +184,24 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
     </div>
   );
 
+  const renderFailedTransaction = () => (
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
+        <ShieldClose className="w-8 h-8 text-red-500" />
+      </div>
+      <h3 className="text-xl font-medium mb-2">Failed Transaction</h3>
+      <p className="text-white/60 mb-2">
+        Failed {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
+      </p>
+      <button
+        onClick={onClose}
+        className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg mt-6"
+      >
+        Close
+      </button>
+    </div>
+  );
+
   return (
     <div className="h-full p-6">
       <div className="flex justify-between items-center mb-6">
@@ -202,7 +220,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           <X className="w-4 h-4" />
         </button>
       </div>
-      {failedTransaction && 
+      {failedTransaction &&
         <FailedTransaction onClose={onClose} description={`Send ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
       }
       {showConfirmation && !failedTransaction ? renderConfirmation() : (

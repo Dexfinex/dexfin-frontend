@@ -7,8 +7,8 @@ import {
     moonbeam, astar, canto, zksync, kava,
     base, linea, Chain
 } from "viem/chains";
-import {TokenType} from "../types/swap.type.ts";
-import {NULL_ADDRESS} from "../constants";
+import { TokenType } from "../types/swap.type.ts";
+import { NULL_ADDRESS } from "../constants";
 
 export interface NETWORK {
     id: string;
@@ -211,7 +211,7 @@ export const mapChainId2ViemChain: Record<number, Chain> = {
     59144: linea
 };
 
-export const mapPopularTokens:Record<number, TokenType[]> = {
+export const mapPopularTokens: Record<number, TokenType[]> = {
     1: [
         {
             symbol: 'ETH',

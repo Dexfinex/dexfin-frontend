@@ -50,7 +50,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [projectName, setProjectName] = useState('');
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
   const { address, chainId, switchChain } = useContext(Web3AuthContext);
-
   const { isLoading: isLoadingBalance } = useEvmWalletBalance();
   const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
 
@@ -276,7 +275,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             const data = response.brianData.data;
             resetProcessStates();
             await switchChain(data.fromToken.chainId);
-
 
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             const token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());

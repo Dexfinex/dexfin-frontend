@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronDown, ShoppingCart, X } from 'lucide-react';
+import { ChevronDown, ShoppingCart, X, ArrowLeft } from 'lucide-react';
 import { Alert, AlertIcon, Button } from '@chakra-ui/react';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { CheckoutSectionProps } from '../../../types/cart.type';
@@ -86,7 +86,7 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
             <div className="flex items-center justify-between p-4 border-b border-white/10">
                 <h2 className="text-xl font-semibold">Checkout</h2>
                 <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                    <X className="w-4 h-4" />
+                    <ArrowLeft className="w-4 h-4" />
                 </button>
             </div>
 
