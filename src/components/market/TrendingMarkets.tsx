@@ -1,49 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { RefreshCw, AlertCircle } from 'lucide-react';
-import { coingeckoService } from '../../services/coingecko.service';
-import { TrendingCoin } from '../../types';
+import { useGetTrendingCoins } from '../../hooks/useTrendingCoins';
 
 export const TrendingMarkets: React.FC = () => {
-  const [coins, setCoins] = useState<TrendingCoin[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async (showRefreshState = false) => {
-    try {
-      if (showRefreshState) {
-        setRefreshing(true);
-      }
-      const data = await coingeckoService.getTrendingCoins();
-      if (data && data.length > 0) {
-        setCoins(data);
-        setError(null);
-      } else {
-        setError('No trending data available');
-      }
-    } catch (err) {
-      console.error('Error fetching trending coins:', err);
-      setError('Unable to load trending data');
-    } finally {
-      setLoading(false);
-      if (showRefreshState) {
-        setRefreshing(false);
-      }
-    }
+  const { data: coins, isLoading, refetch, error } = useGetTrendingCoins();
+
+  const handleRefresh = async () => {
+    await refetch();
   };
 
-  useEffect(() => {
-    fetchData();
-    // Refresh every 2 minutes to stay within rate limits
-    const interval = setInterval(() => fetchData(), 120000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleRefresh = () => {
-    fetchData(true);
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-6 h-full">
         <div className="animate-pulse space-y-4">
@@ -59,7 +26,7 @@ export const TrendingMarkets: React.FC = () => {
     return (
       <div className="p-6 h-full flex flex-col items-center justify-center text-center">
         <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-        <p className="text-white/60 mb-4">{error}</p>
+        <p className="text-white/60 mb-4">{error.message}</p>
         <button
           onClick={handleRefresh}
           className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
@@ -75,18 +42,17 @@ export const TrendingMarkets: React.FC = () => {
       <div className="flex justify-end mb-4">
         <button
           onClick={handleRefresh}
-          disabled={refreshing}
-          className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${
-            refreshing ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+          disabled={isLoading}
+          className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           title="Refresh data"
         >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        {coins.map((coin) => (
+        {(coins || []).map((coin) => (
           <div
             key={coin.id}
             className="p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
