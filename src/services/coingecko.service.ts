@@ -3,8 +3,6 @@ import {CoinData, CoinGeckoToken, SearchResult, TrendingCoin} from "../types";
 import {ChartDataPoint, TokenType} from "../types/swap.type.ts";
 import {TokenTypeB} from "../types/cart.type.ts";
 import axios from "axios";
-import {mapCoingeckoAssetPlatforms} from "../constants/mock/coingeckoAssetPlatforms.ts";
-import {NULL_ADDRESS} from "../constants";
 import {MarketCapToken} from "../components/market/MarketCap.tsx";
 
 export const coingeckoService = {
