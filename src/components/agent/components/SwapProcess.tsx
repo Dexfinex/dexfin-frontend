@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, ArrowRight, CheckCircle2, X, ShieldClose } from 'lucide-react';
+import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
 import { TokenType, Step, Protocol } from '../../../types/brian.type';
 import { convertCryptoAmount } from '../../../utils/brian';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
 
-
+import { FailedTransaction } from '../modals/FailedTransaction.tsx';
+import { SuccessModal } from '../modals/SuccessModal.tsx';
 interface SwapProcessProps {
   onClose: () => void;
   fromToken: TokenType;
@@ -78,7 +79,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, receiver, fromA
     if (showConfirmation) {
       const stages = [
         { progress: 25, status: 'Preparing transaction...' },
-        { progress: 50, status: 'Submitting to Uniswap V3...' },
+        { progress: 50, status: 'Submitting to Protocol...' },
         { progress: 75, status: 'Waiting for confirmation...' },
         { progress: 100, status: 'Transaction confirmed!' }
       ];
@@ -194,24 +195,6 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, receiver, fromA
     </div>
   );
 
-  const renderFailedTransaction = () => (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-      <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
-        <ShieldClose className="w-8 h-8 text-red-500" />
-      </div>
-      <h3 className="text-xl font-medium mb-2">Failed Transaction</h3>
-      <p className="text-white/60 mb-2">
-          Swap {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol} for {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} via {protocol.name}
-      </p>
-      <button
-        onClick={onClose}
-        className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg mt-6"
-      >
-        Close
-      </button>
-    </div>
-  );
-
   const renderConfirmation = () => (
     <div className="flex flex-col items-center justify-center h-full text-center">
       {transactionProgress < 100 ? (
@@ -246,21 +229,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, receiver, fromA
           </p>
         </>
       ) : (
-        <>
-          <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-6">
-            <CheckCircle2 className="w-8 h-8 text-green-500" />
-          </div>
-          <h3 className="text-xl font-medium mb-2">Swap Successful!</h3>
-          <p className="text-white/60 mb-6">
-            You've successfully swapped {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol} for {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol}
-          </p>
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg"
-          >
-            Close
-          </button>
-        </>
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol}`} />
       )}
     </div>
   );
@@ -295,7 +264,11 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, receiver, fromA
           <X className="w-4 h-4" />
         </button>
       </div>
-      {failedTransaction && renderFailedTransaction()}
+      {failedTransaction &&
+        <FailedTransaction
+          description={`Swap ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} via ${protocol.name}`}
+          onClose={onClose}
+        />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (
         <div className="h-[calc(100%-60px)]">
           {step === 1 && renderStep1()}
