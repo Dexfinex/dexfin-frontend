@@ -309,6 +309,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSearchQuery("")
     setChatHistory([])
     setRequestUsers([])
+    setRequestGroups([])
     setSelectedUser(null)
     setSearchedUser(null)
     setSelectedGroup(null)
@@ -476,7 +477,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
 
           updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
-        } else if (receivedMessage.event == "chat.accept" && chatMode === "group") {
+        } else if (receivedMessage.event == "chat.accept") {
           // add a member
           const profile = await getWalletProfile(chatUser, receivedMessage.from)
           console.log('received message from = ', receivedMessage.from)
@@ -490,13 +491,30 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           if (selectedGroup && selectedGroup?.groupId == receivedMessage.chatId) {
             setSelectedGroup({
               ...selectedGroup,
-              members: [...selectedGroup.members, newMember]
+              members: [...selectedGroup.members, newMember],
+              pendingMembers: selectedGroup.pendingMembers.length > 0 ? selectedGroup.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
             });
-          } else if (groupList.find(group => group.groupId == receivedMessage.chatId)) {
-            setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
-          } else if (requestGroups.find(group => group.groupId == receivedMessage.chatId)) {
-            setRequestGroups(requestGroups.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
           }
+          if (requestGroups.find(group => group.groupId == receivedMessage.chatId)) {
+            setRequestGroups(requestGroups.map(group => group.groupId == receivedMessage.chatId ?
+              { ...group, members: [...group.members, newMember], pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : [] }
+              : group))
+          } else {
+            setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ?
+              { ...group, members: [...group.members, newMember], pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : [] }
+              : group))
+          }
+        } else if (receivedMessage.event == "chat.reject") {
+          if (selectedGroup && selectedGroup.groupId == receivedMessage.chatId) {
+            setSelectedGroup({
+              ...selectedGroup,
+              pendingMembers: selectedGroup.pendingMembers.length > 0 ? selectedGroup.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
+            })
+          }
+
+          setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? {
+            ...group, pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
+          } : group))
         }
       } else if (receivedMessage.origin == "self") {
         if (receivedMessage.event == "chat.message") {
@@ -571,16 +589,17 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         isAdmin: false,
         wallet: receivedMessage.from
       }
+
       console.log('participate profile = ', profile)
       if (selectedGroup && selectedGroup?.groupId == receivedMessage.chatId) {
         setSelectedGroup({
           ...selectedGroup,
-          members: [...selectedGroup.members, newMember]
+          members: [...selectedGroup.members, newMember],
+          pendingMembers: selectedGroup.pendingMembers.length > 0 ? selectedGroup.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
         });
-        setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
-      } else if (groupList.find(group => group.groupId == receivedMessage.chatId)) {
-        setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
       }
+      
+      setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
     } else if (receivedMessage.event == "chat.group.participant.remove" && receivedMessage.origin == "other") {
       if (selectedGroup?.groupId == receivedMessage.chatId) {
         setSearchedGroup(null)
