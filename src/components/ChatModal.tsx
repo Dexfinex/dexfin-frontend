@@ -3,7 +3,7 @@ import {
   X, Maximize2, Minimize2, Search, Smile, Download,
   MessageSquare, Share2, Users, ArrowRight, Plus,
   Settings, User, Info, CheckCircle, XCircle, File,
-  Edit
+  Edit, Lock, Eye
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import GifPicker from 'gif-picker-react';
@@ -15,70 +15,20 @@ import { SendFileModal } from './SendFileModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
-import { Spinner, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
+import { Spinner, Popover, PopoverTrigger, PopoverContent, Tooltip } from '@chakra-ui/react';
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
 import { LIMIT } from '../utils/chatApi';
 import { EditChatProfileModal } from './EditChatProfileModal';
+import { ChatGroupModal } from './ChatGroupModal';
+import { IUser, IGroup, ChatType, IChat, ProfileType } from '../types/chat.type';
 
 interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface IUser {
-  name: string;
-  ensName: string;
-  profilePicture: string;
-  address: string;
-  chatId: string;
-  type: "Request" | "Connected" | "Searched";
-  lastTimestamp: number;
-  lastMessage: string;
-  unreadMessages: number;
-}
-
-interface IMember {
-  image: string;
-  isAdmin: boolean;
-  wallet: string;
-}
-
-interface IGroup {
-  groupId: string;
-  name: string;
-  description: string;
-  public: boolean;
-  image: string;
-  erc20: string;
-  nft: string;
-  members: IMember[];
-  pendingMembers: IMember[];
-  type: "Request" | "Connected" | "Searched";
-  lastTimestamp: number;
-  lastMessage: string;
-}
-
-type ChatType = "Text" | "MediaEmbed" | "Image" | "File" | "Reaction";
-
-interface IChat {
-  timestamp: number;
-  type: ChatType;
-  content: string;
-  fromAddress: string;
-  toAddress: string;
-  chatId: string;
-  link: string | null;
-  reaction: string;
-  image?: string;
-}
-
-type ProfileType = {
-  desc: string,
-  name: string,
-  picture: string,
-}
 // interface ChatUser {
 //   id: string;
 //   name: string;
@@ -253,6 +203,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [isCreateGroupActive, setIsCreateGroupActive] = useState(false);
   const [isEditProfileActive, setIsEditProfileActive] = useState(false);
+  const [isChatGroupModalActive, setIsChatGroupModalActive] = useState(false);
   const [isSendModalActive, setIsSendModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
@@ -1829,11 +1780,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       return chatHistory.map((msg) => (
         <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
           {
-            msg.fromAddress != address &&
-            < img
-              src={msg.image}
-              className="w-8 h-8 rounded-full mt-1"
-            />
+            msg.fromAddress != address ? msg.image ?
+              < img
+                src={msg.image}
+                className="w-8 h-8 rounded-full mt-1"
+              />
+              : null : null
           }
           <div className="flex-1 min-w-0">
             <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
@@ -2220,11 +2172,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg">
                         {selectedGroup.icon}
                       </div>
-                    )}
-                    <div>
+                    )} */}
+                    {/* <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{selectedGroup.name}</span>
-                        {selectedGroup.type === 'private' && (
+                        {selectedGroup.public && (
                           <Lock className="w-3 h-3 text-white/40" />
                         )}
                         {selectedGroup.type === 'nft-gated' && (
@@ -2253,11 +2205,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     </button>
                   </>
                 )} */}
-                {/* {selectedGroup && (
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                {
+                  selectedGroup?.public == true ? <Tooltip label="Public"><Eye className='w-4 h-4 text-white/50' /></Tooltip> :
+                    selectedGroup?.public == false ? <Tooltip label="Private"><Lock className='w-4 h-4 text-white/50' /></Tooltip> : null
+                }
+                {selectedGroup && (
+                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setIsChatGroupModalActive(true)}>
                     <Settings className="w-4 h-4" />
                   </button>
-                )} */}
+                )}
                 <button
                   onClick={toggleFullscreen}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -2366,6 +2322,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         onClose={() => setIsEditProfileActive(false)}
         profile={ownProfile}
         setProfile={setOwnProfile}
+      />
+
+      <ChatGroupModal
+        isOpen={isChatGroupModalActive}
+        onClose={() => setIsChatGroupModalActive(false)}
+        group={selectedGroup}
       />
     </>
   );
