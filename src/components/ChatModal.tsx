@@ -466,7 +466,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   content: receivedMessage.message.content,
                   fromAddress: extractAddress(receivedMessage.from),
                   toAddress: "",
-                  chatId: receivedMessage.chatId,
+                  chatId: receivedMessage.reference,
                   link: null,
                   image: found?.image || "",
                   reaction: ""
@@ -581,6 +581,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       } else if (groupList.find(group => group.groupId == receivedMessage.chatId)) {
         setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
       }
+    } else if (receivedMessage.event == "chat.group.participant.remove" && receivedMessage.origin == "other") {
+      if (selectedGroup?.groupId == receivedMessage.chatId) {
+        setSearchedGroup(null)
+        setChatHistory([])
+      }
+
+      setGroupList(groupList.filter(group => group.groupId != receivedMessage.chatId))
     }
   }
 
@@ -748,6 +755,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsFullscreen(!isFullscreen);
   };
 
+  const updateOneGroup = (group: IGroup) => {
+    setGroupList(groupList.map(e => e.groupId == group.groupId ? group : e))
+    setSelectedGroup(group)
+  }
+
   const handleUnlock = async () => {
     if (!chatUser?.uid) {
       const user = await PushAPI.initialize(signer, {
@@ -893,7 +905,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setToBottom(true)
 
     if (chatMode === "p2p" && selectedUser) {
-      setChatHistory([...chatHistory, {
+      const updatedChat: IChat[] = [...chatHistory, {
         timestamp: Math.floor(Date.now()),
         type: "Text",
         content: message.trim(),
@@ -902,7 +914,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         chatId: "",
         link: null,
         reaction: ""
-      }])
+      }]
+      setChatHistory(updatedChat)
 
       try {
         console.log(selectedUser)
@@ -916,7 +929,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           setSearchedUser(null)
           setConnectedUsers([{ ...searchedUser, unreadMessages: 0 }, ...connectedUsers])
         }
-        console.log('sent msg = ', sentMsg)
+        // console.log('sent msg = ', sentMsg)
+
+        setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
         setIsFailedSent(true)
         setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
@@ -924,7 +939,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       }
     } else if (chatMode === "group") {
       const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == address)
-      setChatHistory([...chatHistory, {
+      const updatedChat: IChat[] = [...chatHistory, {
         timestamp: Math.floor(Date.now()),
         type: "Text",
         content: message.trim(),
@@ -934,7 +949,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         link: null,
         image: found?.image || "",
         reaction: ""
-      }])
+      }]
+      setChatHistory(updatedChat)
 
       try {
         const sentMsg = await chatUser.chat.send(selectedGroup?.groupId, {
@@ -945,6 +961,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setMessage("")
 
         console.log('sent msg = ', sentMsg)
+        setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
         setIsFailedSent(true)
         setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
@@ -1128,9 +1145,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setChatHistory([])
     setSelectedGroup(group)
 
-    console.log('group = ', group)
     const history = await chatUser.chat.history(group.groupId, { limit: LIMIT })
-
+    console.log('group history = ', history)
     if (history.length > 0) {
       let chats: IChat[] = []
       let reactions: any[] = []
@@ -1798,11 +1814,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             }
           </div>
           {
-            msg.fromAddress == address &&
-            < img
-              src={msg.image}
-              className="w-8 h-8 rounded-full mt-1"
-            />
+            msg.fromAddress == address ? msg.image ?
+              < img
+                src={msg.image}
+                className="w-8 h-8 rounded-full mt-1"
+              />
+              : null : null
           }
         </div>
       ))
@@ -2328,6 +2345,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         isOpen={isChatGroupModalActive}
         onClose={() => setIsChatGroupModalActive(false)}
         group={selectedGroup}
+        updateOneGroup={updateOneGroup}
       />
     </>
   );

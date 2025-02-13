@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { X, File, Camera, Eye, Lock, Plus, Search, Edit } from 'lucide-react';
-import { Badge, Button, Spinner, Popover, PopoverTrigger, PopoverContent, } from '@chakra-ui/react';
+import { Badge, Button, Spinner } from '@chakra-ui/react';
 import { IGroup, IMember } from '../types/chat.type';
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, shrinkAddress } from '../utils/common.util';
@@ -12,6 +12,7 @@ interface ChatGroupModalProps {
     isOpen: boolean;
     onClose: () => void;
     group: IGroup | null;
+    updateOneGroup: (group: IGroup) => void;
 }
 
 interface AddWalletModalProps {
@@ -40,7 +41,7 @@ const AddWalletModal: React.FC<AddWalletModalProps> = ({ isOpen, onClose, groupI
         setSearchAddress("")
     }, [isOpen])
 
-    const handleCreateGroup = async () => {
+    const handleAddMembers = async () => {
         setCreating(true)
         // await createGroup()
         if (groupId) {
@@ -135,7 +136,7 @@ const AddWalletModal: React.FC<AddWalletModalProps> = ({ isOpen, onClose, groupI
 
                     {
                         creating ? <Spinner className='mt-4' /> :
-                            <Button className='mt-4' variant={'solid'} colorScheme='teal' onClick={handleCreateGroup}>Create Group</Button>
+                            <Button className='mt-4' variant={'solid'} colorScheme='teal' onClick={handleAddMembers}>Create Group</Button>
                     }
                 </div>
             </div>
@@ -143,17 +144,22 @@ const AddWalletModal: React.FC<AddWalletModalProps> = ({ isOpen, onClose, groupI
     )
 }
 
-
-export const ChatGroupModal: React.FC<ChatGroupModalProps> = ({ isOpen, onClose, group }) => {
+export const ChatGroupModal: React.FC<ChatGroupModalProps> = ({ isOpen, onClose, group, updateOneGroup }) => {
     const [isAdmin, setIsAdmin] = useState(false);
     const { address } = useContext(Web3AuthContext);
-    const [addWalletActive, setAddWalletActive] = useState(false)
+    const [addWalletActive, setAddWalletActive] = useState(false);
+    const [isHanding, setIsHandling] = useState(false);
+    const { chatUser } = useStore();
 
     useEffect(() => {
         if (group?.members && group?.members.length > 0) {
             const member: any = group.members.find((member: IMember) => extractAddress(member.wallet) == address)
             console.log('member = ', member)
-            // setIsAdmin(member.isAdmin)
+            if (member) {
+                setIsAdmin(member.isAdmin)
+            } else {
+                setIsAdmin(false)
+            }
         }
     }, [group])
 
@@ -161,12 +167,41 @@ export const ChatGroupModal: React.FC<ChatGroupModalProps> = ({ isOpen, onClose,
         setAddWalletActive(true)
     }
 
-    const handleMakeAdmin = (address: string) => {
+    const handleMakeAdmin = async (address: string) => {
+        setIsHandling(true)
         console.log('make admin = ', address)
+        try {
+            const makeAdmins = await chatUser.chat.group.modify(group?.groupId, {
+                role: 'ADMIN', // Specify the new role here: "ADMIN" or "MEMBER"
+                accounts: [extractAddress(address)], // Array of wallet addresses for the members whose roles are being changed
+            })
+
+            console.log('make Admins = ', makeAdmins)
+        } catch (err) {
+            console.log('make member admin err: err')
+        }
+        setIsHandling(false)
     }
 
-    const handleRemoveMember = (address: string) => {
+    const handleRemoveMember = async (address: string) => {
         console.log('remove member = ', address)
+        setIsHandling(true)
+        try {
+            const removed = await chatUser.chat.group.remove(group?.groupId, {
+                accounts: [extractAddress(address)],
+            });
+            console.log('removed = ', removed)
+
+            const newGroup: IGroup = {
+                ...group,
+                members: group?.members ? group?.members.filter(member => member.wallet != address) : []
+            } as IGroup
+
+            updateOneGroup(newGroup)
+        } catch (err) {
+            console.log('remove member err: ', err)
+        }
+        setIsHandling(false)
     }
 
     if (!isOpen) return null;
@@ -218,11 +253,14 @@ export const ChatGroupModal: React.FC<ChatGroupModalProps> = ({ isOpen, onClose,
                         </Button>
                     </div>}
 
-                    {/* {
-                        <div className='w-full mt-4 overflow-y-auto ai-chat-scrollbar max-h-[480px]'>
-                        </div>
-                    } */}
                     <div className='w-full mt-4 overflow-y-auto ai-chat-scrollbar max-h-[480px]'>
+                        {group.pendingMembers.length > 0 && <>
+                            <p className='text-white/80'>Pending Members</p>
+                        </>}
+                    </div>
+
+                    <div className='w-full mt-4 overflow-y-auto ai-chat-scrollbar max-h-[480px]'>
+                        <p className='text-white/80'>Members</p>
                         {
                             group.members.length > 0 && group.members.map(member => <div key={member.wallet} className='border-b border-white/20 p-2 flex items-center gap-4 justify-between'>
                                 <div className='flex items-center gap-4'>
@@ -231,14 +269,14 @@ export const ChatGroupModal: React.FC<ChatGroupModalProps> = ({ isOpen, onClose,
                                 </div>
                                 {
                                     member.isAdmin ? <Badge colorScheme='red' className='p-2'>Admin</Badge> :
-                                        isAdmin ? <div>
+                                        isAdmin ? !isHanding ? <div>
                                             <Button colorScheme='blue' variant='ghost' size={'xs'} onClick={() => handleMakeAdmin(member.wallet)}>
                                                 Make Admin
                                             </Button>
                                             <Button colorScheme='red' variant='ghost' size={'xs'} onClick={() => handleRemoveMember(member.wallet)}>
                                                 Remove
                                             </Button>
-                                        </div>
+                                        </div> : <Spinner />
                                             : <span></span>
                                 }
                             </div>)
