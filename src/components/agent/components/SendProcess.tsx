@@ -6,7 +6,6 @@ import { TokenType, Step } from '../../../types/brian.type';
 import { convertCryptoAmount } from '../../../utils/brian';
 import { shrinkAddress } from '../../../utils/common.util';
 import { mapChainId2ViemChain } from '../../../config/networks';
-import { useWalletClient, usePublicClient } from "wagmi";
 import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
 
 interface SendProcessProps {
@@ -24,17 +23,12 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
   const [failedTransaction, setFailedTransaction] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
-  const { data: walletClient } = useWalletClient();
   const [scan, setScan] = useState<string>('https://etherscan.io/');
-  const publicClient = usePublicClient();
   const { mutate: sendTransactionMutate } = useBrianTransactionMutation();
 
   const handleTransaction = async (data: any) => {
     try {
-      if (!walletClient) {
-        console.error("Wallet client not found");
-        return;
-      }
+      
       if (steps.length === 0) {
         console.error("No transaction details available");
         return;
@@ -218,7 +212,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
       </div>
       <h3 className="text-xl font-medium mb-2">Failed Transaction</h3>
       <p className="text-white/60 mb-2">
-        Failed {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
+        Send {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
       </p>
       <button
         onClick={onClose}
