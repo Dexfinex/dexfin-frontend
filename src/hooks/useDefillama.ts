@@ -32,15 +32,15 @@ export const useGetDefillamaProtocols = () => {
     };
 };
 
-export const useGetDefillamaPools = () => {
+export const useGetDefillamaPools = ({ chainName }: { chainName: string }) => {
     const fetchDefillamaPools = useCallback(async () => {
-        const data = await defillamaService.getPools();
+        const data = await defillamaService.getPools({ chain: chainName });
 
         return data;
-    }, []);
+    }, [chainName]);
 
     const { isLoading, refetch, data, error } = useQuery<DefillamaPool[]>({
-        queryKey: ["get-defillama-pools"],
+        queryKey: [`get-defillama-pools-${chainName}`],
         queryFn: fetchDefillamaPools,
     });
 
