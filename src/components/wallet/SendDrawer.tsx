@@ -447,8 +447,13 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
                   </div>
                 </div>
               </div>
-              <div className="text-sm text-white/60">
-                Network Fee: {isGasEstimationLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton> : `$${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}
+              <div className='w-full flex justify-end items-end'>
+                <div className="text-sm text-white/60">
+                  Network Fee: {
+                    isGasEstimationLoading ?
+                      <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                      : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                </div>
               </div>
             </div>
           ) : null}
@@ -462,7 +467,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
               >
                 {
                   isConfirming ?
-                    <div><Spinner size="md" className='mr-2' /> Loading...</div>
+                    <div><Spinner size="md" className='mr-2' /> Confirming...</div>
                     : <div>Send {selectedAsset.symbol}</div>
                 }
 
