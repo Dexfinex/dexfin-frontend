@@ -20,8 +20,6 @@ export const mapRpcUrls: Record<number, string> = {
     [avalanche.id]: 'https://avalanche-mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',
 }
 
-export const COINGECKO_API_KEY = import.meta.env.VITE_COINGECKO_API_KEY as string || 'CG-XQa2AKt6eiVgLFnK8Ch7xJV2';
-
 export const COINGECKO_BASE_URL ="https://dexfinv3-backend-production.up.railway.app/coingecko"
 
 export const DEFILLAMA_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/defillama";

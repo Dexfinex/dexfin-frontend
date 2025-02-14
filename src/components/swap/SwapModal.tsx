@@ -1,6 +1,6 @@
-import  {useState} from 'react';
+import {useState} from 'react';
 import {Box, Flex, HStack, IconButton, Modal, ModalContent, ModalOverlay, Text,} from '@chakra-ui/react';
-import {Maximize2, Settings2, X} from 'lucide-react';
+import {Maximize2, X} from 'lucide-react';
 import {SellBox} from "./components/SellBox";
 import {BuyBox} from "./components/BuyBox";
 import {SwapBox} from "./components/SwapBox";
@@ -121,14 +121,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                             <Flex justify="space-between" align="center" mb={6}>
                                 <Text fontSize="xl" fontWeight="bold">Swap</Text>
                                 <HStack spacing={2}>
-                                    <IconButton
-                                        aria-label="Settings"
-                                        icon={<Settings2 size={16}/>}
-                                        variant="ghost"
-                                        size="sm"
-                                        color="white"
-                                        _hover={{bg: 'whiteAlpha.200'}}
-                                    />
+                                    <SlippageSettings value={slippage} onChange={setSlippage}/>
                                     <IconButton
                                         aria-label="Maximize"
                                         icon={<Maximize2 size={16}/>}
@@ -186,9 +179,6 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                         >
                                             Swap
                                         </button>
-                                        <div className="flex items-center justify-end w-full">
-                                            <SlippageSettings value={slippage} onChange={setSlippage}/>
-                                        </div>
                                     </div>
                                 </div>
 
