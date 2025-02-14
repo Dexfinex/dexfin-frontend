@@ -32,6 +32,7 @@ interface SendDrawerProps {
     symbol: string;
     amount: number;
     logo: string;
+    chain: number;
   }[];
 }
 
@@ -52,7 +53,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
   const [showSelectedEnsInfo, setShowSelectedEnsInfo] = useState(false);
 
   const { mutate: sendTransactionMutate } = useSendTransactionMutation();
-  const { signer, isConnected, login } = useContext(Web3AuthContext);
+  const { signer, isConnected, login, switchChain } = useContext(Web3AuthContext);
 
   const { chainId } = useContext(Web3AuthContext);
 
@@ -129,7 +130,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
   const { isLoading: ensAvatarLoading, data: ensAvatar } = ensAvatarDataResponse
 
   const submitDisabled = useMemo(() => {
-    return !amount || !!errors.amount || isConfirming || !(ethers.utils.isAddress(address) || showSelectedEnsInfo)
+    return !amount || isConfirming || !(ethers.utils.isAddress(address) || showSelectedEnsInfo)
   }, [amount, address, isConfirming, showSelectedEnsInfo])
 
   const showPreview = useMemo(() => {
@@ -166,8 +167,13 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
     }
   }, [tokenChainId, nativeTokenAddress, nativeTokenPrice])
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     setIsConfirming(true);
+    if (Number(chainId) !== Number(selectedAsset.chain)) {
+      await switchChain(Number(selectedAsset.chain)).catch(() => {
+        return setIsConfirming(false)
+      });
+    }
     const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
     sendTransactionMutate(
       {
@@ -181,11 +187,10 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
       {
         onSuccess: (receipt) => {
           setIsConfirming(false);
-          setHash(receipt.blockHash)
+          setHash(receipt.transactionHash)
           setTxModalOpen(true)
           setValue("amount", "")
-          setValue("address", "")
-          // onClose();
+          setAddress("")
           console.log('success', receipt);
         },
         onError: (error: TransactionError) => {
@@ -211,7 +216,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
         className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${walletContainerWidth}`}
       >
         {
-          hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[chainId!]}/tx/${hash}`} />
+          hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[Number(selectedAsset.chain)]}/tx/${hash}`} />
         }
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -238,11 +243,11 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
                 onClick={() => setShowAssetSelector(!showAssetSelector)}
                 className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
               >
-                <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
+                <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(selectedAsset.chain)} />
                 <div className="flex-1 text-left">
                   <div className="font-medium">
                     {selectedAsset.name}
-                    {!compareWalletAddresses(selectedAsset.address, nativeTokenAddress) && <span className='ml-1 text-sm font-light'>({cropString(selectedAsset.address || "", 4)})</span>}
+                    {!compareWalletAddresses(selectedAsset.address, mapChainId2NativeAddress[Number(selectedAsset.chain)]) && <span className='ml-1 text-sm font-light'>({cropString(selectedAsset.address || "", 4)})</span>}
                   </div>
                   <div className="text-sm text-white/60">
                     Balance: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
@@ -274,19 +279,22 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
                     <div className="max-h-48 overflow-y-auto">
                       {filteredAssets.map((asset) => (
                         <button
-                          key={asset.name}
+                          key={asset.name + asset.chain}
                           type="button"
-                          onClick={() => {
+                          onClick={async () => {
                             setSelectedAsset(asset)
                             setShowAssetSelector(false);
+                            if (Number(chainId) !== Number(asset.chain)) {
+                              await switchChain(Number(asset.chain));
+                            }
                           }}
                           className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
                         >
-                          <TokenChainIcon src={asset.logo} alt={asset.name} size={"md"} chainId={Number(chainId)} />
+                          <TokenChainIcon src={asset.logo} alt={asset.name} size={"md"} chainId={Number(asset.chain)} />
                           <div className="flex-1 text-left">
                             <div className="font-medium">
                               {asset.name}
-                              {!compareWalletAddresses(asset.address, nativeTokenAddress) && <span className='ml-1 text-sm font-light'>({cropString(asset.address, 4)})</span>}
+                              {!compareWalletAddresses(asset.address, mapChainId2NativeAddress[Number(asset.chain)]) && <span className='ml-1 text-sm font-light'>({cropString(asset.address, 10)})</span>}
                             </div>
                             <div className="text-sm text-white/60">
                               {`${formatNumberByFrac(asset.amount)} ${asset.symbol}`}
@@ -411,7 +419,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
             <div className="p-4 bg-white/5 rounded-lg">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
+                  <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(selectedAsset.chain)} />
                   <div className='ml-3'>
                     <div className="text-sm text-white/60">You send</div>
                     <div className="font-medium">
@@ -449,7 +457,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
             isConnected ?
               <button
                 type={`${isConfirming ? "button" : "submit"}`}
-                disabled={submitDisabled}
+                disabled={submitDisabled || !!errors.amount}
                 className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium flex align-center justify-center"
               >
                 {
