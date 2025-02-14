@@ -4,7 +4,7 @@ import { X, Maximize2, Minimize2, ArrowDown, CreditCard, Send, Wallet, TrendingU
 import { SendDrawer } from './wallet/SendDrawer';
 import { ReceiveDrawer } from './wallet/ReceiveDrawer';
 import { BuyDrawer } from './wallet/BuyDrawer';
-import { mockDeFiPositions, mockDeFiStats, formatTransactionAmount, formatUsdValue, formatApy, getHealthFactorColor, } from '../lib/wallet';
+import { mockDeFiPositions, mockDeFiStats, formatUsdValue, formatApy, getHealthFactorColor, } from '../lib/wallet';
 import { formatNumberByFrac } from '../utils/common.util.ts';
 import { TransactionType } from '../types/wallet';
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
@@ -173,7 +173,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
               <div className="flex items-center gap-3">
                 <div>
                   <div className="text-sm">
-                    {formatTransactionAmount(tx.transferAmount, tx.tokenSymbol || '')}
+                    {tx.transactionType === TransactionType.Received ? "+" : "-"} {formatNumberByFrac(tx.transferAmount)} {tx.tokenSymbol || ''}
                   </div>
                 </div>
               </div>
