@@ -17,6 +17,7 @@ interface TokenBalanceStoreState {
   tokenBalances: TokenBalance[];
   totalUsdValue: number;
   chainUsdValue: Record<number, number>;
+  getTokenBalance: (address: string, chainId: number) => TokenBalance | null;
   setTokenBalances: (balances: TokenBalance[]) => void
 }
 
@@ -28,16 +29,16 @@ const useTokenBalanceStore = create<TokenBalanceStoreState>((set) => ({
   getTokenBalance: (address: string, chainId: number) => {
     const state = useTokenBalanceStore.getState() as TokenBalanceStoreState;
     const value = state.tokenBalances.find(
-      (token) => token.address === address && token.chain === chainId
+      (token) => token.address === address && Number(token.chain) === Number(chainId)
     );
-    return value || {};
+    return value || null;
   },
   getChainUsdBalance: (chainId: number): number => {
     const state = useTokenBalanceStore.getState() as TokenBalanceStoreState;
     return state.chainUsdValue[chainId] || 0;
   },
   setTokenBalances: (balances: TokenBalance[]) => {
-    const sortedBalances =  balances.sort((a, b) => a.usdValue >= b.usdValue ? -1 : 1)
+    const sortedBalances = balances.sort((a, b) => a.usdValue >= b.usdValue ? -1 : 1)
     const totalUsdValue = balances.reduce(
       (acc, b) => acc + Number(b.usdValue) || 0,
       0

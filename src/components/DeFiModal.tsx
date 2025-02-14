@@ -1,10 +1,15 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X } from 'lucide-react';
+import { ethers } from "ethers";
 
 import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useDefi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import useDefiStore, { Position } from '../store/useDefiStore';
 import { formatNumberByFrac } from '../utils/common.util';
+import useTokenBalanceStore from '../store/useTokenBalanceStore';
+import { TokenChainIcon } from './swap/components/TokenIcon';
+import { useSendDepositMutation } from '../hooks/useDeposit';
+import useGasEstimation from '../hooks/useGasEstimation';
 
 interface DeFiModalProps {
   isOpen: boolean;
@@ -156,9 +161,29 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'explore'>('overview');
   const [selectedPositionType, setSelectedPositionType] = useState<Position['type'] | 'ALL'>('ALL');
   const [modalState, setModalState] = useState<ModalState>({ type: null });
+  const [inputAmountToken1, setInputAmountToken1] = useState("");
+  // const [inputToken2, setInputToken2] = useState("");
 
-  const { chainId, address } = useContext(Web3AuthContext);
+  const { mutate: sendDepositMutate } = useSendDepositMutation();
+  const { data: gasData } = useGasEstimation()
+
+  const { chainId, address, provider, signer } = useContext(Web3AuthContext);
   const { positions, protocol, netAPY, healthFactor, protocolTypes } = useDefiStore();
+
+  const { getTokenBalance } = useTokenBalanceStore();
+
+  const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0].contract_address, Number(chainId)) : null;
+  const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1].contract_address, Number(chainId)) : null;
+
+  const isErrorInputAmountToken1 = useMemo(() => {
+    if (inputAmountToken1 === "") {
+      return false;
+    }
+    if (0 < Number(inputAmountToken1) && Number(inputAmountToken1) <= Number(tokenBalance1?.balance)) {
+      return false;
+    }
+    return true;
+  }, [inputAmountToken1, tokenBalance1])
 
   useDefiPositionByWallet({ chainId: chainId, walletAddress: address })
   useDefiProtocolsByWallet({ chainId, walletAddress: address })
@@ -210,6 +235,76 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     setModalState({ type, position });
   };
 
+  const depositHandler = async () => {
+    const amountValue = ethers.utils.parseUnits(
+      Number(inputAmountToken1).toFixed(8).replace(/\.?0+$/, ""),
+      5
+    );
+
+    if (signer) {
+
+      const _tx = {
+        data: "0xa9059cbb00000000000000000000000055d398326f99059ff775485246999027b31979550000000000000000000000000000000000000000000000000de0b6b3a7640000",
+        gasLimit: 210000n,
+        gasPrice: 2500000000n,
+        to: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+        value: 0n
+      }
+
+      const _txData = {
+        "createdAt": 46643157,
+        "tx": {
+          "data": "0x083001ba0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000200000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000186a00000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d00000000000000000000000000000000000000000000000000000000000186a00000000000000000000000000000000000000000000000000000000000000006095ea7b3010001ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010001ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580de8e33700c1000000000000ff4752ba5dbc23f44d87826276bf6fd6b1c372ad240203010104040506ffffffffffffffffffffffffffffffffffffffffffffffff095ea7b3010007ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010007ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000240000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000200000000000000000000000004752ba5dbc23f44d87826276bf6fd6b1c372ad24000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000186a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000000200000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000184ac00000000000000000000000000000000000000000000000000000000000000200000000000000000000000007d585b0e27bbb3d981b7757115ec11f47c47699400000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000067aee01b00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000",
+          "to": "0x80EbA3855878739F4710233A8a19d89Bdd2ffB8E",
+          "from": "0x22c7Fa62e46196cFE1Ee15D686e541f605A87Bd6",
+          "value": "0",
+        },
+        "gas": "263273", "bundle": [{ "action": "approve", "protocol": "erc20", "args": { "token": "0x55d398326f99059ff775485246999027b3197955", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "approve", "protocol": "erc20", "args": { "token": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "deposit", "protocol": "uniswap-v2", "args": { "tokenIn": ["0x55d398326f99059ff775485246999027b3197955", "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d"], "tokenOut": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2", "amountIn": ["100000", "100000"], "primaryAddress": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24" } }]
+      }
+
+      await signer.sendTransaction(_txData.tx).catch((e) => {
+        console.error(e)
+      })
+    }
+    return
+
+    sendDepositMutate({
+      chainId: Number(chainId),
+      fromAddress: address,
+      routingStrategy: "delegate",
+      action: "deposit",
+      protocol: "uniswap-v2",
+      tokenIn: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
+      tokenOut: modalState?.position?.address || "",
+      amountIn: [Number(amountValue), Number(amountValue)],
+      primaryAddress: "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"
+    }, {
+      onSuccess: async (txData) => {
+        console.log("#########################", txData)
+
+
+        if (signer) {
+
+          const _tx = {
+            data: "0xa9059cbb00000000000000000000000055d398326f99059ff775485246999027b31979550000000000000000000000000000000000000000000000000de0b6b3a7640000",
+            gasLimit: 210000n,
+            gasPrice: 2500000000n,
+            to: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+            value: 0n
+          }
+
+          const _txData = { "createdAt": 46643157, "tx": { "data": "0x083001ba000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000000200000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000186a00000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d00000000000000000000000000000000000000000000000000000000000186a00000000000000000000000000000000000000000000000000000000000000008095ea7b3010001ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010001ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580d095ea7b3010001ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010001ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580de8e33700c1000000000000ff4752ba5dbc23f44d87826276bf6fd6b1c372ad240203010104040506ffffffffffffffffffffffffffffffffffffffffffffffff095ea7b3010007ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010007ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000240000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000200000000000000000000000004752ba5dbc23f44d87826276bf6fd6b1c372ad24000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000186a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000000200000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000184ac00000000000000000000000000000000000000000000000000000000000000200000000000000000000000007d585b0e27bbb3d981b7757115ec11f47c47699400000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000067aed7fd00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000", "to": "0x80EbA3855878739F4710233A8a19d89Bdd2ffB8E", "from": "0x22c7Fa62e46196cFE1Ee15D686e541f605A87Bd6", "value": "0" }, "gas": "263273", "bundle": [{ "action": "approve", "protocol": "erc20", "args": { "token": "0x55d398326f99059ff775485246999027b3197955", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "approve", "protocol": "erc20", "args": { "token": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "deposit", "protocol": "uniswap-v2", "args": { "tokenIn": ["0x55d398326f99059ff775485246999027b3197955", "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d"], "tokenOut": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2", "amountIn": ["100000", "100000"], "primaryAddress": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24" } }] }
+
+          console.log("########################", txData)
+          await signer.sendTransaction(_txData.tx)
+        }
+      },
+      onError: async () => {
+
+      }
+    })
+  }
+
   const renderPositions = () => (
     <div className="space-y-3">
       {positions
@@ -234,8 +329,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     </span>
                     <span className="text-white/40">•</span>
                     <span className="text-sm text-white/60">
-                      {position.tokens}
-                      {position.pairToken && `/${position.pairToken}`}
+                      {`${position.tokens[0].symbol}/${position.tokens[1].symbol} ${position.tokens[2].symbol}`}
                     </span>
                   </div>
 
@@ -289,7 +383,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                             <div className="text-blue-400">+{(position.rewards || "0")}% APR</div>
                           </div>
                         )}
-                        {position.healthFactor && (
+                        {!!position.healthFactor && (
                           <div>
                             <span className="text-sm text-white/60">Health Factor</span>
                             <div className="text-green-400">{position.healthFactor}</div>
@@ -475,17 +569,17 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 <button
-                  onClick={() => handleAction(
-                    offering.type === 'BORROWING' ? 'borrow' : 'deposit',
-                    {
-                      protocol: offering.protocol,
-                      type: offering.type,
-                      amount: 0,
-                      tokens: offering.token,
-                      apy: offering.apy,
-                      logo: offering.logo
-                    }
-                  )}
+                  // onClick={() => handleAction(
+                  //   offering.type === 'BORROWING' ? 'borrow' : 'deposit',
+                  //   {
+                  //     protocol: offering.protocol,
+                  //     type: offering.type,
+                  //     amount: 0,
+                  //     tokens: offering.tokens,
+                  //     apy: offering.apy,
+                  //     logo: offering.logo
+                  //   }
+                  // )}
                   className="px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg"
                 >
                   Get Started
@@ -511,6 +605,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
+              <button onClick={depositHandler}>test</button>
               <button
                 onClick={() => setSelectedTab('overview')}
                 className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'overview'
@@ -749,8 +844,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 <div>
                   <div className="font-medium">{modalState.position.protocol}</div>
                   <div className="text-sm text-white/60">
-                    {modalState.position.tokens}
-                    {modalState.position.pairToken && `/${modalState.position.pairToken}`}
+                    {`${modalState.position.tokens[0].symbol}/${modalState.position.tokens[1].symbol} ${modalState.position.tokens[2].symbol}`}
                   </div>
                 </div>
                 <div className="ml-auto text-right">
@@ -758,7 +852,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     ? 'text-red-400'
                     : 'text-emerald-400'
                     }`}>
-                    {modalState.position.apy}% APY
+                    {modalState.position.apy || 0}% APY
                   </div>
                   {modalState.position.rewards && (
                     <div className="text-sm text-blue-400">
@@ -769,12 +863,24 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               </div>
 
               <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-sm text-white/60 mb-2">Amount</div>
-                <input
-                  type="text"
-                  className="w-full bg-transparent text-2xl outline-none"
-                  placeholder="0.00"
-                />
+                <div className="text-sm text-white/60 mb-2">
+                  Amount
+                </div>
+                <div className='relative flex'>
+                  <input
+                    value={inputAmountToken1}
+                    onChange={(e) => setInputAmountToken1(e.target.value)}
+                    type="text"
+                    className={`w-full bg-transparent text-2xl outline-none ${isErrorInputAmountToken1 ? "text-red-500" : ""}`}
+                    placeholder="0.00"
+                  />
+                  <div className='flex items-center fixed right-12'>
+                    <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                    <span className='ml-2'>
+                      {tokenBalance1?.symbol || ""}
+                    </span>
+                  </div>
+                </div>
                 <div className="flex items-center justify-between mt-2 text-sm">
                   <span className="text-white/60">
                     {modalState.type === 'borrow'
@@ -782,7 +888,40 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       } ${modalState.position.tokens}`
                       : modalState.type === 'repay'
                         ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
-                        : `Balance: ${modalState.position.amount} ${modalState.position.tokens}`
+                        : `Balance: ${formatNumberByFrac(tokenBalance1?.balance)}`
+                    }
+                  </span>
+                  <button className="text-blue-400">MAX</button>
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-xl p-4">
+                <div className="text-sm text-white/60 mb-2">
+                  Amount
+                </div>
+                <div className='relative flex'>
+                  <input
+                    value={inputAmountToken1}
+                    onChange={(e) => setInputAmountToken1(e.target.value)}
+                    type="text"
+                    className={`w-full bg-transparent text-2xl outline-none ${isErrorInputAmountToken1 ? "text-red-500" : ""}`}
+                    placeholder="0.00"
+                  />
+                  <div className='flex items-center fixed right-12'>
+                    <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                    <span className='ml-2'>
+                      {tokenBalance2?.symbol || ""}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-2 text-sm">
+                  <span className="text-white/60">
+                    {modalState.type === 'borrow'
+                      ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
+                      } ${modalState.position.tokens}`
+                      : modalState.type === 'repay'
+                        ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
+                        : `Balance: ${formatNumberByFrac(tokenBalance2?.balance)}`
                     }
                   </span>
                   <button className="text-blue-400">MAX</button>
@@ -810,7 +949,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
               )}
 
-              <button className="w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium">
+              <button className="w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium" onClick={depositHandler}>
                 {modalState.type === 'deposit' ? 'Deposit' :
                   modalState.type === 'withdraw' ? 'Withdraw' :
                     modalState.type === 'borrow' ? 'Borrow' : 'Repay'}

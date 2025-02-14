@@ -34,6 +34,8 @@ export const BRIAN_BASE_URL = "https://dexfinv3-backend-production.up.railway.ap
 
 export const CRYPTONEWS_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/crypto-news';
 
+export const ENSO_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/enso';
+
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 
 export const ZEROX_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/0x';
