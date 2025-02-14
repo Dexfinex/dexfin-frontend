@@ -16,7 +16,7 @@ import { TrendingCoins } from '../TrendingCoins.tsx';
 import { NewsWidget } from '../widgets/NewsWidget.tsx';
 import { YieldProcess } from '../YieldProcess.tsx';
 import { SwapProcess } from './components/SwapProcess.tsx';
-import { BridgeProcess } from '../BridgeProcess.tsx';
+import { BridgeProcess } from './components/BridgeProcess.tsx';
 import { PortfolioProcess } from '../PortfolioProcess.tsx';
 import { SendProcess } from './components/SendProcess.tsx';
 import { StakeProcess } from '../StakeProcess.tsx';
@@ -56,6 +56,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [
     fromAmount, setFromAmount] = useState('0');
   const [receiver, setReceiver] = useState('');
+  const [solver, setSolver] = useState('');
   const [steps, setSteps] = useState<Step[]>([]);
 
   // Reset all process states
@@ -275,7 +276,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
 
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
-            if(data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
+            if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
             if (token && token.balance > amount) {
               setFromToken(data.fromToken);
               setToToken(data.toToken);
@@ -291,12 +292,10 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             const data = response.brianData.data;
             resetProcessStates();
             await switchChain(data.fromToken.chainId);
-
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
-            if(data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
+            if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
 
-            
             if (token && token.balance > amount) {
               setFromToken(data.fromToken);
               setProtocol(data.protocol);
@@ -305,6 +304,27 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
               setReceiver(data.receiver);
               setSteps(data.steps);
               setShowSwapProcess(true);
+            }
+            else {
+              response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
+            }
+          } else if (response.brianData.action == 'bridge') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+            const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
+            let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+            if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
+
+            if (token && token.balance > amount) {
+              setFromToken(data.fromToken);
+              setProtocol(data.protocol);
+              setToToken(data.toToken);
+              setFromAmount(data.fromAmount);
+              setReceiver(data.receiver);
+              setSteps(data.steps);
+              setShowBridgeProcess(true);
+              setSolver(response.brianData.solver);
             }
             else {
               response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
@@ -443,24 +463,25 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setShowYieldProcess(false);
             setMessages([]);
           }} />
-        ) : showSwapProcess && fromToken && toToken && protocol ? (
-          <SwapProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol = {protocol}
+        ) : showSwapProcess && fromToken && toToken ? (
+          <SwapProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
             onClose={() => {
               setShowSwapProcess(false);
               setMessages([]);
             }} />
-        ) : showBridgeProcess ? (
-          <BridgeProcess onClose={() => {
-            setShowBridgeProcess(false);
-            setMessages([]);
-          }} />
+        ) : showBridgeProcess && fromToken && toToken ? (
+          <BridgeProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol} solver={solver}
+            onClose={() => {
+              setShowBridgeProcess(false);
+              setMessages([]);
+            }} />
         ) : showPortfolioProcess ? (
           <PortfolioProcess onClose={() => {
             setShowPortfolioProcess(false);
             setMessages([]);
           }} />
-        ) : showSendProcess && fromToken && toToken  ? (
-          <SendProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} 
+        ) : showSendProcess && fromToken && toToken ? (
+          <SendProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken}
             onClose={() => {
               setShowSendProcess(false);
               setMessages([]);

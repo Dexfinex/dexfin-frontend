@@ -51,6 +51,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           },
         },
       );
+      
 
     } catch (error) {
       console.error("Error executing transactions:", error);
