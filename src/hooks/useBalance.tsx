@@ -152,7 +152,7 @@ export const useEvmWalletBalance = (params?: IEvmWallet) => {
 		if (!activeChainId || !activeWalletAddress) {
 			return []
 		}
-		const data = await dexfinv3Service.getEvmWalletBalance({ chainId: Number(activeChainId), address: activeWalletAddress });
+		const data = await dexfinv3Service.getEvmWalletBalanceAll({ address: activeWalletAddress });
 		if (data) {
 			return data;
 		}

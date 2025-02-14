@@ -30,6 +30,19 @@ export const dexfinv3Service = {
     return [];
   },
 
+  getEvmWalletBalanceAll: async ({ address }: { address: string }): Promise<EvmWalletBalanceResponseType[]> => {
+    try {
+      const { data } = await dexfinv3Api.get<EvmWalletBalanceResponseType[]>(
+        `/evm/wallet/${address}/balances`
+      );
+      return data;
+    } catch (error) {
+      console.log("Failed to fetch evm wallet balance:", error);
+    }
+
+    return [];
+  },
+
   getEvmWalletTransfer: async ({
     chainId,
     address,
