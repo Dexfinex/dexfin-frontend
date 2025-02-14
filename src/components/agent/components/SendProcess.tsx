@@ -97,8 +97,8 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
 
       <div className="flex-1 bg-white/5 rounded-xl p-6">
         <div className="space-y-6">
-          <div className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white/5 rounded-lg">
+            <div className="flex items-center gap-3 mb-4 md:mb-0">
               <img
                 src={fromToken.logoURI}
                 alt="USDC"
@@ -109,7 +109,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
                 <div className="text-xl font-medium">{fromToken ? convertCryptoAmount(fromAmount, fromToken.decimals) : ''} {fromToken?.symbol}</div>
               </div>
             </div>
-            <ArrowRight className="w-6 h-6 text-white/40" />
+            <ArrowRight className="w-6 h-6 text-white/40 hidden md:block" />
             <div className="flex items-center gap-3">
               <img
                 src="https://api.dicebear.com/7.x/avataaars/svg?seed=vitalik"

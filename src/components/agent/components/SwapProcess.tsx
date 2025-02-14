@@ -151,7 +151,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, receiver, fromA
 
       <div className="flex-1 bg-white/5 rounded-xl p-6">
         <div className="space-y-6">
-          <div className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
+          <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
               <img
                 src={fromToken.logoURI}
