@@ -498,7 +498,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 chain: 'mainnet',
             };
 
-            const transactionSignature = await signTransactionWithEncryptedKey({
+            return await signTransactionWithEncryptedKey({
                 pkpSessionSigs: sessionSigs!,
                 network: 'solana',
                 id: solanaWalletInfo.wrappedKeyId,
@@ -507,9 +507,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-expect-error
                 litNodeClient: litNodeClient as ILitNodeClient,
-            });
-
-            return transactionSignature
+            })
         }
 
         return null
@@ -581,7 +579,6 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
         handleGoogleLogin,
         handleDiscordLogin,
-
 
         isConnected,
         provider,

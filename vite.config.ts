@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill';
+import inject from '@rollup/plugin-inject'; // Ensures Buffer is injected in production
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -28,6 +29,11 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      plugins: [
+        inject({
+          Buffer: ['buffer', 'Buffer'], // Injects Buffer globally in production
+        }),
+      ],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {

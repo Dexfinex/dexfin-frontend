@@ -5,7 +5,6 @@ import UniswapV2FactoryABI from '@uniswap/v2-core/build/UniswapV2Factory.json';
 // @ts-ignore
 import axios from "axios";
 import {formatUnits} from "viem";
-// import assetPlatforms from "../global-props/asset-platforms.json"
 
 const assetPlatforms = [
     {
@@ -1549,13 +1548,7 @@ const assetsMap = {};
 const UNISWAP_V2_FACTORY_ADDRESS = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f';
 const providerURL = 'https://mainnet.infura.io/v3/34815cc4b79d43ddacef021408fc3065';
 
-interface Token {
-    address: string;
-}
 
-interface Chain {
-    value: string;
-}
 
 
 export const getCoinGeckoIdFrom = async (token, chain) => {
@@ -1743,32 +1736,7 @@ export function getPriceChangePercentage(ohlcArray) {
     return ((lastValue / secondValue - 1) * 100).toFixed(2);
 }
 
-/*
 
-export async function getPriceChangePercentage(pairAddress, type = '1H', time_from = 0, time_to = 0) {
-
-    const response = await axios.request({
-        method: 'GET',
-        url: `https://public-api.birdeye.so/defi/history_price?address=${pairAddress}&address_type=pair&type=${type}&time_from=${time_from}&time_to=${time_to}`,
-        headers: {
-            'X-API-KEY': '0f5c65eb198347038ad1b2d4da49092d',
-            'x-chain': 'ethereum'
-        }
-    });
-
-    let value = 0;
-
-    if (response.data) {
-        let items = response.data.data.items;
-        if (items.length > 1) {
-            value = (items[items.length - 1].value / items[items.length - 2].value - 1) * 100;
-            value = value.toFixed(2);
-        }
-    }
-
-    return value;
-}
-*/
 
 
 export const formatNumber = (num, fixedCount = 2) => {
@@ -1794,18 +1762,7 @@ export const formatNumber = (num, fixedCount = 2) => {
 }
 
 
-/*
-export const getChainById = (chainId) => {
-    if (!chainId) {
-        return null;
-    }
-    const chain = allChains?.find((chain) => chain.id === chainId);
-    // if (!chain) {
-    //   throw new Error('Chain not found or chainId is invalid.');
-    // }
-    return chain;
-}
-*/
+
 
 export const formatTokenAmount = (
     amount: bigint = 0n,
