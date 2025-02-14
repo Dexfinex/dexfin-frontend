@@ -158,7 +158,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ isOpen, onClose, assets,
       return getTokenPrice(nativeTokenAddress, tokenChainId)
     }
     return 0;
-  }, [getTokenPrice, nativeTokenAddress, tokenChainId, tokenPrices])
+  }, [getTokenPrice, nativeTokenAddress, tokenChainId])
 
   useEffect(() => {
     if (tokenChainId && nativeTokenAddress && nativeTokenPrice === 0) {

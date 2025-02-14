@@ -9,6 +9,7 @@ import {SlippageSettings} from "./SlippageSettings";
 import {Chart} from "./components/chart/Chart.tsx";
 import {ConfirmSwapModal} from "./modals/ConfirmSwapModal.tsx";
 import {NULL_ADDRESS} from "../../constants";
+import {SolanaSwapBox} from "./components/SolanaSwapBox.tsx";
 
 interface SwapModalProps {
     isOpen: boolean;
@@ -50,12 +51,12 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
         setToAmount(fromAmount);
     };
 
-/*
-    const handleSwap = () => {
-        if (!fromAmount || !toAmount) return;
-        setShowConfirmModal(true);
-    };
-*/
+    /*
+        const handleSwap = () => {
+            if (!fromAmount || !toAmount) return;
+            setShowConfirmModal(true);
+        };
+    */
 
     const handleConfirmSwap = () => {
         // TODO: Implement actual swap logic
@@ -199,18 +200,33 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                         onAmountChange={setFromAmount}
                                     />
                                 ) : (
-                                    <SwapBox
-                                        fromToken={fromToken}
-                                        toToken={toToken}
-                                        fromAmount={fromAmount}
-                                        toAmount={toAmount}
-                                        onFromTokenSelect={onFromTokenSelect}
-                                        onToTokenSelect={onToTokenSelect}
-                                        onFromAmountChange={setFromAmount}
-                                        onToAmountChange={setToAmount}
-                                        onSwitch={handleSwitch}
-                                        slippage={slippage}
-                                    />
+                                    fromToken?.chainId === 900 ? (
+                                        <SolanaSwapBox
+                                            fromToken={fromToken}
+                                            toToken={toToken}
+                                            fromAmount={fromAmount}
+                                            toAmount={toAmount}
+                                            onFromTokenSelect={onFromTokenSelect}
+                                            onToTokenSelect={onToTokenSelect}
+                                            onFromAmountChange={setFromAmount}
+                                            onToAmountChange={setToAmount}
+                                            onSwitch={handleSwitch}
+                                            slippage={slippage}
+                                        />
+                                    ) : (
+                                        <SwapBox
+                                            fromToken={fromToken}
+                                            toToken={toToken}
+                                            fromAmount={fromAmount}
+                                            toAmount={toAmount}
+                                            onFromTokenSelect={onFromTokenSelect}
+                                            onToTokenSelect={onToTokenSelect}
+                                            onFromAmountChange={setFromAmount}
+                                            onToAmountChange={setToAmount}
+                                            onSwitch={handleSwitch}
+                                            slippage={slippage}
+                                        />
+                                    )
                                 )}
                             </div>
 

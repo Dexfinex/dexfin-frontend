@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 import { coingeckoService } from '../../services/coingecko.service';
 import { cryptoNewsService } from '../../services/cryptonews.service.ts';
-import { brianService } from '../../services/brian.services';
+import { brianService } from '../../services/brian.service';
 import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/brian.tsx';
 import {
   Mic,
