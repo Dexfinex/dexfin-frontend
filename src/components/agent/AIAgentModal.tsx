@@ -267,8 +267,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         const normalizedCommand = command.trim();
 
         response = await generateResponse(normalizedCommand, address, chainId);
-        console.log(response);
-        if (response.type == "action") {
+
+        if (response.type == "action" && response.brianData.type == "write") {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
             resetProcessStates();
@@ -330,6 +330,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
               response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
             }
           }
+        } else if (response.type == "action" && response.brianData.type == 'knowledge') {
+          response = { text: convertBrianKnowledgeToPlainText(response.brianData.answer) };
         }
 
         if (response) {
@@ -527,7 +529,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                             <p className="whitespace-pre-wrap">{message.content}</p>
                             <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
                             {message.data && (
-                              <div className="w-[800px] mt-4">
+                              <div className="mt-4 w-full">
                                 <PriceChart data={message.data} />
                               </div>
                             )}
