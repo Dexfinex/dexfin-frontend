@@ -1,19 +1,22 @@
 import MarketInput from "../MarketInput/index";
-import { Box, Button, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
-import { useContext, useEffect, useMemo, useState } from "react";
+import {Box, Button} from "@chakra-ui/react";
+import {useContext, useEffect, useMemo, useState} from "react";
 import BenefitsSlider from "../BenefitsSlider/index.tsx";
-import { useSwapInfoHook } from "../../../../../hooks/UseSwapinfoHook.js";
-import { formatNumberByFrac, getExchangeIconUrlFrom, getRealExchangeDescription, toFixedFloat } from "../../../../../utils/trade.util";
-import { Web3AuthContext } from "../../../../../providers/Web3AuthContext.js";
+import {useSwapInfoHook} from "../../../../../hooks/UseSwapinfoHook.js";
+import {
+    formatNumberByFrac,
+    getExchangeIconUrlFrom,
+    getRealExchangeDescription,
+    toFixedFloat
+} from "../../../../../utils/trade.util";
+import {Web3AuthContext} from "../../../../../providers/Web3AuthContext.js";
 // import {Orion} from "@orionprotocol/sdk";
-import BigNumber from "bignumber.js";
 // import { BrowserProvider, Wallet } from "ethers-v6";
-import { DepositWithdrawModal } from "../Modals/DepositAndWithdrawModal";
-import { ChevronDownIcon } from "@chakra-ui/icons";
-import { getAssetIconUrlBySymbolName } from "../../../../../constants/mock/tradepairs.ts";
-import { unit } from "../../../../TradingViewModal.tsx"
-import { ConfirmOrderModal, IToken } from "../Modals/ConfirmOrderModal";
-import { getTokenPriceByTokenAddress } from "../../../../../utils/Token.util.ts";
+import {DepositWithdrawModal} from "../Modals/DepositAndWithdrawModal";
+import {getAssetIconUrlBySymbolName} from "../../../../../constants/mock/tradepairs.ts";
+import {unit} from "../../../../TradingViewModal.tsx"
+import {ConfirmOrderModal, IToken} from "../Modals/ConfirmOrderModal";
+import {coingeckoService} from "../../../../../services/coingecko.service.ts";
 
 interface IPairConfig {
     pricePrecision: number;
@@ -152,7 +155,9 @@ const MarketAndLimitPanel = ({
 
         if (symbolAssetOut && chainServiceInfo?.assetToAddress[symbolAssetOut]) {
             (async () => {
-                const priceUSD = await getTokenPriceByTokenAddress(chainServiceInfo?.assetToAddress[symbolAssetOut], chainServiceInfo?.chainId);
+                const address = chainServiceInfo?.assetToAddress[symbolAssetOut]
+                const response = await coingeckoService.getTokenPrices(chainServiceInfo?.chainId, [address])
+                const priceUSD = response[address];
                 setPriceAssetOut(priceUSD);
             })();
         }
