@@ -27,6 +27,8 @@ import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 import { convertCryptoAmount } from '../../utils/brian.tsx';
+import { DepositProcess } from './components/DepositProcess.tsx';
+
 interface AIAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -47,6 +49,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [showStakeProcess, setShowStakeProcess] = useState(false);
   const [showProjectAnalysis, setShowProjectAnalysis] = useState(false);
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
+  const [showDepositProcess, setShowDepositProcess] = useState(false);
   const { address, chainId, switchChain } = useContext(Web3AuthContext);
   const { tokenBalances } = useTokenBalanceStore();
 
@@ -68,6 +71,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowSendProcess(false);
     setShowStakeProcess(false);
     setShowProjectAnalysis(false);
+    setShowDepositProcess(false);
   };
 
   const processCommandCase = async (command: string, address: string, chainId: number | undefined) => {
@@ -267,13 +271,13 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         const normalizedCommand = command.trim();
 
         response = await generateResponse(normalizedCommand, address, chainId);
-
+        console.log(response);
         if (response.type == "action" && response.brianData.type == "write") {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
             resetProcessStates();
             await switchChain(data.fromToken.chainId);
-
+            
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
             if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
@@ -325,6 +329,26 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
               setSteps(data.steps);
               setShowBridgeProcess(true);
               setSolver(response.brianData.solver);
+            }
+            else {
+              response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
+            }
+          } else if (response.brianData.action == 'deposit') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+            const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
+            let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+            if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
+
+            if (token && token.balance > amount) {
+              setFromToken(data.fromToken);
+              setProtocol(data.protocol);
+              setToToken(data.toToken);
+              setFromAmount(data.fromAmount);
+              setReceiver(data.receiver);
+              setSteps(data.steps);
+              setShowDepositProcess(true);
             }
             else {
               response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
@@ -501,6 +525,12 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             }}
             projectName={''}
           />
+        ) : showDepositProcess && fromToken && toToken ? (
+          <DepositProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowDepositProcess(false);
+              setMessages([]);
+            }} />
         ) : (
           <div className="flex flex-col h-full">
             {/* Header */}
