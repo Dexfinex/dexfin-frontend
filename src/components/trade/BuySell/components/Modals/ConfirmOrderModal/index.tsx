@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js";
 import {Button, Modal, ModalBody, ModalCloseButton, ModalContent, ModalOverlay, useToast} from '@chakra-ui/react';
 import {MdOutlineKeyboardArrowRight} from "react-icons/md";
 import "./style.scss"
-import {formatNumber} from "../../../../../../utils/Token.util";
+import {formatNumber} from "../../../../../../utils/token.util";
 import {useState} from "react";
 import {formatNumberByFrac, toFixedFloat} from "../../../../../../utils/trade.util";
 import {BrowserProvider} from "ethers-v6";
