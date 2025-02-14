@@ -1,13 +1,14 @@
 import React, { useContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { useInView } from "react-intersection-observer";
 import { useStore } from '../store/useStore';
 import { IGroup, IUser, IChat, ChatModeType, ChatType } from '../types/chat.type';
 import { MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'lucide-react';
 import { Spinner, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
 import { downloadBase64File, shrinkAddress, getChatHistoryDate, extractAddress } from '../utils/common.util';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
+import { LIMIT } from '../utils/chatApi';
 
 interface ChatMessagesProps {
-    setIsScrollTop: (isTop: boolean) => void;
     selectedGroup: IGroup | null;
     selectedUser: IUser | null;
     chatHistory: Array<IChat>;
@@ -18,41 +19,43 @@ interface ChatMessagesProps {
     isHandlingRequest: boolean;
     isJoiningGroup: boolean;
     loadingChatHistory: boolean;
-    loadingPrevChat: boolean;
     toBottom: boolean;
     setToBottom: (is: boolean) => void;
     setChatHistory: (history: IChat[]) => void;
 }
 
 export const ChatMessages: React.FC<ChatMessagesProps> = ({
-    setIsScrollTop, selectedGroup, selectedUser, chatHistory, chatMode, isHandlingRequest, isJoiningGroup, loadingChatHistory, loadingPrevChat, toBottom, setToBottom,
-    handleUserRequest, handleGroupRequest, handleJoinGroup, setChatHistory
+    selectedGroup, selectedUser, chatHistory, chatMode, isHandlingRequest, isJoiningGroup, loadingChatHistory,
+    handleUserRequest, handleGroupRequest, handleJoinGroup, setChatHistory, toBottom, setToBottom,
 }) => {
+    const { ref: topRef, inView: topInView } = useInView(); // Detect top scroll
+
     const { address } = useContext(Web3AuthContext);
     const chatScrollRef = useRef<HTMLDivElement>(null);
     const { chatUser } = useStore();
 
-    const handleScroll = useCallback(() => {
-        if (chatScrollRef.current) {
-            setIsScrollTop(chatScrollRef.current.scrollTop === 0);
-        }
-    }, []);
+    const [loadingPrevChat, setLoadingPrevChat] = useState(false);
+    const [firstLoadTop, setFirstLoadTop] = useState(true);
 
+    // Fetch older messages when user scrolls to the top
     useEffect(() => {
-        const scrollElement = chatScrollRef.current;
-        if (!scrollElement) return;
+        if (firstLoadTop) {
+            setFirstLoadTop(false);
+            return; // 🚀 Prevent fetching old messages on first render
+        }
 
-        scrollElement.addEventListener("scroll", handleScroll);
-
-        return () => {
-            scrollElement.removeEventListener("scroll", handleScroll);
-        };
-    }, [handleScroll]);
-
+        if (topInView) {
+            console.log('fetch old messages in topInView')
+            if (selectedUser && chatHistory.length > 0 && chatHistory[0].link) {
+                getPrevChatHistory(selectedUser.address, chatHistory[0].chatId)
+            } else if ((selectedGroup && chatHistory.length > 0 && chatHistory[0].link)) {
+                getPrevChatHistory(selectedGroup.groupId, chatHistory[0].chatId)
+            }
+        }
+    }, [topInView])
 
     const scrollBottom = useCallback(() => {
         if (chatScrollRef.current) {
-            // chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
             chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" })
         }
     }, [])
@@ -64,6 +67,57 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
             setToBottom(false)
         }
     }, [chatHistory, toBottom, scrollBottom])
+
+    const getPrevChatHistory = async (address: string, chatId: string) => {
+        setLoadingPrevChat(true)
+        const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
+        console.log('prev history = ', prevHistory)
+
+        if (prevHistory.length > 0) {
+            let chats: IChat[] = []
+            let reactions: any[] = []
+
+            // todo should add reactions more
+            prevHistory.forEach((data: any) => {
+                if (data.messageType == "Reaction") {
+                    reactions = [...reactions, data.messageObj]
+                } else {
+                    chats = [...chats, {
+                        timestamp: data.timestamp,
+                        type: data.messageType,
+                        content: data.messageContent,
+                        fromAddress: extractAddress(data.fromDID),
+                        toAddress: extractAddress(data.toDID),
+                        chatId: data.cid,
+                        link: data.link,
+                        image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
+                    } as IChat]
+                }
+            })
+
+            if (reactions.length > 0) {
+                chats = chats.map(chat => {
+                    const found = reactions.find(e => e.reference == chat.chatId)
+                    if (found) {
+                        return {
+                            ...chat,
+                            reaction: found.content
+                        }
+                    }
+                    return chat
+                })
+            }
+
+            chats.shift()
+
+            if (chats.length > 0) {
+                const updatedChat = [...chats.reverse(), ...chatHistory]
+                setChatHistory(updatedChat)
+            }
+        }
+
+        setLoadingPrevChat(false)
+    }
 
     const handleReaction = async (chatId: string, content: string) => {
         // console.log('reference: ', chatId)
@@ -322,6 +376,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
         if (chatHistory && chatHistory.length > 0) {
             return (
                 <div className="space-y-4">
+                    <div ref={topRef} className="loading"></div>
                     {
                         loadingPrevChat && <div className='w-full flex justify-center'>
                             <Spinner />

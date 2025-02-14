@@ -222,8 +222,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
   const [isFailedSent, setIsFailedSent] = useState(false);
-  const [isScrollTop, setIsScrollTop] = useState(false);
-  const [loadingPrevChat, setLoadingPrevChat] = useState(false);
   const [toBottom, setToBottom] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isHandlingRequest, setIsHandlingRequest] = useState(false);
@@ -314,7 +312,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       console.log('loading group & p2p err: ', err)
       toast({
         status: 'error',
-        description: `Something went wrong :(`,
+        description: `Something went wrong. :(`,
         duration: 3500
       })
     }
@@ -407,21 +405,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setIsEmojiOpen(false)
     setIsGifOpen(false)
   }, [chatMode])
-
-  useEffect(() => {
-    // console.log('isScrollTop')
-    if (isScrollTop) {
-      // console.log('selected user = ', selectedUser)
-      // console.log('selected group = ', selectedGroup)
-      // console.log('chat history = ', chatHistory)
-
-      if (selectedUser && chatHistory.length > 0 && chatHistory[0].link) {
-        getPrevChatHistory(selectedUser.address, chatHistory[0].chatId)
-      } else if ((selectedGroup && chatHistory.length > 0 && chatHistory[0].link)) {
-        getPrevChatHistory(selectedGroup.groupId, chatHistory[0].chatId)
-      }
-    }
-  }, [isScrollTop])
 
   useEffect(() => {
     if (!message) {
@@ -749,56 +732,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }
 
-  const getPrevChatHistory = async (address: string, chatId: string) => {
-    setLoadingPrevChat(true)
-    const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
-    console.log('prev history = ', prevHistory)
-
-    if (prevHistory.length > 0) {
-      let chats: IChat[] = []
-      let reactions: any[] = []
-
-      // todo should add reactions more
-      prevHistory.forEach((data: any) => {
-        if (data.messageType == "Reaction") {
-          reactions = [...reactions, data.messageObj]
-        } else {
-          chats = [...chats, {
-            timestamp: data.timestamp,
-            type: data.messageType,
-            content: data.messageContent,
-            fromAddress: extractAddress(data.fromDID),
-            toAddress: extractAddress(data.toDID),
-            chatId: data.cid,
-            link: data.link,
-            image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
-          } as IChat]
-        }
-      })
-
-      if (reactions.length > 0) {
-        chats = chats.map(chat => {
-          const found = reactions.find(e => e.reference == chat.chatId)
-          if (found) {
-            return {
-              ...chat,
-              reaction: found.content
-            }
-          }
-          return chat
-        })
-      }
-
-      chats.shift()
-
-      if (chats.length > 0) {
-        setChatHistory(prev => [...chats.reverse(), ...prev])
-      }
-    }
-
-    setLoadingPrevChat(false)
-  }
-
   const setLastMessage = (type: ChatType, content: string) => {
     if (type === "Text" || type === "Reaction") {
       return content
@@ -1060,6 +993,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       }
     } catch (err) {
       console.log('load chat history err: ', err)
+      toast({
+        status: 'error',
+        description: `Something went wrong. :(`,
+        duration: 3500
+      })
     }
 
     setLoadingChatHistory(false)
@@ -1161,21 +1099,30 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSelectedUser(user)
 
     console.log('request user = ', user)
-    const history = await chatUser.chat.history(user.address)
-    if (history.length > 0) {
-      const tmp: IChat[] = history.map((data: any) => {
-        return {
-          timestamp: data.timestamp,
-          type: data.messageType,
-          content: data.messageContent,
-          fromAddress: extractAddress(data.fromDID),
-          toAddress: extractAddress(data.toDID),
-          chatId: data.cid,
-          link: data.link
-        }
-      })
+    try {
+      const history = await chatUser.chat.history(user.address, { limit: LIMIT })
+      if (history.length > 0) {
+        const tmp: IChat[] = history.map((data: any) => {
+          return {
+            timestamp: data.timestamp,
+            type: data.messageType,
+            content: data.messageContent,
+            fromAddress: extractAddress(data.fromDID),
+            toAddress: extractAddress(data.toDID),
+            chatId: data.cid,
+            link: data.link
+          }
+        })
       setToBottom(true)
-      setChatHistory(tmp.reverse())
+        setChatHistory(tmp.reverse())
+      }
+    } catch (err) {
+      console.log('load request user chat err: ', err)
+      toast({
+        status: 'error',
+        description: `Something went wrong. :(`,
+        duration: 3500
+      })
     }
 
     setLoadingChatHistory(false)
@@ -1187,45 +1134,54 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSelectedGroup(group)
 
     console.log('selected group = ', group)
-    const history = await chatUser.chat.history(group.groupId, { limit: LIMIT })
-    // console.log('group history = ', history)
-    if (history.length > 0) {
-      let chats: IChat[] = []
-      let reactions: any[] = []
+    try {
+      const history = await chatUser.chat.history(group.groupId, { limit: LIMIT })
+      // console.log('group history = ', history)
+      if (history.length > 0) {
+        let chats: IChat[] = []
+        let reactions: any[] = []
 
-      history.forEach((data: any) => {
-        if (data.messageType == "Reaction") {
-          reactions = [...reactions, data.messageObj]
-        } else {
-          const found = group?.members.find(member => extractAddress(member.wallet) == extractAddress(data.fromDID))
-          chats = [...chats, {
-            timestamp: data.timestamp,
-            type: data.messageType,
-            content: data.messageContent,
-            fromAddress: extractAddress(data.fromDID),
-            toAddress: extractAddress(data.toDID),
-            chatId: data.cid,
-            link: data.link,
-            image: found?.image || ""
-          } as IChat]
-        }
-      })
-
-      if (reactions.length > 0) {
-        chats = chats.map(chat => {
-          const found = reactions.find(e => e.reference == chat.chatId)
-          if (found) {
-            return {
-              ...chat,
-              reaction: found.content
-            }
+        history.forEach((data: any) => {
+          if (data.messageType == "Reaction") {
+            reactions = [...reactions, data.messageObj]
+          } else {
+            const found = group?.members.find(member => extractAddress(member.wallet) == extractAddress(data.fromDID))
+            chats = [...chats, {
+              timestamp: data.timestamp,
+              type: data.messageType,
+              content: data.messageContent,
+              fromAddress: extractAddress(data.fromDID),
+              toAddress: extractAddress(data.toDID),
+              chatId: data.cid,
+              link: data.link,
+              image: found?.image || ""
+            } as IChat]
           }
-          return chat
         })
-      }
+
+        if (reactions.length > 0) {
+          chats = chats.map(chat => {
+            const found = reactions.find(e => e.reference == chat.chatId)
+            if (found) {
+              return {
+                ...chat,
+                reaction: found.content
+              }
+            }
+            return chat
+          })
+        }
 
       setToBottom(true)
-      setChatHistory(chats.reverse())
+        setChatHistory(chats.reverse())
+      }
+    } catch (err) {
+      console.log('load group chat err: ', err)
+      toast({
+        status: 'error',
+        description: `Something went wrong. :(`,
+        duration: 3500
+      })
     }
 
     setLoadingChatHistory(false)
@@ -1925,7 +1881,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
             {/* Chat Messages */}
             <ChatMessages
-              setIsScrollTop={setIsScrollTop}
               selectedGroup={selectedGroup}
               selectedUser={selectedUser}
               chatMode={chatMode}
@@ -1937,7 +1892,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               isHandlingRequest={isHandlingRequest}
               isJoiningGroup={isJoiningGroup}
               loadingChatHistory={loadingChatHistory}
-              loadingPrevChat={loadingPrevChat}
               toBottom={toBottom}
               setToBottom={setToBottom}
             />
