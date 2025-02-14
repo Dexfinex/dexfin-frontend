@@ -1,16 +1,29 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { RefreshCw, AlertCircle } from 'lucide-react';
-import { useGetTrendingCoins, useGetTopGainers } from '../../hooks/useMarketTrend';
+import { useGetTrendingCoins, useGetTopGainers, useGetTopLosers } from '../../hooks/useMarketTrend';
 
 export const TrendingMarkets: React.FC = () => {
 
   const { data: coins, isLoading: isLoadingTrend, refetch: refetchTrend, error: errorTrend } = useGetTrendingCoins();
-  const { data: gainer, isLoading: isLoadingGainer, error: errorGainer, refetch: refetchGainer } = useGetTopGainers();
+  const { data: gainers, isLoading: isLoadingGainer, error: errorGainer, refetch: refetchGainer } = useGetTopGainers();
+  const { data: losers, isLoading: isLoadingLoser, error: errorLoser, refetch: refetchLoser } = useGetTopLosers();
 
-  const error = errorTrend || errorGainer;
-  const isLoading = isLoadingTrend || isLoadingGainer;
+  const error = errorTrend || errorGainer || errorLoser;
 
   const [selectedTab, setSelectedTab] = useState('Trending Tokens');
+
+  const isLoading = useMemo(() => {
+    switch (selectedTab) {
+      case "Trending Tokens":
+        return isLoadingTrend;
+      case "Top Gainers":
+        return isLoadingGainer;
+      case "Top Losers":
+        return isLoadingLoser
+      default:
+        return isLoadingTrend;
+    }
+  }, [selectedTab, isLoadingTrend, isLoadingGainer, isLoadingLoser]);
 
   const handleRefresh = async () => {
     switch (selectedTab) {
@@ -21,7 +34,7 @@ export const TrendingMarkets: React.FC = () => {
         await refetchGainer();
         break;
       case "Top Losers":
-
+        await refetchLoser();
         break;
       default:
         break;
@@ -99,7 +112,7 @@ export const TrendingMarkets: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        {(coins || []).map((coin) => (
+        {selectedTab === "Trending Tokens" && (coins || []).map((coin) => (
           <div
             key={coin.id}
             className="p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
@@ -143,6 +156,136 @@ export const TrendingMarkets: React.FC = () => {
                             notation: 'compact',
                             maximumFractionDigits: 1
                           }).format(coin.volume)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {selectedTab === "Top Gainers" && (gainers || []).map((gainer) => (
+          <div
+            key={gainer.id}
+            className="p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-blue-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all" />
+                <img
+                  src={gainer.thumb}
+                  alt={gainer.name}
+                  className="w-12 h-12 rounded-full relative"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg tracking-tight truncate">
+                      {gainer.name}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm text-white/80">{gainer.symbol}</span>
+                      {gainer.marketCapRank && (
+                        <span className="px-2 py-0.5 rounded-full bg-white/10 text-xs font-medium">
+                          Rank #{gainer.marketCapRank}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-medium text-white">
+                      ${gainer.priceUsd.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 6
+                      })}
+                    </div>
+                    {gainer.usd24hVol > 0 && (
+                      <div className="text-sm mt-0.5">
+                        <span className="text-white/60">24H Vol:</span>
+                        <span className="text-white/80 ml-2">
+                          ${new Intl.NumberFormat('en-US', {
+                            notation: 'compact',
+                            maximumFractionDigits: 1
+                          }).format(gainer.usd24hVol)}
+                        </span>
+                      </div>
+                    )}
+                    {gainer.usd24hChange > 0 && (
+                      <div className="text-sm mt-0.5">
+                        <span className="text-white/60">24H Change:</span>
+                        <span className="text-white/80 ml-2">
+                          ${new Intl.NumberFormat('en-US', {
+                            notation: 'compact',
+                            maximumFractionDigits: 1
+                          }).format(gainer.usd24hChange)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {selectedTab === "Top Losers" && (losers || []).map((gainer) => (
+          <div
+            key={gainer.id}
+            className="p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-blue-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all" />
+                <img
+                  src={gainer.thumb}
+                  alt={gainer.name}
+                  className="w-12 h-12 rounded-full relative"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg tracking-tight truncate">
+                      {gainer.name}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm text-white/80">{gainer.symbol}</span>
+                      {gainer.marketCapRank && (
+                        <span className="px-2 py-0.5 rounded-full bg-white/10 text-xs font-medium">
+                          Rank #{gainer.marketCapRank}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-medium text-white">
+                      ${gainer.priceUsd.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 6
+                      })}
+                    </div>
+                    {gainer.usd24hVol > 0 && (
+                      <div className="text-sm mt-0.5">
+                        <span className="text-white/60">24H Vol:</span>
+                        <span className="text-white/80 ml-2">
+                          ${new Intl.NumberFormat('en-US', {
+                            notation: 'compact',
+                            maximumFractionDigits: 1
+                          }).format(gainer.usd24hVol)}
+                        </span>
+                      </div>
+                    )}
+                    {gainer.usd24hChange > 0 && (
+                      <div className="text-sm mt-0.5">
+                        <span className="text-white/60">24H Change:</span>
+                        <span className="text-white/80 ml-2">
+                          ${new Intl.NumberFormat('en-US', {
+                            notation: 'compact',
+                            maximumFractionDigits: 1
+                          }).format(gainer.usd24hChange)}
                         </span>
                       </div>
                     )}

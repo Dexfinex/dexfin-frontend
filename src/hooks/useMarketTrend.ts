@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { coingeckoService } from "../services/coingecko.service";
-import { Ganiner, TrendingCoin } from "../types";
+import { Ganiner, Loser, TrendingCoin } from "../types";
 
 export const useGetTrendingCoins = () => {
     const fetchTrendingMarket = useCallback(async () => {
@@ -33,6 +33,27 @@ export const useGetTopGainers = () => {
 
     const { isLoading, refetch, data, error } = useQuery<Ganiner[]>({
         queryKey: [`top-gainers`],
+        queryFn: fetchTopGainers,
+        refetchInterval: 2 * 60_000,
+    });
+
+    return {
+        isLoading,
+        refetch,
+        data,
+        error
+    };
+};
+
+export const useGetTopLosers = () => {
+    const fetchTopGainers = useCallback(async () => {
+        const data = await coingeckoService.getTopLosers();
+
+        return data;
+    }, []);
+
+    const { isLoading, refetch, data, error } = useQuery<Loser[]>({
+        queryKey: [`top-losers`],
         queryFn: fetchTopGainers,
         refetchInterval: 2 * 60_000,
     });

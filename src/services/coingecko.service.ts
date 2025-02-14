@@ -1,5 +1,5 @@
 import { coinGeckoApi } from "./api.service.ts";
-import { CoinData, CoinGeckoToken, Ganiner, SearchResult, TrendingCoin } from "../types";
+import { CoinData, CoinGeckoToken, Ganiner, Loser, SearchResult, TrendingCoin } from "../types";
 import { ChartDataPoint, TokenType } from "../types/swap.type.ts";
 import { TokenTypeB } from "../types/cart.type.ts";
 import axios from "axios";
@@ -132,6 +132,16 @@ export const coingeckoService = {
             return data;
         } catch (error) {
             console.error('Failed to fetch top gainers:', error);
+            throw error;
+        }
+    },
+
+    getTopLosers: async (): Promise<Loser[]> => {
+        try {
+            const { data } = await coinGeckoApi.get<Loser[]>('/top_losers/');
+            return data;
+        } catch (error) {
+            console.error('Failed to fetch top losers:', error);
             throw error;
         }
     },

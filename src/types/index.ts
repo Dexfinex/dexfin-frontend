@@ -266,3 +266,13 @@ export interface Ganiner {
   usd24hChange: number;
   usd24hVol: number;
 }
+export interface Loser {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  usd24hChange: number;
+  usd24hVol: number;
+}
