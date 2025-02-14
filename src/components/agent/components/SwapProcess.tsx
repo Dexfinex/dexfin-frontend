@@ -14,10 +14,10 @@ interface SwapProcessProps {
   fromAmount: string;
   receiver: string;
   steps: Step[];
-  protocol: Protocol;
+  protocol: Protocol | undefined;
 }
 
-export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, receiver, fromAmount, toToken, fromToken, protocol, onClose }) => {
+export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol, onClose }) => {
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -151,7 +151,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, receiver, fromA
 
       <div className="flex-1 bg-white/5 rounded-xl p-6">
         <div className="space-y-6">
-          <div className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
+          <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
               <img
                 src={fromToken.logoURI}
@@ -180,7 +180,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, receiver, fromA
           <div className="p-4 bg-white/5 rounded-lg space-y-3">
             <div className="flex justify-between">
               <span className="text-white/60">Rate</span>
-              <span className="font-medium">1 {toToken.symbol} = ${formatNumberByFrac(Number(toToken.priceUSD), 2)}</span>
+              <span className="font-medium">1 {fromToken.symbol} = {formatNumberByFrac(Number(fromToken.priceUSD)/Number(toToken.priceUSD), 2)} {toToken.symbol} </span>
             </div>
           </div>
         </div>
@@ -225,7 +225,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, receiver, fromA
             />
           </div>
           <p className="mt-4 text-white/60">
-            Swapping {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol} for {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} via {protocol.name}
+            Swapping {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol} for {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} via {protocol?.name}
           </p>
         </>
       ) : (
@@ -266,7 +266,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, receiver, fromA
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Swap ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} via ${protocol.name}`}
+          description={`Swap ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} via ${protocol?.name}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (
