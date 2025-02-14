@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { AlertCircle, Filter, RefreshCw, Search, TrendingDown, TrendingUp } from 'lucide-react';
-
+import { AlertCircle, Filter, RefreshCw, Search, TrendingDown, TrendingUp, ArrowUpDown } from 'lucide-react';
+import _ from 'lodash';
 import { formatAge, formatNumber } from '../../utils';
 import { getChainIcon } from '../../utils/getChainIcon';
 
@@ -9,18 +9,53 @@ import { useGetTrendingPools, useGetNewPools, useGetTopPools } from '../../hooks
 const networks = [
   { id: 'eth', name: 'Ethereum', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
   { id: 'base', name: 'Base', logo: getChainIcon(8453) },
-  { id: 'solana', name: 'Solana', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' }
+  { id: 'solana', name: 'Solana', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
+
 ];
+
+interface BaseToken {
+  id: string;
+  type: string;
+  attributes: {
+    name: string;
+    symbol: string;
+    image_url?: string;
+  };
+}
 
 export const DexExplorer: React.FC = () => {
   const [network, setNetwork] = useState<string>('eth');
   const [view, setView] = useState<'trending' | 'new' | 'top'>('trending');
   const [searchQuery, setSearchQuery] = useState('');
   const [showNetworkSelector, setShowNetworkSelector] = useState(false);
+  const [sortConfig, setSortConfig] = useState({
+    key: '',
+    direction: 'desc'
+  });
+  const handleSort = (key: string) => {
+    let direction = 'desc';
 
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+
+    setSortConfig({ key, direction });
+  };
   const { data: trendingPoolsData, error: trendingError, isLoading: isLoadingTrending, refetch: refetchTrend } = useGetTrendingPools(network);
   const { data: newPoolsData, error: newError, isLoading: isLoadingNew, refetch: refetchNew } = useGetNewPools(network);
   const { data: topPoolsData, error: topError, isLoading: isLoadingTop, refetch: refetchTop } = useGetTopPools(network);
+
+
+  const SortIndicator = ({ currentKey }: { currentKey: string }) => {
+    if (sortConfig.key !== currentKey) {
+      return <ArrowUpDown className="w-4 h-4 ml-1 opacity-50" />;
+    }
+    return (
+      <ArrowUpDown
+        className={`w-4 h-4 ml-1 ${sortConfig.direction === 'asc' ? 'rotate-180' : ''}`}
+      />
+    );
+  };
 
   const pools = useMemo(() => {
     switch (view) {
@@ -87,7 +122,130 @@ export const DexExplorer: React.FC = () => {
       quoteToken?.attributes.symbol.toLowerCase().includes(searchLower)
     );
   });
+  const sortedPools = useMemo(() => {
+    if (!sortConfig.key) return filteredPools;
 
+    return [...filteredPools].sort((a, b) => {
+      let aValue, bValue;
+      const parseFormattedNumber = (value: string): number => {
+        if (!value) return 0;
+        
+        const multipliers = {
+          'K': 1000,
+          'M': 1000000,
+          'B': 1000000000
+        };
+      
+        // Remove any commas and convert to uppercase for consistency
+        const cleanValue = value.replace(/,/g, '').toUpperCase();
+        
+        // Extract the number and suffix
+        const match = cleanValue.match(/^([\d.]+)([KMB])?$/);
+        
+        if (!match) return 0;
+        
+        const [, number, suffix] = match;
+        const baseValue = parseFloat(number);
+        
+        if (suffix && multipliers[suffix]) {
+          return baseValue * multipliers[suffix];
+        }
+        
+        return baseValue;
+      };
+      const parseAgeToMinutes = (age: string): number => {
+        if (!age) return 0;
+        
+        // Convert to lowercase and trim for consistency
+        const cleanAge = age.toLowerCase().trim();
+        
+        // Match number and unit
+        const match = cleanAge.match(/^(\d+)(y|mth|d|h|m)$/);
+        if (!match) return 0;
+        
+        const [, value, unit] = match;
+        const numValue = parseInt(value);
+        
+        
+        switch (unit) {
+          case 'y':
+            return numValue * 525600;
+          case 'mth':
+            return numValue * 43800;  
+          case 'd':
+            return numValue * 1440; 
+          case 'h':
+            return numValue * 60;
+          case 'm':
+            return numValue;
+          default:
+            return 0;
+        }
+      };
+      switch (sortConfig.key) {
+        case 'price':
+          aValue = parseFloat(a.attributes.base_token_price_usd || '0');
+          bValue = parseFloat(b.attributes.base_token_price_usd || '0');
+          break;
+        case '5m':
+          aValue = parseFloat(a.attributes.price_change_percentage?.m5 || '0');
+          bValue = parseFloat(b.attributes.price_change_percentage?.m5 || '0');
+          break;
+        case '1h':
+          aValue = parseFloat(a.attributes.price_change_percentage?.h1 || '0');
+          bValue = parseFloat(b.attributes.price_change_percentage?.h1 || '0');
+          break;
+        case '6h':
+          aValue = parseFloat(a.attributes.price_change_percentage?.h6 || '0');
+          bValue = parseFloat(b.attributes.price_change_percentage?.h6 || '0');
+          break;
+        case '24h':
+          aValue = parseFloat(a.attributes.price_change_percentage?.h24 || '0');
+          bValue = parseFloat(b.attributes.price_change_percentage?.h24 || '0');
+          break;
+          case 'volume':
+            aValue = parseFormattedNumber(a.attributes.volume_usd?.h24 || '0');
+            bValue = parseFormattedNumber(b.attributes.volume_usd?.h24 || '0');
+            break;
+            case 'tvl':
+              aValue = parseFormattedNumber(a.attributes.reserve_in_usd || '0');
+              bValue = parseFormattedNumber(b.attributes.reserve_in_usd || '0');
+              break;
+              case 'transactions':
+                let aTransactions, bTransactions;
+                try {
+                  // Safely parse JSON and handle potential parsing errors
+                  aTransactions = typeof a.attributes.transactions?.h24 === 'string' 
+                    ? JSON.parse(a.attributes.transactions.h24) 
+                    : a.attributes.transactions?.h24 || { buyers: 0, sellers: 0 };
+                  
+                  bTransactions = typeof b.attributes.transactions?.h24 === 'string'
+                    ? JSON.parse(b.attributes.transactions.h24)
+                    : b.attributes.transactions?.h24 || { buyers: 0, sellers: 0 };
+                  
+                  // Ensure we're working with numbers
+                  aValue = Number(aTransactions.buyers || 0) + Number(aTransactions.sellers || 0);
+                  bValue = Number(bTransactions.buyers || 0) + Number(bTransactions.sellers || 0);
+                } catch (error) {
+                  // If there's any error in parsing, default to 0
+                  aValue = 0;
+                  bValue = 0;
+                }
+                break;
+          case 'age':
+            aValue = parseAgeToMinutes(formatAge(a.attributes.pool_created_at));
+            bValue = parseAgeToMinutes(formatAge(b.attributes.pool_created_at));
+            break;
+        default:
+          return 0;
+      }
+
+      if (sortConfig.direction === 'asc') {
+        return aValue - bValue;
+      }
+      return bValue - aValue;
+    });
+  }, [filteredPools, sortConfig]);
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center">
@@ -116,7 +274,7 @@ export const DexExplorer: React.FC = () => {
             >
               {selectedNetwork && (
                 <img
-                  src={selectedNetwork.logo}
+                  src={selectedNetwork.logo ? selectedNetwork.logo : ''}
                   alt={selectedNetwork.name}
                   className="w-5 h-5"
                 />
@@ -147,7 +305,7 @@ export const DexExplorer: React.FC = () => {
                       className={`w-full flex items-center gap-3 px-4 py-2 hover:bg-white/5 transition-colors ${network === n.id ? 'bg-white/10' : ''
                         }`}
                     >
-                      <img src={n.logo} alt={n.name} className="w-5 h-5" />
+                      <img src={n.logo ? n.logo : ''} alt={n.name} className="w-5 h-5" />
                       <span>{n.name}</span>
                     </button>
                   ))}
@@ -213,17 +371,61 @@ export const DexExplorer: React.FC = () => {
         <table className="w-full">
           <thead>
             <tr className="text-left text-white/60">
-              <th className="px-4 py-3 whitespace-nowrap">Pool</th>
-              <th className="px-4 py-3 whitespace-nowrap">Price</th>
-              <th className="px-4 py-3 whitespace-nowrap">5M %</th>
-              <th className="px-4 py-3 whitespace-nowrap">1h %</th>
-              <th className="px-4 py-3 whitespace-nowrap">6h %</th>
-              <th className="px-4 py-3 whitespace-nowrap">24h %</th>              
-              <th className="px-4 py-3 whitespace-nowrap">Volume (24h)</th>
-              <th className="px-4 py-3 whitespace-nowrap">TVL</th>
-              <th className="px-4 py-3 whitespace-nowrap">Transactions (24h)</th>
-              <th className="px-4 py-3 whitespace-nowrap">Age</th>
-
+              <th className="px-4 py-3 font-medium whitespace-nowrap">Pool</th>
+              <th
+                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                onClick={() => handleSort('price')}
+              >
+                Price{sortConfig.key === 'price' && <SortIndicator currentKey="price" />}
+              </th>
+              <th
+                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                onClick={() => handleSort('5m')}
+              >
+                5M %{sortConfig.key === '5m' && <SortIndicator currentKey="5m" />}
+              </th>
+              <th
+                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                onClick={() => handleSort('1h')}
+              >
+                1h %{sortConfig.key === '1h' && <SortIndicator currentKey="1h" />}
+              </th>
+              <th
+                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                onClick={() => handleSort('6h')}
+              >
+                6h %{sortConfig.key === '6h' && <SortIndicator currentKey="6h" />}
+              </th>
+              <th
+                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                onClick={() => handleSort('24h')}
+              >
+                24h %{sortConfig.key === '24h' && <SortIndicator currentKey="24h" />}
+              </th>
+              <th
+                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                onClick={() => handleSort('volume')}
+              >
+                Volume (24h){sortConfig.key === 'volume' && <SortIndicator currentKey="volume" />}
+              </th>
+              <th
+                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                onClick={() => handleSort('tvl')}
+              >
+                TVL{sortConfig.key === 'tvl' && <SortIndicator currentKey="tvl" />}
+              </th>
+              <th
+                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                onClick={() => handleSort('transactions')}
+              >
+                Transactions (24h){sortConfig.key === 'transactions' && <SortIndicator currentKey="transactions" />}
+              </th>
+              <th
+                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                onClick={() => handleSort('age')}
+              >
+                Age{sortConfig.key === 'age' && <SortIndicator currentKey="age" />}
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -264,7 +466,7 @@ export const DexExplorer: React.FC = () => {
 
                 </tr>
               ))
-            ) : filteredPools.length === 0 ? (
+            ) : sortedPools.length === 0 ? (
               <tr>
                 <td colSpan={10} className="py-12 text-center">
                   <Search className="w-12 h-12 mx-auto mb-4 text-white/40" />
@@ -275,7 +477,7 @@ export const DexExplorer: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              filteredPools.map((pool) => {
+              sortedPools.map((pool) => {
                 const baseToken = pool.included?.tokens.find(t =>
                   t.id === pool.relationships.base_token.data.id
                 );
@@ -286,10 +488,11 @@ export const DexExplorer: React.FC = () => {
                 const priceChange1h = parseFloat(pool.attributes.price_change_percentage?.h1 || '0');
                 const priceChange6h = parseFloat(pool.attributes.price_change_percentage?.h6 || '0');
                 const priceChange24h = parseFloat(pool.attributes.price_change_percentage?.h24 || '0');
-                const volume24h = parseFloat(pool.attributes.volume_usd?.h24 || '0');
-                const transactions24h = pool.attributes.transactions?.h24 || 0;
-                const tvl = parseFloat(pool.attributes.reserve_in_usd || '0');
-
+                const volume24h = pool.attributes.volume_usd?.h24;
+                const tvl = pool.attributes.reserve_in_usd;
+                const transactions24h_json = JSON.stringify(pool.attributes.transactions?.h24 || 0);
+                const token_age = pool.attributes.pool_created_at;
+                const transactions24h=Number(JSON.parse(transactions24h_json).buyers) + Number(JSON.parse(transactions24h_json).sellers)
 
 
                 return (
@@ -297,10 +500,10 @@ export const DexExplorer: React.FC = () => {
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex -space-x-2">
-                          {baseToken?.attributes.logo_url ? (
+                          {(baseToken as BaseToken)?.attributes.image_url ? (
                             <img
-                              src={baseToken.attributes.logo_url}
-                              alt={baseToken.attributes.symbol}
+                              src={(baseToken as BaseToken).attributes.image_url}
+                              alt={(baseToken as BaseToken).attributes.symbol}
                               className="w-8 h-8 rounded-full ring-2 ring-[#0a0a0c]"
                             />
                           ) : (
@@ -308,10 +511,10 @@ export const DexExplorer: React.FC = () => {
                               <span className="text-xs font-medium">{baseToken?.attributes.symbol.charAt(0)}</span>
                             </div>
                           )}
-                          {quoteToken?.attributes.logo_url ? (
+                          {(quoteToken as BaseToken)?.attributes.image_url ? (
                             <img
-                              src={quoteToken.attributes.logo_url}
-                              alt={quoteToken.attributes.symbol}
+                              src={(quoteToken as BaseToken).attributes.image_url}
+                              alt={(quoteToken as BaseToken).attributes.symbol}
                               className="w-8 h-8 rounded-full ring-2 ring-[#0a0a0c]"
                             />
                           ) : (
@@ -377,13 +580,13 @@ export const DexExplorer: React.FC = () => {
                         <span>{Math.abs(priceChange24h).toFixed(2)}%</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4">${formatNumber(volume24h)}</td>
-                    <td className="px-4 py-4">${formatNumber(tvl)}</td>
-                    <td className="px-4 py-4">{formatNumber(transactions24h)}</td>
+                    <td className="px-4 py-4">{volume24h}</td>
+                    <td className="px-4 py-4">{tvl}</td>
+                    <td className="px-4 py-4">{transactions24h}</td>
                     <td className="px-4 py-4 text-white/60">
-                      {formatAge(pool.attributes.pool_created_at)}
+                      {formatAge(token_age)}
                     </td>
-                    
+
                   </tr>
                 );
               })

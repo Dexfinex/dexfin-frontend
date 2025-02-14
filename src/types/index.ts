@@ -176,8 +176,11 @@ export interface TokenPool {
     };
     base_token_price_usd?: string;
     transactions?: {
-      h24?: number;
+      h24?: string;
+      buyers?: number;
+      sellers?: number;
     };
+
     volume_usd?: {
       h24?: string;
     };
