@@ -1,24 +1,6 @@
 import { create } from "zustand";
 import { DefillamaPool, DefillamaProtocol, DeFiStats, DefillamaCategory } from "../types";
 
-interface DeFiStats1 {
-    totalTvl: number;
-    totalChange24h: number;
-    defiMarketCap: number;
-    categories: {
-        name: string;
-        tvl: number;
-        change24h: number;
-    }[];
-    protocols: {
-        name: string;
-        tvl: number;
-        change24h: number;
-        category: string;
-        logo: string;
-    }[];
-}
-
 // Define the store's state and actions
 interface DefillamaStore {
     totalTvl: number,

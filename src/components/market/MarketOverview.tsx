@@ -1,12 +1,24 @@
 import React from 'react';
-import {Activity, BarChart2, Brain, Hash, MessageSquare, TrendingDown, TrendingUp, Zap} from 'lucide-react';
+import { Activity, BarChart2, Brain, Hash, MessageSquare, TrendingDown, TrendingUp, Zap } from 'lucide-react';
+
+import useFearGreedStore from '../../store/useFearGreedStore';
+import useDefillamaStore from '../../store/useDefillamaStore';
+import { useGetDefillamaProtocols } from '../../hooks/useDefillama';
+import { formatNumberByFrac } from '../../utils/common.util';
 
 export const MarketOverview: React.FC = () => {
+  useGetDefillamaProtocols();
+
+  const { data } = useFearGreedStore();
+  const { getDeFiStats } = useDefillamaStore();
+
+  const defiStats = getDeFiStats();
+
   // Mock data for demonstration
   const marketMetrics = {
     fearGreed: {
-      value: 68,
-      change: 5,
+      value: data.value,
+      change: data.dailyChange,
       label: 'GREED'
     },
     marketSentiment: {
@@ -20,9 +32,9 @@ export const MarketOverview: React.FC = () => {
       label: 'B'
     },
     marketCap: {
-      value: 2.52,
-      change: 1.8,
-      label: 'T'
+      value: defiStats.defiMarketCap,
+      change: formatNumberByFrac(defiStats.totalChange24h),
+      label: 'B'
     }
   };
 
@@ -96,7 +108,7 @@ export const MarketOverview: React.FC = () => {
           </div>
           <div className="mt-1">
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-orange-400 transition-all"
                 style={{ width: `${marketMetrics.fearGreed.value}%` }}
               />
@@ -119,7 +131,7 @@ export const MarketOverview: React.FC = () => {
           </div>
           <div className="mt-1">
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-purple-400 transition-all"
                 style={{ width: `${marketMetrics.marketSentiment.value}%` }}
               />
@@ -142,7 +154,7 @@ export const MarketOverview: React.FC = () => {
           </div>
           <div className="mt-1">
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-blue-400 transition-all"
                 style={{ width: '65%' }}
               />
@@ -156,7 +168,9 @@ export const MarketOverview: React.FC = () => {
             <span className="text-sm text-white/60">Market Cap</span>
           </div>
           <div className="flex items-baseline justify-between">
-            <div className="text-2xl font-bold">${marketMetrics.marketCap.value}{marketMetrics.marketCap.label}</div>
+            <div className="text-2xl font-bold">
+              ${(marketMetrics.marketCap.value / 1e9).toFixed(2)}
+              {marketMetrics.marketCap.label}</div>
             <div className="flex items-center gap-1 text-sm">
               <TrendingUp className="w-4 h-4 text-green-400" />
               <span className="text-green-400">{marketMetrics.marketCap.change}%</span>
@@ -164,9 +178,9 @@ export const MarketOverview: React.FC = () => {
           </div>
           <div className="mt-1">
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-green-400 transition-all"
-                style={{ width: '75%' }}
+                style={{ width: `${100 - (Number(marketMetrics.marketCap.change) || 0)}%` }}
               />
             </div>
           </div>
@@ -198,7 +212,7 @@ export const MarketOverview: React.FC = () => {
                     <span className="text-green-400">{socialMetrics.sentiment.positive}%</span>
                   </div>
                   <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-green-400 transition-all"
                       style={{ width: `${socialMetrics.sentiment.positive}%` }}
                     />
@@ -210,7 +224,7 @@ export const MarketOverview: React.FC = () => {
                     <span className="text-blue-400">{socialMetrics.sentiment.neutral}%</span>
                   </div>
                   <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-blue-400 transition-all"
                       style={{ width: `${socialMetrics.sentiment.neutral}%` }}
                     />
@@ -222,7 +236,7 @@ export const MarketOverview: React.FC = () => {
                     <span className="text-red-400">{socialMetrics.sentiment.negative}%</span>
                   </div>
                   <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-red-400 transition-all"
                       style={{ width: `${socialMetrics.sentiment.negative}%` }}
                     />
@@ -238,7 +252,7 @@ export const MarketOverview: React.FC = () => {
               </div>
               <div className="flex flex-wrap gap-2">
                 {socialMetrics.trendingTopics.map((topic) => (
-                  <div 
+                  <div
                     key={topic}
                     className="px-2 py-1 bg-white/10 rounded-lg text-sm hover:bg-white/20 transition-colors cursor-pointer"
                   >
@@ -265,11 +279,10 @@ export const MarketOverview: React.FC = () => {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium">{topic.name}</span>
-                  <div className={`px-2 py-0.5 rounded-full text-xs ${
-                    topic.sentiment >= 70 ? 'bg-green-500/20 text-green-400' :
+                  <div className={`px-2 py-0.5 rounded-full text-xs ${topic.sentiment >= 70 ? 'bg-green-500/20 text-green-400' :
                     topic.sentiment >= 50 ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-red-500/20 text-red-400'
-                  }`}>
+                      'bg-red-500/20 text-red-400'
+                    }`}>
                     {topic.sentiment}%
                   </div>
                 </div>
