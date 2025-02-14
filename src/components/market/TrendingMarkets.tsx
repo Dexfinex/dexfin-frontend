@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { RefreshCw, AlertCircle } from 'lucide-react';
+import { Skeleton } from '@chakra-ui/react';
 import { useGetTrendingCoins, useGetTopGainers, useGetTopLosers } from '../../hooks/useMarketTrend';
 
 export const TrendingMarkets: React.FC = () => {
@@ -40,18 +41,6 @@ export const TrendingMarkets: React.FC = () => {
         break;
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="p-6 h-full">
-        <div className="animate-pulse space-y-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-24 bg-white/5 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -112,6 +101,13 @@ export const TrendingMarkets: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-3 gap-6">
+
+        {
+          isLoading && Array.from({ length: 15 }).map((_, index) => {
+            return <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'6rem'} key={index}></Skeleton>
+          })
+        }
+
         {selectedTab === "Trending Tokens" && (coins || []).map((coin) => (
           <div
             key={coin.id}
