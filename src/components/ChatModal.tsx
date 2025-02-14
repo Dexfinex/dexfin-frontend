@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useRef } from 'react';
+import React, { useContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import {
   X, Maximize2, Minimize2, Search, Smile, Download,
   MessageSquare, Share2, Users, ArrowRight, Plus,
@@ -15,14 +15,15 @@ import { SendFileModal } from './SendFileModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
-import { Spinner, Popover, PopoverTrigger, PopoverContent, Tooltip } from '@chakra-ui/react';
+import { Spinner, Popover, PopoverTrigger, PopoverContent, Tooltip, useToast } from '@chakra-ui/react';
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
 import { LIMIT } from '../utils/chatApi';
 import { EditChatProfileModal } from './EditChatProfileModal';
 import { ChatGroupModal } from './ChatGroupModal';
-import { IUser, IGroup, ChatType, IChat, ProfileType } from '../types/chat.type';
+import { IUser, IGroup, ChatType, IChat, ProfileType, ChatModeType } from '../types/chat.type';
+import { ChatMessages } from './ChatMessages';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -195,7 +196,7 @@ interface ChatModalProps {
 
 export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [chatMode, setChatMode] = useState<'group' | 'p2p'>('group');
+  const [chatMode, setChatMode] = useState<ChatModeType>('group');
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<IGroup | null>(null);
   const [message, setMessage] = useState('');
@@ -207,6 +208,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSendModalActive, setIsSendModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
+  const toast = useToast()
 
   const [loading, setLoading] = useState(false);
   const [ownProfile, setOwnProfile] = useState<ProfileType | null>(null);
@@ -220,17 +222,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
   const [isFailedSent, setIsFailedSent] = useState(false);
-  const [isScrollTop, setIsScrollTop] = useState(false);
-  const [loadingPrevChat, setLoadingPrevChat] = useState(false);
   const [toBottom, setToBottom] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isHandlingRequest, setIsHandlingRequest] = useState(false);
   const [isJoiningGroup, setIsJoiningGroup] = useState(false);
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [isGifOpen, setIsGifOpen] = useState(false);
-  const [receivedMessage, setReceivedMessage] = useState<any>([]);
+  const [receivedMessage, setReceivedMessage] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<any>();
-  const chatScrollRef = useRef<HTMLDivElement>(null);
   const emojiPickRef = useRef<HTMLDivElement>(null);
   const gifPickRef = useRef<HTMLDivElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
@@ -246,66 +245,133 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   //   }
   // ]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (chatScrollRef.current) {
-        setIsScrollTop(chatScrollRef.current.scrollTop === 0);
+  const setProfile = useCallback(async () => {
+    const profile = await chatUser.profile.info()
+
+    setOwnProfile({
+      name: profile?.name || "",
+      desc: profile?.desc || "",
+      picture: profile.picture
+    })
+  }, [chatUser])
+
+  const getChatInformation = useCallback(async () => {
+    setLoading(true)
+    setGroupList([])
+    setConnectedUsers([])
+
+    // get group & p2p info
+    try {
+      const chatData = await getAllChatData(chatUser)
+      console.log('chatdata = ', chatData)
+
+      let groupInformation: IGroup[] = []
+      let userInformation: IUser[] = []
+
+      chatData.forEach((data: any) => {
+        if (data.groupInformation) {
+          groupInformation = [...groupInformation, {
+            groupId: data.groupInformation.chatId,
+            name: data.groupInformation.groupName,
+            description: data.groupInformation.groupDescription,
+            public: data.groupInformation.isPublic,
+            image: data.groupInformation.groupImage,
+            erc20: data.groupInformation.contractAddressERC20,
+            nft: data.groupInformation.contractAddressNFT,
+            members: data.groupInformation.members,
+            pendingMembers: data.groupInformation.pendingMembers,
+            type: "Connected",
+            lastTimestamp: Number(data.msg.timestamp),
+            lastMessage: setLastMessage(data.msg.messageType, data.msg.messageContent)
+          }]
+        } else {
+          userInformation = [...userInformation, {
+            name: data.name,
+            ensName: "",
+            profilePicture: data.profilePicture,
+            address: extractAddress(data.wallets),
+            chatId: data.chatId,
+            type: "Connected",
+            lastTimestamp: data.msg.timestamp,
+            lastMessage: setLastMessage(data.msg.messageType, data.msg.messageContent),
+            unreadMessages: 0
+          }]
+        }
+      });
+      console.log('groupInformation = ', groupInformation)
+
+      if (groupInformation.length > 0) {
+        setGroupList(groupInformation.sort((a, b) => b.lastTimestamp - a.lastTimestamp))
       }
-    };
-
-    const scrollElement = chatScrollRef.current;
-    if (scrollElement) {
-      scrollElement.addEventListener("scroll", handleScroll);
-    }
-
-    // return () => {
-    //   if (scrollElement) {
-    //     scrollElement.removeEventListener("scroll", handleScroll);
-    //   }
-    // };
-  }, []);
-
-
-  useEffect(() => {
-    if (isOpen && chatUser?.uid) {
-      console.log('get chat user')
-      setProfile()
-      getChatInformation()
-      // const profile = await getWalletProfile(chatUser, searchQuery)
-    } else {
-      clearValues()
-    }
-  }, [isOpen, chatUser])
-
-  useEffect(() => {
-    clearValues()
-  }, [chatMode])
-
-  useEffect(() => {
-    console.log('isScrollTop')
-    if (isScrollTop) {
-      console.log('selected user = ', selectedUser)
-      console.log('selected group = ', selectedGroup)
-      console.log('chat history = ', chatHistory)
-
-      if (selectedUser && chatHistory.length > 0 && chatHistory[0].link) {
-        getPrevChatHistory(selectedUser.address, chatHistory[0].chatId)
-      } else if ((selectedGroup && chatHistory.length > 0 && chatHistory[0].link)) {
-        getPrevChatHistory(selectedGroup.groupId, chatHistory[0].chatId)
+      if (userInformation.length > 0) {
+        const sorted = userInformation.sort((a, b) => b.lastTimestamp - a.lastTimestamp)
+        setConnectedUsers(sorted)
+        updateEnsName("connected", undefined, undefined, sorted)
       }
+    } catch (err) {
+      console.log('loading group & p2p err: ', err)
+      toast({
+        status: 'error',
+        description: `Something went wrong. :(`,
+        duration: 3500
+      })
     }
-  }, [isScrollTop])
 
-  useEffect(() => {
-    if (!message) {
-      const textarea = textareaRef.current;
-      if (textarea) {
-        textarea.style.height = "40px";
+    // get chat request
+    try {
+      const requests = await chatUser.chat.list('REQUESTS')
+      console.log('requests = ', requests)
+      if (requests.length > 0) {
+        let directRequests: IUser[] = []
+        let groupRequests: IGroup[] = []
+
+        requests.forEach((request: any) => {
+          if (!request.groupInformation) {
+            directRequests = [...directRequests, {
+              name: request.name,
+              ensName: "",
+              profilePicture: request.profilePicture,
+              address: extractAddress(request.wallets),
+              chatId: request.chatId,
+              type: "Request",
+              unreadMessages: 0,
+              lastTimestamp: request.msg?.timestamp ? Number(request.msg?.timestamp) : 0,
+              lastMessage: request.msg?.messageContent ? request.msg?.messageContent : ""
+            }]
+          } else if (request.groupInformation) {
+            groupRequests = [...groupRequests, {
+              groupId: request.groupInformation.chatId,
+              name: request.groupInformation.groupName,
+              description: request.groupInformation.groupDescription,
+              public: request.groupInformation.isPublic,
+              image: request.groupInformation.groupImage,
+              erc20: request.groupInformation.contractAddressERC20,
+              nft: request.groupInformation.contractAddressNFT,
+              members: request.groupInformation.members,
+              pendingMembers: request.groupInformation.pendingMembers,
+              type: "Request",
+              lastTimestamp: request.msg?.timestamp ? Number(request.msg?.timestamp) : 0,
+              lastMessage: request.msg?.messageContent ? request.msg?.messageContent : ""
+            }]
+          }
+        })
+
+        if (directRequests.length > 0) {
+          setRequestUsers(directRequests)
+          updateEnsName("request", undefined, undefined, directRequests)
+        }
+        if (groupRequests.length > 0) {
+          setRequestGroups(groupRequests)
+        }
       }
+    } catch (err) {
+      console.log('loading request err: ', err)
     }
-  }, [message])
 
-  const clearValues = () => {
+    setLoading(false)
+  }, [chatUser])
+
+  const clearValues = useCallback(() => {
     setSearchQuery("")
     setChatHistory([])
     setRequestUsers([])
@@ -316,23 +382,56 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSearchedGroup(null)
     setIsEmojiOpen(false)
     setIsGifOpen(false)
-  }
+  }, [])
+
+  useEffect(() => {
+    if (isOpen && chatUser?.uid) {
+      console.log('get chat user')
+      setProfile()
+      getChatInformation()
+      // const profile = await getWalletProfile(chatUser, searchQuery)
+    } else {
+      clearValues()
+    }
+  }, [isOpen, chatUser, setProfile, getChatInformation, clearValues])
+
+  useEffect(() => {
+    setSearchQuery("")
+    setChatHistory([])
+    setSelectedUser(null)
+    setSearchedUser(null)
+    setSelectedGroup(null)
+    setSearchedGroup(null)
+    setIsEmojiOpen(false)
+    setIsGifOpen(false)
+  }, [chatMode])
+
+  useEffect(() => {
+    if (!message) {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.style.height = "40px";
+      }
+    }
+  }, [message])
 
   useEffect(() => {
     setMessage("")
   }, [selectedUser, selectedGroup])
 
   useEffect(() => {
-    console.log('chat history = ', chatHistory)
-    if (toBottom) {
-      scrollBottom()
-      setToBottom(false)
-    }
-  }, [chatHistory])
-
-  useEffect(() => {
     handleReceiveMsg()
   }, [receivedMessage])
+
+  useEffect(() => {
+    if (isFailedSent) {
+      toast({
+        status: 'error',
+        description: `Can't send a message. Please try again.`,
+        duration: 3500
+      })
+    }
+  }, [isFailedSent])
 
   // useEffect(() => {
   //   console.log('request users = ', requestUsers)
@@ -407,24 +506,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     });
   }
 
-  const scrollBottom = () => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
-  }
-
-  const setProfile = async () => {
-    const profile = await chatUser.profile.info()
-
-    setOwnProfile({
-      name: profile?.name || "",
-      desc: profile?.desc || "",
-      picture: profile.picture
-    })
-  }
-
   const handleReceiveMsg = async () => {
-    if (receivedMessage.meta?.group == true) {
+    console.log('handle receive message')
+
+    // handle group messages
+    if (receivedMessage?.meta?.group == true) {
       if (receivedMessage.origin == "other") {
         if (receivedMessage.event == "chat.request") {
           const found = requestGroups.find((group: IGroup) => group.groupId == receivedMessage.chatId)
@@ -433,8 +519,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             const profile = await chatUser.chat.group.info(receivedMessage.chatId)
             console.log('group profile = ', profile)
 
-            setRequestGroups(
-              [...requestGroups, {
+            setRequestGroups(prev =>
+              [...prev, {
                 groupId: profile.chatId,
                 name: profile.groupName,
                 description: profile.groupDescription,
@@ -460,8 +546,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
             } else {
               setToBottom(true)
-              setChatHistory(
-                [...chatHistory, {
+              setChatHistory(prevChat =>
+                [...prevChat, {
                   timestamp: Number(receivedMessage.timestamp),
                   type: receivedMessage.message.type,
                   content: receivedMessage.message.content,
@@ -496,13 +582,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             });
           }
           if (requestGroups.find(group => group.groupId == receivedMessage.chatId)) {
-            setRequestGroups(requestGroups.map(group => group.groupId == receivedMessage.chatId ?
-              { ...group, members: [...group.members, newMember], pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : [] }
-              : group))
+            setRequestGroups(prev => {
+              const updated = prev.map(group => group.groupId == receivedMessage.chatId ?
+                { ...group, members: [...group.members, newMember], pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : [] }
+                : group)
+
+              return [...updated]
+            })
           } else {
-            setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ?
-              { ...group, members: [...group.members, newMember], pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : [] }
-              : group))
+            setGroupList(prev => {
+              const updated = prev.map(group => group.groupId == receivedMessage.chatId ?
+                { ...group, members: [...group.members, newMember], pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : [] }
+                : group)
+
+              return [...updated]
+            })
           }
         } else if (receivedMessage.event == "chat.reject") {
           if (selectedGroup && selectedGroup.groupId == receivedMessage.chatId) {
@@ -512,20 +606,27 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             })
           }
 
-          setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? {
-            ...group, pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
-          } : group))
+          setGroupList(prev => {
+            const updated = prev.map(group => group.groupId == receivedMessage.chatId ? {
+              ...group, pendingMembers: group.pendingMembers.length > 0 ? group.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
+            } : group)
+
+            return [...updated]
+          })
         }
       } else if (receivedMessage.origin == "self") {
         if (receivedMessage.event == "chat.message") {
           updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
         }
       }
-    } else if (receivedMessage.meta?.group == false) {
+    }
+
+    // handle p2p messages
+    else if (receivedMessage?.meta?.group == false) {
       if (receivedMessage.origin == "other") {
         console.log('receive other')
         if (receivedMessage.event == "chat.request") {
-          const found = requestUsers.find(user => user.chatId == receivedMessage.from)
+          const found = requestUsers.find(user => user.address == extractAddress(receivedMessage.from))
 
           if (!found) {
             const profile = await getWalletProfile(chatUser, receivedMessage.from)
@@ -539,14 +640,29 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 chatId: receivedMessage.chatId,
                 type: "Request",
                 unreadMessages: 0,
-                lastTimestamp: 0,
-                lastMessage: ""
+                lastTimestamp: Number(receivedMessage.timestamp),
+                lastMessage: receivedMessage.message.content
               }] as Array<IUser>
               setRequestUsers(users)
 
               updateEnsName("request", undefined, undefined, users)
             }
+          } else if (selectedUser?.address == extractAddress(receivedMessage.from)) {
+            setChatHistory(prev =>
+              [...prev, {
+                timestamp: Number(receivedMessage.timestamp),
+                type: receivedMessage.message.type,
+                content: receivedMessage.message.content,
+                fromAddress: extractAddress(receivedMessage.from),
+                toAddress: extractAddress(receivedMessage.to[0]),
+                chatId: receivedMessage.chatId,
+                link: null,
+                reaction: ""
+              }]
+            )
           }
+
+          updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, true)
         } else if (receivedMessage.event == "chat.message") {
           console.log('chat.message')
           if (extractAddress(receivedMessage.from) == selectedUser?.address) {
@@ -554,8 +670,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
             } else {
               setToBottom(true)
-              setChatHistory(
-                [...chatHistory, {
+              setChatHistory(prev =>
+                [...prev, {
                   timestamp: Number(receivedMessage.timestamp),
                   type: receivedMessage.message.type,
                   content: receivedMessage.message.content,
@@ -574,13 +690,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
         }
       } else if (receivedMessage.origin == "self") {
-        if (receivedMessage.event == "chat.message" || receivedMessage.even == "chat.request") {
+        if (receivedMessage.event == "chat.message" || receivedMessage.event == "chat.request") {
           updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
         }
       }
     }
 
-    if (receivedMessage.event == "chat.group.participant.join" && receivedMessage.origin == "other") {
+    if (receivedMessage?.event == "chat.group.participant.join" && receivedMessage.origin == "other") {
       console.log('chat.group.participant.join------------')
       // add a member
       const profile = await getWalletProfile(chatUser, receivedMessage.from)
@@ -598,66 +714,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           pendingMembers: selectedGroup.pendingMembers.length > 0 ? selectedGroup.pendingMembers.filter(member => member.wallet != receivedMessage.from) : []
         });
       }
-      
-      setGroupList(groupList.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group))
-    } else if (receivedMessage.event == "chat.group.participant.remove" && receivedMessage.origin == "other") {
+
+      setGroupList(prev => {
+        const updated = prev.map(group => group.groupId == receivedMessage.chatId ? { ...group, members: [...group.members, newMember] } : group)
+        return [...updated]
+      })
+    } else if (receivedMessage?.event == "chat.group.participant.remove" && receivedMessage.origin == "other") {
       if (selectedGroup?.groupId == receivedMessage.chatId) {
         setSearchedGroup(null)
         setChatHistory([])
       }
 
-      setGroupList(groupList.filter(group => group.groupId != receivedMessage.chatId))
-    }
-  }
-
-  const getPrevChatHistory = async (address: string, chatId: string) => {
-    setLoadingPrevChat(true)
-    const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
-    console.log('prev history = ', prevHistory)
-
-    if (prevHistory.length > 0) {
-      let chats: IChat[] = []
-      let reactions: any[] = []
-
-      // todo should add reactions more
-      prevHistory.forEach((data: any) => {
-        if (data.messageType == "Reaction") {
-          reactions = [...reactions, data.messageObj]
-        } else {
-          chats = [...chats, {
-            timestamp: data.timestamp,
-            type: data.messageType,
-            content: data.messageContent,
-            fromAddress: extractAddress(data.fromDID),
-            toAddress: extractAddress(data.toDID),
-            chatId: data.cid,
-            link: data.link,
-            image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
-          } as IChat]
-        }
+      setGroupList(prev => {
+        const updated = prev.filter(group => group.groupId != receivedMessage.chatId)
+        return [...updated]
       })
-
-      if (reactions.length > 0) {
-        chats = chats.map(chat => {
-          const found = reactions.find(e => e.reference == chat.chatId)
-          if (found) {
-            return {
-              ...chat,
-              reaction: found.content
-            }
-          }
-          return chat
-        })
-      }
-
-      chats.shift()
-
-      if (chats.length > 0) {
-        setChatHistory([...chats.reverse(), ...chatHistory])
-      }
     }
-
-    setLoadingPrevChat(false)
   }
 
   const setLastMessage = (type: ChatType, content: string) => {
@@ -668,114 +740,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }
 
-  const getChatInformation = async () => {
-    setLoading(true)
-    setGroupList([])
-    setConnectedUsers([])
-
-    const chatData = await getAllChatData(chatUser)
-    console.log('chatdata = ', chatData)
-
-    let groupInformation: IGroup[] = []
-    let userInformation: IUser[] = []
-
-    chatData.forEach((data: any) => {
-      if (data.groupInformation) {
-        groupInformation = [...groupInformation, {
-          groupId: data.groupInformation.chatId,
-          name: data.groupInformation.groupName,
-          description: data.groupInformation.groupDescription,
-          public: data.groupInformation.isPublic,
-          image: data.groupInformation.groupImage,
-          erc20: data.groupInformation.contractAddressERC20,
-          nft: data.groupInformation.contractAddressNFT,
-          members: data.groupInformation.members,
-          pendingMembers: data.groupInformation.pendingMembers,
-          type: "Connected",
-          lastTimestamp: Number(data.msg.timestamp),
-          lastMessage: setLastMessage(data.msg.messageType, data.msg.messageContent)
-        }]
-      } else {
-        userInformation = [...userInformation, {
-          name: data.name,
-          ensName: "",
-          profilePicture: data.profilePicture,
-          address: extractAddress(data.wallets),
-          chatId: data.chatId,
-          type: "Connected",
-          lastTimestamp: data.msg.timestamp,
-          lastMessage: setLastMessage(data.msg.messageType, data.msg.messageContent),
-          unreadMessages: 0
-        }]
-      }
-    });
-    console.log('groupInformation = ', groupInformation)
-
-    if (groupInformation.length > 0) {
-      setGroupList(groupInformation.sort((a, b) => b.lastTimestamp - a.lastTimestamp))
-    }
-    if (userInformation.length > 0) {
-      const sorted = userInformation.sort((a, b) => b.lastTimestamp - a.lastTimestamp)
-      setConnectedUsers(sorted)
-      updateEnsName("connected", undefined, undefined, sorted)
-    }
-
-    //get chat request
-    const requests = await chatUser.chat.list('REQUESTS')
-    console.log('requests = ', requests)
-    if (requests.length > 0) {
-      let directRequests: IUser[] = []
-      let groupRequests: IGroup[] = []
-
-      requests.forEach((request: any) => {
-        if (!request.groupInformation) {
-          directRequests = [...directRequests, {
-            name: request.name,
-            ensName: "",
-            profilePicture: request.profilePicture,
-            address: extractAddress(request.wallets),
-            chatId: request.chatId,
-            type: "Request",
-            unreadMessages: 0,
-            lastTimestamp: 0,
-            lastMessage: ""
-          }]
-        } else if (request.groupInformation) {
-          groupRequests = [...groupRequests, {
-            groupId: request.groupInformation.chatId,
-            name: request.groupInformation.groupName,
-            description: request.groupInformation.groupDescription,
-            public: request.groupInformation.isPublic,
-            image: request.groupInformation.groupImage,
-            erc20: request.groupInformation.contractAddressERC20,
-            nft: request.groupInformation.contractAddressNFT,
-            members: request.groupInformation.members,
-            pendingMembers: request.groupInformation.pendingMembers,
-            type: "Request",
-            lastTimestamp: request.msg?.timestamp ? Number(request.msg?.timestamp) : 0,
-            lastMessage: request.msg?.messageContent ? request.msg?.messageContent : ""
-          }]
-        }
-      })
-
-      if (directRequests.length > 0) {
-        setRequestUsers(directRequests)
-        updateEnsName("request", undefined, undefined, directRequests)
-      }
-      if (groupRequests.length > 0) {
-        setRequestGroups(groupRequests)
-      }
-    }
-
-    setLoading(false)
-  }
-
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
   const updateOneGroup = (group: IGroup) => {
-    setGroupList(groupList.map(e => e.groupId == group.groupId ? group : e))
+    setGroupList(prev => {
+      const updated = prev.map(e => e.groupId == group.groupId ? group : e)
+      return updated
+    })
     setSelectedGroup(group)
   }
 
@@ -792,7 +765,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const onMakeGroup = (group: any) => {
     console.log('on make group : ', group)
-    setGroupList([{
+    setGroupList(prev => [{
       groupId: group.chatId,
       name: group.groupName,
       description: group.groupDescription,
@@ -805,111 +778,91 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       type: "Connected",
       lastTimestamp: 0,
       lastMessage: ""
-    }, ...groupList])
+    }, ...prev])
   }
 
-  const handleAcceptChat = async () => {
-    try {
-      setIsHandlingRequest(true)
-      const acceptRequest = await chatUser.chat.accept(selectedUser?.address)
-      setRequestUsers(requestUsers.filter((item) => item.chatId !== selectedUser?.chatId))
+  const handleUserRequest = async (isAccept: boolean) => {
+    setIsHandlingRequest(true)
 
-      if (selectedUser) {
-        setConnectedUsers([{ ...selectedUser, unreadMessages: 0 }, ...connectedUsers])
-      }
+    if (isAccept) {
+      try {
+        const acceptRequest = await chatUser.chat.accept(selectedUser?.address)
+        console.log('accept request = ', acceptRequest)
 
-      setSelectedUser({
-        ...selectedUser,
-        type: "Connected"
-      } as IUser)
-      console.log('accept request = ', acceptRequest)
-    } catch (err) {
-      console.log('request accept error: ', err)
-    }
-
-    setIsHandlingRequest(false)
-  }
-
-  const handleRejectChat = async () => {
-    try {
-      setIsHandlingRequest(true)
-      const rejectRequest = await chatUser.chat.reject(selectedUser?.address)
-
-      console.log('rejectRequest = ', rejectRequest)
-
-      setRequestUsers(requestUsers.filter((item) => item.chatId !== selectedUser?.chatId))
-      setSelectedUser(null)
-    } catch (err) {
-      console.log('request reject error: ', err)
-    }
-
-    setIsHandlingRequest(false)
-  }
-
-  const handleAcceptGroupRequest = async () => {
-    try {
-      setIsHandlingRequest(true)
-
-      const acceptGroup = await chatUser.chat.group.join(selectedGroup?.groupId);
-      console.log('acceptGroup = ', acceptGroup)
-
-      if (selectedGroup) {
-        setRequestGroups(requestGroups.filter(group => group.groupId != selectedGroup.groupId))
-        setGroupList([{ ...selectedGroup, type: "Connected" }, ...groupList])
-        setSelectedGroup({
-          ...selectedGroup,
-          type: "Connected",
-          members: acceptGroup?.members
+        setRequestUsers(prev => {
+          const updated = prev.filter((item) => item.chatId !== selectedUser?.chatId)
+          return [...updated]
         })
+
+        if (selectedUser) {
+          const newUser = { ...selectedUser, unreadMessages: 0, type: "Connected" } as IUser
+          setConnectedUsers(prev => [newUser, ...prev])
+          setSelectedUser(newUser)
+        }
+      } catch (err) {
+        console.log('request accept error: ', err)
       }
-    } catch (err) {
-      console.log('request accept error: ', err)
+    } else {
+      try {
+        const rejectRequest = await chatUser.chat.reject(selectedUser?.address)
+
+        console.log('rejectRequest = ', rejectRequest)
+
+        setRequestUsers(prev => {
+          const updated = prev.filter((item) => item.chatId !== selectedUser?.chatId)
+          return [...updated]
+        })
+        setSelectedUser(null)
+      } catch (err) {
+        console.log('request reject error: ', err)
+      }
     }
 
     setIsHandlingRequest(false)
   }
 
-  const handleRejectRequest = async () => {
-    try {
-      setIsHandlingRequest(true)
+  const handleGroupRequest = async (isAccept: boolean) => {
+    setIsHandlingRequest(true)
 
-      const rejectGroup = await chatUser.chat.group.reject(selectedGroup?.groupId);
-      console.log('rejectGroup = ', rejectGroup)
+    if (isAccept) {
+      try {
 
-      if (selectedGroup) {
-        setRequestGroups(requestGroups.filter(group => group.groupId != selectedGroup.groupId))
-        setSelectedGroup(null)
+        const acceptGroup = await chatUser.chat.group.join(selectedGroup?.groupId);
+        console.log('acceptGroup = ', acceptGroup)
+
+        if (selectedGroup) {
+          setRequestGroups(prev => {
+            const updated = prev.filter(group => group.groupId != selectedGroup.groupId)
+            return [...updated]
+          })
+          setGroupList(prev => [{ ...selectedGroup, type: "Connected" }, ...prev])
+          setSelectedGroup({
+            ...selectedGroup,
+            type: "Connected",
+            members: acceptGroup?.members
+          })
+        }
+      } catch (err) {
+        console.log('request accept error: ', err)
       }
-    } catch (err) {
-      console.log('request accept error: ', err)
+    } else {
+      try {
+        const rejectGroup = await chatUser.chat.group.reject(selectedGroup?.groupId);
+        console.log('rejectGroup = ', rejectGroup)
+
+        if (selectedGroup) {
+          setRequestGroups(prev => {
+            const updated = prev.filter(group => group.groupId != selectedGroup.groupId)
+            return [...updated]
+          })
+          setSelectedGroup(null)
+        }
+      } catch (err) {
+        console.log('request accept error: ', err)
+      }
     }
 
     setIsHandlingRequest(false)
-  }
-
-  const handleReaction = async (chatId: string, content: string) => {
-    // console.log('reference: ', chatId)
-    // console.log('address: ', address)
-    // console.log('content: ', content)
-
-    const receipient = selectedGroup ? selectedGroup.groupId : selectedUser ? selectedUser.address : ""
-
-    if (!receipient) return
-
-    try {
-      setChatHistory(prev => prev.map(chat => chat.chatId == chatId ? { ...chat, reaction: content } : chat))
-
-      const sentReaction = await chatUser.chat.send(receipient, {
-        type: 'Reaction',
-        content,
-        reference: chatId
-      })
-
-      console.log('sent reaction = ', sentReaction)
-    } catch (err) {
-      console.log('reaction err: ', err)
-      setChatHistory(prev => prev.map(chat => chat.chatId == chatId ? { ...chat, reaction: "" } : chat))
-    }
   }
 
   const handleSendMessage = async () => {
@@ -946,14 +899,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setMessage("")
         if (searchedUser?.address == selectedUser.address) {
           setSearchedUser(null)
-          setConnectedUsers([{ ...searchedUser, unreadMessages: 0 }, ...connectedUsers])
+          setConnectedUsers(prev => [{ ...searchedUser, unreadMessages: 0 }, ...prev])
         }
         // console.log('sent msg = ', sentMsg)
 
         setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
         setIsFailedSent(true)
-        setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
+        setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
         console.log('sent msg err: ', err)
       }
     } else if (chatMode === "group") {
@@ -983,7 +936,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
         setIsFailedSent(true)
-        setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
+        setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
         console.log('sent msg err: ', err)
       }
     }
@@ -995,6 +948,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setLoadingChatHistory(true)
     setChatHistory([])
     setSelectedUser(user)
+    console.log('user = ', user)
 
     try {
       const history = await chatUser.chat.history(user.address, { limit: LIMIT })
@@ -1039,6 +993,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       }
     } catch (err) {
       console.log('load chat history err: ', err)
+      toast({
+        status: 'error',
+        description: `Something went wrong. :(`,
+        duration: 3500
+      })
     }
 
     setLoadingChatHistory(false)
@@ -1139,21 +1098,31 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setChatHistory([])
     setSelectedUser(user)
 
-    const history = await chatUser.chat.history(user.address)
-    if (history.length > 0) {
-      const tmp: IChat[] = history.map((data: any) => {
-        return {
-          timestamp: data.timestamp,
-          type: data.messageType,
-          content: data.messageContent,
-          fromAddress: extractAddress(data.fromDID),
-          toAddress: extractAddress(data.toDID),
-          chatId: data.cid,
-          link: data.link
-        }
-      })
+    console.log('request user = ', user)
+    try {
+      const history = await chatUser.chat.history(user.address, { limit: LIMIT })
+      if (history.length > 0) {
+        const tmp: IChat[] = history.map((data: any) => {
+          return {
+            timestamp: data.timestamp,
+            type: data.messageType,
+            content: data.messageContent,
+            fromAddress: extractAddress(data.fromDID),
+            toAddress: extractAddress(data.toDID),
+            chatId: data.cid,
+            link: data.link
+          }
+        })
       setToBottom(true)
-      setChatHistory(tmp.reverse())
+        setChatHistory(tmp.reverse())
+      }
+    } catch (err) {
+      console.log('load request user chat err: ', err)
+      toast({
+        status: 'error',
+        description: `Something went wrong. :(`,
+        duration: 3500
+      })
     }
 
     setLoadingChatHistory(false)
@@ -1165,45 +1134,54 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSelectedGroup(group)
 
     console.log('selected group = ', group)
-    const history = await chatUser.chat.history(group.groupId, { limit: LIMIT })
-    // console.log('group history = ', history)
-    if (history.length > 0) {
-      let chats: IChat[] = []
-      let reactions: any[] = []
+    try {
+      const history = await chatUser.chat.history(group.groupId, { limit: LIMIT })
+      // console.log('group history = ', history)
+      if (history.length > 0) {
+        let chats: IChat[] = []
+        let reactions: any[] = []
 
-      history.forEach((data: any) => {
-        if (data.messageType == "Reaction") {
-          reactions = [...reactions, data.messageObj]
-        } else {
-          const found = group?.members.find(member => extractAddress(member.wallet) == extractAddress(data.fromDID))
-          chats = [...chats, {
-            timestamp: data.timestamp,
-            type: data.messageType,
-            content: data.messageContent,
-            fromAddress: extractAddress(data.fromDID),
-            toAddress: extractAddress(data.toDID),
-            chatId: data.cid,
-            link: data.link,
-            image: found?.image || ""
-          } as IChat]
-        }
-      })
-
-      if (reactions.length > 0) {
-        chats = chats.map(chat => {
-          const found = reactions.find(e => e.reference == chat.chatId)
-          if (found) {
-            return {
-              ...chat,
-              reaction: found.content
-            }
+        history.forEach((data: any) => {
+          if (data.messageType == "Reaction") {
+            reactions = [...reactions, data.messageObj]
+          } else {
+            const found = group?.members.find(member => extractAddress(member.wallet) == extractAddress(data.fromDID))
+            chats = [...chats, {
+              timestamp: data.timestamp,
+              type: data.messageType,
+              content: data.messageContent,
+              fromAddress: extractAddress(data.fromDID),
+              toAddress: extractAddress(data.toDID),
+              chatId: data.cid,
+              link: data.link,
+              image: found?.image || ""
+            } as IChat]
           }
-          return chat
         })
-      }
+
+        if (reactions.length > 0) {
+          chats = chats.map(chat => {
+            const found = reactions.find(e => e.reference == chat.chatId)
+            if (found) {
+              return {
+                ...chat,
+                reaction: found.content
+              }
+            }
+            return chat
+          })
+        }
 
       setToBottom(true)
-      setChatHistory(chats.reverse())
+        setChatHistory(chats.reverse())
+      }
+    } catch (err) {
+      console.log('load group chat err: ', err)
+      toast({
+        status: 'error',
+        description: `Something went wrong. :(`,
+        duration: 3500
+      })
     }
 
     setLoadingChatHistory(false)
@@ -1226,7 +1204,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           type: "Connected",
           members: joinGroup.members
         }
-        setGroupList([{ ...newGroup, type: "Connected" }, ...groupList])
+        setGroupList(prev => [{ ...newGroup, type: "Connected" }, ...prev])
         setSelectedGroup(newGroup)
       }
     } catch (err) {
@@ -1272,7 +1250,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     try {
       if (chatMode === "group" && selectedGroup) {
         const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == address)
-        setChatHistory([...chatHistory, {
+        setChatHistory(prev => [...prev, {
           timestamp: Math.floor(Date.now()),
           type,
           content,
@@ -1292,7 +1270,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setMessage("")
         console.log('sent media: ', sentMedia)
       } else if (chatMode === "p2p" && selectedUser) {
-        setChatHistory([...chatHistory, {
+        setChatHistory(prev => [...prev, {
           timestamp: Math.floor(Date.now()),
           type,
           content,
@@ -1311,13 +1289,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         setMessage("")
         if (searchedUser?.address == selectedUser.address) {
           setSearchedUser(null)
-          setConnectedUsers([{ ...searchedUser, unreadMessages: 0 }, ...connectedUsers])
+          setConnectedUsers(prev => [{ ...searchedUser, unreadMessages: 0 }, ...prev])
         }
         console.log('sent media: ', sentMedia)
       }
     } catch (err) {
       console.log('send gif err: ', err)
-      setChatHistory([...chatHistory.slice(0, chatHistory.length - 1)])
+      setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
     }
   }
 
@@ -1379,16 +1357,29 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     const lastMessage = (type === "Text" || type === "Reaction" ? msg : "💻Media")
 
     if (!isGroup) {
-      connectedUsers.length > 0 && setConnectedUsers((prevUsers) => {
-        const updatedUsers = prevUsers.map((user) =>
-          user.address === address
-            ? { ...user, lastMessage, lastTimestamp: timestamp }
-            : user
-        );
-        // console.log("Previous Users: ", prevUsers);
-        // console.log("Updated Users: ", updatedUsers);
-        return updatedUsers.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
-      });
+      if (isRequest) {
+        requestUsers.length > 0 && setRequestUsers((prevUsers) => {
+          const updatedUsers = prevUsers.map((user) =>
+            user.address === address
+              ? { ...user, lastMessage, lastTimestamp: timestamp }
+              : user
+          );
+          // console.log("Previous Users: ", prevUsers);
+          // console.log("Updated Users: ", updatedUsers);
+          return updatedUsers.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
+        });
+      } else {
+        connectedUsers.length > 0 && setConnectedUsers((prevUsers) => {
+          const updatedUsers = prevUsers.map((user) =>
+            user.address === address
+              ? { ...user, lastMessage, lastTimestamp: timestamp }
+              : user
+          );
+          // console.log("Previous Users: ", prevUsers);
+          // console.log("Updated Users: ", updatedUsers);
+          return updatedUsers.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
+        });
+      }
     } else {
       if (isRequest) {
         requestGroups.length > 0 && setRequestGroups((prevGroups) => {
@@ -1431,25 +1422,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       });
     }
   }
-
-  const downloadBase64File = (base64Data: string, fileName: string, fileType: string) => {
-    // Convert Base64 to a Blob
-    const byteCharacters = atob(base64Data);
-    const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) => byteCharacters.charCodeAt(i));
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: fileType });
-
-    // Create a temporary link element and trigger the download
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-
-    // Cleanup
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-  };
 
   const clearUnreadMessages = (address: string) => {
     if (connectedUsers.length > 0) {
@@ -1520,13 +1492,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     return <>
       {
         requestUsers.length > 0 && requestUsers.map(user => <div key={user.chatId} className={`flex p-3 hover:bg-white/5 ${user.address == selectedUser?.address && 'bg-white/10'}`}>
-          <button className={`flex-1 py-2 flex gap-8 items-center`}
+          <button className={`flex-1 py-2 flex justify-between items-center`}
             onClick={() => handleSelectRequestUser(user)}>
+
             {user?.profilePicture ? <img src={user.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
-            <div className='flex flex-col'>
+            <div className='flex flex-col text-left'>
               <span>{user.ensName ? user.ensName : user?.name || shrinkAddress(user.address)}</span>
-              {/* <span className='text-sm text-gray-400'>Join Group!</span> */}
+              {user.lastMessage ? <div className="text-sm text-white/60 truncate">{user.lastMessage.slice(0, 20)}</div> : <></>}
             </div>
+
+            {user?.lastTimestamp ? <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(user?.lastTimestamp)}</span> : <></>}
             <Info className='text-red-500' />
           </button>
         </div>
@@ -1705,372 +1680,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     //   )
     // }
   }
-
-  const renderChatBox = (chatId: string, type: ChatType, isOwner: boolean, content: string, address: string, reaction?: string) => {
-    let messageContent = content
-    let fileName = ""
-    let fileSize = ""
-    let fileType = ""
-
-    try {
-      if (type === "File") {
-        const parsed = JSON.parse(content)
-        // console.log('parsed = ', parsed)
-        if (parsed) {
-          messageContent = parsed.content.split(",")[1]
-          fileName = parsed.name
-          fileSize = parsed.size
-          fileType = parsed.type
-        }
-      } else if (type === "Image") {
-        const parsed = JSON.parse(content)
-        if (parsed) {
-          messageContent = parsed.content
-        }
-      }
-    } catch (err) {
-      // console.log('file content parse err')
-    }
-
-    const renderReactionBtn = () => <div className={`absolute ${!isOwner ? 'right-[-20px]' : 'left-[-20px]'} bottom-[2px]`}>
-      <Popover>
-        <PopoverTrigger>
-          <Smile className={`text-white/50 w-4 h-4 cursor-pointer`} />
-        </PopoverTrigger>
-        <PopoverContent className='!bg-transparent !border-transparent !w-[200px]'>
-          <div className='flex gap-1'>
-            <button onClick={() => handleReaction(chatId, '👍')}>👍</button>
-            <button onClick={() => handleReaction(chatId, '👎')}>👎</button>
-            <button onClick={() => handleReaction(chatId, '❤️')}>❤️</button>
-            <button onClick={() => handleReaction(chatId, '🔥')}>🔥</button>
-            <button onClick={() => handleReaction(chatId, '😲')}>😲</button>
-            <button onClick={() => handleReaction(chatId, '😂')}>😂</button>
-            <button onClick={() => handleReaction(chatId, '😢')}>😢</button>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </div>
-
-    const reactionIcon = () => reaction ? <span className={`absolute ${!isOwner ? 'right-[8px]' : 'left-[8px]'} bottom-[-10px]`}>{reaction}</span> : null
-
-    if (type === "Text") {
-      return <div className={`flex ${!isOwner ? 'justify-start' : 'justify-end'}`}>
-        <div className={`relative rounded-lg p-3 max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
-          {messageContent}
-          {renderReactionBtn()}
-          {reactionIcon()}
-        </div>
-      </div>
-    } else if (type === "MediaEmbed") {
-      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
-        <img className={`w-52 h-auto`} src={messageContent} />
-        {renderReactionBtn()}
-        {reactionIcon()}
-      </div>
-    } else if (type === "Image") {
-      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
-        <img className={`w-52 h-auto`} src={messageContent} />
-        {renderReactionBtn()}
-        {reactionIcon()}
-      </div>
-    } else if (type === "File") {
-      return <div className={`relative flex flex-col gap-4 items-center w-56 h-20 rounded-lg justify-center  ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
-        <div className='flex gap-4 items-center'>
-          <File className='w-10 h-10 text-white/50' />
-          <div className='flex flex-col text-white/50'>
-            <span className='text-md'>{fileName}</span>
-            <span className='text-sm text-center'>{fileSize}B</span>
-          </div>
-          <Download className='w-5 h-5 cursor-pointer' onClick={() => downloadBase64File(messageContent, fileName, fileType)} />
-        </div>
-        {renderReactionBtn()}
-        {reactionIcon()}
-      </div>
-    }
-  }
-
-  const renderChatHistory = () => {
-    if (chatMode === "p2p") {
-      return chatHistory.map((msg: IChat) => (
-        msg.type !== "Reaction" ? <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-          {
-            msg.fromAddress == selectedUser?.address &&
-            < img
-              src={selectedUser.profilePicture}
-              className="w-8 h-8 rounded-full mt-1"
-            />
-          }
-          <div className="flex-1 min-w-0">
-            <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
-              {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-              <span className="font-medium text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
-              <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
-            </div>
-            {
-              renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
-            }
-          </div>
-        </div> : null
-      ))
-    } else if (chatMode === "group") {
-      return chatHistory.map((msg) => (
-        <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-          {
-            msg.fromAddress != address ? msg.image ?
-              < img
-                src={msg.image}
-                className="w-8 h-8 rounded-full mt-1"
-              />
-              : null : null
-          }
-          <div className="flex-1 min-w-0">
-            <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
-              {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-              <span className="font-medium text-white/70">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
-              <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
-            </div>
-            {
-              renderChatBox(msg.chatId, msg.type, msg.fromAddress == address, msg.content, "", msg.reaction)
-            }
-          </div>
-          {
-            msg.fromAddress == address ? msg.image ?
-              < img
-                src={msg.image}
-                className="w-8 h-8 rounded-full mt-1"
-              />
-              : null : null
-          }
-        </div>
-      ))
-    }
-  }
-
-  const renderButtonsInHistory = () => {
-    if (selectedUser?.type === "Request") {
-      return <div className='w-full flex justify-center'>
-        <div className='w-[320px] rounded-lg p-3 bg-white/5'>
-          <span className='text-white/40'>This wallet wants to chat with you! Please accept to continue or reject to decline.</span>
-          <div className='mt-2 flex gap-4 justify-center'>
-            {
-              isHandlingRequest ? <Spinner className='w-10 h-10' /> : <>
-                <button onClick={handleAcceptChat}>
-                  <CheckCircle className='text-blue-500 w-10 h-10' />
-                </button>
-                <button onClick={handleRejectChat}>
-                  <XCircle className='text-white/40 w-10 h-10' />
-                </button>
-              </>
-            }
-          </div>
-        </div>
-      </div>
-    }
-
-    if (selectedGroup?.type === "Request") {
-      console.log('group request')
-      return <div className='w-full flex justify-center'>
-        <div className='w-[320px] rounded-lg py-5 px-3 bg-white/5'>
-          <div className='text-white/40 text-center'>You were invited to this group. Please accept to continue messaging in this group.</div>
-          <div className='mt-2 flex gap-4 justify-center'>
-            {
-              isHandlingRequest ? <Spinner className='w-10 h-10' /> : <>
-                <button onClick={handleAcceptGroupRequest}>
-                  <CheckCircle className='text-blue-500 w-10 h-10' />
-                </button>
-                <button onClick={handleRejectRequest}>
-                  <XCircle className='text-white/40 w-10 h-10' />
-                </button>
-              </>
-            }
-          </div>
-        </div>
-      </div>
-    }
-
-    if (selectedGroup?.type === "Searched") {
-      return <div className='w-full flex justify-center'>
-        <div className='w-[320px] rounded-lg py-5 px-3 bg-white/5'>
-          <div className='text-white/40 text-center'>Click on the button to join the group.</div>
-          <div className='mt-2 flex gap-4 justify-center'>
-            {
-              !isJoiningGroup ?
-                <button
-                  className='py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg'
-                  onClick={handleJoinGroup}>
-                  Join Group
-                </button> :
-                <Spinner />
-            }
-          </div>
-        </div>
-      </div>
-    }
-
-    return null
-  }
-
-  const renderMessages = () => {
-    if (!selectedGroup && !selectedUser) {
-      return (
-        <div className="flex flex-col items-center justify-center h-full text-white/40">
-          <MessageSquare className="w-12 h-12 mb-4" />
-          <p>No messages yet</p>
-          <p className="text-sm">Start a conversation!</p>
-        </div>
-      );
-    }
-
-    if (loadingChatHistory) {
-      return (
-        <div className="flex flex-col items-center justify-center h-full">
-          <Spinner />
-        </div>
-      )
-    }
-
-    if (chatHistory && chatHistory.length > 0) {
-      return (
-        <div className="space-y-4">
-          {
-            loadingPrevChat && <div className='w-full flex justify-center'>
-              <Spinner />
-            </div>
-          }
-          {
-            renderChatHistory()
-          }
-          {
-            renderButtonsInHistory()
-          }
-        </div>
-      )
-    } else {
-      return (
-        renderButtonsInHistory() ||
-        <div className="flex flex-col items-center justify-center h-full text-white/40">
-          <MessageSquare className="w-12 h-12 mb-4" />
-          <p>No messages yet</p>
-          <p className="text-sm">Start a conversation!</p>
-        </div>
-      )
-    }
-
-    // if (isFailedSent) {
-    //   return <div className='text-red-500 text-sm absolute bottom-[76px] right-[8px]'>Can't send message. Please try again.</div>
-    // }
-
-    // // Check access before showing messages
-    // if (!canAccessChat(selectedUser, selectedGroup)) {
-    //   return (
-    //     <div className="flex flex-col items-center justify-center h-full text-center p-6">
-    //       <Shield className="w-16 h-16 text-red-400 mb-4" />
-    //       <h3 className="text-xl font-medium mb-2">NFT Required</h3>
-    //       <p className="text-white/60 mb-4">
-    //         This {selectedGroup ? 'group' : 'chat'} requires ownership of{' '}
-    //         {selectedGroup?.requiredNft?.collection || selectedUser?.nftAccess?.[0].collection}
-    //       </p>
-    //       <div className="flex items-center gap-4">
-    //         <img
-    //           src={selectedGroup?.requiredNft?.image || selectedUser?.nftAccess?.[0].image}
-    //           alt="Required NFT"
-    //           className="w-24 h-24 rounded-lg"
-    //         />
-    //         <div className="text-left">
-    //           <h4 className="font-medium mb-2">Required NFT</h4>
-    //           <p className="text-sm text-white/60">
-    //             You need to own at least one NFT from this collection to access the chat
-    //           </p>
-    //           <a
-    //             href="https://opensea.io"
-    //             target="_blank"
-    //             rel="noopener noreferrer"
-    //             className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors text-sm"
-    //           >
-    //             <span>Buy on OpenSea</span>
-    //             <ExternalLink className="w-4 h-4" />
-    //           </a>
-    //         </div>
-    //       </div>
-    //     </div>
-    //   );
-    // }
-
-    // // Show trading group messages
-    // if (selectedGroup?.id === 'trading') {
-    //   return (
-    //     <div className="space-y-4">
-    //       {tradingGroupMessages.map((msg) => (
-    //         <div key={msg.id} className="flex items-start gap-3 group">
-    //           <img
-    //             src={msg.sender.avatar}
-    //             alt={msg.sender.name}
-    //             className="w-8 h-8 rounded-full mt-1"
-    //           />
-    //           <div className="flex-1 min-w-0">
-    //             <div className="flex items-center gap-2 mb-1">
-    //               <span className="font-medium">{msg.sender.name}</span>
-    //               <span className="text-sm text-white/60">{msg.sender.ens}</span>
-    //               <span className="text-sm text-white/40">{msg.timestamp}</span>
-    //             </div>
-    //             <div className="bg-white/5 rounded-lg p-3">
-    //               {msg.content}
-    //             </div>
-    //             {msg.reactions && (
-    //               <div className="flex items-center gap-2 mt-2">
-    //                 {msg.reactions.map((reaction, index) => (
-    //                   <button
-    //                     key={index}
-    //                     className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm ${reaction.reacted ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 hover:bg-white/10'
-    //                       } transition-colors`}
-    //                   >
-    //                     <span>{reaction.emoji}</span>
-    //                     <span>{reaction.count}</span>
-    //                   </button>
-    //                 ))}
-    //                 <button className="p-1 rounded-full bg-white/5 hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all">
-    //                   <Plus className="w-3 h-3" />
-    //                 </button>
-    //               </div>
-    //             )}
-    //           </div>
-    //         </div>
-    //       ))}
-    //     </div>
-    //   );
-    // }
-
-    // // Show Bob's direct messages
-    // if (selectedUser?.id === '2') { // Bob's ID
-    //   const chatMessages = messages['bob'] || [];
-    //   return (
-    //     <div className="space-y-4">
-    //       {chatMessages.map((msg) => (
-    //         <div key={msg.id} className="flex items-start gap-3 group">
-    //           <img
-    //             src={msg.sender.avatar}
-    //             alt={msg.sender.name}
-    //             className="w-8 h-8 rounded-full mt-1"
-    //           />
-    //           <div className="flex-1 min-w-0">
-    //             <div className="flex items-center gap-2 mb-1">
-    //               <span className="font-medium">{msg.sender.name}</span>
-    //               <span className="text-sm text-white/60">{msg.sender.ens}</span>
-    //               <span className="text-sm text-white/40">{msg.timestamp}</span>
-    //             </div>
-    //             <div className={`rounded-lg p-3 ${msg.sender.id === 'me' ? 'bg-blue-500/20 ml-auto' : 'bg-white/5'
-    //               }`}>
-    //               {msg.content}
-    //             </div>
-    //           </div>
-    //         </div>
-    //       ))}
-    //     </div>
-    //   );
-    // }
-
-    // Empty state for other chats
-  };
 
   if (!isOpen) return null;
 
@@ -2271,9 +1880,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Chat Messages */}
-            <div ref={chatScrollRef} className="flex-1 p-4 overflow-x-hidden overflow-y-auto ai-chat-scrollbar">
-              {renderMessages()}
-            </div>
+            <ChatMessages
+              selectedGroup={selectedGroup}
+              selectedUser={selectedUser}
+              chatMode={chatMode}
+              chatHistory={chatHistory}
+              setChatHistory={setChatHistory}
+              handleUserRequest={handleUserRequest}
+              handleGroupRequest={handleGroupRequest}
+              handleJoinGroup={handleJoinGroup}
+              isHandlingRequest={isHandlingRequest}
+              isJoiningGroup={isJoiningGroup}
+              loadingChatHistory={loadingChatHistory}
+              toBottom={toBottom}
+              setToBottom={setToBottom}
+            />
 
             {/* Chat Input */}
             {canAccessChat(selectedUser, selectedGroup) && (
