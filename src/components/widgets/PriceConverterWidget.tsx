@@ -9,18 +9,26 @@ import { mapChainId2NativeAddress } from "../../config/networks.ts";
 const formatSpecialNumber = (num: number): string => {
   if (num === 0) return '0.00';
 
-  // Convert to string and remove scientific notation
   let str = num.toFixed(20).replace(/\.?0+$/, '');
 
-  // Find the first non-zero decimal digit
   const match = str.match(/^0\.0+[1-9]/);
   if (match) {
-    const leadingZeros = (match[0].match(/0/g) || []).length - 1;
+    const zeroMatch = str.match(/^0\.(0+)[1-9]/);
+    const zeroCount = zeroMatch ? zeroMatch[1].length : 0;
     const firstNonZero = str.replace(/^0\.0+/, '');
-    return `0.0₁₀${firstNonZero.slice(0, 4)}`;
+
+    const subscriptNumber = zeroCount.toString().split('').map(num => {
+      const subscripts = ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉'];
+      return subscripts[parseInt(num)];
+    }).join('');
+
+    return `0.0${subscriptNumber}${firstNonZero.slice(0, 4)}`;
   }
 
-  // For normal numbers, show regular format with up to 4 decimal places
+  if (num >= 0.01) {
+    return num.toFixed(4).replace(/\.?0+$/, '');
+  }
+
   return Number(str).toFixed(4).replace(/\.?0+$/, '');
 };
 
