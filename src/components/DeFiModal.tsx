@@ -1,25 +1,19 @@
-import React, {useState} from 'react';
-import {BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X} from 'lucide-react';
+import React, { useState, useContext, useEffect, useMemo } from 'react';
+import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X } from 'lucide-react';
+import { ethers } from "ethers";
+
+import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useDefi';
+import { Web3AuthContext } from '../providers/Web3AuthContext';
+import useDefiStore, { Position } from '../store/useDefiStore';
+import { formatNumberByFrac } from '../utils/common.util';
+import useTokenBalanceStore from '../store/useTokenBalanceStore';
+import { TokenChainIcon } from './swap/components/TokenIcon';
+import { useSendDepositMutation } from '../hooks/useDeposit';
+import useGasEstimation from '../hooks/useGasEstimation';
 
 interface DeFiModalProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-interface Position {
-  protocol: string;
-  type: 'LENDING' | 'BORROWING' | 'STAKING' | 'POOL';
-  amount: number;
-  token: string;
-  apy: number;
-  rewards?: number;
-  healthFactor?: number;
-  poolShare?: number;
-  pairToken?: string;
-  logo: string;
-  borrowed?: number;
-  maxBorrow?: number;
-  collateralFactor?: number;
 }
 
 interface Offering {
@@ -47,59 +41,6 @@ interface ModalState {
   type: 'deposit' | 'withdraw' | 'borrow' | 'repay' | null;
   position?: Position;
 }
-
-const positions: Position[] = [
-  {
-    protocol: 'Aave V3',
-    type: 'LENDING',
-    amount: 1875,
-    token: 'USDC',
-    apy: 8.15,
-    logo: 'https://cryptologos.cc/logos/aave-aave-logo.png',
-    collateralFactor: 0.85
-  },
-  {
-    protocol: 'Compound V3',
-    type: 'BORROWING',
-    amount: 2500,
-    token: 'ETH',
-    apy: 3.5,
-    borrowed: 1.5,
-    maxBorrow: 2.0,
-    healthFactor: 1.75,
-    logo: 'https://cryptologos.cc/logos/compound-comp-logo.png'
-  },
-  {
-    protocol: 'Lido',
-    type: 'STAKING',
-    amount: 3700,
-    token: 'ETH',
-    apy: 5.5,
-    rewards: 2.5,
-    logo: 'https://cryptologos.cc/logos/lido-dao-ldo-logo.png'
-  },
-  {
-    protocol: 'Uniswap V3',
-    type: 'POOL',
-    amount: 3150,
-    token: 'ETH',
-    pairToken: 'USDC',
-    apy: 12.45,
-    poolShare: 0.015,
-    logo: 'https://cryptologos.cc/logos/uniswap-uni-logo.png'
-  },
-  {
-    protocol: 'Aave V3',
-    type: 'BORROWING',
-    amount: 5000,
-    token: 'USDC',
-    apy: 4.25,
-    borrowed: 2500,
-    maxBorrow: 4250,
-    healthFactor: 1.45,
-    logo: 'https://cryptologos.cc/logos/aave-aave-logo.png'
-  }
-];
 
 const offerings: Offering[] = [
   {
@@ -220,13 +161,39 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'explore'>('overview');
   const [selectedPositionType, setSelectedPositionType] = useState<Position['type'] | 'ALL'>('ALL');
   const [modalState, setModalState] = useState<ModalState>({ type: null });
+  const [inputAmountToken1, setInputAmountToken1] = useState("");
+  // const [inputToken2, setInputToken2] = useState("");
+
+  const { mutate: sendDepositMutate } = useSendDepositMutation();
+  const { data: gasData } = useGasEstimation()
+
+  const { chainId, address, provider, signer } = useContext(Web3AuthContext);
+  const { positions, protocol, netAPY, healthFactor, protocolTypes } = useDefiStore();
+
+  const { getTokenBalance } = useTokenBalanceStore();
+
+  const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0].contract_address, Number(chainId)) : null;
+  const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1].contract_address, Number(chainId)) : null;
+
+  const isErrorInputAmountToken1 = useMemo(() => {
+    if (inputAmountToken1 === "") {
+      return false;
+    }
+    if (0 < Number(inputAmountToken1) && Number(inputAmountToken1) <= Number(tokenBalance1?.balance)) {
+      return false;
+    }
+    return true;
+  }, [inputAmountToken1, tokenBalance1])
+
+  useDefiPositionByWallet({ chainId: chainId, walletAddress: address })
+  useDefiProtocolsByWallet({ chainId, walletAddress: address })
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
   const getTypeIcon = (type: Position['type']) => {
-    switch (type) {
+    switch (type.toUpperCase()) {
       case 'LENDING':
         return '💰';
       case 'BORROWING':
@@ -235,6 +202,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         return '🔒';
       case 'POOL':
         return '🌊';
+      default:
+        return '🎢'
     }
   };
 
@@ -266,6 +235,76 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     setModalState({ type, position });
   };
 
+  const depositHandler = async () => {
+    const amountValue = ethers.utils.parseUnits(
+      Number(inputAmountToken1).toFixed(8).replace(/\.?0+$/, ""),
+      5
+    );
+
+    if (signer) {
+
+      const _tx = {
+        data: "0xa9059cbb00000000000000000000000055d398326f99059ff775485246999027b31979550000000000000000000000000000000000000000000000000de0b6b3a7640000",
+        gasLimit: 210000n,
+        gasPrice: 2500000000n,
+        to: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+        value: 0n
+      }
+
+      const _txData = {
+        "createdAt": 46643157,
+        "tx": {
+          "data": "0x083001ba0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000200000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000186a00000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d00000000000000000000000000000000000000000000000000000000000186a00000000000000000000000000000000000000000000000000000000000000006095ea7b3010001ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010001ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580de8e33700c1000000000000ff4752ba5dbc23f44d87826276bf6fd6b1c372ad240203010104040506ffffffffffffffffffffffffffffffffffffffffffffffff095ea7b3010007ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010007ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000240000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000200000000000000000000000004752ba5dbc23f44d87826276bf6fd6b1c372ad24000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000186a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000000200000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000184ac00000000000000000000000000000000000000000000000000000000000000200000000000000000000000007d585b0e27bbb3d981b7757115ec11f47c47699400000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000067aee01b00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000",
+          "to": "0x80EbA3855878739F4710233A8a19d89Bdd2ffB8E",
+          "from": "0x22c7Fa62e46196cFE1Ee15D686e541f605A87Bd6",
+          "value": "0",
+        },
+        "gas": "263273", "bundle": [{ "action": "approve", "protocol": "erc20", "args": { "token": "0x55d398326f99059ff775485246999027b3197955", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "approve", "protocol": "erc20", "args": { "token": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "deposit", "protocol": "uniswap-v2", "args": { "tokenIn": ["0x55d398326f99059ff775485246999027b3197955", "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d"], "tokenOut": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2", "amountIn": ["100000", "100000"], "primaryAddress": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24" } }]
+      }
+
+      await signer.sendTransaction(_txData.tx).catch((e) => {
+        console.error(e)
+      })
+    }
+    return
+
+    sendDepositMutate({
+      chainId: Number(chainId),
+      fromAddress: address,
+      routingStrategy: "delegate",
+      action: "deposit",
+      protocol: "uniswap-v2",
+      tokenIn: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
+      tokenOut: modalState?.position?.address || "",
+      amountIn: [Number(amountValue), Number(amountValue)],
+      primaryAddress: "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"
+    }, {
+      onSuccess: async (txData) => {
+        console.log("#########################", txData)
+
+
+        if (signer) {
+
+          const _tx = {
+            data: "0xa9059cbb00000000000000000000000055d398326f99059ff775485246999027b31979550000000000000000000000000000000000000000000000000de0b6b3a7640000",
+            gasLimit: 210000n,
+            gasPrice: 2500000000n,
+            to: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+            value: 0n
+          }
+
+          const _txData = { "createdAt": 46643157, "tx": { "data": "0x083001ba000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000000200000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000186a00000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d00000000000000000000000000000000000000000000000000000000000186a00000000000000000000000000000000000000000000000000000000000000008095ea7b3010001ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010001ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580d095ea7b3010001ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010001ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580de8e33700c1000000000000ff4752ba5dbc23f44d87826276bf6fd6b1c372ad240203010104040506ffffffffffffffffffffffffffffffffffffffffffffffff095ea7b3010007ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010007ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000240000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000200000000000000000000000004752ba5dbc23f44d87826276bf6fd6b1c372ad24000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000186a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000000200000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000184ac00000000000000000000000000000000000000000000000000000000000000200000000000000000000000007d585b0e27bbb3d981b7757115ec11f47c47699400000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000067aed7fd00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000", "to": "0x80EbA3855878739F4710233A8a19d89Bdd2ffB8E", "from": "0x22c7Fa62e46196cFE1Ee15D686e541f605A87Bd6", "value": "0" }, "gas": "263273", "bundle": [{ "action": "approve", "protocol": "erc20", "args": { "token": "0x55d398326f99059ff775485246999027b3197955", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "approve", "protocol": "erc20", "args": { "token": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "deposit", "protocol": "uniswap-v2", "args": { "tokenIn": ["0x55d398326f99059ff775485246999027b3197955", "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d"], "tokenOut": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2", "amountIn": ["100000", "100000"], "primaryAddress": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24" } }] }
+
+          console.log("########################", txData)
+          await signer.sendTransaction(_txData.tx)
+        }
+      },
+      onError: async () => {
+
+      }
+    })
+  }
+
   const renderPositions = () => (
     <div className="space-y-3">
       {positions
@@ -290,18 +329,17 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     </span>
                     <span className="text-white/40">•</span>
                     <span className="text-sm text-white/60">
-                      {position.token}
-                      {position.pairToken && `/${position.pairToken}`}
+                      {`${position.tokens[0].symbol}/${position.tokens[1].symbol} ${position.tokens[2].symbol}`}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-6">
                     {position.type === 'BORROWING' ? (
                       <>
                         <div>
                           <span className="text-sm text-white/60">Borrowed</span>
                           <div className="text-lg">
-                            {position.borrowed} {position.token}
+                            {position.borrowed} {position.tokens}
                             <span className="text-sm text-white/60 ml-1">
                               (${(position.borrowed! * 3245.67).toLocaleString()})
                             </span>
@@ -310,7 +348,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         <div>
                           <span className="text-sm text-white/60">Borrow Limit</span>
                           <div className="text-lg">
-                            {position.maxBorrow} {position.token}
+                            {position.maxBorrow} {position.tokens}
                             <span className="text-sm text-white/60 ml-1">
                               (${(position.maxBorrow! * 3245.67).toLocaleString()})
                             </span>
@@ -322,10 +360,9 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         </div>
                         <div>
                           <span className="text-sm text-white/60">Health Factor</span>
-                          <div className={`${
-                            position.healthFactor! >= 1.5 ? 'text-green-400' :
+                          <div className={`${position.healthFactor! >= 1.5 ? 'text-green-400' :
                             position.healthFactor! >= 1.1 ? 'text-yellow-400' : 'text-red-400'
-                          }`}>
+                            }`}>
                             {position.healthFactor!.toFixed(2)}
                           </div>
                         </div>
@@ -334,19 +371,19 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       <>
                         <div>
                           <span className="text-sm text-white/60">Amount</span>
-                          <div className="text-lg">${position.amount.toLocaleString()}</div>
+                          <div className="text-lg">${(position.amount || "0").toLocaleString()}</div>
                         </div>
                         <div>
                           <span className="text-sm text-white/60">APY</span>
-                          <div className="text-emerald-400">{position.apy}%</div>
+                          <div className="text-emerald-400">{(position.apy || "0")}%</div>
                         </div>
                         {position.rewards && (
                           <div>
                             <span className="text-sm text-white/60">Rewards</span>
-                            <div className="text-blue-400">+{position.rewards}% APR</div>
+                            <div className="text-blue-400">+{(position.rewards || "0")}% APR</div>
                           </div>
                         )}
-                        {position.healthFactor && (
+                        {!!position.healthFactor && (
                           <div>
                             <span className="text-sm text-white/60">Health Factor</span>
                             <div className="text-green-400">{position.healthFactor}</div>
@@ -413,11 +450,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all ${
-                      (position.borrowed! / position.maxBorrow!) >= 0.8 ? 'bg-red-500' :
+                    className={`h-full transition-all ${(position.borrowed! / position.maxBorrow!) >= 0.8 ? 'bg-red-500' :
                       (position.borrowed! / position.maxBorrow!) >= 0.6 ? 'bg-yellow-500' :
-                      'bg-green-500'
-                    }`}
+                        'bg-green-500'
+                      }`}
                     style={{ width: `${(position.borrowed! / position.maxBorrow!) * 100}%` }}
                   />
                 </div>
@@ -433,11 +469,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => setSelectedPositionType('ALL')}
-          className={`px-3 py-1.5 rounded-lg transition-colors ${
-            selectedPositionType === 'ALL'
-              ? 'bg-white/10'
-              : 'hover:bg-white/5'
-          }`}
+          className={`px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
+            ? 'bg-white/10'
+            : 'hover:bg-white/5'
+            }`}
         >
           All Types
         </button>
@@ -445,11 +480,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           <button
             key={type}
             onClick={() => setSelectedPositionType(type)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-              selectedPositionType === type
-                ? 'bg-white/10'
-                : 'hover:bg-white/5'
-            }`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
+              ? 'bg-white/10'
+              : 'hover:bg-white/5'
+              }`}
           >
             {getTypeIcon(type)}
             <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
@@ -471,7 +505,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   alt={offering.protocol}
                   className="w-10 h-10"
                 />
-                
+
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-medium">{offering.protocol}</h3>
@@ -484,7 +518,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       {offering.pairToken && `/${offering.pairToken}`}
                     </span>
                   </div>
-                  
+
                   <p className="text-sm text-white/60 mb-2">
                     {offering.description}
                   </p>
@@ -492,9 +526,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   <div className="flex items-center gap-6">
                     <div>
                       <span className="text-sm text-white/60">Base APY</span>
-                      <div className={`${
-                        offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
-                      }`}>
+                      <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
+                        }`}>
                         {offering.apy}%
                       </div>
                     </div>
@@ -536,17 +569,17 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 <button
-                  onClick={() => handleAction(
-                    offering.type === 'BORROWING' ? 'borrow' : 'deposit',
-                    {
-                      protocol: offering.protocol,
-                      type: offering.type,
-                      amount: 0,
-                      token: offering.token,
-                      apy: offering.apy,
-                      logo: offering.logo
-                    }
-                  )}
+                  // onClick={() => handleAction(
+                  //   offering.type === 'BORROWING' ? 'borrow' : 'deposit',
+                  //   {
+                  //     protocol: offering.protocol,
+                  //     type: offering.type,
+                  //     amount: 0,
+                  //     tokens: offering.tokens,
+                  //     apy: offering.apy,
+                  //     logo: offering.logo
+                  //   }
+                  // )}
                   className="px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg"
                 >
                   Get Started
@@ -564,32 +597,30 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${
-          isFullscreen
-            ? 'w-full h-full rounded-none'
-            : 'w-[90%] h-[90%] rounded-xl'
-        }`}
+        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
+          ? 'w-full h-full rounded-none'
+          : 'w-[90%] h-[90%] rounded-xl'
+          }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
+              <button onClick={depositHandler}>test</button>
               <button
                 onClick={() => setSelectedTab('overview')}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
-                  selectedTab === 'overview'
-                    ? 'bg-white/10'
-                    : 'hover:bg-white/5'
-                }`}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'overview'
+                  ? 'bg-white/10'
+                  : 'hover:bg-white/5'
+                  }`}
               >
                 Overview
               </button>
               <button
                 onClick={() => setSelectedTab('explore')}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
-                  selectedTab === 'explore'
-                    ? 'bg-white/10'
-                    : 'hover:bg-white/5'
-                }`}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'explore'
+                  ? 'bg-white/10'
+                  : 'hover:bg-white/5'
+                  }`}
               >
                 Explore
               </button>
@@ -627,7 +658,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Total Value Locked</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    $9,555
+                    {formatNumberByFrac(protocol.total_usd_value)}
                   </div>
                   <div className="flex items-center gap-1 text-emerald-400">
                     <TrendingUp className="w-4 h-4" />
@@ -642,7 +673,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Net APY</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    +5.82%
+                    + {netAPY}%
                   </div>
                   <div className="text-sm text-white/60">
                     Across all positions
@@ -655,7 +686,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Total Rewards</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    +$549.25
+                    +$ {protocol.total_unclaimed_usd_value}
                   </div>
                   <div className="text-sm text-white/60">
                     Unclaimed rewards
@@ -671,7 +702,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     Healthy
                   </div>
                   <div className="text-sm text-white/60">
-                    All positions safe
+                    All positions safe ({healthFactor})
                   </div>
                 </div>
               </div>
@@ -680,23 +711,21 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               <div className="flex items-center gap-2 mb-6">
                 <button
                   onClick={() => setSelectedPositionType('ALL')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${
-                    selectedPositionType === 'ALL'
-                      ? 'bg-white/10'
-                      : 'hover:bg-white/5'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
+                    ? 'bg-white/10'
+                    : 'hover:bg-white/5'
+                    }`}
                 >
                   All Types
                 </button>
-                {(['LENDING', 'BORROWING', 'STAKING', 'POOL'] as Position['type'][]).map(type => (
+                {protocolTypes.map(type => (
                   <button
                     key={type}
                     onClick={() => setSelectedPositionType(type)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                      selectedPositionType === type
-                        ? 'bg-white/10'
-                        : 'hover:bg-white/5'
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
+                      ? 'bg-white/10'
+                      : 'hover:bg-white/5'
+                      }`}
                   >
                     {getTypeIcon(type)}
                     <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
@@ -713,11 +742,12 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 <div className="bg-white/5 rounded-xl p-4">
                   <h3 className="text-lg font-medium mb-4">Protocol Breakdown</h3>
                   <div className="space-y-3">
-                    {['Aave V3', 'Compound V3', 'Lido', 'Uniswap V3'].map((protocol) => {
+                    {positions.map((position) => {
+                      const protocol = position.protocol;
                       const protocolPositions = positions.filter(p => p.protocol === protocol);
                       const totalValue = protocolPositions.reduce((sum, p) => sum + p.amount, 0);
                       const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
-                      
+
                       return (
                         <div key={protocol} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
                           <img
@@ -747,11 +777,11 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 <div className="bg-white/5 rounded-xl p-4">
                   <h3 className="text-lg font-medium mb-4">Type Distribution</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    {(['LENDING', 'BORROWING', 'STAKING', 'POOL'] as Position['type'][]).map((type) => {
+                    {protocolTypes.map((type) => {
                       const typePositions = positions.filter(p => p.type === type);
                       const totalValue = typePositions.reduce((sum, p) => sum + p.amount, 0);
                       const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
-                      
+
                       return (
                         <div key={type} className="p-4 bg-white/5 rounded-lg">
                           <div className="flex items-center justify-between mb-2">
@@ -793,8 +823,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-medium">
                 {modalState.type === 'deposit' ? 'Deposit' :
-                 modalState.type === 'withdraw' ? 'Withdraw' :
-                 modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
+                  modalState.type === 'withdraw' ? 'Withdraw' :
+                    modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
               </h3>
               <button
                 onClick={() => setModalState({ type: null })}
@@ -814,17 +844,15 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 <div>
                   <div className="font-medium">{modalState.position.protocol}</div>
                   <div className="text-sm text-white/60">
-                    {modalState.position.token}
-                    {modalState.position.pairToken && `/${modalState.position.pairToken}`}
+                    {`${modalState.position.tokens[0].symbol}/${modalState.position.tokens[1].symbol} ${modalState.position.tokens[2].symbol}`}
                   </div>
                 </div>
                 <div className="ml-auto text-right">
-                  <div className={`${
-                    modalState.type === 'borrow' || modalState.type === 'repay'
-                      ? 'text-red-400'
-                      : 'text-emerald-400'
-                  }`}>
-                    {modalState.position.apy}% APY
+                  <div className={`${modalState.type === 'borrow' || modalState.type === 'repay'
+                    ? 'text-red-400'
+                    : 'text-emerald-400'
+                    }`}>
+                    {modalState.position.apy || 0}% APY
                   </div>
                   {modalState.position.rewards && (
                     <div className="text-sm text-blue-400">
@@ -835,21 +863,65 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               </div>
 
               <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-sm text-white/60 mb-2">Amount</div>
-                <input
-                  type="text"
-                  className="w-full bg-transparent text-2xl outline-none"
-                  placeholder="0.00"
-                />
+                <div className="text-sm text-white/60 mb-2">
+                  Amount
+                </div>
+                <div className='relative flex'>
+                  <input
+                    value={inputAmountToken1}
+                    onChange={(e) => setInputAmountToken1(e.target.value)}
+                    type="text"
+                    className={`w-full bg-transparent text-2xl outline-none ${isErrorInputAmountToken1 ? "text-red-500" : ""}`}
+                    placeholder="0.00"
+                  />
+                  <div className='flex items-center fixed right-12'>
+                    <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                    <span className='ml-2'>
+                      {tokenBalance1?.symbol || ""}
+                    </span>
+                  </div>
+                </div>
                 <div className="flex items-center justify-between mt-2 text-sm">
                   <span className="text-white/60">
-                    {modalState.type === 'borrow' 
-                      ? `Available to borrow: ${
-                          modalState.position.maxBorrow! - modalState.position.borrowed!
-                        } ${modalState.position.token}`
+                    {modalState.type === 'borrow'
+                      ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
+                      } ${modalState.position.tokens}`
                       : modalState.type === 'repay'
-                      ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.token}`
-                      : `Balance: ${modalState.position.amount} ${modalState.position.token}`
+                        ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
+                        : `Balance: ${formatNumberByFrac(tokenBalance1?.balance)}`
+                    }
+                  </span>
+                  <button className="text-blue-400">MAX</button>
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-xl p-4">
+                <div className="text-sm text-white/60 mb-2">
+                  Amount
+                </div>
+                <div className='relative flex'>
+                  <input
+                    value={inputAmountToken1}
+                    onChange={(e) => setInputAmountToken1(e.target.value)}
+                    type="text"
+                    className={`w-full bg-transparent text-2xl outline-none ${isErrorInputAmountToken1 ? "text-red-500" : ""}`}
+                    placeholder="0.00"
+                  />
+                  <div className='flex items-center fixed right-12'>
+                    <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                    <span className='ml-2'>
+                      {tokenBalance2?.symbol || ""}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-2 text-sm">
+                  <span className="text-white/60">
+                    {modalState.type === 'borrow'
+                      ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
+                      } ${modalState.position.tokens}`
+                      : modalState.type === 'repay'
+                        ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
+                        : `Balance: ${formatNumberByFrac(tokenBalance2?.balance)}`
                     }
                   </span>
                   <button className="text-blue-400">MAX</button>
@@ -864,10 +936,9 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-white/60">Health Factor</span>
-                    <span className={`${
-                      modalState.position.healthFactor! >= 1.5 ? 'text-green-400' :
+                    <span className={`${modalState.position.healthFactor! >= 1.5 ? 'text-green-400' :
                       modalState.position.healthFactor! >= 1.1 ? 'text-yellow-400' : 'text-red-400'
-                    }`}>
+                      }`}>
                       {modalState.position.healthFactor!.toFixed(2)}
                     </span>
                   </div>
@@ -878,10 +949,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
               )}
 
-              <button className="w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium">
+              <button className="w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium" onClick={depositHandler}>
                 {modalState.type === 'deposit' ? 'Deposit' :
-                 modalState.type === 'withdraw' ? 'Withdraw' :
-                 modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
+                  modalState.type === 'withdraw' ? 'Withdraw' :
+                    modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
               </button>
             </div>
           </div>
