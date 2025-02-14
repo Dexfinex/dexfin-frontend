@@ -112,7 +112,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(chainId)} />
+                  <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(position.chain)} />
                   <div className='flex flex-col justify-start items-start'>
                     <div className="font-medium">{position.symbol}</div>
                     <div className="text-sm text-white/60">
