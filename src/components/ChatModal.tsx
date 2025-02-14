@@ -343,8 +343,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             chatId: request.chatId,
             type: "Request",
             unreadMessages: 0,
-            lastTimestamp: 0,
-            lastMessage: ""
+            lastTimestamp: request.msg?.timestamp ? Number(request.msg?.timestamp) : 0,
+            lastMessage: request.msg?.messageContent ? request.msg?.messageContent : ""
           }]
         } else if (request.groupInformation) {
           groupRequests = [...groupRequests, {
@@ -542,6 +542,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }
 
   const handleReceiveMsg = async () => {
+    console.log('handle receive message')
+
+    // handle group messages
     if (receivedMessage?.meta?.group == true) {
       if (receivedMessage.origin == "other") {
         if (receivedMessage.event == "chat.request") {
@@ -651,11 +654,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           updateLastMessageInfo(receivedMessage.chatId, receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), true, false)
         }
       }
-    } else if (receivedMessage?.meta?.group == false) {
+    }
+
+    // handle p2p messages
+    else if (receivedMessage?.meta?.group == false) {
       if (receivedMessage.origin == "other") {
         console.log('receive other')
         if (receivedMessage.event == "chat.request") {
-          const found = requestUsers.find(user => user.chatId == receivedMessage.from)
+          const found = requestUsers.find(user => user.address == extractAddress(receivedMessage.from))
 
           if (!found) {
             const profile = await getWalletProfile(chatUser, receivedMessage.from)
@@ -676,7 +682,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
               updateEnsName("request", undefined, undefined, users)
             }
+          } else if (selectedUser?.address == extractAddress(receivedMessage.from)) {
+            setChatHistory(prev =>
+              [...prev, {
+                timestamp: Number(receivedMessage.timestamp),
+                type: receivedMessage.message.type,
+                content: receivedMessage.message.content,
+                fromAddress: extractAddress(receivedMessage.from),
+                toAddress: extractAddress(receivedMessage.to[0]),
+                chatId: receivedMessage.chatId,
+                link: null,
+                reaction: ""
+              }]
+            )
           }
+
+          updateLastMessageInfo(extractAddress(receivedMessage.from), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, true)
         } else if (receivedMessage.event == "chat.message") {
           console.log('chat.message')
           if (extractAddress(receivedMessage.from) == selectedUser?.address) {
@@ -704,7 +725,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           }
         }
       } else if (receivedMessage.origin == "self") {
-        if (receivedMessage.event == "chat.message" || receivedMessage.even == "chat.request") {
+        if (receivedMessage.event == "chat.message" || receivedMessage.event == "chat.request") {
           updateLastMessageInfo(extractAddress(receivedMessage.to[0]), receivedMessage.message.type, receivedMessage.message.content, Number(receivedMessage.timestamp), false, false)
         }
       }
@@ -849,20 +870,19 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     try {
       setIsHandlingRequest(true)
       const acceptRequest = await chatUser.chat.accept(selectedUser?.address)
+      console.log('accept request = ', acceptRequest)
+
       setRequestUsers(prev => {
         const updated = prev.filter((item) => item.chatId !== selectedUser?.chatId)
         return [...updated]
       })
 
       if (selectedUser) {
-        setConnectedUsers(prev => [{ ...selectedUser, unreadMessages: 0 }, ...prev])
+        const newUser = { ...selectedUser, unreadMessages: 0, type: "Connected" } as IUser
+        setConnectedUsers(prev => [newUser, ...prev])
+        setSelectedUser(newUser)
       }
 
-      setSelectedUser({
-        ...selectedUser,
-        type: "Connected"
-      } as IUser)
-      console.log('accept request = ', acceptRequest)
     } catch (err) {
       console.log('request accept error: ', err)
     }
@@ -1050,6 +1070,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setLoadingChatHistory(true)
     setChatHistory([])
     setSelectedUser(user)
+    console.log('user = ', user)
 
     try {
       const history = await chatUser.chat.history(user.address, { limit: LIMIT })
@@ -1194,6 +1215,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setChatHistory([])
     setSelectedUser(user)
 
+    console.log('request user = ', user)
     const history = await chatUser.chat.history(user.address)
     if (history.length > 0) {
       const tmp: IChat[] = history.map((data: any) => {
@@ -1434,16 +1456,29 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     const lastMessage = (type === "Text" || type === "Reaction" ? msg : "💻Media")
 
     if (!isGroup) {
-      connectedUsers.length > 0 && setConnectedUsers((prevUsers) => {
-        const updatedUsers = prevUsers.map((user) =>
-          user.address === address
-            ? { ...user, lastMessage, lastTimestamp: timestamp }
-            : user
-        );
-        // console.log("Previous Users: ", prevUsers);
-        // console.log("Updated Users: ", updatedUsers);
-        return updatedUsers.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
-      });
+      if (isRequest) {
+        requestUsers.length > 0 && setRequestUsers((prevUsers) => {
+          const updatedUsers = prevUsers.map((user) =>
+            user.address === address
+              ? { ...user, lastMessage, lastTimestamp: timestamp }
+              : user
+          );
+          // console.log("Previous Users: ", prevUsers);
+          // console.log("Updated Users: ", updatedUsers);
+          return updatedUsers.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
+        });
+      } else {
+        connectedUsers.length > 0 && setConnectedUsers((prevUsers) => {
+          const updatedUsers = prevUsers.map((user) =>
+            user.address === address
+              ? { ...user, lastMessage, lastTimestamp: timestamp }
+              : user
+          );
+          // console.log("Previous Users: ", prevUsers);
+          // console.log("Updated Users: ", updatedUsers);
+          return updatedUsers.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
+        });
+      }
     } else {
       if (isRequest) {
         requestGroups.length > 0 && setRequestGroups((prevGroups) => {
@@ -1575,13 +1610,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     return <>
       {
         requestUsers.length > 0 && requestUsers.map(user => <div key={user.chatId} className={`flex p-3 hover:bg-white/5 ${user.address == selectedUser?.address && 'bg-white/10'}`}>
-          <button className={`flex-1 py-2 flex gap-8 items-center`}
+          <button className={`flex-1 py-2 flex justify-between items-center`}
             onClick={() => handleSelectRequestUser(user)}>
+
             {user?.profilePicture ? <img src={user.profilePicture} className='w-10 h-10 rounded-full' /> : <User />}
-            <div className='flex flex-col'>
+            <div className='flex flex-col text-left'>
               <span>{user.ensName ? user.ensName : user?.name || shrinkAddress(user.address)}</span>
-              {/* <span className='text-sm text-gray-400'>Join Group!</span> */}
+              {user.lastMessage ? <div className="text-sm text-white/60 truncate">{user.lastMessage.slice(0, 20)}</div> : <></>}
             </div>
+
+            {user?.lastTimestamp ? <span className='w-[64px] text-xs text-white/40'>{getChatHistoryDate(user?.lastTimestamp)}</span> : <></>}
             <Info className='text-red-500' />
           </button>
         </div>
