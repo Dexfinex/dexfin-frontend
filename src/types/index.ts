@@ -171,11 +171,14 @@ export interface TokenPool {
     price_change_percentage: {
       h24?: string;
       h1?: string;
+      h6?: string;
+      m5?: string;
     };
     base_token_price_usd?: string;
     transactions?: {
-      h24?: number;
+      h24?: string;
     };
+
     volume_usd?: {
       h24?: string;
     };
