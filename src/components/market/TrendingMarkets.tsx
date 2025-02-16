@@ -59,7 +59,7 @@ export const TrendingMarkets: React.FC = () => {
   }
 
   return (
-    <div className="p-6 h-full">
+    <div className="p-2 sm:p-6 h-full">
       <div className="flex justify-between mb-4">
         <div className="flex items-center gap-2">
           <button
@@ -101,7 +101,7 @@ export const TrendingMarkets: React.FC = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3  lg:grid-cols-2 md:grid-cols-1 sm:grid-cols-1">
 
         {
           isLoading && Array.from({ length: 15 }).map((_, index) => {
@@ -112,7 +112,7 @@ export const TrendingMarkets: React.FC = () => {
         {selectedTab === "Trending Tokens" && (coins || []).map((coin) => (
           <div
             key={coin.id}
-            className="p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+            className="p-3 sm:p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
           >
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -120,30 +120,25 @@ export const TrendingMarkets: React.FC = () => {
                 <img
                   src={coin.thumb}
                   alt={coin.name}
-                  className="w-12 h-12 rounded-full relative"
+                  className="w-8 h-8 sm:w-12 sm:h-12 rounded-full relative"
                 />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold text-lg tracking-tight truncate">
+                    <h3 className="font-semibold text-md lg:text-lg  tracking-tight truncate w-[150px] sm:w-full">
                       {coin.name}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-sm text-white/80">{coin.symbol}</span>
-                      {coin.marketCapRank && (
-                        <span className="px-2 py-0.5 rounded-full bg-white/10 text-xs font-medium">
-                          Rank #{coin.marketCapRank}
-                        </span>
-                      )}
+                      <span className="px-2 py-0.5 rounded-full bg-white/10 text-xs font-medium">
+                        Rank #{coin.marketCapRank}
+                      </span>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-medium text-white">
-                      ${coin.priceUsd.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 6
-                      })}
+                      ${formatNumberByFrac(coin.priceUsd)}
                     </div>
                     {coin.volume > 0 && (
                       <div className="flex items-center gap-1 text-sm mt-0.5">
@@ -166,7 +161,7 @@ export const TrendingMarkets: React.FC = () => {
         {selectedTab === "Top Gainers" && (gainers || []).map((gainer) => (
           <div
             key={gainer.id}
-            className="p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+            className="p-3 sm:p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
           >
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -174,13 +169,13 @@ export const TrendingMarkets: React.FC = () => {
                 <img
                   src={gainer.thumb}
                   alt={gainer.name}
-                  className="w-12 h-12 rounded-full relative"
+                  className="w-8 h-8 sm:w-12 sm:h-12 rounded-full relative"
                 />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold text-lg tracking-tight truncate">
+                    <h3 className="font-semibold text-md lg:text-lg  tracking-tight truncate w-[150px] sm:w-full">
                       {gainer.name}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -194,10 +189,7 @@ export const TrendingMarkets: React.FC = () => {
                   </div>
                   <div className="text-right justify-items-end">
                     <div className="flex text-lg font-medium text-white">
-                      ${gainer.priceUsd.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 6
-                      })}
+                      ${formatNumberByFrac(gainer.priceUsd)}
                       <div className={`flex items-center ml-1 justify-end text-sm ${gainer.usd24hChange >= 0 ? 'text-emerald-400' : 'text-red-400'
                         }`}>
                         {gainer.usd24hChange > 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
@@ -225,7 +217,7 @@ export const TrendingMarkets: React.FC = () => {
         {selectedTab === "Top Losers" && (losers || []).map((gainer) => (
           <div
             key={gainer.id}
-            className="p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+            className="p-3 sm:p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
           >
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -233,13 +225,13 @@ export const TrendingMarkets: React.FC = () => {
                 <img
                   src={gainer.thumb}
                   alt={gainer.name}
-                  className="w-12 h-12 rounded-full relative"
+                  className="w-8 h-8 md:w-10 md:h-10 sm:w-12 sm:h-12  rounded-full relative"
                 />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold text-lg tracking-tight truncate">
+                    <h3 className="font-semibold text-md lg:text-lg  tracking-tight truncate w-[150px] sm:w-full">
                       {gainer.name}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -253,10 +245,7 @@ export const TrendingMarkets: React.FC = () => {
                   </div>
                   <div className="text-right justify-items-end">
                     <div className="flex text-lg font-medium text-white">
-                      ${gainer.priceUsd.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 6
-                      })}
+                      ${formatNumberByFrac(gainer.priceUsd)}
                       <div className={`flex items-center ml-1 justify-end text-sm ${gainer.usd24hChange >= 0 ? 'text-emerald-400' : 'text-red-400'
                         }`}>
                         {gainer.usd24hChange > 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
