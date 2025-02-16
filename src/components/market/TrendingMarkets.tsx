@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { Skeleton } from '@chakra-ui/react';
 import { useGetTrendingCoins, useGetTopGainers, useGetTopLosers } from '../../hooks/useMarketTrend';
+import { formatNumberByFrac } from '../../utils/common.util';
 
 export const TrendingMarkets: React.FC = () => {
 
@@ -191,32 +192,26 @@ export const TrendingMarkets: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-medium text-white">
+                  <div className="text-right justify-items-end">
+                    <div className="flex text-lg font-medium text-white">
                       ${gainer.priceUsd.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 6
                       })}
+                      <div className={`flex items-center ml-1 justify-end text-sm ${gainer.usd24hChange >= 0 ? 'text-emerald-400' : 'text-red-400'
+                        }`}>
+                        {gainer.usd24hChange > 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
+                        {formatNumberByFrac(Math.abs(gainer.usd24hChange))} %
+                      </div>
                     </div>
                     {gainer.usd24hVol > 0 && (
-                      <div className="text-sm mt-0.5">
+                      <div className="flex text-sm mt-0.5">
                         <span className="text-white/60">24H Vol:</span>
                         <span className="text-white/80 ml-2">
                           ${new Intl.NumberFormat('en-US', {
                             notation: 'compact',
                             maximumFractionDigits: 1
                           }).format(gainer.usd24hVol)}
-                        </span>
-                      </div>
-                    )}
-                    {gainer.usd24hChange > 0 && (
-                      <div className="text-sm mt-0.5">
-                        <span className="text-white/60">24H Change:</span>
-                        <span className="text-white/80 ml-2">
-                          ${new Intl.NumberFormat('en-US', {
-                            notation: 'compact',
-                            maximumFractionDigits: 1
-                          }).format(gainer.usd24hChange)}
                         </span>
                       </div>
                     )}
@@ -256,12 +251,17 @@ export const TrendingMarkets: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-medium text-white">
+                  <div className="text-right justify-items-end">
+                    <div className="flex text-lg font-medium text-white">
                       ${gainer.priceUsd.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 6
                       })}
+                      <div className={`flex items-center ml-1 justify-end text-sm ${gainer.usd24hChange >= 0 ? 'text-emerald-400' : 'text-red-400'
+                        }`}>
+                        {gainer.usd24hChange > 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
+                        {formatNumberByFrac(Math.abs(gainer.usd24hChange))} %
+                      </div>
                     </div>
                     {gainer.usd24hVol > 0 && (
                       <div className="text-sm mt-0.5">
@@ -271,17 +271,6 @@ export const TrendingMarkets: React.FC = () => {
                             notation: 'compact',
                             maximumFractionDigits: 1
                           }).format(gainer.usd24hVol)}
-                        </span>
-                      </div>
-                    )}
-                    {gainer.usd24hChange > 0 && (
-                      <div className="text-sm mt-0.5">
-                        <span className="text-white/60">24H Change:</span>
-                        <span className="text-white/80 ml-2">
-                          ${new Intl.NumberFormat('en-US', {
-                            notation: 'compact',
-                            maximumFractionDigits: 1
-                          }).format(gainer.usd24hChange)}
                         </span>
                       </div>
                     )}
