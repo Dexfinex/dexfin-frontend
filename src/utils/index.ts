@@ -24,9 +24,9 @@ export function formatAge(dateString: string): string {
     case 'y':
       date.setFullYear(date.getFullYear() - numericValue);
       break;
-    case 'm':
-      date.setMonth(date.getMonth() - numericValue);
-      break;
+    // case 'm':
+    //   date.setMonth(date.getMonth() - numericValue);
+    //   break;
     case 'd':
       date.setDate(date.getDate() - numericValue);
       break;

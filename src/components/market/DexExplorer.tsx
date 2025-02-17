@@ -5,6 +5,8 @@ import { formatAge, formatNumber } from '../../utils';
 import { getChainIcon } from '../../utils/getChainIcon';
 
 import { useGetTrendingPools, useGetNewPools, useGetTopPools } from '../../hooks/useGeckoTerminal';
+import {LoadingSpinner} from './LoadingSpinner'
+
 
 const networks = [
   { id: 'eth', name: 'Ethereum', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
@@ -35,27 +37,41 @@ export const DexExplorer: React.FC = () => {
     direction: 'desc'
   });
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [sortConfig, searchQuery, view, network]);
 
 
   const handleSort = (key: string) => {
     let direction = 'desc';
 
-    // if (sortConfig.key === key && sortConfig.direction === 'desc') {
-    //   direction = 'asc';
-    // }
+
     if (sortConfig.key === key) {
       direction = sortConfig.direction === 'desc' ? 'asc' : 'desc';
     }
     setSortConfig({ key, direction });
   };
+  
   const { data: trendingPoolsData, error: trendingError, isLoading: isLoadingTrending, refetch: refetchTrend } = useGetTrendingPools(network);
   const { data: newPoolsData, error: newError, isLoading: isLoadingNew, refetch: refetchNew } = useGetNewPools(network);
   const { data: topPoolsData, error: topError, isLoading: isLoadingTop, refetch: refetchTop } = useGetTopPools(network);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [network, sortConfig, searchQuery, view]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  
+useEffect(() => {
+  const fetchInitialData = async () => {
+    setIsInitialLoading(true);
+    try {
+      if (view === 'trending') await refetchTrend();
+      if (view === 'new') await refetchNew();
+      if (view === 'top') await refetchTop();
+    } finally {
+      setIsInitialLoading(false);
+    }
+  };
 
+  fetchInitialData();
+}, [network, view]);
   const SortIndicator = ({ currentKey }: { currentKey: string }) => {
     if (sortConfig.key !== currentKey) {
       return <ArrowUpDown className="w-4 h-4 ml-1 opacity-50" />;
@@ -67,18 +83,7 @@ export const DexExplorer: React.FC = () => {
     );
   };
 
-  const pools = useMemo(() => {
-    switch (view) {
-      case 'trending':
-        return trendingPoolsData;
-      case 'new':
-        return newPoolsData;
-      case 'top':
-        return topPoolsData;
-      default:
-        return trendingPoolsData;
-    }
-  }, [view, trendingPoolsData, newPoolsData, topPoolsData])
+
 
   const error = useMemo(() => {
     return trendingError || newError || topError
@@ -110,14 +115,35 @@ export const DexExplorer: React.FC = () => {
     }
   };
 
+
   const handleNetworkChange = (newNetwork: string) => {
     setNetwork(newNetwork);
     setShowNetworkSelector(false);
+    setView('trending');
+    setSearchQuery('');
   };
+  const pools = useMemo(() => {
+    switch (view) {
+      case 'trending':
+        return trendingPoolsData;
+      case 'new':
+        return newPoolsData;
+      case 'top':
+        return topPoolsData;
+      default:
+        return trendingPoolsData;
+    }
+  }, [view, trendingPoolsData, newPoolsData, topPoolsData, network]);
 
-  const selectedNetwork = networks.find(n => n.id === network);
+  
+  const selectedNetwork = useMemo(()=>{
+    return networks.find(n=>n.id === network)
+  }, [network])
+  
+  // const selectedNetwork = networks.find(n => n.id === network);
 
   const filteredPools = (pools || []).filter(pool => {
+    // console.log(pool)
     const searchLower = searchQuery.toLowerCase();
     const baseToken = pool.included?.tokens.find(t =>
       t.id === pool.relationships.base_token.data.id
@@ -313,6 +339,7 @@ const sortedPools = useMemo(() => {
               {selectedNetwork && (
                 <img
                   src={selectedNetwork.logo ? selectedNetwork.logo : ''}
+                  // src={selectedNetwork.logo}
                   alt={selectedNetwork.name}
                   className="w-5 h-5"
                 />
@@ -344,6 +371,7 @@ const sortedPools = useMemo(() => {
                         }`}
                     >
                       <img src={n.logo ? n.logo : ''} alt={n.name} className="w-5 h-5" />
+                      {/* <img src={n.logo} alt={n.name} className="w-5 h-5" /> */}
                       <span>{n.name}</span>
                     </button>
                   ))}
@@ -633,6 +661,7 @@ const sortedPools = useMemo(() => {
         </table>
         </div>
   <Pagination />
+  {isInitialLoading && <LoadingSpinner />}
     </div>
   );
 };
