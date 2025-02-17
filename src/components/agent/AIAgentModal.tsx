@@ -28,6 +28,7 @@ import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 import { convertCryptoAmount } from '../../utils/brian.tsx';
 import { DepositProcess } from './components/DepositProcess.tsx';
+import { WithdrawProcess } from './components/WithdrawProcess.tsx';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [showProjectAnalysis, setShowProjectAnalysis] = useState(false);
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
   const [showDepositProcess, setShowDepositProcess] = useState(false);
+  const [showWithdrawProcess, setShowWithdrawProcess] = useState(false);
   const { address, chainId, switchChain } = useContext(Web3AuthContext);
   const { tokenBalances } = useTokenBalanceStore();
 
@@ -72,6 +74,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowStakeProcess(false);
     setShowProjectAnalysis(false);
     setShowDepositProcess(false);
+    setShowWithdrawProcess(false);
   };
 
   const processCommandCase = async (command: string, address: string, chainId: number | undefined) => {
@@ -277,7 +280,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             const data = response.brianData.data;
             resetProcessStates();
             await switchChain(data.fromToken.chainId);
-            
+
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
             if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
@@ -353,6 +356,18 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             else {
               response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
             }
+          } else if (response.brianData.action == 'withdraw') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+
+            setFromToken(data.fromToken);
+            setProtocol(data.protocol);
+            setToToken(data.toToken);
+            setFromAmount(data.fromAmount);
+            setReceiver(data.receiver);
+            setSteps(data.steps);
+            setShowWithdrawProcess(true);
           }
         } else if (response.type == "action" && response.brianData.type == 'knowledge') {
           response = { text: convertBrianKnowledgeToPlainText(response.brianData.answer) };
@@ -529,6 +544,12 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           <DepositProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
             onClose={() => {
               setShowDepositProcess(false);
+              setMessages([]);
+            }} />
+        ) : showWithdrawProcess && fromToken && toToken ? (
+          <WithdrawProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowWithdrawProcess(false);
               setMessages([]);
             }} />
         ) : (
