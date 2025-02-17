@@ -30,6 +30,7 @@ export interface Position {
     borrowed?: number;
     maxBorrow?: number;
     collateralFactor?: number;
+    factory?: string;
 }
 
 // Define the store's state and actions
@@ -70,6 +71,7 @@ const useDefiStore = create<DefiStoreState>((set) => ({
             rewards: position.total_projected_earnings_usd.weekly,
             healthFactor: position.account_data?.health_factor || 0,
             logo: position.protocol_logo,
+            factory: position.position?.position_details?.factory,
         }))
         set({ positions: positions as unknown as Position[], netAPY, healthFactor, protocolTypes })
     },
