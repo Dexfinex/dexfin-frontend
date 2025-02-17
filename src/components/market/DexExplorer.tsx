@@ -143,7 +143,6 @@ useEffect(() => {
   // const selectedNetwork = networks.find(n => n.id === network);
 
   const filteredPools = (pools || []).filter(pool => {
-    // console.log(pool)
     const searchLower = searchQuery.toLowerCase();
     const baseToken = pool.included?.tokens.find(t =>
       t.id === pool.relationships.base_token.data.id
@@ -196,8 +195,8 @@ const sortedPools = useMemo(() => {
       try {
         switch (sortConfig.key) {
           case 'price':
-            aValue = parseFloat(a.attributes.base_token_price_usd || '0');
-            bValue = parseFloat(b.attributes.base_token_price_usd || '0');
+            aValue = parseFormattedNumber(a.attributes.base_token_price_usd || '0');
+            bValue = parseFormattedNumber(b.attributes.base_token_price_usd || '0');
             break;
           case '5m':
             aValue = parseFloat(a.attributes.price_change_percentage?.m5 || '0');
@@ -550,6 +549,7 @@ const sortedPools = useMemo(() => {
                 const quoteToken = pool.included?.tokens.find(t =>
                   t.id === pool.relationships.quote_token.data.id
                 );
+                const Token_price=pool.attributes.base_token_price_usd;
                 const priceChange5m = parseFloat(pool.attributes.price_change_percentage?.m5 || '0');
                 const priceChange1h = parseFloat(pool.attributes.price_change_percentage?.h1 || '0');
                 const priceChange6h = parseFloat(pool.attributes.price_change_percentage?.h6 || '0');
@@ -559,7 +559,6 @@ const sortedPools = useMemo(() => {
                 const transactions24h_json = JSON.stringify(pool.attributes.transactions?.h24 || 0);
                 const token_age = pool.attributes.pool_created_at;
                 const transactions24h = Number(JSON.parse(transactions24h_json).buyers) + Number(JSON.parse(transactions24h_json).sellers)
-
 
                 return (
                   <tr key={pool.id} className="transition-colors hover:bg-white/5">
@@ -600,7 +599,7 @@ const sortedPools = useMemo(() => {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      ${formatNumber(pool.attributes.base_token_price_usd || '0')}
+                      ${Token_price}
                     </td>
                     <td className="px-4 py-4">
                       <div className={`flex items-center gap-1 ${priceChange5m >= 0 ? 'text-green-400' : 'text-red-400'
