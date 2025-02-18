@@ -38,7 +38,7 @@ export const RepayProcess: React.FC<RepayProcessProps> = ({ steps, fromAmount, t
       setShowConfirmation(true);
 
       sendTransactionMutate(
-        { transactions: data },
+        { transactions: data, duration: 0 },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);

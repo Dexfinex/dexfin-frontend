@@ -38,7 +38,7 @@ export const BorrowProcess: React.FC<BorrowProcessProps> = ({ steps,toAmount, to
       setShowConfirmation(true);
 
       sendTransactionMutate(
-        { transactions: data },
+        { transactions: data, duration: 0 },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);

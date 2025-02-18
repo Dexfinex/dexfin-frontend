@@ -31,6 +31,7 @@ import { DepositProcess } from './components/DepositProcess.tsx';
 import { WithdrawProcess } from './components/WithdrawProcess.tsx';
 import { BorrowProcess } from './components/BorrowProcess.tsx';
 import { RepayProcess } from './components/RepayProcess.tsx';
+import { ENSRegisterProcess } from './components/ENSRegisterProcess.tsx';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -56,6 +57,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [showWithdrawProcess, setShowWithdrawProcess] = useState(false);
   const [showBorrowProcess, setShowBorrowProcess] = useState(false);
   const [showRepayProcess, setShowRepayProcess] = useState(false);
+  const [showENSRegisterProcess, setShowENSRegisterProcess] = useState(false);
   const { address, chainId, switchChain } = useContext(Web3AuthContext);
   const { tokenBalances } = useTokenBalanceStore();
 
@@ -65,8 +67,10 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [fromAmount, setFromAmount] = useState('0');
   const [toAmount, setToAmount] = useState('0');
   const [receiver, setReceiver] = useState('');
+  const [ensName, setEnsName] = useState('');
   const [solver, setSolver] = useState('');
   const [steps, setSteps] = useState<Step[]>([]);
+  const [description, setDescription] = useState('');
 
   // Reset all process states
   const resetProcessStates = () => {
@@ -81,6 +85,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowWithdrawProcess(false);
     setShowBorrowProcess(false);
     setShowRepayProcess(false);
+    setShowENSRegisterProcess(false);
   };
 
   const processCommandCase = async (command: string, address: string, chainId: number | undefined) => {
@@ -401,6 +406,16 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setReceiver(data.receiver);
             setSteps(data.steps);
             setShowRepayProcess(true);
+          } else if (response.brianData.action == 'ENS Registration') {
+            
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+            setFromToken(data.fromToken);
+            setDescription(data.description);
+            setSteps(data.steps);
+            setEnsName(response.brianData.extractedParams.address);
+            setShowENSRegisterProcess(true);
           }
         } else if (response.brianData.type == 'knowledge') {
           response = { text: convertBrianKnowledgeToPlainText(response.brianData.answer) };
@@ -597,6 +612,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
               setShowRepayProcess(false);
               setMessages([]);
             }} />
+        ) : showENSRegisterProcess && fromToken ? (
+          <ENSRegisterProcess description = {description} steps={steps} ensName={ensName} fromToken={fromToken} onClose={() => {
+            setShowENSRegisterProcess(false);
+            setMessages([]);
+          }} />
         ) : (
           <div className="flex flex-col h-full">
             {/* Header */}
