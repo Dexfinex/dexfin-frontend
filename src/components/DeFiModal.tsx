@@ -1,6 +1,6 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X } from 'lucide-react';
-import { Spinner } from '@chakra-ui/react';
+import { Spinner, Skeleton } from '@chakra-ui/react';
 
 import { TokenChainIcon } from './swap/components/TokenIcon';
 
@@ -10,7 +10,10 @@ import useDefiStore, { Position } from '../store/useDefiStore';
 import useTokenBalanceStore from '../store/useTokenBalanceStore';
 import { useSendDepositMutation } from '../hooks/useDeposit';
 import useGasEstimation from "../hooks/useGasEstimation.ts";
+import useGetTokenPrices from '../hooks/useGetTokenPrices';
+import useTokenStore from "../store/useTokenStore.ts";
 
+import { mapChainId2NativeAddress } from "../config/networks.ts";
 import { formatNumberByFrac } from '../utils/common.util';
 
 interface DeFiModalProps {
@@ -173,9 +176,34 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { positions, protocol, netAPY, healthFactor, protocolTypes } = useDefiStore();
 
   const { getTokenBalance } = useTokenBalanceStore();
-  const { data: gasData } = useGasEstimation()
-  const { refetch: refetchDefiPositionByWallet } = useDefiPositionByWallet({ chainId: chainId, walletAddress: address });
-  useDefiProtocolsByWallet({ chainId, walletAddress: address });
+  const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation()
+
+  const { isLoading: isLoadingPosition, refetch: refetchDefiPositionByWallet } = useDefiPositionByWallet({ chainId: chainId, walletAddress: address });
+  const { isLoading: isLoadingProtocol, refetch: refetchDefiProtocolByWallet } = useDefiProtocolsByWallet({ chainId, walletAddress: address });
+
+  const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
+
+  const { refetch: refetchNativeTokenPrice } = useGetTokenPrices({
+    tokenAddresses: [nativeTokenAddress],
+    chainId: Number(chainId),
+  })
+
+  const { getTokenPrice, tokenPrices } = useTokenStore()
+
+  const nativeTokenPrice = useMemo(() => {
+    if (chainId && nativeTokenAddress) {
+      return getTokenPrice(nativeTokenAddress, chainId)
+    }
+    return 0;
+  }, [getTokenPrice, nativeTokenAddress, chainId, tokenPrices])
+
+  useEffect(() => {
+    if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
+      refetchNativeTokenPrice()
+    }
+  }, [chainId, nativeTokenAddress, nativeTokenPrice])
+
+  const isLoading = isLoadingPosition || isLoadingProtocol;
 
   const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0].contract_address, Number(chainId)) : null;
   const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1].contract_address, Number(chainId)) : null;
@@ -290,6 +318,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
             if (transactionResponse) {
               await transactionResponse.wait();
               await refetchDefiPositionByWallet();
+              await refetchDefiProtocolByWallet();
 
               setTokenAmount("");
               setToken2Amount("");
@@ -309,159 +338,163 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const renderPositions = () => (
     <div className="space-y-3">
+      {
+        positions.length === 0 && isLoading && <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'}></Skeleton>
+      }
       {positions
         .filter(p => selectedPositionType === 'ALL' || p.type === selectedPositionType)
         .map((position, index) => (
-          <div
-            key={index}
-            className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <img
-                  src={position.logo}
-                  alt={position.protocol}
-                  className="w-10 h-10"
-                />
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-medium">{position.protocol}</h3>
-                    <span className={`text-sm ${getTypeColor(position.type)}`}>
-                      {position.type}
-                    </span>
-                    <span className="text-white/40">•</span>
-                    <span className="text-sm text-white/60">
-                      {`${position.tokens[0]?.symbol}/${position.tokens[1]?.symbol} ${position.tokens[2]?.symbol}`}
-                    </span>
-                  </div>
+          isLoading ? <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'}></Skeleton>
+            : <div
+              key={index}
+              className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={position.logo}
+                    alt={position.protocol}
+                    className="w-10 h-10"
+                  />
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-medium">{position.protocol}</h3>
+                      <span className={`text-sm ${getTypeColor(position.type)}`}>
+                        {position.type}
+                      </span>
+                      <span className="text-white/40">•</span>
+                      <span className="text-sm text-white/60">
+                        {`${position.tokens[0]?.symbol}/${position.tokens[1]?.symbol} ${position.tokens[2]?.symbol}`}
+                      </span>
+                    </div>
 
-                  <div className="flex items-center gap-6">
-                    {position.type === 'BORROWING' ? (
-                      <>
-                        <div>
-                          <span className="text-sm text-white/60">Borrowed</span>
-                          <div className="text-lg">
-                            {position.borrowed} {position.tokens}
-                            <span className="text-sm text-white/60 ml-1">
-                              (${(position.borrowed! * 3245.67).toLocaleString()})
-                            </span>
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-sm text-white/60">Borrow Limit</span>
-                          <div className="text-lg">
-                            {position.maxBorrow} {position.tokens}
-                            <span className="text-sm text-white/60 ml-1">
-                              (${(position.maxBorrow! * 3245.67).toLocaleString()})
-                            </span>
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-sm text-white/60">APY</span>
-                          <div className="text-red-400">{position.apy}%</div>
-                        </div>
-                        <div>
-                          <span className="text-sm text-white/60">Health Factor</span>
-                          <div className={`${position.healthFactor! >= 1.5 ? 'text-green-400' :
-                            position.healthFactor! >= 1.1 ? 'text-yellow-400' : 'text-red-400'
-                            }`}>
-                            {position.healthFactor!.toFixed(2)}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div>
-                          <span className="text-sm text-white/60">Amount</span>
-                          <div className="text-lg">${(position.amount || "0").toLocaleString()}</div>
-                        </div>
-                        <div>
-                          <span className="text-sm text-white/60">APY</span>
-                          <div className="text-emerald-400">{(position.apy || "0")}%</div>
-                        </div>
-                        {position.rewards && (
+                    <div className="flex items-center gap-6">
+                      {position.type === 'BORROWING' ? (
+                        <>
                           <div>
-                            <span className="text-sm text-white/60">Rewards</span>
-                            <div className="text-blue-400">+{(position.rewards || "0")}% APR</div>
+                            <span className="text-sm text-white/60">Borrowed</span>
+                            <div className="text-lg">
+                              {position.borrowed} {position.tokens}
+                              <span className="text-sm text-white/60 ml-1">
+                                (${(position.borrowed! * 3245.67).toLocaleString()})
+                              </span>
+                            </div>
                           </div>
-                        )}
-                        {!!position.healthFactor && (
+                          <div>
+                            <span className="text-sm text-white/60">Borrow Limit</span>
+                            <div className="text-lg">
+                              {position.maxBorrow} {position.tokens}
+                              <span className="text-sm text-white/60 ml-1">
+                                (${(position.maxBorrow! * 3245.67).toLocaleString()})
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-sm text-white/60">APY</span>
+                            <div className="text-red-400">{position.apy}%</div>
+                          </div>
                           <div>
                             <span className="text-sm text-white/60">Health Factor</span>
-                            <div className="text-green-400">{position.healthFactor}</div>
+                            <div className={`${position.healthFactor! >= 1.5 ? 'text-green-400' :
+                              position.healthFactor! >= 1.1 ? 'text-yellow-400' : 'text-red-400'
+                              }`}>
+                              {position.healthFactor!.toFixed(2)}
+                            </div>
                           </div>
-                        )}
-                        {position.poolShare && (
+                        </>
+                      ) : (
+                        <>
                           <div>
-                            <span className="text-sm text-white/60">Pool Share</span>
-                            <div>{(position.poolShare * 100).toFixed(3)}%</div>
+                            <span className="text-sm text-white/60">Amount</span>
+                            <div className="text-lg">${(position.amount || "0").toLocaleString()}</div>
                           </div>
-                        )}
-                        {position.collateralFactor && (
                           <div>
-                            <span className="text-sm text-white/60">Collateral Factor</span>
-                            <div>{(position.collateralFactor * 100)}%</div>
+                            <span className="text-sm text-white/60">APY</span>
+                            <div className="text-emerald-400">{(position.apy || "0")}%</div>
                           </div>
-                        )}
-                      </>
-                    )}
+                          {position.rewards && (
+                            <div>
+                              <span className="text-sm text-white/60">Rewards</span>
+                              <div className="text-blue-400">+{(position.rewards || "0")}% APR</div>
+                            </div>
+                          )}
+                          {!!position.healthFactor && (
+                            <div>
+                              <span className="text-sm text-white/60">Health Factor</span>
+                              <div className="text-green-400">{position.healthFactor}</div>
+                            </div>
+                          )}
+                          {position.poolShare && (
+                            <div>
+                              <span className="text-sm text-white/60">Pool Share</span>
+                              <div>{(position.poolShare * 100).toFixed(3)}%</div>
+                            </div>
+                          )}
+                          {position.collateralFactor && (
+                            <div>
+                              <span className="text-sm text-white/60">Collateral Factor</span>
+                              <div>{(position.collateralFactor * 100)}%</div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-2">
+                  {position.type === 'BORROWING' ? (
+                    <>
+                      <button
+                        onClick={() => handleAction('borrow', position)}
+                        className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
+                      >
+                        Borrow More
+                      </button>
+                      <button
+                        onClick={() => handleAction('repay', position)}
+                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
+                      >
+                        Repay
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleAction('deposit', position)}
+                        className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
+                      >
+                        Deposit
+                      </button>
+                      <button
+                        onClick={() => handleAction('withdraw', position)}
+                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
+                      >
+                        Withdraw
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {position.type === 'BORROWING' ? (
-                  <>
-                    <button
-                      onClick={() => handleAction('borrow', position)}
-                      className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
-                    >
-                      Borrow More
-                    </button>
-                    <button
-                      onClick={() => handleAction('repay', position)}
-                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
-                    >
-                      Repay
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => handleAction('deposit', position)}
-                      className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
-                    >
-                      Deposit
-                    </button>
-                    <button
-                      onClick={() => handleAction('withdraw', position)}
-                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
-                    >
-                      Withdraw
-                    </button>
-                  </>
-                )}
-              </div>
+              {position.type === 'BORROWING' && (
+                <div className="mt-3">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-white/60">Borrow Utilization</span>
+                    <span>{((position.borrowed! / position.maxBorrow!) * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${(position.borrowed! / position.maxBorrow!) >= 0.8 ? 'bg-red-500' :
+                        (position.borrowed! / position.maxBorrow!) >= 0.6 ? 'bg-yellow-500' :
+                          'bg-green-500'
+                        }`}
+                      style={{ width: `${(position.borrowed! / position.maxBorrow!) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-
-            {position.type === 'BORROWING' && (
-              <div className="mt-3">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-white/60">Borrow Utilization</span>
-                  <span>{((position.borrowed! / position.maxBorrow!) * 100).toFixed(1)}%</span>
-                </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all ${(position.borrowed! / position.maxBorrow!) >= 0.8 ? 'bg-red-500' :
-                      (position.borrowed! / position.maxBorrow!) >= 0.6 ? 'bg-yellow-500' :
-                        'bg-green-500'
-                      }`}
-                    style={{ width: `${(position.borrowed! / position.maxBorrow!) * 100}%` }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
         ))}
     </div>
   );
@@ -659,7 +692,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Total Value Locked</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    {formatNumberByFrac(protocol.total_usd_value)}
+                    {
+                      isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'2rem'}></Skeleton>
+                        : formatNumberByFrac(protocol.total_usd_value)
+                    }
                   </div>
                   <div className="flex items-center gap-1 text-emerald-400">
                     <TrendingUp className="w-4 h-4" />
@@ -674,7 +710,11 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Net APY</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    + {netAPY}%
+                    {
+                      isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'2rem'}></Skeleton>
+                        : `+ ${netAPY}%`
+                    }
+
                   </div>
                   <div className="text-sm text-white/60">
                     Across all positions
@@ -687,7 +727,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Total Rewards</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    +$ {protocol.total_unclaimed_usd_value}
+                    {
+                      isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'2rem'}></Skeleton>
+                        : `+$ ${protocol.total_unclaimed_usd_value}`
+                    }
                   </div>
                   <div className="text-sm text-white/60">
                     Unclaimed rewards
@@ -969,6 +1012,25 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"sm"} chainId={Number(tokenBalance2?.chain)} />
                     <span className='ml-2'>
                       {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted))}
+                    </span>
+                    <span className='ml-1'>
+                      {tokenBalance2?.symbol || ""}
+                    </span>
+                  </div>
+                </div>
+
+                <div className='flex justify-between'>
+                  <div>
+                    <span className='ml-2'>
+                      Network Fee:
+                    </span>
+                  </div>
+                  <div className='items-center flex'>
+                    <span className='ml-2'>
+                      {
+                        isGasEstimationLoading ?
+                          <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                          : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
                     </span>
                     <span className='ml-1'>
                       {tokenBalance2?.symbol || ""}
