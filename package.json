@@ -49,6 +49,7 @@
     "emoji-picker-react": "^4.12.0",
     "ethers": "^5.7.2",
     "ethers-v6": "npm:ethers@^6.13.5",
+    "framer-motion": "^12.4.4",
     "gif-picker-react": "^1.4.0",
     "just-clone": "^6.2.0",
     "lightweight-charts": "^4.1.3",

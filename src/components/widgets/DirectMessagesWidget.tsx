@@ -1,9 +1,13 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Plus, Send } from 'lucide-react';
+import { Plus, Search, Send } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
 import { Spinner, useToast } from '@chakra-ui/react';
+import { motion } from 'framer-motion';
+import { getWalletProfile } from '../../utils/chatApi';
+import { IUser } from '../../types/chat.type';
+import { getEnsName, shrinkAddress } from '../../utils/common.util';
 
 interface Message {
   id: string;
@@ -51,10 +55,111 @@ const mockMessages: Message[] = [
   }
 ];
 
+interface OverlayProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedUser: IUser | null;
+  setSelectedUser: (user: IUser) => void;
+}
+
+const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSelectedUser }) => {
+  const { chatUser } = useStore();
+  const { address } = useContext(Web3AuthContext);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchedUser, setSearchedUser] = useState<IUser | null>(null);
+
+  const handleSearch = async () => {
+    if (!searchQuery || searchQuery == address) return
+    if (selectedUser?.address == searchQuery) return
+    setSearching(true)
+
+    try {
+      const profile = await getWalletProfile(chatUser, searchQuery)
+
+      if (profile) {
+        console.log('profile = ', profile)
+        const ensName = await getEnsName(searchQuery)
+
+        console.log('ens name = ', ensName)
+        const user = {
+          name: profile.name,
+          ensName,
+          profilePicture: profile.picture,
+          address: searchQuery,
+          chatId: "",
+          type: "Connected",
+          unreadMessages: 0,
+          lastTimestamp: 0,
+          lastMessage: ""
+        } as IUser
+
+        setSearchedUser(user)
+      }
+    } catch (err) {
+      console.log('get user profile err: ', err)
+    }
+
+    setSearching(false)
+  }
+
+  return (
+    isOpen && (
+      <motion.div
+        className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <motion.div
+          className="bg-white/90 p-3 rounded-lg shadow-lg w-[320px]"
+          initial={{ y: "-100%", opacity: 0 }}  // Start from top (hidden)
+          animate={{ y: 0, opacity: 1 }}       // Animate to visible position
+          exit={{ y: "-100%", opacity: 0 }}    // Slide out to the top
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}  // Smooth transition
+          onClick={(e) => e.stopPropagation()}  // Prevent closing when clicking inside
+        >
+          <div className='w-full flex items-center'>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Search Address"
+              className="flex-1 bg-black/80 px-3 py-1.5 rounded-lg outline-none text-sm"
+            />
+
+            {
+              searching ? <Spinner className='ml-2 text-black/80' /> :
+                <button className='ml-2' onClick={handleSearch}>
+                  <Search className='text-black/80 w-5 h-5 hover:text-black' />
+                </button>
+            }
+          </div>
+          {
+            searchedUser && <div className='py-2 my-2 cursor-pointer hover:bg-white/70 rounded-lg' onClick={() => setSelectedUser(searchedUser as IUser)}>
+              <div className='flex items-center gap-4 text-black'>
+                <img src={searchedUser.profilePicture} className='rounded-full w-10 h-10' />
+                <div className='flex items-start flex-col'>
+                  {searchedUser?.name && <div>{searchedUser?.name}</div>}
+                  <div>{searchedUser?.ensName ? searchedUser?.ensName + " | " + shrinkAddress(searchedUser.address) : shrinkAddress(searchedUser.address)}</div>
+                </div>
+              </div>
+            </div>
+          }
+        </motion.div>
+      </motion.div >
+    )
+  );
+};
+
 export const DirectMessagesWidget: React.FC = () => {
   const { chatUser, setChatUser } = useStore();
   const { signer, address } = useContext(Web3AuthContext);
   const [receivedMessage, setReceivedMessage] = useState<any>(null);
+  const [isOverlay, setIsOverlay] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
   const toast = useToast()
 
   const [messages, setMessages] = useState<Message[]>(mockMessages);
@@ -194,6 +299,12 @@ export const DirectMessagesWidget: React.FC = () => {
           Unlock Profile
         </button>
       </div>}
+
+      {/* Search */}
+      <button className='absolute right-0 hover:bg-white/10 p-2 rounded-lg' onClick={() => setIsOverlay(true)}>
+        <Search className='w-4 h-4' />
+      </button>
+      {isOverlay && <Overlay isOpen={isOverlay} onClose={() => setIsOverlay(false)} selectedUser={selectedUser} setSelectedUser={setSelectedUser} />}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto ai-chat-scrollbar space-y-2">
