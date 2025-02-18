@@ -758,8 +758,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         env: CONSTANTS.ENV.PROD,
       });
 
-      setChatUser(user)
-      initStream(user)
+      const encryption = await user.encryption.info()
+
+      if (encryption?.decryptedPgpPrivateKey) {
+        setChatUser(user)
+        initStream(user)
+      }
     }
   }
 
@@ -1113,7 +1117,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             link: data.link
           }
         })
-      setToBottom(true)
+        setToBottom(true)
         setChatHistory(tmp.reverse())
       }
     } catch (err) {
@@ -1172,7 +1176,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           })
         }
 
-      setToBottom(true)
+        setToBottom(true)
         setChatHistory(chats.reverse())
       }
     } catch (err) {
