@@ -12,7 +12,10 @@ const networks = [
   { id: 'eth', name: 'Ethereum', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
   { id: 'base', name: 'Base', logo: getChainIcon(8453) },
   { id: 'solana', name: 'Solana', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
-
+  {id: 'arbitrum', name: 'Arbitrum', logo: "https://cryptologos.cc/logos/arbitrum-arb-logo.png"},
+  {id: 'optimism', name: "Optimism", logo: "https://cryptologos.cc/logos/optimism-ethereum-op-logo.png"},
+  {id: "matic-network", name: "Polygon", logo: "https://cryptologos.cc/logos/polygon-matic-logo.png"},
+  {id: "avalanche", name: "Avalanche", logo: "https://cryptologos.cc/logos/avalanche-avax-logo.png"}
 ];
 
 interface BaseToken {
@@ -645,8 +648,8 @@ const sortedPools = useMemo(() => {
                         <span>{Math.abs(priceChange24h).toFixed(2)}%</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4">{formatNumber(volume24h)}</td>
-                    <td className="px-4 py-4">{formatNumber(tvl)}</td>
+                    <td className="px-4 py-4">${formatNumber(volume24h)}</td>
+                    <td className="px-4 py-4">${formatNumber(tvl)}</td>
                     <td className="px-4 py-4">{formatNumber(transactions24h)}</td>
                     <td className="px-4 py-4 text-white/60">
                       {formatAge(token_age)}
