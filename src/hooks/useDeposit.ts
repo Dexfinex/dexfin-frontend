@@ -14,7 +14,7 @@ interface mutationDataParams {
     fromAddress: string;
     routingStrategy: string;
     action: "deposit";
-    protocol: "uniswap-v2";
+    protocol: string;
     tokenIn: string[];
     tokenOut: string;
     amountIn: number[];
@@ -70,7 +70,7 @@ export const useSendDepositMutation = () => {
                 fromAddress: data.fromAddress,
                 chainId: data.chainId,
                 routingStrategy: "router",
-                actions: generateEnSoExecuteAction({ action: data.action, protocol: data.protocol, tokenIn: data.tokenIn, tokenOut: data.tokenOut, amountIn: amountIn, chainId: data.chainId, receiver: data.receiver })
+                actions: generateEnSoExecuteAction({ action: data.action, protocol: data.protocol, tokenIn: data.tokenIn, tokenOut: data.tokenOut, amountIn: amountIn, chainId: Number(data.chainId), receiver: data.receiver })
             })
 
             return depositBundle;

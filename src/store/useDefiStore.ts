@@ -17,6 +17,7 @@ export interface PositionToken {
 
 export interface Position {
     protocol: string;
+    protocol_id: string;
     type: string;
     amount: number;
     tokens: PositionToken[];
@@ -64,6 +65,7 @@ const useDefiStore = create<DefiStoreState>((set) => ({
         const positions = evmPositions.map((position) => ({
             address: position.position.address,
             protocol: position.protocol_name,
+            protocol_id: position.protocol_id,
             type: position.position.label,
             amount: position.position.balance_usd,
             tokens: position.position.tokens,

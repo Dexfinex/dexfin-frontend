@@ -53,5 +53,6 @@ export const generateEnSoExecuteAction = (
 }
 
 export const getPrimaryAddress = ({ chainId, protocol }: { chainId: number, protocol: string }) => {
+    console.log({ protocol, chainId })
     return PRIMARY_ADDRESS_BY_PROTOCOL[protocol][chainId];
 }

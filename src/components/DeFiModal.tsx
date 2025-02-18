@@ -1,14 +1,17 @@
 import React, { useState, useContext, useMemo } from 'react';
 import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X } from 'lucide-react';
+import { Spinner } from '@chakra-ui/react';
+
+import { TokenChainIcon } from './swap/components/TokenIcon';
 
 import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useDefi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import useDefiStore, { Position } from '../store/useDefiStore';
-import { formatNumberByFrac } from '../utils/common.util';
 import useTokenBalanceStore from '../store/useTokenBalanceStore';
-import { TokenChainIcon } from './swap/components/TokenIcon';
 import { useSendDepositMutation } from '../hooks/useDeposit';
 import useGasEstimation from "../hooks/useGasEstimation.ts";
+
+import { formatNumberByFrac } from '../utils/common.util';
 
 interface DeFiModalProps {
   isOpen: boolean;
@@ -161,6 +164,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [selectedPositionType, setSelectedPositionType] = useState<Position['type'] | 'ALL'>('ALL');
   const [modalState, setModalState] = useState<ModalState>({ type: null });
   const [tokenAmount, setTokenAmount] = useState("");
+  const [token2Amount, setToken2Amount] = useState("");
+  const [confirming, setConfirming] = useState("");
 
   const { mutate: sendDepositMutate } = useSendDepositMutation();
 
@@ -169,9 +174,18 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation()
+  const { refetch: refetchDefiPositionByWallet } = useDefiPositionByWallet({ chainId: chainId, walletAddress: address });
+  useDefiProtocolsByWallet({ chainId, walletAddress: address });
 
   const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0].contract_address, Number(chainId)) : null;
   const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1].contract_address, Number(chainId)) : null;
+
+  const priceRatio = useMemo(() => {
+    if (tokenBalance1?.usdPrice && tokenBalance2?.usdPrice) {
+      return tokenBalance1?.usdPrice / tokenBalance2?.usdPrice
+    }
+    return 1;
+  }, [tokenBalance1, tokenBalance2]);
 
   const isErrorTokenAmount = useMemo(() => {
     if (tokenAmount === "") {
@@ -183,8 +197,21 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     return true;
   }, [tokenAmount, tokenBalance1])
 
-  useDefiPositionByWallet({ chainId: chainId, walletAddress: address })
-  useDefiProtocolsByWallet({ chainId, walletAddress: address })
+  const isErrorToken2Amount = useMemo(() => {
+    if (token2Amount === "") {
+      return false;
+    }
+    if (0 < Number(token2Amount) && Number(token2Amount) <= Number(tokenBalance2?.balance)) {
+      return false;
+    }
+    return true;
+  }, [token2Amount, tokenBalance2])
+
+  const buttonText = useMemo(() => {
+    return modalState.type === 'deposit' ? 'Deposit' :
+      modalState.type === 'withdraw' ? 'Withdraw' :
+        modalState.type === 'borrow' ? 'Borrow' : 'Repay'
+  }, [modalState]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -235,15 +262,17 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const depositHandler = async () => {
     if (signer) {
+      setConfirming("Approving...");
+
       sendDepositMutate({
         chainId: Number(chainId),
         fromAddress: address,
         routingStrategy: "router",
         action: "deposit",
-        protocol: "uniswap-v2",
+        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
         tokenIn: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
         tokenOut: modalState?.position?.address || "",
-        amountIn: [Number(tokenAmount), Number(tokenAmount)],
+        amountIn: [Number(tokenAmount), Number(token2Amount || 0)],
         primaryAddress: modalState.position?.factory || "",
         signer: signer,
         receiver: address,
@@ -252,12 +281,26 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       }, {
         onSuccess: async (txData) => {
           if (signer) {
+            setConfirming("Executing...");
             // execute defi action
-            await signer.sendTransaction(txData.tx)
-          }
-        },
-        onError: async () => {
+            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+              setConfirming("")
+              return null;
+            });
+            if (transactionResponse) {
+              await transactionResponse.wait();
+              await refetchDefiPositionByWallet();
 
+              setTokenAmount("");
+              setModalState({ type: null })
+            }
+
+          }
+          setConfirming("");
+        },
+        onError: async (e) => {
+          console.error(e)
+          setConfirming("");
         }
       })
     }
@@ -826,7 +869,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 <div className='relative flex'>
                   <input
                     value={tokenAmount}
-                    onChange={(e) => setTokenAmount(e.target.value)}
+                    onChange={(e) => {
+                      setTokenAmount(e.target.value);
+                      setToken2Amount((Number(e.target.value) * Number(priceRatio)).toString());
+                    }}
                     type="text"
                     className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""}`}
                     placeholder="0.00"
@@ -848,7 +894,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         : `Balance: ${formatNumberByFrac(tokenBalance1?.balance)}`
                     }
                   </span>
-                  <button className="text-blue-400">MAX</button>
+                  <button className="text-blue-400" onClick={() => {
+                    setTokenAmount((tokenBalance1?.balance || "") + "");
+                    setToken2Amount((Number(tokenBalance1?.balance) * Number(priceRatio)).toString());
+                  }}>MAX</button>
                 </div>
               </div>
 
@@ -858,10 +907,13 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
                 <div className='relative flex'>
                   <input
-                    value={tokenAmount}
+                    value={token2Amount}
+                    onChange={(e) => {
+                      setToken2Amount(e.target.value);
+                      setTokenAmount((Number(e.target.value) / Number(priceRatio)).toString());
+                    }}
                     type="text"
-                    disabled={true}
-                    className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""} opacity-50`}
+                    className={`w-full bg-transparent text-2xl outline-none ${isErrorToken2Amount ? "text-red-500" : ""}`}
                     placeholder="0.00"
                   />
                   <div className='flex items-center fixed right-12'>
@@ -881,7 +933,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         : `Balance: ${formatNumberByFrac(tokenBalance2?.balance)}`
                     }
                   </span>
-                  <button className="text-blue-400">MAX</button>
+                  <button className="text-blue-400" onClick={() => {
+                    setToken2Amount((tokenBalance2?.balance || "") + "");
+                    setTokenAmount((Number(tokenBalance2?.balance) / Number(priceRatio)).toString());
+                  }}>MAX</button>
                 </div>
               </div>
 
@@ -906,10 +961,11 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
               )}
 
-              <button className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount ? "opacity-60" : ""}`} disabled={isErrorTokenAmount} onClick={depositHandler}>
-                {modalState.type === 'deposit' ? 'Deposit' :
-                  modalState.type === 'withdraw' ? 'Withdraw' :
-                    modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
+              <button
+                className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || isErrorToken2Amount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
+                onClick={depositHandler}
+              >
+                {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : buttonText}
               </button>
             </div>
           </div>
