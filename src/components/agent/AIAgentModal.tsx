@@ -29,6 +29,8 @@ import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 import { convertCryptoAmount } from '../../utils/brian.tsx';
 import { DepositProcess } from './components/DepositProcess.tsx';
 import { WithdrawProcess } from './components/WithdrawProcess.tsx';
+import { BorrowProcess } from './components/BorrowProcess.tsx';
+import { RepayProcess } from './components/RepayProcess.tsx';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -52,14 +54,16 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
   const [showDepositProcess, setShowDepositProcess] = useState(false);
   const [showWithdrawProcess, setShowWithdrawProcess] = useState(false);
+  const [showBorrowProcess, setShowBorrowProcess] = useState(false);
+  const [showRepayProcess, setShowRepayProcess] = useState(false);
   const { address, chainId, switchChain } = useContext(Web3AuthContext);
   const { tokenBalances } = useTokenBalanceStore();
 
   const [fromToken, setFromToken] = useState<TokenType>();
   const [protocol, setProtocol] = useState<Protocol>();
   const [toToken, setToToken] = useState<TokenType>();
-  const [
-    fromAmount, setFromAmount] = useState('0');
+  const [fromAmount, setFromAmount] = useState('0');
+  const [toAmount, setToAmount] = useState('0');
   const [receiver, setReceiver] = useState('');
   const [solver, setSolver] = useState('');
   const [steps, setSteps] = useState<Step[]>([]);
@@ -75,6 +79,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowProjectAnalysis(false);
     setShowDepositProcess(false);
     setShowWithdrawProcess(false);
+    setShowBorrowProcess(false);
+    setShowRepayProcess(false);
   };
 
   const processCommandCase = async (command: string, address: string, chainId: number | undefined) => {
@@ -368,8 +374,35 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setReceiver(data.receiver);
             setSteps(data.steps);
             setShowWithdrawProcess(true);
+          } else if (response.brianData.action == 'AAVE Borrow') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+
+            setFromToken(data.fromToken);
+            setProtocol(data.protocol);
+            setToToken(data.toToken);
+            setFromAmount(data.fromAmount);
+            setToAmount(data.toAmount);
+            
+            setReceiver(data.receiver);
+            setSteps(data.steps);
+            setShowBorrowProcess(true);
+          } else if (response.brianData.action == 'AAVE Repay') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+
+            setFromToken(data.fromToken);
+            setProtocol(data.protocol);
+            setToToken(data.toToken);
+            setFromAmount(data.fromAmount);
+            setToAmount(data.toAmount);
+            setReceiver(data.receiver);
+            setSteps(data.steps);
+            setShowRepayProcess(true);
           }
-        } else if (response.type == "action" && response.brianData.type == 'knowledge') {
+        } else if (response.brianData.type == 'knowledge') {
           response = { text: convertBrianKnowledgeToPlainText(response.brianData.answer) };
         }
 
@@ -550,6 +583,18 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           <WithdrawProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
             onClose={() => {
               setShowWithdrawProcess(false);
+              setMessages([]);
+            }} />
+        ) : showBorrowProcess && fromToken && toToken ? (
+          <BorrowProcess steps={steps} receiver={receiver} toAmount={toAmount} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowBorrowProcess(false);
+              setMessages([]);
+            }} />
+        ) : showRepayProcess && fromToken && toToken ? (
+          <RepayProcess steps={steps} receiver={receiver} toAmount={toAmount} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowRepayProcess(false);
               setMessages([]);
             }} />
         ) : (
