@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Plus, Search, Send } from 'lucide-react';
+import { Plus, Search, Send, MessageSquare, Smile, File, Download } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
-import { Spinner, useToast } from '@chakra-ui/react';
+import { Spinner, useToast, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { getWalletProfile } from '../../utils/chatApi';
-import { IUser } from '../../types/chat.type';
-import { getEnsName, shrinkAddress } from '../../utils/common.util';
+import { IUser, IChat, ChatType } from '../../types/chat.type';
+import { getEnsName, shrinkAddress, extractAddress, getChatHistoryDate, downloadBase64File } from '../../utils/common.util';
+import { LIMIT } from '../../utils/chatApi';
 
 interface Message {
   id: string;
@@ -103,6 +104,11 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
     setSearching(false)
   }
 
+  const handleSelectUser = () => {
+    setSelectedUser(searchedUser as IUser)
+    onClose()
+  }
+
   return (
     isOpen && (
       <motion.div
@@ -138,7 +144,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
             }
           </div>
           {
-            searchedUser && <div className='py-2 my-2 cursor-pointer hover:bg-white/70 rounded-lg' onClick={() => setSelectedUser(searchedUser as IUser)}>
+            searchedUser && <div className='py-2 my-2 cursor-pointer hover:bg-white/70 rounded-lg' onClick={handleSelectUser}>
               <div className='flex items-center gap-4 text-black'>
                 <img src={searchedUser.profilePicture} className='rounded-full w-10 h-10' />
                 <div className='flex items-start flex-col'>
@@ -160,20 +166,65 @@ export const DirectMessagesWidget: React.FC = () => {
   const [receivedMessage, setReceivedMessage] = useState<any>(null);
   const [isOverlay, setIsOverlay] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
+  const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
   const toast = useToast()
 
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [newMessage, setNewMessage] = useState('');
 
   useEffect(() => {
-    console.log('direct message compoment did amount')
-    console.log('chat user = ', chatUser)
-  }, [])
-
+    console.log('selectedUser = ', selectedUser)
+    if (selectedUser) {
+      handleSelectUser()
+    }
+  }, [selectedUser])
 
   useEffect(() => {
     handleReceiveMsg()
   }, [receivedMessage])
+
+  const handleSelectUser = async () => {
+    const history = await chatUser.chat.history(selectedUser?.address, { limit: LIMIT })
+
+    if (history.length > 0) {
+      console.log('history = ', history)
+      let chats: IChat[] = []
+      let reactions: any[] = []
+
+      history.forEach((data: any) => {
+        if (data.messageType == "Reaction") {
+          reactions = [...reactions, data.messageObj]
+        } else {
+          chats = [...chats, {
+            timestamp: data.timestamp,
+            type: data.messageType,
+            content: data.messageContent,
+            fromAddress: extractAddress(data.fromDID),
+            toAddress: extractAddress(data.toDID),
+            chatId: data.cid,
+            link: data.link,
+          } as IChat]
+        }
+      })
+
+      if (reactions.length > 0) {
+        chats = chats.map(chat => {
+          const found = reactions.find(e => e.reference == chat.chatId)
+          if (found) {
+            return {
+              ...chat,
+              reaction: found.content
+            }
+          }
+          return chat
+        })
+      }
+
+      // setToBottom(true)
+      setChatHistory(chats.reverse())
+      // clearUnreadMessages(user.address)
+    }
+  }
 
   const handleReceiveMsg = () => {
     console.log('handle receive message ', receivedMessage)
@@ -182,21 +233,127 @@ export const DirectMessagesWidget: React.FC = () => {
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
 
-    const message: Message = {
-      id: Date.now().toString(),
-      sender: {
-        name: 'You',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
-        isOnline: true
-      },
-      content: newMessage.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-      isMe: true
-    };
+    // const message: Message = {
+    //   id: Date.now().toString(),
+    //   sender: {
+    //     name: 'You',
+    //     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
+    //     isOnline: true
+    //   },
+    //   content: newMessage.trim(),
+    //   timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+    //   isMe: true
+    // };
 
-    setMessages(prev => [...prev, message]);
-    setNewMessage('');
-  };
+    // setMessages(prev => [...prev, message]);
+    // setNewMessage('');
+  }
+
+  const renderChatBox = (chatId: string, type: ChatType, isOwner: boolean, content: string, address: string, reaction?: string) => {
+    let messageContent = content
+    let fileName = ""
+    let fileSize = ""
+    let fileType = ""
+
+    try {
+      if (type === "File") {
+        const parsed = JSON.parse(content)
+        // console.log('parsed = ', parsed)
+        if (parsed) {
+          messageContent = parsed.content.split(",")[1]
+          fileName = parsed.name
+          fileSize = parsed.size
+          fileType = parsed.type
+        }
+      } else if (type === "Image") {
+        const parsed = JSON.parse(content)
+        if (parsed) {
+          messageContent = parsed.content
+        }
+      }
+    } catch (err) {
+      // console.log('file content parse err')
+    }
+
+    const handleReaction = async (chatId: string, content: string) => {
+      const receipient = selectedUser ? selectedUser.address : ""
+
+      if (!receipient) return
+
+      try {
+        const updatedChat = chatHistory.map(chat => chat.chatId == chatId ? { ...chat, reaction: content } : chat)
+        setChatHistory([...updatedChat])
+
+        const sentReaction = await chatUser.chat.send(receipient, {
+          type: 'Reaction',
+          content,
+          reference: chatId
+        })
+
+        console.log('sent reaction = ', sentReaction)
+      } catch (err) {
+        console.log('reaction err: ', err)
+        const updated = chatHistory.map(chat => chat.chatId == chatId ? { ...chat, reaction: "" } : chat)
+        setChatHistory([...updated])
+      }
+    }
+
+    const renderReactionBtn = () => <div className={`absolute ${!isOwner ? 'right-[-20px]' : 'left-[-20px]'} bottom-[2px]`}>
+      <Popover>
+        <PopoverTrigger>
+          <Smile className={`text-white/50 w-4 h-4 cursor-pointer`} />
+        </PopoverTrigger>
+        <PopoverContent className='!bg-transparent !border-transparent !w-[200px]'>
+          <div className='flex gap-1'>
+            <button onClick={() => handleReaction(chatId, '👍')}>👍</button>
+            <button onClick={() => handleReaction(chatId, '👎')}>👎</button>
+            <button onClick={() => handleReaction(chatId, '❤️')}>❤️</button>
+            <button onClick={() => handleReaction(chatId, '🔥')}>🔥</button>
+            <button onClick={() => handleReaction(chatId, '😲')}>😲</button>
+            <button onClick={() => handleReaction(chatId, '😂')}>😂</button>
+            <button onClick={() => handleReaction(chatId, '😢')}>😢</button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+
+    const reactionIcon = () => reaction ? <span className={`absolute ${!isOwner ? 'right-[8px]' : 'left-[8px]'} bottom-[-10px]`}>{reaction}</span> : null
+
+    if (type === "Text") {
+      return <div className={`flex ${!isOwner ? 'justify-start' : 'justify-end'}`}>
+        <div className={`relative rounded-lg p-3 max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+          {messageContent}
+          {renderReactionBtn()}
+          {reactionIcon()}
+        </div>
+      </div>
+    } else if (type === "MediaEmbed") {
+      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
+        <img className={`w-52 h-auto`} src={messageContent} />
+        {renderReactionBtn()}
+        {reactionIcon()}
+      </div>
+    } else if (type === "Image") {
+      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
+        <img className={`w-52 h-auto`} src={messageContent} />
+        {renderReactionBtn()}
+        {reactionIcon()}
+      </div>
+    } else if (type === "File") {
+      return <div className={`relative flex flex-col gap-4 items-center w-56 h-20 rounded-lg justify-center  ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+        <div className='flex gap-4 items-center'>
+          <File className='w-10 h-10 text-white/50' />
+          <div className='flex flex-col text-white/50'>
+            <span className='text-md'>{fileName}</span>
+            <span className='text-sm text-center'>{fileSize}B</span>
+          </div>
+          <Download className='w-5 h-5 cursor-pointer' onClick={() => downloadBase64File(messageContent, fileName, fileType)} />
+        </div>
+        {renderReactionBtn()}
+        {reactionIcon()}
+      </div>
+    }
+  }
 
   const initStream = async (user: any) => {
     const stream = await user.initStream(
@@ -301,14 +458,14 @@ export const DirectMessagesWidget: React.FC = () => {
       </div>}
 
       {/* Search */}
-      <button className='absolute right-0 hover:bg-white/10 p-2 rounded-lg' onClick={() => setIsOverlay(true)}>
+      <button className='absolute top-8 right-2 hover:bg-white/10 p-2 rounded-lg' onClick={() => setIsOverlay(true)}>
         <Search className='w-4 h-4' />
       </button>
       {isOverlay && <Overlay isOpen={isOverlay} onClose={() => setIsOverlay(false)} selectedUser={selectedUser} setSelectedUser={setSelectedUser} />}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto ai-chat-scrollbar space-y-2">
-        {messages.map((message) => (
+      <div className="flex-1 overflow-x-hidden overflow-y-auto ai-chat-scrollbar space-y-2">
+        {/* {messages.map((message) => (
           <div
             key={message.id}
             className={`flex items-start gap-2 ${message.isMe ? 'flex-row-reverse' : ''}`}
@@ -333,11 +490,45 @@ export const DirectMessagesWidget: React.FC = () => {
               </div>
             </div>
           </div>
-        ))}
+        ))} */}
+        {
+          chatHistory.length > 0 ? chatHistory.map((msg: IChat) => (
+            msg.type !== "Reaction" ? <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
+              {
+                msg.fromAddress == selectedUser?.address &&
+                < img
+                  src={selectedUser.profilePicture}
+                  className="w-8 h-8 rounded-full mt-1"
+                />
+              }
+              <div className="flex-1 min-w-0">
+                <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+                  {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+                  <span className="font-medium text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+                  <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
+                </div>
+                {
+                  renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
+                }
+              </div>
+            </div> : null
+          ))
+            :
+            !selectedUser ?
+              <div className="flex flex-col items-center justify-center h-full text-white/40">
+                Please select a user
+              </div> :
+              <div className="flex flex-col items-center justify-center h-full text-white/40">
+                <MessageSquare className="w-12 h-12 mb-4" />
+                <p>No messages yet</p>
+                <p className="text-sm">Start a conversation!</p>
+                <p className='text-sm'>{shrinkAddress(selectedUser.address)}</p>
+              </div>
+        }
       </div>
 
       {/* Input */}
-      <div className="mt-2 flex items-center gap-2">
+      {selectedUser && <div className="mt-2 flex items-center gap-2">
         <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
           <Plus className="w-4 h-4" />
         </button>
@@ -345,7 +536,7 @@ export const DirectMessagesWidget: React.FC = () => {
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
           placeholder="Type a message..."
           className="flex-1 bg-white/5 px-3 py-1.5 rounded-lg outline-none text-sm"
         />
@@ -357,7 +548,7 @@ export const DirectMessagesWidget: React.FC = () => {
         >
           <Send className="w-4 h-4" />
         </button>
-      </div>
+      </div>}
     </div>
   );
 };
