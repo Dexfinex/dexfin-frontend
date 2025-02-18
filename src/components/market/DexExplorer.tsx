@@ -549,13 +549,13 @@ const sortedPools = useMemo(() => {
                 const quoteToken = pool.included?.tokens.find(t =>
                   t.id === pool.relationships.quote_token.data.id
                 );
-                const Token_price=pool.attributes.base_token_price_usd;
+                const Token_price=parseFloat(pool.attributes.base_token_price_usd || '0');
                 const priceChange5m = parseFloat(pool.attributes.price_change_percentage?.m5 || '0');
                 const priceChange1h = parseFloat(pool.attributes.price_change_percentage?.h1 || '0');
                 const priceChange6h = parseFloat(pool.attributes.price_change_percentage?.h6 || '0');
                 const priceChange24h = parseFloat(pool.attributes.price_change_percentage?.h24 || '0');
-                const volume24h = pool.attributes.volume_usd?.h24;
-                const tvl = pool.attributes.reserve_in_usd;
+                const volume24h = parseFloat(pool.attributes.volume_usd?.h24 || '0');
+                const tvl = parseFloat(pool.attributes.reserve_in_usd || '0');
                 const transactions24h_json = JSON.stringify(pool.attributes.transactions?.h24 || 0);
                 const token_age = pool.attributes.pool_created_at;
                 const transactions24h = Number(JSON.parse(transactions24h_json).buyers) + Number(JSON.parse(transactions24h_json).sellers)
@@ -599,7 +599,7 @@ const sortedPools = useMemo(() => {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      ${Token_price}
+                      ${formatNumber(Token_price)}
                     </td>
                     <td className="px-4 py-4">
                       <div className={`flex items-center gap-1 ${priceChange5m >= 0 ? 'text-green-400' : 'text-red-400'
@@ -645,9 +645,9 @@ const sortedPools = useMemo(() => {
                         <span>{Math.abs(priceChange24h).toFixed(2)}%</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4">{volume24h}</td>
-                    <td className="px-4 py-4">{tvl}</td>
-                    <td className="px-4 py-4">{transactions24h}</td>
+                    <td className="px-4 py-4">{formatNumber(volume24h)}</td>
+                    <td className="px-4 py-4">{formatNumber(tvl)}</td>
+                    <td className="px-4 py-4">{formatNumber(transactions24h)}</td>
                     <td className="px-4 py-4 text-white/60">
                       {formatAge(token_age)}
                     </td>
