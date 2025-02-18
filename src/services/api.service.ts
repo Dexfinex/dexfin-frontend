@@ -17,6 +17,9 @@ export const defillamaApi = axios.create({
 export const fearGreedApi = axios.create({
   baseURL: FEARGREED_BASE_URL,
 });
+export const marketSentimentApi = axios.create({
+  
+})
 
 export const geckoTerminalApi = axios.create({
   baseURL: GECKOTERMINAL_BASE_URL,
