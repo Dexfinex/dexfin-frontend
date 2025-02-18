@@ -261,7 +261,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   };
 
   const depositHandler = async () => {
-    if (signer) {
+    if (signer && Number(tokenAmount) > 0 && Number(token2Amount) > 0) {
       setConfirming("Approving...");
 
       sendDepositMutate({
@@ -292,6 +292,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               await refetchDefiPositionByWallet();
 
               setTokenAmount("");
+              setToken2Amount("");
               setModalState({ type: null })
             }
 
@@ -937,6 +938,42 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     setToken2Amount((tokenBalance2?.balance || "") + "");
                     setTokenAmount((Number(tokenBalance2?.balance) / Number(priceRatio)).toString());
                   }}>MAX</button>
+                </div>
+              </div>
+
+              <div className='mt-2 mb-2 flex flex-col gap-2'>
+                <div className='flex justify-between'>
+                  <div>
+                    <span className='ml-2'>
+                      {tokenBalance1?.symbol || ""} Position
+                    </span>
+                  </div>
+                  <div className='items-center flex'>
+                    <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"sm"} chainId={Number(tokenBalance1?.chain)} />
+                    <span className='ml-2'>
+                      {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted))}
+                    </span>
+                    <span className='ml-1'>
+                      {tokenBalance2?.symbol || ""}
+                    </span>
+                  </div>
+                </div>
+
+                <div className='flex justify-between'>
+                  <div>
+                    <span className='ml-2'>
+                      {tokenBalance2?.symbol || ""} Position
+                    </span>
+                  </div>
+                  <div className='items-center flex'>
+                    <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"sm"} chainId={Number(tokenBalance2?.chain)} />
+                    <span className='ml-2'>
+                      {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted))}
+                    </span>
+                    <span className='ml-1'>
+                      {tokenBalance2?.symbol || ""}
+                    </span>
+                  </div>
                 </div>
               </div>
 
