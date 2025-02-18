@@ -46,20 +46,25 @@ export const useSendDepositMutation = () => {
                 const nativeTokenAddress = mapChainId2NativeAddress[Number(data.chainId)];
 
                 if (!compareWalletAddresses(nativeTokenAddress, data.tokenIn[i])) {
-                    const tx = {
-                        to: data.tokenIn[i],
-                        data: tokenContract.interface.encodeFunctionData("approve", [
-                            ENSO_ROUTER_ADDRESS,
-                            amountValue,
-                        ]),
-                        // gasPrice: ethers.parseUnits('10', 'gwei'),
-                        gasPrice: data.gasPrice,
-                        gasLimit: data.gasLimit, // Example static gas limit
-                        value: 0n,
-                    };
-                    if (data.signer) {
-                        const transactionResponse = await data.signer?.sendTransaction(tx);
-                        await transactionResponse.wait();
+                    const allowanceAmount = await tokenContract.allowance(data.fromAddress, ENSO_ROUTER_ADDRESS);
+                    if (Number(allowanceAmount) < Number(amountValue)) {
+                        const tx = {
+                            to: data.tokenIn[i],
+                            data: tokenContract.interface.encodeFunctionData("approve", [
+                                ENSO_ROUTER_ADDRESS,
+                                amountValue,
+                            ]),
+                            // gasPrice: ethers.parseUnits('10', 'gwei'),
+                            gasPrice: data.gasPrice,
+                            gasLimit: data.gasLimit, // Example static gas limit
+                            value: 0n,
+                        };
+
+                        if (data.signer) {
+                            const transactionResponse = await data.signer?.sendTransaction(tx);
+                            await transactionResponse.wait();
+                        }
+
                     }
                 }
 

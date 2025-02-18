@@ -12,7 +12,9 @@ import { useSendDepositMutation } from '../hooks/useDeposit';
 import useGasEstimation from "../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../hooks/useGetTokenPrices';
 import useTokenStore from "../store/useTokenStore.ts";
+import { TransactionModal } from './swap/modals/TransactionModal.tsx';
 
+import { mapChainId2ExplorerUrl } from '../config/networks.ts';
 import { mapChainId2NativeAddress } from "../config/networks.ts";
 import { formatNumberByFrac } from '../utils/common.util';
 
@@ -169,6 +171,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [tokenAmount, setTokenAmount] = useState("");
   const [token2Amount, setToken2Amount] = useState("");
   const [confirming, setConfirming] = useState("");
+  const [txModalOpen, setTxModalOpen] = useState(false);
+  const [hash, setHash] = useState("");
 
   const { mutate: sendDepositMutate } = useSendDepositMutation();
 
@@ -316,7 +320,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               return null;
             });
             if (transactionResponse) {
-              await transactionResponse.wait();
+              const receipt = await transactionResponse.wait();
+              setHash(receipt.transactionHash);
               await refetchDefiPositionByWallet();
               await refetchDefiProtocolByWallet();
 
@@ -344,7 +349,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       {positions
         .filter(p => selectedPositionType === 'ALL' || p.type === selectedPositionType)
         .map((position, index) => (
-          isLoading ? <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'}></Skeleton>
+          isLoading ? <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'} key={`sk-${index}`}></Skeleton>
             : <div
               key={index}
               className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
@@ -638,6 +643,9 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10">
+          {
+            hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[Number(chainId)]}/tx/${hash}`} />
+          }
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <button
@@ -984,7 +992,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              <div className='mt-2 mb-2 flex flex-col gap-2'>
+              <div className='mt-2 mb-2 flex flex-col gap-3'>
                 <div className='flex justify-between'>
                   <div>
                     <span className='ml-2'>
@@ -992,7 +1000,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     </span>
                   </div>
                   <div className='items-center flex'>
-                    <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"sm"} chainId={Number(tokenBalance1?.chain)} />
+                    <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
                     <span className='ml-2'>
                       {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted))}
                     </span>
@@ -1009,7 +1017,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     </span>
                   </div>
                   <div className='items-center flex'>
-                    <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"sm"} chainId={Number(tokenBalance2?.chain)} />
+                    <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
                     <span className='ml-2'>
                       {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted))}
                     </span>
@@ -1022,7 +1030,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 <div className='flex justify-between'>
                   <div>
                     <span className='ml-2'>
-                      Network Fee:
+                      Network Fee
                     </span>
                   </div>
                   <div className='items-center flex'>
@@ -1031,9 +1039,6 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         isGasEstimationLoading ?
                           <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
                           : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
-                    </span>
-                    <span className='ml-1'>
-                      {tokenBalance2?.symbol || ""}
                     </span>
                   </div>
                 </div>
