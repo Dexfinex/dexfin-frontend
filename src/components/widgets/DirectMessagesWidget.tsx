@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef, useCallback } from 'react';
 import { Plus, Search, Send, MessageSquare, Smile, File, Download } from 'lucide-react';
+import { useInView } from "react-intersection-observer";
 import { useStore } from '../../store/useStore';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
@@ -9,52 +10,6 @@ import { getWalletProfile } from '../../utils/chatApi';
 import { IUser, IChat, ChatType } from '../../types/chat.type';
 import { getEnsName, shrinkAddress, extractAddress, getChatHistoryDate, downloadBase64File } from '../../utils/common.util';
 import { LIMIT } from '../../utils/chatApi';
-
-interface Message {
-  id: string;
-  sender: {
-    name: string;
-    avatar: string;
-    isOnline: boolean;
-  };
-  content: string;
-  timestamp: string;
-  isMe?: boolean;
-}
-
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    sender: {
-      name: 'Bob',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
-      isOnline: true
-    },
-    content: "Hey! Just wanted to share my latest trade analysis. Looking at some interesting setups in the DeFi sector. 📊",
-    timestamp: '11:15 AM'
-  },
-  {
-    id: '2',
-    sender: {
-      name: 'You',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
-      isOnline: true
-    },
-    content: "Thanks for sharing! What specific protocols are you looking at?",
-    timestamp: '11:16 AM',
-    isMe: true
-  },
-  {
-    id: '3',
-    sender: {
-      name: 'Bob',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
-      isOnline: true
-    },
-    content: "Mainly focusing on Aave and Compound. The lending rates are looking attractive right now.",
-    timestamp: '11:17 AM'
-  }
-];
 
 interface OverlayProps {
   isOpen: boolean;
@@ -167,10 +122,15 @@ export const DirectMessagesWidget: React.FC = () => {
   const [isOverlay, setIsOverlay] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
+  const [loadingChatHistory, setLoadingChatHistory] = useState(false);
+  const [loadingPrevChat, setLoadingPrevChat] = useState(false);
+  const [toBottom, setToBottom] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const [firstLoadTop, setFirstLoadTop] = useState(true);
   const toast = useToast()
 
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
-  const [newMessage, setNewMessage] = useState('');
+  const { ref: topRef, inView: topInView } = useInView({ threshold: 1 }); // Detect top scroll
 
   useEffect(() => {
     console.log('selectedUser = ', selectedUser)
@@ -183,7 +143,86 @@ export const DirectMessagesWidget: React.FC = () => {
     handleReceiveMsg()
   }, [receivedMessage])
 
+  useEffect(() => {
+    if (firstLoadTop) {
+      setFirstLoadTop(false);
+      return; // 🚀 Prevent fetching old messages on first render
+    }
+
+    if (topInView) {
+      console.log('fetch old messages in topInView')
+      if (selectedUser && chatHistory.length > 0 && chatHistory[0].link) {
+        getPrevChatHistory(selectedUser.address, chatHistory[0].chatId)
+      }
+    }
+  }, [topInView])
+
+  const scrollBottom = useCallback(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (toBottom) {
+      scrollBottom()
+      setToBottom(false)
+    }
+  }, [chatHistory, toBottom, scrollBottom])
+
+  const getPrevChatHistory = async (address: string, chatId: string) => {
+    setLoadingPrevChat(true)
+    const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
+    console.log('prev history = ', prevHistory)
+
+    if (prevHistory.length > 0) {
+      let chats: IChat[] = []
+      let reactions: any[] = []
+
+      // todo should add reactions more
+      prevHistory.forEach((data: any) => {
+        if (data.messageType == "Reaction") {
+          reactions = [...reactions, data.messageObj]
+        } else {
+          chats = [...chats, {
+            timestamp: data.timestamp,
+            type: data.messageType,
+            content: data.messageContent,
+            fromAddress: extractAddress(data.fromDID),
+            toAddress: extractAddress(data.toDID),
+            chatId: data.cid,
+            link: data.link,
+          } as IChat]
+        }
+      })
+
+      if (reactions.length > 0) {
+        chats = chats.map(chat => {
+          const found = reactions.find(e => e.reference == chat.chatId)
+          if (found) {
+            return {
+              ...chat,
+              reaction: found.content
+            }
+          }
+          return chat
+        })
+      }
+
+      chats.shift()
+
+      if (chats.length > 0) {
+        const updatedChat = [...chats.reverse(), ...chatHistory]
+        setChatHistory(updatedChat)
+      }
+    }
+
+    setLoadingPrevChat(false)
+  }
+
   const handleSelectUser = async () => {
+    setLoadingChatHistory(true)
+
     const history = await chatUser.chat.history(selectedUser?.address, { limit: LIMIT })
 
     if (history.length > 0) {
@@ -220,10 +259,11 @@ export const DirectMessagesWidget: React.FC = () => {
         })
       }
 
-      // setToBottom(true)
+      setToBottom(true)
       setChatHistory(chats.reverse())
-      // clearUnreadMessages(user.address)
     }
+
+    setLoadingChatHistory(false)
   }
 
   const handleReceiveMsg = () => {
@@ -233,20 +273,6 @@ export const DirectMessagesWidget: React.FC = () => {
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
 
-    // const message: Message = {
-    //   id: Date.now().toString(),
-    //   sender: {
-    //     name: 'You',
-    //     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
-    //     isOnline: true
-    //   },
-    //   content: newMessage.trim(),
-    //   timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-    //   isMe: true
-    // };
-
-    // setMessages(prev => [...prev, message]);
-    // setNewMessage('');
   }
 
   const renderChatBox = (chatId: string, type: ChatType, isOwner: boolean, content: string, address: string, reaction?: string) => {
@@ -321,21 +347,21 @@ export const DirectMessagesWidget: React.FC = () => {
 
     if (type === "Text") {
       return <div className={`flex ${!isOwner ? 'justify-start' : 'justify-end'}`}>
-        <div className={`relative rounded-lg p-3 max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+        <div className={`relative rounded-lg p-2 text-sm max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
           {messageContent}
           {renderReactionBtn()}
           {reactionIcon()}
         </div>
       </div>
     } else if (type === "MediaEmbed") {
-      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
-        <img className={`w-52 h-auto`} src={messageContent} />
+      return <div className={`relative w-44 ${!isOwner ? '' : 'ml-auto'}`}>
+        <img className={`w-44 h-auto`} src={messageContent} />
         {renderReactionBtn()}
         {reactionIcon()}
       </div>
     } else if (type === "Image") {
-      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
-        <img className={`w-52 h-auto`} src={messageContent} />
+      return <div className={`relative w-44 ${!isOwner ? '' : 'ml-auto'}`}>
+        <img className={`w-44 h-auto`} src={messageContent} />
         {renderReactionBtn()}
         {reactionIcon()}
       </div>
@@ -464,66 +490,51 @@ export const DirectMessagesWidget: React.FC = () => {
       {isOverlay && <Overlay isOpen={isOverlay} onClose={() => setIsOverlay(false)} selectedUser={selectedUser} setSelectedUser={setSelectedUser} />}
 
       {/* Messages */}
-      <div className="flex-1 overflow-x-hidden overflow-y-auto ai-chat-scrollbar space-y-2">
-        {/* {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex items-start gap-2 ${message.isMe ? 'flex-row-reverse' : ''}`}
-          >
-            <div className="relative flex-shrink-0">
-              <img
-                src={message.sender.avatar}
-                alt={message.sender.name}
-                className="w-6 h-6 rounded-full"
-              />
-              {message.sender.isOnline && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#0a0a0c]" />
-              )}
-            </div>
-            <div className={`max-w-[75%] ${message.isMe ? 'items-end' : 'items-start'}`}>
-              <div className={`p-2 rounded-lg text-sm ${message.isMe ? 'bg-blue-500/20' : 'bg-white/5'
-                }`}>
-                {message.content}
-              </div>
-              <div className="text-[10px] text-white/40 mt-0.5">
-                {message.timestamp}
-              </div>
-            </div>
-          </div>
-        ))} */}
+      <div className="flex-1 overflow-x-hidden overflow-y-auto ai-chat-scrollbar space-y-2" ref={chatScrollRef} >
         {
-          chatHistory.length > 0 ? chatHistory.map((msg: IChat) => (
-            msg.type !== "Reaction" ? <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-              {
-                msg.fromAddress == selectedUser?.address &&
-                < img
-                  src={selectedUser.profilePicture}
-                  className="w-8 h-8 rounded-full mt-1"
-                />
-              }
-              <div className="flex-1 min-w-0">
-                <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
-                  {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                  <span className="font-medium text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
-                  <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
-                </div>
-                {
-                  renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
-                }
-              </div>
-            </div> : null
-          ))
+          loadingChatHistory ?
+            <div className='flex items-center justify-center h-full'>
+              <Spinner />
+            </div>
             :
-            !selectedUser ?
-              <div className="flex flex-col items-center justify-center h-full text-white/40">
-                Please select a user
-              </div> :
-              <div className="flex flex-col items-center justify-center h-full text-white/40">
-                <MessageSquare className="w-12 h-12 mb-4" />
-                <p>No messages yet</p>
-                <p className="text-sm">Start a conversation!</p>
-                <p className='text-sm'>{shrinkAddress(selectedUser.address)}</p>
-              </div>
+            chatHistory.length > 0 ? <>
+              <div ref={topRef}></div>
+              {loadingPrevChat && <div className='w-full flex justify-center'>
+                <Spinner />
+              </div>}
+              {chatHistory.map((msg: IChat) => (
+                msg.type !== "Reaction" ? <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
+                  {
+                    msg.fromAddress == selectedUser?.address &&
+                    < img
+                      src={selectedUser.profilePicture}
+                      className="w-8 h-8 rounded-full mt-1"
+                    />
+                  }
+                  <div className="flex-1 min-w-0">
+                    <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+                      {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+                      <span className="text-xs font-small text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+                      <span className={`text-xs text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
+                    </div>
+                    {
+                      renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
+                    }
+                  </div>
+                </div> : null
+              ))}
+            </>
+              :
+              !selectedUser ?
+                <div className="flex flex-col items-center justify-center h-full text-white/40">
+                  Please select a user
+                </div> :
+                <div className="flex flex-col items-center justify-center h-full text-white/40">
+                  <MessageSquare className="w-12 h-12 mb-4" />
+                  <p>No messages yet</p>
+                  <p className="text-sm">Start a conversation!</p>
+                  <p className='text-sm'>{shrinkAddress(selectedUser.address)}</p>
+                </div>
         }
       </div>
 
