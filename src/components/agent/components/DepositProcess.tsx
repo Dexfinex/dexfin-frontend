@@ -37,7 +37,7 @@ export const DepositProcess: React.FC<DepositProcessProps> = ({ steps, fromAmoun
       setShowConfirmation(true);
 
       sendTransactionMutate(
-        { transactions: data },
+        { transactions: data, duration: 0 },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);

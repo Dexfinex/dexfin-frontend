@@ -78,7 +78,7 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
       setShowConfirmation(true);
 
       sendTransactionMutate(
-        { transactions: data },
+        { transactions: data, duration: 0 },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);

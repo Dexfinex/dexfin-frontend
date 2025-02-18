@@ -37,7 +37,7 @@ export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmo
       setShowConfirmation(true);
 
       sendTransactionMutate(
-        { transactions: data },
+        { transactions: data, duration: 0 },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);
