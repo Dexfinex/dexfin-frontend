@@ -1,5 +1,5 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
-import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X } from 'lucide-react';
+import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X, ArrowLeft } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
 import { TokenChainIcon } from './swap/components/TokenIcon';
@@ -173,6 +173,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [confirming, setConfirming] = useState("");
   const [txModalOpen, setTxModalOpen] = useState(false);
   const [hash, setHash] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
 
   const { mutate: sendDepositMutate } = useSendDepositMutation();
 
@@ -214,7 +215,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const priceRatio = useMemo(() => {
     if (tokenBalance1?.usdPrice && tokenBalance2?.usdPrice) {
-      return tokenBalance1?.usdPrice / tokenBalance2?.usdPrice
+      const ratio = tokenBalance1?.usdPrice / tokenBalance2?.usdPrice
+      return ratio > 1 ? 1 : ratio;
     }
     return 1;
   }, [tokenBalance1, tokenBalance2]);
@@ -322,6 +324,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
             if (transactionResponse) {
               const receipt = await transactionResponse.wait();
               setHash(receipt.transactionHash);
+              setTxModalOpen(true);
               await refetchDefiPositionByWallet();
               await refetchDefiProtocolByWallet();
 
@@ -873,6 +876,12 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalState({ type: null })} />
           <div className="relative glass w-[400px] rounded-xl p-6">
             <div className="flex items-center justify-between mb-6">
+              {
+                showPreview &&
+                <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setShowPreview(false)}>
+                  <ArrowLeft />
+                </button>
+              }
               <h3 className="text-xl font-medium">
                 {modalState.type === 'deposit' ? 'Deposit' :
                   modalState.type === 'withdraw' ? 'Withdraw' :
@@ -914,135 +923,226 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-sm text-white/60 mb-2">
-                  Amount
-                </div>
-                <div className='relative flex'>
-                  <input
-                    value={tokenAmount}
-                    onChange={(e) => {
-                      setTokenAmount(e.target.value);
-                      setToken2Amount((Number(e.target.value) * Number(priceRatio)).toString());
-                    }}
-                    type="text"
-                    className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""}`}
-                    placeholder="0.00"
-                  />
-                  <div className='flex items-center fixed right-12'>
-                    <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
-                    <span className='ml-2'>
-                      {tokenBalance1?.symbol || ""}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-2 text-sm">
-                  <span className="text-white/60">
-                    {modalState.type === 'borrow'
-                      ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
-                      } ${modalState.position.tokens}`
-                      : modalState.type === 'repay'
-                        ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
-                        : `Balance: ${formatNumberByFrac(tokenBalance1?.balance)}`
-                    }
-                  </span>
-                  <button className="text-blue-400" onClick={() => {
-                    setTokenAmount((tokenBalance1?.balance || "") + "");
-                    setToken2Amount((Number(tokenBalance1?.balance) * Number(priceRatio)).toString());
-                  }}>MAX</button>
-                </div>
-              </div>
+              {
+                showPreview ?
+                  <div className='mt-2 mb-2 flex flex-col gap-4'>
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2 text-2xl'>
+                          {`${formatNumberByFrac(Number(tokenAmount), 6)} ${tokenBalance1?.symbol}`}
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"lg"} chainId={Number(tokenBalance1?.chain)} />
+                      </div>
+                    </div>
 
-              <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-sm text-white/60 mb-2">
-                  Amount
-                </div>
-                <div className='relative flex'>
-                  <input
-                    value={token2Amount}
-                    onChange={(e) => {
-                      setToken2Amount(e.target.value);
-                      setTokenAmount((Number(e.target.value) / Number(priceRatio)).toString());
-                    }}
-                    type="text"
-                    className={`w-full bg-transparent text-2xl outline-none ${isErrorToken2Amount ? "text-red-500" : ""}`}
-                    placeholder="0.00"
-                  />
-                  <div className='flex items-center fixed right-12'>
-                    <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
-                    <span className='ml-2'>
-                      {tokenBalance2?.symbol || ""}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-2 text-sm">
-                  <span className="text-white/60">
-                    {modalState.type === 'borrow'
-                      ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
-                      } ${modalState.position.tokens}`
-                      : modalState.type === 'repay'
-                        ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
-                        : `Balance: ${formatNumberByFrac(tokenBalance2?.balance)}`
-                    }
-                  </span>
-                  <button className="text-blue-400" onClick={() => {
-                    setToken2Amount((tokenBalance2?.balance || "") + "");
-                    setTokenAmount((Number(tokenBalance2?.balance) / Number(priceRatio)).toString());
-                  }}>MAX</button>
-                </div>
-              </div>
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2 text-2xl'>
+                          {`${formatNumberByFrac(Number(token2Amount), 6)} ${tokenBalance2?.symbol}`}
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"lg"} chainId={Number(tokenBalance2?.chain)} />
+                      </div>
+                    </div>
 
-              <div className='mt-2 mb-2 flex flex-col gap-3'>
-                <div className='flex justify-between'>
-                  <div>
-                    <span className='ml-2'>
-                      {tokenBalance1?.symbol || ""} Position
-                    </span>
-                  </div>
-                  <div className='items-center flex'>
-                    <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
-                    <span className='ml-2'>
-                      {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted))}
-                    </span>
-                    <span className='ml-1'>
-                      {tokenBalance2?.symbol || ""}
-                    </span>
-                  </div>
-                </div>
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2'>
+                          Rate
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <span className='ml-2'>
+                          1 {tokenBalance2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenBalance1?.symbol}
+                        </span>
+                      </div>
+                    </div>
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          New {tokenBalance1?.symbol || ""} Position
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                        <span className='ml-2'>
+                          {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted) + Number(tokenAmount))}
+                        </span>
+                        <span className='ml-1'>
+                          {tokenBalance2?.symbol || ""}
+                        </span>
+                      </div>
+                    </div>
 
-                <div className='flex justify-between'>
-                  <div>
-                    <span className='ml-2'>
-                      {tokenBalance2?.symbol || ""} Position
-                    </span>
-                  </div>
-                  <div className='items-center flex'>
-                    <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
-                    <span className='ml-2'>
-                      {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted))}
-                    </span>
-                    <span className='ml-1'>
-                      {tokenBalance2?.symbol || ""}
-                    </span>
-                  </div>
-                </div>
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          New {tokenBalance2?.symbol || ""} Position
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                        <span className='ml-2'>
+                          {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted) + Number(token2Amount))}
+                        </span>
+                        <span className='ml-1'>
+                          {tokenBalance2?.symbol || ""}
+                        </span>
+                      </div>
+                    </div>
 
-                <div className='flex justify-between'>
-                  <div>
-                    <span className='ml-2'>
-                      Network Fee
-                    </span>
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          Network Fee
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <span className='ml-2'>
+                          {
+                            isGasEstimationLoading ?
+                              <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                              : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className='items-center flex'>
-                    <span className='ml-2'>
-                      {
-                        isGasEstimationLoading ?
-                          <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
-                          : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                  :
+                  <>
+                    <div className="bg-white/5 rounded-xl p-4">
+                      <div className="text-sm text-white/60 mb-2">
+                        Amount
+                      </div>
+                      <div className='relative flex'>
+                        <input
+                          value={tokenAmount}
+                          onChange={(e) => {
+                            setTokenAmount(e.target.value);
+                            setToken2Amount((Number(e.target.value) * Number(priceRatio)).toString());
+                          }}
+                          type="text"
+                          className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""}`}
+                          placeholder="0.00"
+                        />
+                        <div className='flex items-center fixed right-12'>
+                          <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                          <span className='ml-2'>
+                            {tokenBalance1?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-2 text-sm">
+                        <span className="text-white/60">
+                          {modalState.type === 'borrow'
+                            ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
+                            } ${modalState.position.tokens}`
+                            : modalState.type === 'repay'
+                              ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
+                              : `Balance: ${formatNumberByFrac(tokenBalance1?.balance)}`
+                          }
+                        </span>
+                        <button className="text-blue-400" onClick={() => {
+                          setTokenAmount((tokenBalance1?.balance || "") + "");
+                          setToken2Amount((Number(tokenBalance1?.balance) * Number(priceRatio)).toString());
+                        }}>MAX</button>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 rounded-xl p-4">
+                      <div className="text-sm text-white/60 mb-2">
+                        Amount
+                      </div>
+                      <div className='relative flex'>
+                        <input
+                          value={token2Amount}
+                          onChange={(e) => {
+                            setToken2Amount(e.target.value);
+                            setTokenAmount((Number(e.target.value) / Number(priceRatio)).toString());
+                          }}
+                          type="text"
+                          className={`w-full bg-transparent text-2xl outline-none ${isErrorToken2Amount ? "text-red-500" : ""}`}
+                          placeholder="0.00"
+                        />
+                        <div className='flex items-center fixed right-12'>
+                          <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                          <span className='ml-2'>
+                            {tokenBalance2?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-2 text-sm">
+                        <span className="text-white/60">
+                          {modalState.type === 'borrow'
+                            ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
+                            } ${modalState.position.tokens}`
+                            : modalState.type === 'repay'
+                              ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
+                              : `Balance: ${formatNumberByFrac(tokenBalance2?.balance)}`
+                          }
+                        </span>
+                        <button className="text-blue-400" onClick={() => {
+                          setToken2Amount((tokenBalance2?.balance || "") + "");
+                          setTokenAmount((Number(tokenBalance2?.balance) / Number(priceRatio)).toString());
+                        }}>MAX</button>
+                      </div>
+                    </div>
+
+                    <div className='mt-2 mb-2 flex flex-col gap-3'>
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            {tokenBalance1?.symbol || ""} Position
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                          <span className='ml-2'>
+                            {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted))}
+                          </span>
+                          <span className='ml-1'>
+                            {tokenBalance2?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            {tokenBalance2?.symbol || ""} Position
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                          <span className='ml-2'>
+                            {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted))}
+                          </span>
+                          <span className='ml-1'>
+                            {tokenBalance2?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            Network Fee
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <span className='ml-2'>
+                            {
+                              isGasEstimationLoading ?
+                                <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                                : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+              }
 
               {modalState.type === 'borrow' && (
                 <div className="p-3 bg-white/5 rounded-lg space-y-2">
@@ -1065,11 +1165,19 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
               )}
 
+
+
               <button
                 className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || isErrorToken2Amount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
-                onClick={depositHandler}
+                onClick={async () => {
+                  if (showPreview) {
+                    depositHandler()
+                  } else {
+                    setShowPreview(true);
+                  }
+                }}
               >
-                {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : buttonText}
+                {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? buttonText : "Next"}
               </button>
             </div>
           </div>
