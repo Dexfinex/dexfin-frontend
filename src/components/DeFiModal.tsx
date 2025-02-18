@@ -9,6 +9,7 @@ import { Web3AuthContext } from '../providers/Web3AuthContext';
 import useDefiStore, { Position } from '../store/useDefiStore';
 import useTokenBalanceStore from '../store/useTokenBalanceStore';
 import { useSendDepositMutation } from '../hooks/useDeposit';
+import { useRedeemEnSoMutation } from '../hooks/useRedeemEnSo.ts';
 import useGasEstimation from "../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../hooks/useGetTokenPrices';
 import useTokenStore from "../store/useTokenStore.ts";
@@ -45,7 +46,7 @@ interface Offering {
 }
 
 interface ModalState {
-  type: 'deposit' | 'withdraw' | 'borrow' | 'repay' | null;
+  type: 'deposit' | 'redeem' | 'borrow' | 'repay' | null;
   position?: Position;
 }
 
@@ -175,7 +176,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [hash, setHash] = useState("");
   const [showPreview, setShowPreview] = useState(false);
 
+  const [withdrawPercent, setWithdrawPercent] = useState("1");
+
   const { mutate: sendDepositMutate } = useSendDepositMutation();
+  const { mutate: redeemEnSoMutate } = useRedeemEnSoMutation();
 
   const { chainId, address, signer } = useContext(Web3AuthContext);
   const { positions, protocol, netAPY, healthFactor, protocolTypes } = useDefiStore();
@@ -241,12 +245,6 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     return true;
   }, [token2Amount, tokenBalance2])
 
-  const buttonText = useMemo(() => {
-    return modalState.type === 'deposit' ? 'Deposit' :
-      modalState.type === 'withdraw' ? 'Withdraw' :
-        modalState.type === 'borrow' ? 'Borrow' : 'Repay'
-  }, [modalState]);
-
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
@@ -290,7 +288,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleAction = (type: 'deposit' | 'withdraw' | 'borrow' | 'repay', position: Position) => {
+  const handleAction = (type: 'deposit' | 'redeem' | 'borrow' | 'repay', position: Position) => {
     setModalState({ type, position });
   };
 
@@ -342,6 +340,53 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         }
       })
     }
+  }
+
+  const redeemHandler = async () => {
+    if (!signer) return;
+
+    setConfirming("Redeeming...");
+
+    redeemEnSoMutate({
+      chainId: Number(chainId),
+      fromAddress: address,
+      routingStrategy: "router",
+      action: "redeem",
+      protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+      tokenIn: modalState?.position?.address || "",
+      tokenOut: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
+      withdrawPercent: Number(withdrawPercent),
+      signer: signer,
+      receiver: address,
+      gasPrice: gasData.gasPrice,
+      gasLimit: gasData.gasLimit
+    }, {
+      onSuccess: async (txData) => {
+        if (signer) {
+          // execute defi action
+          const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+            setConfirming("")
+            return null;
+          });
+          if (transactionResponse) {
+            const receipt = await transactionResponse.wait();
+            setHash(receipt.transactionHash);
+            setTxModalOpen(true);
+            await refetchDefiPositionByWallet();
+            await refetchDefiProtocolByWallet();
+
+            setWithdrawPercent("1")
+            setModalState({ type: null })
+          }
+
+        }
+        setConfirming("");
+      },
+      onError: async (e) => {
+        console.error(e)
+        setConfirming("");
+      }
+    })
   }
 
   const renderPositions = () => (
@@ -475,10 +520,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         Deposit
                       </button>
                       <button
-                        onClick={() => handleAction('withdraw', position)}
+                        onClick={() => handleAction('redeem', position)}
                         className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
                       >
-                        Withdraw
+                        Redeem
                       </button>
                     </>
                   )}
@@ -871,7 +916,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      {modalState.type && modalState.position && (
+      {modalState.type && modalState.type === 'deposit' && modalState.position && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalState({ type: null })} />
           <div className="relative glass w-[400px] rounded-xl p-6">
@@ -883,9 +928,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </button>
               }
               <h3 className="text-xl font-medium">
-                {modalState.type === 'deposit' ? 'Deposit' :
-                  modalState.type === 'withdraw' ? 'Withdraw' :
-                    modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
+                Deposit
               </h3>
               <button
                 onClick={() => setModalState({ type: null })}
@@ -909,17 +952,9 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 </div>
                 <div className="ml-auto text-right">
-                  <div className={`${modalState.type === 'borrow' || modalState.type === 'repay'
-                    ? 'text-red-400'
-                    : 'text-emerald-400'
-                    }`}>
+                  <div className={`text-emerald-400`}>
                     {modalState.position.apy || 0}% APY
                   </div>
-                  {modalState.position.rewards && (
-                    <div className="text-sm text-blue-400">
-                      +{modalState.position.rewards}% APR
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -1036,13 +1071,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       </div>
                       <div className="flex items-center justify-between mt-2 text-sm">
                         <span className="text-white/60">
-                          {modalState.type === 'borrow'
-                            ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
-                            } ${modalState.position.tokens}`
-                            : modalState.type === 'repay'
-                              ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
-                              : `Balance: ${formatNumberByFrac(tokenBalance1?.balance)}`
-                          }
+                          {`Balance: ${formatNumberByFrac(tokenBalance1?.balance)}`}
                         </span>
                         <button className="text-blue-400" onClick={() => {
                           setTokenAmount((tokenBalance1?.balance || "") + "");
@@ -1075,13 +1104,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       </div>
                       <div className="flex items-center justify-between mt-2 text-sm">
                         <span className="text-white/60">
-                          {modalState.type === 'borrow'
-                            ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
-                            } ${modalState.position.tokens}`
-                            : modalState.type === 'repay'
-                              ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
-                              : `Balance: ${formatNumberByFrac(tokenBalance2?.balance)}`
-                          }
+                          {`Balance: ${formatNumberByFrac(tokenBalance2?.balance)}`}
                         </span>
                         <button className="text-blue-400" onClick={() => {
                           setToken2Amount((tokenBalance2?.balance || "") + "");
@@ -1144,29 +1167,6 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   </>
               }
 
-              {modalState.type === 'borrow' && (
-                <div className="p-3 bg-white/5 rounded-lg space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/60">Borrow APY</span>
-                    <span className="text-red-400">{modalState.position.apy}%</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/60">Health Factor</span>
-                    <span className={`${modalState.position.healthFactor! >= 1.5 ? 'text-green-400' :
-                      modalState.position.healthFactor! >= 1.1 ? 'text-yellow-400' : 'text-red-400'
-                      }`}>
-                      {modalState.position.healthFactor!.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/60">Liquidation at</span>
-                    <span className="text-white/80">&lt; 1.0</span>
-                  </div>
-                </div>
-              )}
-
-
-
               <button
                 className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || isErrorToken2Amount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
                 onClick={async () => {
@@ -1177,7 +1177,250 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   }
                 }}
               >
-                {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? buttonText : "Next"}
+                {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Deposit" : "Next"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalState.type && modalState.type === 'redeem' && modalState.position && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalState({ type: null })} />
+          <div className="relative glass w-[400px] rounded-xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              {
+                showPreview &&
+                <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setShowPreview(false)}>
+                  <ArrowLeft />
+                </button>
+              }
+              <h3 className="text-xl font-medium">
+                Redeem
+              </h3>
+              <button
+                onClick={() => setModalState({ type: null })}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
+                <img
+                  src={modalState.position.logo}
+                  alt={modalState.position.protocol}
+                  className="w-8 h-8"
+                />
+                <div>
+                  <div className="font-medium">{modalState.position.protocol}</div>
+                  <div className="text-sm text-white/60">
+                    {`${modalState.position.tokens[0].symbol}/${modalState.position.tokens[1].symbol} ${modalState.position.tokens[2].symbol}`}
+                  </div>
+                </div>
+                <div className="ml-auto text-right">
+                  <div className={`text-emerald-400`}>
+                    {modalState.position.apy || 0}% APY
+                  </div>
+                </div>
+              </div>
+
+              {
+                showPreview ?
+                  <div className='mt-2 mb-2 flex flex-col gap-4'>
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2 text-2xl'>
+                          {`${formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenBalance1?.symbol}`}
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"lg"} chainId={Number(tokenBalance1?.chain)} />
+                      </div>
+                    </div>
+
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2 text-2xl'>
+                          {`${formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenBalance2?.symbol}`}
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"lg"} chainId={Number(tokenBalance2?.chain)} />
+                      </div>
+                    </div>
+
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2'>
+                          Rate
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <span className='ml-2'>
+                          1 {tokenBalance2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenBalance1?.symbol}
+                        </span>
+                      </div>
+                    </div>
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          New {tokenBalance1?.symbol || ""} Position
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                        <span className='ml-2'>
+                          {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
+                        </span>
+                        <span className='ml-1'>
+                          {tokenBalance2?.symbol || ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          New {tokenBalance2?.symbol || ""} Position
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                        <span className='ml-2'>
+                          {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
+                        </span>
+                        <span className='ml-1'>
+                          {tokenBalance2?.symbol || ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          Network Fee
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <span className='ml-2'>
+                          {
+                            isGasEstimationLoading ?
+                              <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                              : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  :
+                  <>
+                    <div className="bg-white/5 rounded-xl p-4">
+                      <div className="text-sm text-white/60 mb-2">
+                        Withdrawal amount
+                      </div>
+                      <div className='relative flex flex-row items-center justify-center w-full'>
+                        <input
+                          minLength={1}
+                          maxLength={3}
+                          inputMode="numeric" autoComplete="off" autoCorrect="off" type="text" pattern="^\d*$"
+                          placeholder="0" spellCheck="false"
+                          value={withdrawPercent}
+                          onChange={(e) => {
+                            if (0 < Number(e.target.value) && Number(e.target.value) <= 100 && !isNaN(Number(e.target.value))) {
+                              setWithdrawPercent(e.target.value)
+                            }
+                          }}
+                          className={`bg-transparent text-5xl outline-none`}
+                          style={{ width: (withdrawPercent.length || 1) * 30 }}
+                        />
+                        <div className='text-4xl text-black ml-2'>%</div>
+                      </div>
+                      <div className='flex w-full items-center justify-center mt-4 gap-4'>
+                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                          onClick={() => setWithdrawPercent("25")}>
+                          25%
+                        </button>
+                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                          onClick={() => setWithdrawPercent("50")}>
+                          50%
+                        </button>
+                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                          onClick={() => setWithdrawPercent("75")}>
+                          75%
+                        </button>
+                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                          onClick={() => setWithdrawPercent("100")}>
+                          MAX
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className='mt-2 mb-2 flex flex-col gap-3'>
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            {tokenBalance1?.symbol || ""} Position
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                          <span className='ml-2'>
+                            {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted))}
+                          </span>
+                          <span className='ml-1'>
+                            {tokenBalance2?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            {tokenBalance2?.symbol || ""} Position
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                          <span className='ml-2'>
+                            {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted))}
+                          </span>
+                          <span className='ml-1'>
+                            {tokenBalance2?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            Network Fee
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <span className='ml-2'>
+                            {
+                              isGasEstimationLoading ?
+                                <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                                : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+              }
+
+              <button
+                className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || isErrorToken2Amount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
+                onClick={async () => {
+                  if (showPreview) {
+                    redeemHandler()
+                  } else {
+                    setShowPreview(true);
+                  }
+                }}
+              >
+                {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Redeem" : "Next"}
               </button>
             </div>
           </div>
