@@ -1,23 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
-import { TokenType, Step, Protocol } from '../../../types/brian.type';
-import { convertCryptoAmount } from '../../../utils/brian';
-import { formatNumberByFrac } from '../../../utils/common.util';
+import { Bot, CheckCircle2, X } from 'lucide-react';
+import { Step, TokenType } from '../../../types/brian.type';
 import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
 
 import { FailedTransaction } from '../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../modals/SuccessModal.tsx';
-interface SwapProcessProps {
+
+interface ENSRegisterProcessProps {
   onClose: () => void;
+  description: string;
+  ensName: string;
   fromToken: TokenType;
-  toToken: TokenType;
-  fromAmount: string;
-  receiver: string;
   steps: Step[];
-  protocol: Protocol | undefined;
 }
 
-export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol, onClose }) => {
+export const ENSRegisterProcess: React.FC<ENSRegisterProcessProps> = ({ description, steps, ensName, fromToken, onClose }) => {
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -36,7 +33,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
       setShowConfirmation(true);
 
       sendTransactionMutate(
-        { transactions: data, duration: 0 },
+        { transactions: data, duration: 60000 },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);
@@ -58,7 +55,6 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
     }
   };
 
-
   useEffect(() => {
     if (step === 1) {
       const timer = setInterval(() => {
@@ -79,7 +75,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
     if (showConfirmation) {
       const stages = [
         { progress: 25, status: 'Preparing transaction...' },
-        { progress: 50, status: 'Submitting to Protocol...' },
+        { progress: 50, status: 'Submitting to ENS...' },
         { progress: 75, status: 'Waiting for confirmation...' },
         { progress: 100, status: 'Transaction confirmed!' }
       ];
@@ -128,9 +124,9 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
           <Bot className="w-12 h-12 text-blue-500" />
         </div>
       </div>
-      <h3 className="mt-8 text-xl font-medium">Finding Best Rate</h3>
+      <h3 className="mt-8 text-xl font-medium">Registering ENS Name</h3>
       <p className="mt-2 text-white/60 text-center max-w-md">
-        Scanning DEXs for the best {fromToken.symbol} to {toToken.symbol} swap rate...
+        Registering {ensName} on the Ethereum Name Service...
       </p>
     </div>
   );
@@ -138,60 +134,19 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
   const renderStep2 = () => (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 mb-6">
-        {/* <img 
-          src={protocol.logoURI??''}
-          alt={protocol?.name}
-          className="w-12 h-12"
-        /> */}
         <div>
-          <h3 className="text-xl font-medium">Best Rate Found</h3>
-          <p className="text-white/60">{protocol?.name} offers the best rate</p>
+          <h3 className="text-xl font-medium">ENS Name Registered</h3>
+          <p className="text-white/60">Your ENS name {ensName} has been successfully registered.</p>
+          <p className="mt-4 text-white/60">{description}</p>
         </div>
       </div>
 
-      <div className="flex-1 bg-white/5 rounded-xl p-6">
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white/5 rounded-lg">
-            <div className="flex items-center gap-3">
-              <img
-                src={fromToken.logoURI}
-                alt={fromToken.symbol}
-                className="w-10 h-10"
-              />
-              <div>
-                <div className="text-sm text-white/60">You pay</div>
-                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol}</div>
-              </div>
-            </div>
-            <ArrowRight className="w-6 h-6 text-white/40" />
-            <div className="flex items-center gap-3">
-              <img
-                src={toToken.logoURI}
-                alt={toToken.symbol}
-                className="w-10 h-10"
-              />
-              <div>
-                <div className="text-sm text-white/60">You receive</div>
-                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 bg-white/5 rounded-lg space-y-3">
-            <div className="flex justify-between">
-              <span className="text-white/60">Rate</span>
-              <span className="font-medium">1 {fromToken.symbol} = {formatNumberByFrac(Number(fromToken.priceUSD)/Number(toToken.priceUSD), 2)} {toToken.symbol} </span>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => handleTransaction(steps)}
-          className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
-        >
-          Confirm Swap
-        </button>
-      </div>
+      <button
+        onClick={() => handleTransaction(steps)}
+        className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
+      >
+        Confirm Registration
+      </button>
     </div>
   );
 
@@ -212,24 +167,23 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
             </div>
           </div>
           <div className="flex items-center gap-4 animate-pulse">
-            <img
-              src={fromToken.logoURI}
-              alt={fromToken.symbol}
-              className="w-12 h-12"
-            />
-            <ArrowRight className="w-6 h-6 text-white/40" />
-            <img
-              src={toToken.logoURI}
-              alt={toToken.symbol}
-              className="w-12 h-12"
-            />
+            {fromToken.logoURI &&
+              <img
+                src={fromToken.logoURI}
+                alt={fromToken.symbol}
+                className="w-12 h-12"
+              />
+            }
           </div>
           <p className="mt-4 text-white/60">
-            Swapping {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} for {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} via {protocol?.name}
+            Please wait at least 1 minute for executing the second transaction.
+          </p>
+          <p className="mt-4 text-white/60">
+            Registering {ensName} on the Ethereum Name Service...
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully registered the ENS name ${ensName}.`} />
       )}
     </div>
   );
@@ -266,7 +220,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Swap ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} via ${protocol?.name}`}
+          description={`Registering ENS name ${ensName}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (

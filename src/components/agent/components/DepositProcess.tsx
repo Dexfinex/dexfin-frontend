@@ -37,7 +37,7 @@ export const DepositProcess: React.FC<DepositProcessProps> = ({ steps, fromAmoun
       setShowConfirmation(true);
 
       sendTransactionMutate(
-        { transactions: data },
+        { transactions: data, duration: 0 },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);
@@ -157,7 +157,7 @@ export const DepositProcess: React.FC<DepositProcessProps> = ({ steps, fromAmoun
               }
               <div>
                 <div className="text-sm text-white/60">You deposit</div>
-                <div className="text-xl font-medium">{convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol}</div>
+                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
@@ -221,11 +221,11 @@ export const DepositProcess: React.FC<DepositProcessProps> = ({ steps, fromAmoun
             }
           </div>
           <p className="mt-4 text-white/60">
-            Depositing {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol} via {protocol?.name}
+            Depositing {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} via {protocol?.name}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully deposited ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully deposited ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol}`} />
       )}
     </div>
   );
@@ -262,7 +262,7 @@ export const DepositProcess: React.FC<DepositProcessProps> = ({ steps, fromAmoun
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Deposit ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol} via ${protocol?.name}`}
+          description={`Deposit ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol} via ${protocol?.name}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (
