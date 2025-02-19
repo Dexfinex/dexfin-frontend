@@ -324,127 +324,158 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const renderPositions = () => (
     <div className="space-y-3">
       {
+        positions.length > 0 && (
+          < div className="flex items-center gap-2 mb-6">
+            <button
+              onClick={() => setSelectedPositionType('ALL')}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
+                ? 'bg-white/10'
+                : 'hover:bg-white/5'
+                }`}
+            >
+              All Types
+            </button>
+            {protocolTypes.map(type => (
+              <button
+                key={type}
+                onClick={() => setSelectedPositionType(type)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
+                  ? 'bg-white/10'
+                  : 'hover:bg-white/5'
+                  }`}
+              >
+                {getTypeIcon(type)}
+                <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
+              </button>
+            ))}
+          </div>
+        )
+      }
+
+      {
         positions.length === 0 && isLoading && <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'}></Skeleton>
       }
-      {positions
-        .filter(p => selectedPositionType === 'ALL' || p.type === selectedPositionType)
-        .map((position, index) => (
-          isLoading ? <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'} key={`sk-${index}`}></Skeleton>
-            : <div
-              key={index}
-              className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={position.logo}
-                    alt={position.protocol}
-                    className="w-10 h-10"
-                  />
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-medium">{position.protocol}</h3>
-                      <span className={`text-sm ${getTypeColor(position.type)}`}>
-                        {position.type}
-                      </span>
-                      <span className="text-white/40">•</span>
-                      <span className="text-sm text-white/60">
-                        {`${position.tokens[0]?.symbol}/${position.tokens[1]?.symbol} ${position.tokens[2]?.symbol}`}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                      <div>
-                        <span className="text-sm text-white/60">Amount</span>
-                        <div className="text-lg">${(position.amount || "0").toLocaleString()}</div>
-                      </div>
-                      <div>
-                        <span className="text-sm text-white/60">APY</span>
-                        <div className="text-emerald-400">{(position.apy || "0")}%</div>
-                      </div>
-                      {position.rewards && (
-                        <div>
-                          <span className="text-sm text-white/60">Rewards</span>
-                          <div className="text-blue-400">+{(position.rewards || "0")}% APR</div>
-                        </div>
-                      )}
-                      {!!position.healthFactor && (
-                        <div>
-                          <span className="text-sm text-white/60">Health Factor</span>
-                          <div className="text-green-400">{position.healthFactor}</div>
-                        </div>
-                      )}
-                      {position.poolShare && (
-                        <div>
-                          <span className="text-sm text-white/60">Pool Share</span>
-                          <div>{(position.poolShare * 100).toFixed(3)}%</div>
-                        </div>
-                      )}
-                      {position.collateralFactor && (
-                        <div>
-                          <span className="text-sm text-white/60">Collateral Factor</span>
-                          <div>{(position.collateralFactor * 100)}%</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {position.type === 'BORROWING' ? (
-                    <>
-                      <button
-                        onClick={() => handleAction('borrow', position)}
-                        className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
-                      >
-                        Borrow More
-                      </button>
-                      <button
-                        onClick={() => handleAction('repay', position)}
-                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
-                      >
-                        Repay
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleAction('deposit', position)}
-                        className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
-                      >
-                        Deposit
-                      </button>
-                      <button
-                        onClick={() => handleAction('redeem', position)}
-                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
-                      >
-                        Redeem
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {position.type === 'BORROWING' && (
-                <div className="mt-3">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-white/60">Borrow Utilization</span>
-                    <span>{((position.borrowed! / position.maxBorrow!) * 100).toFixed(1)}%</span>
-                  </div>
-                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all ${(position.borrowed! / position.maxBorrow!) >= 0.8 ? 'bg-red-500' :
-                        (position.borrowed! / position.maxBorrow!) >= 0.6 ? 'bg-yellow-500' :
-                          'bg-green-500'
-                        }`}
-                      style={{ width: `${(position.borrowed! / position.maxBorrow!) * 100}%` }}
+      {
+        positions
+          .filter(p => selectedPositionType === 'ALL' || p.type === selectedPositionType)
+          .map((position, index) => (
+            isLoading ? <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'} key={`sk-${index}`}></Skeleton>
+              : <div
+                key={index}
+                className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={position.logo}
+                      alt={position.protocol}
+                      className="w-10 h-10"
                     />
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-medium">{position.protocol}</h3>
+                        <span className={`text-sm ${getTypeColor(position.type)}`}>
+                          {position.type}
+                        </span>
+                        <span className="text-white/40">•</span>
+                        <span className="text-sm text-white/60">
+                          {`${position.tokens[0]?.symbol}/${position.tokens[1]?.symbol} ${position.tokens[2]?.symbol}`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-6">
+                        <div>
+                          <span className="text-sm text-white/60">Amount</span>
+                          <div className="text-lg">${(position.amount || "0").toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <span className="text-sm text-white/60">APY</span>
+                          <div className="text-emerald-400">{(position.apy || "0")}%</div>
+                        </div>
+                        {position.rewards && (
+                          <div>
+                            <span className="text-sm text-white/60">Rewards</span>
+                            <div className="text-blue-400">+{(position.rewards || "0")}% APR</div>
+                          </div>
+                        )}
+                        {!!position.healthFactor && (
+                          <div>
+                            <span className="text-sm text-white/60">Health Factor</span>
+                            <div className="text-green-400">{position.healthFactor}</div>
+                          </div>
+                        )}
+                        {position.poolShare && (
+                          <div>
+                            <span className="text-sm text-white/60">Pool Share</span>
+                            <div>{(position.poolShare * 100).toFixed(3)}%</div>
+                          </div>
+                        )}
+                        {position.collateralFactor && (
+                          <div>
+                            <span className="text-sm text-white/60">Collateral Factor</span>
+                            <div>{(position.collateralFactor * 100)}%</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {position.type === 'BORROWING' ? (
+                      <>
+                        <button
+                          onClick={() => handleAction('borrow', position)}
+                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
+                        >
+                          Borrow More
+                        </button>
+                        <button
+                          onClick={() => handleAction('repay', position)}
+                          className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
+                        >
+                          Repay
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleAction('deposit', position)}
+                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
+                        >
+                          Deposit
+                        </button>
+                        <button
+                          onClick={() => handleAction('redeem', position)}
+                          className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
+                        >
+                          Redeem
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-        ))}
-    </div>
+
+                {position.type === 'BORROWING' && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-white/60">Borrow Utilization</span>
+                      <span>{((position.borrowed! / position.maxBorrow!) * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all ${(position.borrowed! / position.maxBorrow!) >= 0.8 ? 'bg-red-500' :
+                          (position.borrowed! / position.maxBorrow!) >= 0.6 ? 'bg-yellow-500' :
+                            'bg-green-500'
+                          }`}
+                        style={{ width: `${(position.borrowed! / position.maxBorrow!) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+          ))
+      }
+    </div >
   );
 
   const renderOfferings = () => (
@@ -612,7 +643,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   </div>
                   <div className="flex items-center gap-1 text-emerald-400">
                     <TrendingUp className="w-4 h-4" />
-                    <span>+5.82%</span>
+                    <span>0 %</span>
                     <span className="text-white/60">24h</span>
                   </div>
                 </div>
@@ -664,108 +695,85 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Position Type Filter */}
-              <div className="flex items-center gap-2 mb-6">
-                <button
-                  onClick={() => setSelectedPositionType('ALL')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
-                    ? 'bg-white/10'
-                    : 'hover:bg-white/5'
-                    }`}
-                >
-                  All Types
-                </button>
-                {protocolTypes.map(type => (
-                  <button
-                    key={type}
-                    onClick={() => setSelectedPositionType(type)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
-                      ? 'bg-white/10'
-                      : 'hover:bg-white/5'
-                      }`}
-                  >
-                    {getTypeIcon(type)}
-                    <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
-                  </button>
-                ))}
-              </div>
-
               {/* Positions */}
               {renderPositions()}
 
               {/* Protocol Statistics */}
-              <div className="grid grid-cols-2 gap-6 mt-6">
-                {/* Protocol Breakdown */}
-                <div className="bg-white/5 rounded-xl p-4">
-                  <h3 className="text-lg font-medium mb-4">Protocol Breakdown</h3>
-                  <div className="space-y-3">
-                    {positions.map((position) => {
-                      const protocol = position.protocol;
-                      const protocolPositions = positions.filter(p => p.protocol === protocol);
-                      const totalValue = protocolPositions.reduce((sum, p) => sum + p.amount, 0);
-                      const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
+              {
+                positions.length > 0 &&
+                <div className="grid grid-cols-2 gap-6 mt-6">
+                  {/* Protocol Breakdown */}
+                  <div className="bg-white/5 rounded-xl p-4">
+                    <h3 className="text-lg font-medium mb-4">Protocol Breakdown</h3>
+                    <div className="space-y-3">
+                      {positions.map((position) => {
+                        const protocol = position.protocol;
+                        const protocolPositions = positions.filter(p => p.protocol === protocol);
+                        const totalValue = protocolPositions.reduce((sum, p) => sum + p.amount, 0);
+                        const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
 
-                      return (
-                        <div key={protocol} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
-                          <img
-                            src={protocolPositions[0]?.logo}
-                            alt={protocol}
-                            className="w-8 h-8"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium">{protocol}</span>
-                              <span>${totalValue.toLocaleString()}</span>
+                        return (
+                          <div key={protocol} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
+                            <img
+                              src={protocolPositions[0]?.logo}
+                              alt={protocol}
+                              className="w-8 h-8"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium">{protocol}</span>
+                                <span>${totalValue.toLocaleString()}</span>
+                              </div>
+                              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-blue-500 transition-all"
+                                  style={{ width: `${(totalValue / totalTVL) * 100}%` }}
+                                />
+                              </div>
                             </div>
-                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Type Distribution */}
+                  <div className="bg-white/5 rounded-xl p-4">
+                    <h3 className="text-lg font-medium mb-4">Type Distribution</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {protocolTypes.map((type) => {
+                        const typePositions = positions.filter(p => p.type === type);
+                        const totalValue = typePositions.reduce((sum, p) => sum + p.amount, 0);
+                        const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
+
+                        return (
+                          <div key={type} className="p-4 bg-white/5 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {getTypeIcon(type)}
+                                <span className="font-medium">{type}</span>
+                              </div>
+                              <span className="text-sm text-white/60">
+                                {typePositions.length} positions
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-white/60">TVL Share</span>
+                              <span>{((totalValue / totalTVL) * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="h-2 bg-white/10 rounded-full overflow-hidden mt-2">
                               <div
                                 className="h-full bg-blue-500 transition-all"
                                 style={{ width: `${(totalValue / totalTVL) * 100}%` }}
                               />
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-
-                {/* Type Distribution */}
-                <div className="bg-white/5 rounded-xl p-4">
-                  <h3 className="text-lg font-medium mb-4">Type Distribution</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {protocolTypes.map((type) => {
-                      const typePositions = positions.filter(p => p.type === type);
-                      const totalValue = typePositions.reduce((sum, p) => sum + p.amount, 0);
-                      const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
-
-                      return (
-                        <div key={type} className="p-4 bg-white/5 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              {getTypeIcon(type)}
-                              <span className="font-medium">{type}</span>
-                            </div>
-                            <span className="text-sm text-white/60">
-                              {typePositions.length} positions
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-white/60">TVL Share</span>
-                            <span>{((totalValue / totalTVL) * 100).toFixed(1)}%</span>
-                          </div>
-                          <div className="h-2 bg-white/10 rounded-full overflow-hidden mt-2">
-                            <div
-                              className="h-full bg-blue-500 transition-all"
-                              style={{ width: `${(totalValue / totalTVL) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+              }
             </>
           ) : (
             renderOfferings()
