@@ -24,143 +24,64 @@ interface DeFiModalProps {
   onClose: () => void;
 }
 
-interface Offering {
-  protocol: string;
-  type: 'LENDING' | 'BORROWING' | 'STAKING' | 'POOL';
-  token: string;
-  pairToken?: string;
-  apy: number;
-  tvl: number;
-  rewards?: {
-    token: string;
-    apy: number;
-  };
-  risk: 'LOW' | 'MEDIUM' | 'HIGH';
-  logo: string;
-  description: string;
-  requirements?: {
-    minAmount?: number;
-    lockupPeriod?: string;
-    collateralRatio?: number;
-  };
-}
-
 interface ModalState {
   type: 'deposit' | 'redeem' | 'borrow' | 'repay' | null;
   position?: Position;
 }
 
-const offerings: Offering[] = [
+const offerings: Position[] = [
   {
-    protocol: 'Aave V3',
-    type: 'LENDING',
-    token: 'USDC',
-    apy: 8.15,
-    tvl: 520000000,
-    risk: 'LOW',
-    logo: 'https://cryptologos.cc/logos/aave-aave-logo.png',
-    description: 'Supply USDC to earn interest and use as collateral',
-    requirements: {
-      minAmount: 1,
-      collateralRatio: 85
-    }
-  },
-  {
-    protocol: 'Compound V3',
-    type: 'BORROWING',
-    token: 'ETH',
-    apy: 3.5,
-    tvl: 480000000,
-    risk: 'MEDIUM',
-    logo: 'https://cryptologos.cc/logos/compound-comp-logo.png',
-    description: 'Borrow ETH against your supplied collateral',
-    requirements: {
-      collateralRatio: 125
-    }
-  },
-  {
-    protocol: 'Lido',
-    type: 'STAKING',
-    token: 'ETH',
-    apy: 5.5,
-    tvl: 320000000,
-    risk: 'LOW',
-    logo: 'https://cryptologos.cc/logos/lido-dao-ldo-logo.png',
-    description: 'Liquid staking solution for ETH 2.0',
-    rewards: {
-      token: 'LDO',
-      apy: 2.5
-    }
-  },
-  {
-    protocol: 'Curve Finance',
-    type: 'POOL',
-    token: 'USDC',
-    pairToken: 'USDT',
-    apy: 12.45,
-    tvl: 280000000,
-    risk: 'MEDIUM',
-    logo: 'https://cryptologos.cc/logos/curve-dao-token-crv-logo.png',
-    description: 'Stable AMM for efficient stablecoin swaps',
-    rewards: {
-      token: 'CRV',
-      apy: 4.2
-    }
-  },
-  {
-    protocol: 'Balancer',
-    type: 'POOL',
-    token: 'ETH',
-    pairToken: 'WBTC',
-    apy: 15.8,
-    tvl: 180000000,
-    risk: 'MEDIUM',
-    logo: 'https://cryptologos.cc/logos/balancer-bal-logo.png',
-    description: 'Weighted liquidity pools with customizable ratios',
-    rewards: {
-      token: 'BAL',
-      apy: 5.8
-    }
-  },
-  {
-    protocol: 'Rocketpool',
-    type: 'STAKING',
-    token: 'ETH',
-    apy: 5.8,
-    tvl: 150000000,
-    risk: 'LOW',
-    logo: 'https://cryptologos.cc/logos/rocket-pool-rpl-logo.png',
-    description: 'Decentralized ETH staking protocol',
-    requirements: {
-      minAmount: 0.01,
-      lockupPeriod: '24h'
-    }
-  },
-  {
-    protocol: 'Maker',
-    type: 'BORROWING',
-    token: 'DAI',
-    apy: 2.75,
-    tvl: 420000000,
-    risk: 'MEDIUM',
-    logo: 'https://cryptologos.cc/logos/maker-mkr-logo.png',
-    description: 'Borrow DAI stablecoin against your crypto collateral',
-    requirements: {
-      collateralRatio: 150
-    }
-  },
-  {
-    protocol: 'Aave V3',
-    type: 'BORROWING',
-    token: 'USDC',
-    apy: 4.25,
-    tvl: 380000000,
-    risk: 'LOW',
-    logo: 'https://cryptologos.cc/logos/aave-aave-logo.png',
-    description: 'Borrow USDC against your supplied collateral',
-    requirements: {
-      collateralRatio: 85
-    }
+    "address": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2",
+    "protocol": "Uniswap v2",
+    "protocol_id": "uniswap-v2",
+    "type": "liquidity",
+    "amount": 0,
+    "apy": 0,
+    "tokens": [
+      {
+        "token_type": "supplied",
+        "name": "Tether USD",
+        "symbol": "USDT",
+        "contract_address": "0x55d398326f99059ff775485246999027b3197955",
+        "decimals": "18",
+        "logo": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+        "thumbnail": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+        "balance": "0",
+        "balance_formatted": "0",
+        "usd_price": 0,
+        "usd_value": 0
+      },
+      {
+        "token_type": "supplied",
+        "name": "USD Coin",
+        "symbol": "USDC",
+        "contract_address": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+        "decimals": "18",
+        "logo": "https://logo.moralis.io/0x38_0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d_0ebe47803189a184e87d3b2531873502.png",
+        "thumbnail": "https://logo.moralis.io/0x38_0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d_0ebe47803189a184e87d3b2531873502.png",
+        "balance": "0",
+        "balance_formatted": "0",
+        "usd_price": 0,
+        "usd_value": 0
+      },
+      {
+        "token_type": "defi-token",
+        "name": "Uniswap V2",
+        "symbol": "UNI-V2",
+        "contract_address": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2",
+        "decimals": "18",
+        "logo": "",
+        "thumbnail": "",
+        "balance": "0",
+        "balance_formatted": "0",
+        "usd_price": 0,
+        "usd_value": 0
+      }
+    ],
+    "rewards": 0,
+    "healthFactor": 0,
+    "logo": "https://cdn.moralis.io/defi/uniswap.png",
+    "factory": "0x8909dc15e40173ff4699343b6eb8132c65e18ec6"
   }
 ];
 
@@ -215,7 +136,9 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const isLoading = isLoadingPosition || isLoadingProtocol;
 
   const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0].contract_address, Number(chainId)) : null;
+  const tokenInfo1 = modalState?.position ? modalState.position.tokens[0] : null;
   const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1].contract_address, Number(chainId)) : null;
+  const tokenInfo2 = modalState?.position ? modalState.position.tokens[1] : null;
 
   const priceRatio = useMemo(() => {
     if (tokenBalance1?.usdPrice && tokenBalance2?.usdPrice) {
@@ -277,16 +200,16 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const getRiskColor = (risk: Offering['risk']) => {
-    switch (risk) {
-      case 'LOW':
-        return 'text-green-400';
-      case 'MEDIUM':
-        return 'text-yellow-400';
-      case 'HIGH':
-        return 'text-red-400';
-    }
-  };
+  // const getRiskColor = (risk: Offering['risk']) => {
+  //   switch (risk) {
+  //     case 'LOW':
+  //       return 'text-green-400';
+  //     case 'MEDIUM':
+  //       return 'text-yellow-400';
+  //     case 'HIGH':
+  //       return 'text-red-400';
+  //   }
+  // };
 
   const handleAction = (type: 'deposit' | 'redeem' | 'borrow' | 'repay', position: Position) => {
     setModalState({ type, position });
@@ -328,7 +251,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
               setTokenAmount("");
               setToken2Amount("");
-              setModalState({ type: null })
+              setShowPreview(false);
+              setModalState({ type: null });
             }
 
           }
@@ -345,7 +269,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const redeemHandler = async () => {
     if (!signer) return;
 
-    setConfirming("Redeeming...");
+    setConfirming("Approving...");
 
     redeemEnSoMutate({
       chainId: Number(chainId),
@@ -363,6 +287,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     }, {
       onSuccess: async (txData) => {
         if (signer) {
+          setConfirming("Redeeming...");
           // execute defi action
           const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
             setConfirming("")
@@ -375,7 +300,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
             await refetchDefiPositionByWallet();
             await refetchDefiProtocolByWallet();
 
-            setWithdrawPercent("1")
+            setWithdrawPercent("1");
+            setShowPreview(false);
             setModalState({ type: null })
           }
 
@@ -422,74 +348,37 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className="flex items-center gap-6">
-                      {position.type === 'BORROWING' ? (
-                        <>
-                          <div>
-                            <span className="text-sm text-white/60">Borrowed</span>
-                            <div className="text-lg">
-                              {position.borrowed} {position.tokens}
-                              <span className="text-sm text-white/60 ml-1">
-                                (${(position.borrowed! * 3245.67).toLocaleString()})
-                              </span>
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-sm text-white/60">Borrow Limit</span>
-                            <div className="text-lg">
-                              {position.maxBorrow} {position.tokens}
-                              <span className="text-sm text-white/60 ml-1">
-                                (${(position.maxBorrow! * 3245.67).toLocaleString()})
-                              </span>
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-sm text-white/60">APY</span>
-                            <div className="text-red-400">{position.apy}%</div>
-                          </div>
-                          <div>
-                            <span className="text-sm text-white/60">Health Factor</span>
-                            <div className={`${position.healthFactor! >= 1.5 ? 'text-green-400' :
-                              position.healthFactor! >= 1.1 ? 'text-yellow-400' : 'text-red-400'
-                              }`}>
-                              {position.healthFactor!.toFixed(2)}
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div>
-                            <span className="text-sm text-white/60">Amount</span>
-                            <div className="text-lg">${(position.amount || "0").toLocaleString()}</div>
-                          </div>
-                          <div>
-                            <span className="text-sm text-white/60">APY</span>
-                            <div className="text-emerald-400">{(position.apy || "0")}%</div>
-                          </div>
-                          {position.rewards && (
-                            <div>
-                              <span className="text-sm text-white/60">Rewards</span>
-                              <div className="text-blue-400">+{(position.rewards || "0")}% APR</div>
-                            </div>
-                          )}
-                          {!!position.healthFactor && (
-                            <div>
-                              <span className="text-sm text-white/60">Health Factor</span>
-                              <div className="text-green-400">{position.healthFactor}</div>
-                            </div>
-                          )}
-                          {position.poolShare && (
-                            <div>
-                              <span className="text-sm text-white/60">Pool Share</span>
-                              <div>{(position.poolShare * 100).toFixed(3)}%</div>
-                            </div>
-                          )}
-                          {position.collateralFactor && (
-                            <div>
-                              <span className="text-sm text-white/60">Collateral Factor</span>
-                              <div>{(position.collateralFactor * 100)}%</div>
-                            </div>
-                          )}
-                        </>
+                      <div>
+                        <span className="text-sm text-white/60">Amount</span>
+                        <div className="text-lg">${(position.amount || "0").toLocaleString()}</div>
+                      </div>
+                      <div>
+                        <span className="text-sm text-white/60">APY</span>
+                        <div className="text-emerald-400">{(position.apy || "0")}%</div>
+                      </div>
+                      {position.rewards && (
+                        <div>
+                          <span className="text-sm text-white/60">Rewards</span>
+                          <div className="text-blue-400">+{(position.rewards || "0")}% APR</div>
+                        </div>
+                      )}
+                      {!!position.healthFactor && (
+                        <div>
+                          <span className="text-sm text-white/60">Health Factor</span>
+                          <div className="text-green-400">{position.healthFactor}</div>
+                        </div>
+                      )}
+                      {position.poolShare && (
+                        <div>
+                          <span className="text-sm text-white/60">Pool Share</span>
+                          <div>{(position.poolShare * 100).toFixed(3)}%</div>
+                        </div>
+                      )}
+                      {position.collateralFactor && (
+                        <div>
+                          <span className="text-sm text-white/60">Collateral Factor</span>
+                          <div>{(position.collateralFactor * 100)}%</div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -564,7 +453,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         >
           All Types
         </button>
-        {(['LENDING', 'BORROWING', 'STAKING', 'POOL'] as Position['type'][]).map(type => (
+        {/* {(['LENDING', 'BORROWING', 'STAKING', 'POOL'] as Position['type'][]).map(type => (
           <button
             key={type}
             onClick={() => setSelectedPositionType(type)}
@@ -576,7 +465,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
             {getTypeIcon(type)}
             <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
           </button>
-        ))}
+        ))} */}
       </div>
 
       <div className="space-y-3">
@@ -602,73 +491,36 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     </span>
                     <span className="text-white/40">•</span>
                     <span className="text-sm text-white/60">
-                      {offering.token}
-                      {offering.pairToken && `/${offering.pairToken}`}
+                      {`${offering.tokens[0]?.symbol}/${offering.tokens[1]?.symbol} ${offering.tokens[2]?.symbol}`}
                     </span>
                   </div>
 
-                  <p className="text-sm text-white/60 mb-2">
-                    {offering.description}
-                  </p>
+                  {/* <p className="text-sm text-white/60 mb-2">
+                    this is description
+                  </p> */}
 
                   <div className="flex items-center gap-6">
                     <div>
                       <span className="text-sm text-white/60">Base APY</span>
                       <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
                         }`}>
-                        {offering.apy}%
+                        {offering.apy || "0"} %
                       </div>
                     </div>
-                    {offering.rewards && (
-                      <div>
-                        <span className="text-sm text-white/60">
-                          {offering.rewards.token} Rewards
-                        </span>
-                        <div className="text-blue-400">+{offering.rewards.apy}% APR</div>
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-sm text-white/60">TVL</span>
-                      <div>${(offering.tvl / 1000000).toFixed(1)}M</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-white/60">Risk Level</span>
-                      <div className={getRiskColor(offering.risk)}>{offering.risk}</div>
-                    </div>
-                    {offering.requirements?.minAmount && (
-                      <div>
-                        <span className="text-sm text-white/60">Min Amount</span>
-                        <div>{offering.requirements.minAmount} {offering.token}</div>
-                      </div>
-                    )}
-                    {offering.requirements?.lockupPeriod && (
-                      <div>
-                        <span className="text-sm text-white/60">Lock Period</span>
-                        <div>{offering.requirements.lockupPeriod}</div>
-                      </div>
-                    )}
-                    {offering.requirements?.collateralRatio && (
-                      <div>
-                        <span className="text-sm text-white/60">Collateral</span>
-                        <div>{offering.requirements.collateralRatio}%</div>
-                      </div>
-                    )}
                   </div>
                 </div>
 
                 <button
-                  // onClick={() => handleAction(
-                  //   offering.type === 'BORROWING' ? 'borrow' : 'deposit',
-                  //   {
-                  //     protocol: offering.protocol,
-                  //     type: offering.type,
-                  //     amount: 0,
-                  //     tokens: offering.tokens,
-                  //     apy: offering.apy,
-                  //     logo: offering.logo
-                  //   }
-                  // )}
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg"
+                  onClick={() => {
+                    const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
+
+                    handleAction(
+                      'deposit',
+                      position || offering
+                    );
+                  }
+                  }
+                  className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg`}
                 >
                   Get Started
                 </button>
@@ -964,22 +816,22 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <div className='flex justify-between mt-2'>
                       <div>
                         <span className='ml-2 text-2xl'>
-                          {`${formatNumberByFrac(Number(tokenAmount), 6)} ${tokenBalance1?.symbol}`}
+                          {`${formatNumberByFrac(Number(tokenAmount), 6)} ${tokenInfo1?.symbol}`}
                         </span>
                       </div>
                       <div className='items-center flex'>
-                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"lg"} chainId={Number(tokenBalance1?.chain)} />
+                        <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
                       </div>
                     </div>
 
                     <div className='flex justify-between mt-2'>
                       <div>
                         <span className='ml-2 text-2xl'>
-                          {`${formatNumberByFrac(Number(token2Amount), 6)} ${tokenBalance2?.symbol}`}
+                          {`${formatNumberByFrac(Number(token2Amount), 6)} ${tokenInfo2?.symbol}`}
                         </span>
                       </div>
                       <div className='items-center flex'>
-                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"lg"} chainId={Number(tokenBalance2?.chain)} />
+                        <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
                       </div>
                     </div>
 
@@ -991,18 +843,18 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       </div>
                       <div className='items-center flex'>
                         <span className='ml-2'>
-                          1 {tokenBalance2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenBalance1?.symbol}
+                          1 {tokenInfo2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenInfo1?.symbol}
                         </span>
                       </div>
                     </div>
                     <div className='flex justify-between'>
                       <div>
                         <span className='ml-2'>
-                          New {tokenBalance1?.symbol || ""} Position
+                          New {tokenInfo1?.symbol || ""} Position
                         </span>
                       </div>
                       <div className='items-center flex'>
-                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                        <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                         <span className='ml-2'>
                           {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted) + Number(tokenAmount))}
                         </span>
@@ -1019,12 +871,12 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         </span>
                       </div>
                       <div className='items-center flex'>
-                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                        <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                         <span className='ml-2'>
                           {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted) + Number(token2Amount))}
                         </span>
                         <span className='ml-1'>
-                          {tokenBalance2?.symbol || ""}
+                          {tokenInfo2?.symbol || ""}
                         </span>
                       </div>
                     </div>
@@ -1063,19 +915,19 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                           placeholder="0.00"
                         />
                         <div className='flex items-center fixed right-12'>
-                          <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                          <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                           <span className='ml-2'>
-                            {tokenBalance1?.symbol || ""}
+                            {tokenInfo1?.symbol || ""}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-2 text-sm">
                         <span className="text-white/60">
-                          {`Balance: ${formatNumberByFrac(tokenBalance1?.balance)}`}
+                          {`Balance: ${formatNumberByFrac(Number(tokenBalance1?.balance) || 0)}`}
                         </span>
                         <button className="text-blue-400" onClick={() => {
                           setTokenAmount((tokenBalance1?.balance || "") + "");
-                          setToken2Amount((Number(tokenBalance1?.balance) * Number(priceRatio)).toString());
+                          setToken2Amount((Number(tokenBalance1?.balance) * Number(priceRatio) || 0).toString());
                         }}>MAX</button>
                       </div>
                     </div>
@@ -1089,26 +941,26 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                           value={token2Amount}
                           onChange={(e) => {
                             setToken2Amount(e.target.value);
-                            setTokenAmount((Number(e.target.value) / Number(priceRatio)).toString());
+                            setTokenAmount(((Number(e.target.value) / Number(priceRatio)) || 0).toString());
                           }}
                           type="text"
                           className={`w-full bg-transparent text-2xl outline-none ${isErrorToken2Amount ? "text-red-500" : ""}`}
                           placeholder="0.00"
                         />
                         <div className='flex items-center fixed right-12'>
-                          <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                          <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                           <span className='ml-2'>
-                            {tokenBalance2?.symbol || ""}
+                            {tokenInfo2?.symbol || ""}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-2 text-sm">
                         <span className="text-white/60">
-                          {`Balance: ${formatNumberByFrac(tokenBalance2?.balance)}`}
+                          {`Balance: ${formatNumberByFrac(Number(tokenBalance2?.balance) || 0)}`}
                         </span>
                         <button className="text-blue-400" onClick={() => {
                           setToken2Amount((tokenBalance2?.balance || "") + "");
-                          setTokenAmount((Number(tokenBalance2?.balance) / Number(priceRatio)).toString());
+                          setTokenAmount(((Number(tokenBalance2?.balance) / Number(priceRatio)) || 0).toString());
                         }}>MAX</button>
                       </div>
                     </div>
@@ -1117,16 +969,16 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       <div className='flex justify-between'>
                         <div>
                           <span className='ml-2'>
-                            {tokenBalance1?.symbol || ""} Position
+                            {tokenInfo1?.symbol || ""} Position
                           </span>
                         </div>
                         <div className='items-center flex'>
-                          <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                          <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                           <span className='ml-2'>
                             {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted))}
                           </span>
                           <span className='ml-1'>
-                            {tokenBalance2?.symbol || ""}
+                            {tokenInfo1?.symbol || ""}
                           </span>
                         </div>
                       </div>
@@ -1134,16 +986,16 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                       <div className='flex justify-between'>
                         <div>
                           <span className='ml-2'>
-                            {tokenBalance2?.symbol || ""} Position
+                            {tokenInfo2?.symbol || ""} Position
                           </span>
                         </div>
                         <div className='items-center flex'>
-                          <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                          <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                           <span className='ml-2'>
                             {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted))}
                           </span>
                           <span className='ml-1'>
-                            {tokenBalance2?.symbol || ""}
+                            {tokenInfo2?.symbol || ""}
                           </span>
                         </div>
                       </div>
@@ -1236,7 +1088,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         </span>
                       </div>
                       <div className='items-center flex'>
-                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"lg"} chainId={Number(tokenBalance1?.chain)} />
+                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
                       </div>
                     </div>
 
@@ -1247,7 +1099,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         </span>
                       </div>
                       <div className='items-center flex'>
-                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"lg"} chainId={Number(tokenBalance2?.chain)} />
+                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
                       </div>
                     </div>
 
@@ -1270,7 +1122,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         </span>
                       </div>
                       <div className='items-center flex'>
-                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                         <span className='ml-2'>
                           {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
                         </span>
@@ -1287,7 +1139,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                         </span>
                       </div>
                       <div className='items-center flex'>
-                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                         <span className='ml-2'>
                           {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
                         </span>
@@ -1364,7 +1216,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                           </span>
                         </div>
                         <div className='items-center flex'>
-                          <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
+                          <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                           <span className='ml-2'>
                             {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted))}
                           </span>
@@ -1381,7 +1233,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                           </span>
                         </div>
                         <div className='items-center flex'>
-                          <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
+                          <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                           <span className='ml-2'>
                             {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted))}
                           </span>
