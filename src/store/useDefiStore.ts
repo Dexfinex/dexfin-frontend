@@ -17,6 +17,7 @@ export interface PositionToken {
 
 export interface Position {
     protocol: string;
+    protocol_id: string;
     type: string;
     amount: number;
     tokens: PositionToken[];
@@ -30,6 +31,7 @@ export interface Position {
     borrowed?: number;
     maxBorrow?: number;
     collateralFactor?: number;
+    factory?: string;
 }
 
 // Define the store's state and actions
@@ -63,6 +65,7 @@ const useDefiStore = create<DefiStoreState>((set) => ({
         const positions = evmPositions.map((position) => ({
             address: position.position.address,
             protocol: position.protocol_name,
+            protocol_id: position.protocol_id,
             type: position.position.label,
             amount: position.position.balance_usd,
             tokens: position.position.tokens,
@@ -70,6 +73,7 @@ const useDefiStore = create<DefiStoreState>((set) => ({
             rewards: position.total_projected_earnings_usd.weekly,
             healthFactor: position.account_data?.health_factor || 0,
             logo: position.protocol_logo,
+            factory: position.position?.position_details?.factory,
         }))
         set({ positions: positions as unknown as Position[], netAPY, healthFactor, protocolTypes })
     },

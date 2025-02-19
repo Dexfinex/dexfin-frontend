@@ -1,158 +1,93 @@
-import React, { useState, useContext, useEffect, useMemo } from 'react';
-import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X } from 'lucide-react';
-import { ethers } from "ethers";
+import React, { useState, useContext, useMemo, useEffect } from 'react';
+import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X, ArrowLeft } from 'lucide-react';
+import { Spinner, Skeleton } from '@chakra-ui/react';
+import { numberToHex } from 'viem';
+
+import { TokenChainIcon } from './swap/components/TokenIcon';
 
 import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useDefi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import useDefiStore, { Position } from '../store/useDefiStore';
-import { formatNumberByFrac } from '../utils/common.util';
 import useTokenBalanceStore from '../store/useTokenBalanceStore';
-import { TokenChainIcon } from './swap/components/TokenIcon';
 import { useSendDepositMutation } from '../hooks/useDeposit';
-import useGasEstimation from '../hooks/useGasEstimation';
+import { useRedeemEnSoMutation } from '../hooks/useRedeemEnSo.ts';
+import useGasEstimation from "../hooks/useGasEstimation.ts";
+import useGetTokenPrices from '../hooks/useGetTokenPrices';
+import useTokenStore from "../store/useTokenStore.ts";
+import { TransactionModal } from './swap/modals/TransactionModal.tsx';
+
+import { mapChainId2ExplorerUrl } from '../config/networks.ts';
+import { mapChainId2NativeAddress } from "../config/networks.ts";
+import { formatNumberByFrac } from '../utils/common.util';
 
 interface DeFiModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface Offering {
-  protocol: string;
-  type: 'LENDING' | 'BORROWING' | 'STAKING' | 'POOL';
-  token: string;
-  pairToken?: string;
-  apy: number;
-  tvl: number;
-  rewards?: {
-    token: string;
-    apy: number;
-  };
-  risk: 'LOW' | 'MEDIUM' | 'HIGH';
-  logo: string;
-  description: string;
-  requirements?: {
-    minAmount?: number;
-    lockupPeriod?: string;
-    collateralRatio?: number;
-  };
+interface ModalState {
+  type: 'deposit' | 'redeem' | 'borrow' | 'repay' | null;
+  position?: Position;
 }
 
-interface ModalState {
-  type: 'deposit' | 'withdraw' | 'borrow' | 'repay' | null;
-  position?: Position;
+interface Offering extends Position {
+  chainId: number;
 }
 
 const offerings: Offering[] = [
   {
-    protocol: 'Aave V3',
-    type: 'LENDING',
-    token: 'USDC',
-    apy: 8.15,
-    tvl: 520000000,
-    risk: 'LOW',
-    logo: 'https://cryptologos.cc/logos/aave-aave-logo.png',
-    description: 'Supply USDC to earn interest and use as collateral',
-    requirements: {
-      minAmount: 1,
-      collateralRatio: 85
-    }
-  },
-  {
-    protocol: 'Compound V3',
-    type: 'BORROWING',
-    token: 'ETH',
-    apy: 3.5,
-    tvl: 480000000,
-    risk: 'MEDIUM',
-    logo: 'https://cryptologos.cc/logos/compound-comp-logo.png',
-    description: 'Borrow ETH against your supplied collateral',
-    requirements: {
-      collateralRatio: 125
-    }
-  },
-  {
-    protocol: 'Lido',
-    type: 'STAKING',
-    token: 'ETH',
-    apy: 5.5,
-    tvl: 320000000,
-    risk: 'LOW',
-    logo: 'https://cryptologos.cc/logos/lido-dao-ldo-logo.png',
-    description: 'Liquid staking solution for ETH 2.0',
-    rewards: {
-      token: 'LDO',
-      apy: 2.5
-    }
-  },
-  {
-    protocol: 'Curve Finance',
-    type: 'POOL',
-    token: 'USDC',
-    pairToken: 'USDT',
-    apy: 12.45,
-    tvl: 280000000,
-    risk: 'MEDIUM',
-    logo: 'https://cryptologos.cc/logos/curve-dao-token-crv-logo.png',
-    description: 'Stable AMM for efficient stablecoin swaps',
-    rewards: {
-      token: 'CRV',
-      apy: 4.2
-    }
-  },
-  {
-    protocol: 'Balancer',
-    type: 'POOL',
-    token: 'ETH',
-    pairToken: 'WBTC',
-    apy: 15.8,
-    tvl: 180000000,
-    risk: 'MEDIUM',
-    logo: 'https://cryptologos.cc/logos/balancer-bal-logo.png',
-    description: 'Weighted liquidity pools with customizable ratios',
-    rewards: {
-      token: 'BAL',
-      apy: 5.8
-    }
-  },
-  {
-    protocol: 'Rocketpool',
-    type: 'STAKING',
-    token: 'ETH',
-    apy: 5.8,
-    tvl: 150000000,
-    risk: 'LOW',
-    logo: 'https://cryptologos.cc/logos/rocket-pool-rpl-logo.png',
-    description: 'Decentralized ETH staking protocol',
-    requirements: {
-      minAmount: 0.01,
-      lockupPeriod: '24h'
-    }
-  },
-  {
-    protocol: 'Maker',
-    type: 'BORROWING',
-    token: 'DAI',
-    apy: 2.75,
-    tvl: 420000000,
-    risk: 'MEDIUM',
-    logo: 'https://cryptologos.cc/logos/maker-mkr-logo.png',
-    description: 'Borrow DAI stablecoin against your crypto collateral',
-    requirements: {
-      collateralRatio: 150
-    }
-  },
-  {
-    protocol: 'Aave V3',
-    type: 'BORROWING',
-    token: 'USDC',
-    apy: 4.25,
-    tvl: 380000000,
-    risk: 'LOW',
-    logo: 'https://cryptologos.cc/logos/aave-aave-logo.png',
-    description: 'Borrow USDC against your supplied collateral',
-    requirements: {
-      collateralRatio: 85
-    }
+    "chainId": 56,
+    "address": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2",
+    "protocol": "Uniswap v2",
+    "protocol_id": "uniswap-v2",
+    "type": "liquidity",
+    "amount": 0,
+    "apy": 0,
+    "tokens": [
+      {
+        "token_type": "supplied",
+        "name": "Tether USD",
+        "symbol": "USDT",
+        "contract_address": "0x55d398326f99059ff775485246999027b3197955",
+        "decimals": "18",
+        "logo": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+        "thumbnail": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+        "balance": "0",
+        "balance_formatted": "0",
+        "usd_price": 0,
+        "usd_value": 0
+      },
+      {
+        "token_type": "supplied",
+        "name": "USD Coin",
+        "symbol": "USDC",
+        "contract_address": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+        "decimals": "18",
+        "logo": "https://logo.moralis.io/0x38_0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d_0ebe47803189a184e87d3b2531873502.png",
+        "thumbnail": "https://logo.moralis.io/0x38_0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d_0ebe47803189a184e87d3b2531873502.png",
+        "balance": "0",
+        "balance_formatted": "0",
+        "usd_price": 0,
+        "usd_value": 0
+      },
+      {
+        "token_type": "defi-token",
+        "name": "Uniswap V2",
+        "symbol": "UNI-V2",
+        "contract_address": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2",
+        "decimals": "18",
+        "logo": "",
+        "thumbnail": "",
+        "balance": "0",
+        "balance_formatted": "0",
+        "usd_price": 0,
+        "usd_value": 0
+      }
+    ],
+    "rewards": 0,
+    "healthFactor": 0,
+    "logo": "https://cdn.moralis.io/defi/uniswap.png",
+    "factory": "0x8909dc15e40173ff4699343b6eb8132c65e18ec6"
   }
 ];
 
@@ -161,32 +96,83 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'explore'>('overview');
   const [selectedPositionType, setSelectedPositionType] = useState<Position['type'] | 'ALL'>('ALL');
   const [modalState, setModalState] = useState<ModalState>({ type: null });
-  const [inputAmountToken1, setInputAmountToken1] = useState("");
-  // const [inputToken2, setInputToken2] = useState("");
+  const [tokenAmount, setTokenAmount] = useState("");
+  const [token2Amount, setToken2Amount] = useState("");
+  const [confirming, setConfirming] = useState("");
+  const [txModalOpen, setTxModalOpen] = useState(false);
+  const [hash, setHash] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
+
+  const [withdrawPercent, setWithdrawPercent] = useState("1");
 
   const { mutate: sendDepositMutate } = useSendDepositMutation();
-  const { data: gasData } = useGasEstimation()
+  const { mutate: redeemEnSoMutate } = useRedeemEnSoMutation();
 
-  const { chainId, address, provider, signer } = useContext(Web3AuthContext);
+  const { chainId, address, signer, switchChain } = useContext(Web3AuthContext);
   const { positions, protocol, netAPY, healthFactor, protocolTypes } = useDefiStore();
 
   const { getTokenBalance } = useTokenBalanceStore();
+  const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation()
+
+  const { isLoading: isLoadingPosition, refetch: refetchDefiPositionByWallet } = useDefiPositionByWallet({ chainId: chainId, walletAddress: address });
+  const { isLoading: isLoadingProtocol, refetch: refetchDefiProtocolByWallet } = useDefiProtocolsByWallet({ chainId, walletAddress: address });
+
+  const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
+
+  const { refetch: refetchNativeTokenPrice } = useGetTokenPrices({
+    tokenAddresses: [nativeTokenAddress],
+    chainId: Number(chainId),
+  })
+
+  const { getTokenPrice, tokenPrices } = useTokenStore()
+
+  const nativeTokenPrice = useMemo(() => {
+    if (chainId && nativeTokenAddress) {
+      return getTokenPrice(nativeTokenAddress, chainId)
+    }
+    return 0;
+  }, [getTokenPrice, nativeTokenAddress, chainId, tokenPrices])
+
+  useEffect(() => {
+    if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
+      refetchNativeTokenPrice()
+    }
+  }, [chainId, nativeTokenAddress, nativeTokenPrice])
+
+  const isLoading = isLoadingPosition || isLoadingProtocol;
 
   const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0].contract_address, Number(chainId)) : null;
+  const tokenInfo1 = modalState?.position ? modalState.position.tokens[0] : null;
   const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1].contract_address, Number(chainId)) : null;
+  const tokenInfo2 = modalState?.position ? modalState.position.tokens[1] : null;
 
-  const isErrorInputAmountToken1 = useMemo(() => {
-    if (inputAmountToken1 === "") {
+  const priceRatio = useMemo(() => {
+    if (tokenBalance1?.usdPrice && tokenBalance2?.usdPrice) {
+      const ratio = tokenBalance1?.usdPrice / tokenBalance2?.usdPrice
+      return ratio > 1 ? 1 : ratio;
+    }
+    return 1;
+  }, [tokenBalance1, tokenBalance2]);
+
+  const isErrorTokenAmount = useMemo(() => {
+    if (tokenAmount === "") {
       return false;
     }
-    if (0 < Number(inputAmountToken1) && Number(inputAmountToken1) <= Number(tokenBalance1?.balance)) {
+    if (0 < Number(tokenAmount) && Number(tokenAmount) <= Number(tokenBalance1?.balance)) {
       return false;
     }
     return true;
-  }, [inputAmountToken1, tokenBalance1])
+  }, [tokenAmount, tokenBalance1])
 
-  useDefiPositionByWallet({ chainId: chainId, walletAddress: address })
-  useDefiProtocolsByWallet({ chainId, walletAddress: address })
+  const isErrorToken2Amount = useMemo(() => {
+    if (token2Amount === "") {
+      return false;
+    }
+    if (0 < Number(token2Amount) && Number(token2Amount) <= Number(tokenBalance2?.balance)) {
+      return false;
+    }
+    return true;
+  }, [token2Amount, tokenBalance2])
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -203,7 +189,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       case 'POOL':
         return '🌊';
       default:
-        return '🎢'
+        return '🎁'
     }
   };
 
@@ -220,155 +206,184 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const getRiskColor = (risk: Offering['risk']) => {
-    switch (risk) {
-      case 'LOW':
-        return 'text-green-400';
-      case 'MEDIUM':
-        return 'text-yellow-400';
-      case 'HIGH':
-        return 'text-red-400';
-    }
-  };
+  // const getRiskColor = (risk: Offering['risk']) => {
+  //   switch (risk) {
+  //     case 'LOW':
+  //       return 'text-green-400';
+  //     case 'MEDIUM':
+  //       return 'text-yellow-400';
+  //     case 'HIGH':
+  //       return 'text-red-400';
+  //   }
+  // };
 
-  const handleAction = (type: 'deposit' | 'withdraw' | 'borrow' | 'repay', position: Position) => {
+  const handleAction = (type: 'deposit' | 'redeem' | 'borrow' | 'repay', position: Position) => {
     setModalState({ type, position });
   };
 
   const depositHandler = async () => {
-    const amountValue = ethers.utils.parseUnits(
-      Number(inputAmountToken1).toFixed(8).replace(/\.?0+$/, ""),
-      5
-    );
+    if (signer && Number(tokenAmount) > 0 && Number(token2Amount) > 0) {
+      setConfirming("Approving...");
 
-    if (signer) {
+      sendDepositMutate({
+        chainId: Number(chainId),
+        fromAddress: address,
+        routingStrategy: "router",
+        action: "deposit",
+        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+        tokenIn: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
+        tokenOut: modalState?.position?.address || "",
+        amountIn: [Number(tokenAmount), Number(token2Amount || 0)],
+        primaryAddress: modalState.position?.factory || "",
+        signer: signer,
+        receiver: address,
+        gasPrice: gasData.gasPrice,
+        gasLimit: gasData.gasLimit
+      }, {
+        onSuccess: async (txData) => {
+          if (signer) {
+            setConfirming("Executing...");
+            // execute defi action
+            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+              setConfirming("")
+              return null;
+            });
+            if (transactionResponse) {
+              const receipt = await transactionResponse.wait();
+              setHash(receipt.transactionHash);
+              setTxModalOpen(true);
+              await refetchDefiPositionByWallet();
+              await refetchDefiProtocolByWallet();
 
-      const _tx = {
-        data: "0xa9059cbb00000000000000000000000055d398326f99059ff775485246999027b31979550000000000000000000000000000000000000000000000000de0b6b3a7640000",
-        gasLimit: 210000n,
-        gasPrice: 2500000000n,
-        to: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
-        value: 0n
-      }
+              setTokenAmount("");
+              setToken2Amount("");
+              setShowPreview(false);
+              setModalState({ type: null });
+            }
 
-      const _txData = {
-        "createdAt": 46643157,
-        "tx": {
-          "data": "0x083001ba0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000200000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000186a00000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d00000000000000000000000000000000000000000000000000000000000186a00000000000000000000000000000000000000000000000000000000000000006095ea7b3010001ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010001ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580de8e33700c1000000000000ff4752ba5dbc23f44d87826276bf6fd6b1c372ad240203010104040506ffffffffffffffffffffffffffffffffffffffffffffffff095ea7b3010007ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010007ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000240000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000200000000000000000000000004752ba5dbc23f44d87826276bf6fd6b1c372ad24000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000186a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000000200000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000184ac00000000000000000000000000000000000000000000000000000000000000200000000000000000000000007d585b0e27bbb3d981b7757115ec11f47c47699400000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000067aee01b00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000",
-          "to": "0x80EbA3855878739F4710233A8a19d89Bdd2ffB8E",
-          "from": "0x22c7Fa62e46196cFE1Ee15D686e541f605A87Bd6",
-          "value": "0",
+          }
+          setConfirming("");
         },
-        "gas": "263273", "bundle": [{ "action": "approve", "protocol": "erc20", "args": { "token": "0x55d398326f99059ff775485246999027b3197955", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "approve", "protocol": "erc20", "args": { "token": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "deposit", "protocol": "uniswap-v2", "args": { "tokenIn": ["0x55d398326f99059ff775485246999027b3197955", "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d"], "tokenOut": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2", "amountIn": ["100000", "100000"], "primaryAddress": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24" } }]
-      }
-
-      await signer.sendTransaction(_txData.tx).catch((e) => {
-        console.error(e)
+        onError: async (e) => {
+          console.error(e)
+          setConfirming("");
+        }
       })
     }
-    return
+  }
 
-    sendDepositMutate({
+  const redeemHandler = async () => {
+    if (!signer) return;
+
+    setConfirming("Approving...");
+
+    redeemEnSoMutate({
       chainId: Number(chainId),
       fromAddress: address,
-      routingStrategy: "delegate",
-      action: "deposit",
-      protocol: "uniswap-v2",
-      tokenIn: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
-      tokenOut: modalState?.position?.address || "",
-      amountIn: [Number(amountValue), Number(amountValue)],
-      primaryAddress: "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"
+      routingStrategy: "router",
+      action: "redeem",
+      protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+      tokenIn: modalState?.position?.address || "",
+      tokenOut: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
+      withdrawPercent: Number(withdrawPercent),
+      signer: signer,
+      receiver: address,
+      gasPrice: gasData.gasPrice,
+      gasLimit: gasData.gasLimit
     }, {
       onSuccess: async (txData) => {
-        console.log("#########################", txData)
-
-
         if (signer) {
+          setConfirming("Redeeming...");
+          // execute defi action
+          const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+            setConfirming("")
+            return null;
+          });
+          if (transactionResponse) {
+            const receipt = await transactionResponse.wait();
+            setHash(receipt.transactionHash);
+            setTxModalOpen(true);
+            await refetchDefiPositionByWallet();
+            await refetchDefiProtocolByWallet();
 
-          const _tx = {
-            data: "0xa9059cbb00000000000000000000000055d398326f99059ff775485246999027b31979550000000000000000000000000000000000000000000000000de0b6b3a7640000",
-            gasLimit: 210000n,
-            gasPrice: 2500000000n,
-            to: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
-            value: 0n
+            setWithdrawPercent("1");
+            setShowPreview(false);
+            setModalState({ type: null })
           }
 
-          const _txData = { "createdAt": 46643157, "tx": { "data": "0x083001ba000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000000200000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000186a00000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d00000000000000000000000000000000000000000000000000000000000186a00000000000000000000000000000000000000000000000000000000000000008095ea7b3010001ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010001ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580d095ea7b3010001ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010001ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580de8e33700c1000000000000ff4752ba5dbc23f44d87826276bf6fd6b1c372ad240203010104040506ffffffffffffffffffffffffffffffffffffffffffffffff095ea7b3010007ffffffffff55d398326f99059ff775485246999027b3197955095ea7b3010007ffffffffff8ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000240000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000200000000000000000000000004752ba5dbc23f44d87826276bf6fd6b1c372ad24000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000186a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000055d398326f99059ff775485246999027b319795500000000000000000000000000000000000000000000000000000000000000200000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000184ac00000000000000000000000000000000000000000000000000000000000000200000000000000000000000007d585b0e27bbb3d981b7757115ec11f47c47699400000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000067aed7fd00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000", "to": "0x80EbA3855878739F4710233A8a19d89Bdd2ffB8E", "from": "0x22c7Fa62e46196cFE1Ee15D686e541f605A87Bd6", "value": "0" }, "gas": "263273", "bundle": [{ "action": "approve", "protocol": "erc20", "args": { "token": "0x55d398326f99059ff775485246999027b3197955", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "approve", "protocol": "erc20", "args": { "token": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d", "spender": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", "amount": "100000" } }, { "action": "deposit", "protocol": "uniswap-v2", "args": { "tokenIn": ["0x55d398326f99059ff775485246999027b3197955", "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d"], "tokenOut": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2", "amountIn": ["100000", "100000"], "primaryAddress": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24" } }] }
-
-          console.log("########################", txData)
-          await signer.sendTransaction(_txData.tx)
         }
+        setConfirming("");
       },
-      onError: async () => {
-
+      onError: async (e) => {
+        console.error(e)
+        setConfirming("");
       }
     })
   }
 
   const renderPositions = () => (
     <div className="space-y-3">
-      {positions
-        .filter(p => selectedPositionType === 'ALL' || p.type === selectedPositionType)
-        .map((position, index) => (
-          <div
-            key={index}
-            className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <img
-                  src={position.logo}
-                  alt={position.protocol}
-                  className="w-10 h-10"
-                />
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-medium">{position.protocol}</h3>
-                    <span className={`text-sm ${getTypeColor(position.type)}`}>
-                      {position.type}
-                    </span>
-                    <span className="text-white/40">•</span>
-                    <span className="text-sm text-white/60">
-                      {`${position.tokens[0].symbol}/${position.tokens[1].symbol} ${position.tokens[2].symbol}`}
-                    </span>
-                  </div>
+      {
+        positions.length > 0 && (
+          < div className="flex items-center gap-2 mb-6">
+            <button
+              onClick={() => setSelectedPositionType('ALL')}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
+                ? 'bg-white/10'
+                : 'hover:bg-white/5'
+                }`}
+            >
+              All Types
+            </button>
+            {protocolTypes.map(type => (
+              <button
+                key={type}
+                onClick={() => setSelectedPositionType(type)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
+                  ? 'bg-white/10'
+                  : 'hover:bg-white/5'
+                  }`}
+              >
+                {getTypeIcon(type)}
+                <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
+              </button>
+            ))}
+          </div>
+        )
+      }
 
-                  <div className="flex items-center gap-6">
-                    {position.type === 'BORROWING' ? (
-                      <>
-                        <div>
-                          <span className="text-sm text-white/60">Borrowed</span>
-                          <div className="text-lg">
-                            {position.borrowed} {position.tokens}
-                            <span className="text-sm text-white/60 ml-1">
-                              (${(position.borrowed! * 3245.67).toLocaleString()})
-                            </span>
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-sm text-white/60">Borrow Limit</span>
-                          <div className="text-lg">
-                            {position.maxBorrow} {position.tokens}
-                            <span className="text-sm text-white/60 ml-1">
-                              (${(position.maxBorrow! * 3245.67).toLocaleString()})
-                            </span>
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-sm text-white/60">APY</span>
-                          <div className="text-red-400">{position.apy}%</div>
-                        </div>
-                        <div>
-                          <span className="text-sm text-white/60">Health Factor</span>
-                          <div className={`${position.healthFactor! >= 1.5 ? 'text-green-400' :
-                            position.healthFactor! >= 1.1 ? 'text-yellow-400' : 'text-red-400'
-                            }`}>
-                            {position.healthFactor!.toFixed(2)}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
+      {
+        positions.length === 0 && isLoading && <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'}></Skeleton>
+      }
+      {
+        positions
+          .filter(p => selectedPositionType === 'ALL' || p.type === selectedPositionType)
+          .map((position, index) => (
+            isLoading ? <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'} key={`sk-${index}`}></Skeleton>
+              : <div
+                key={index}
+                className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={position.logo}
+                      alt={position.protocol}
+                      className="w-10 h-10"
+                    />
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-medium">{position.protocol}</h3>
+                        <span className={`text-sm ${getTypeColor(position.type)}`}>
+                          {position.type}
+                        </span>
+                        <span className="text-white/40">•</span>
+                        <span className="text-sm text-white/60">
+                          {`${position.tokens[0]?.symbol}/${position.tokens[1]?.symbol} ${position.tokens[2]?.symbol}`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-6">
                         <div>
                           <span className="text-sm text-white/60">Amount</span>
                           <div className="text-lg">${(position.amount || "0").toLocaleString()}</div>
@@ -401,67 +416,66 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                             <div>{(position.collateralFactor * 100)}%</div>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {position.type === 'BORROWING' ? (
+                      <>
+                        <button
+                          onClick={() => handleAction('borrow', position)}
+                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
+                        >
+                          Borrow More
+                        </button>
+                        <button
+                          onClick={() => handleAction('repay', position)}
+                          className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
+                        >
+                          Repay
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleAction('deposit', position)}
+                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
+                        >
+                          Deposit
+                        </button>
+                        <button
+                          onClick={() => handleAction('redeem', position)}
+                          className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
+                        >
+                          Redeem
+                        </button>
                       </>
                     )}
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                {position.type === 'BORROWING' ? (
-                  <>
-                    <button
-                      onClick={() => handleAction('borrow', position)}
-                      className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
-                    >
-                      Borrow More
-                    </button>
-                    <button
-                      onClick={() => handleAction('repay', position)}
-                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
-                    >
-                      Repay
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => handleAction('deposit', position)}
-                      className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
-                    >
-                      Deposit
-                    </button>
-                    <button
-                      onClick={() => handleAction('withdraw', position)}
-                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
-                    >
-                      Withdraw
-                    </button>
-                  </>
+                {position.type === 'BORROWING' && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-white/60">Borrow Utilization</span>
+                      <span>{((position.borrowed! / position.maxBorrow!) * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all ${(position.borrowed! / position.maxBorrow!) >= 0.8 ? 'bg-red-500' :
+                          (position.borrowed! / position.maxBorrow!) >= 0.6 ? 'bg-yellow-500' :
+                            'bg-green-500'
+                          }`}
+                        style={{ width: `${(position.borrowed! / position.maxBorrow!) * 100}%` }}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-
-            {position.type === 'BORROWING' && (
-              <div className="mt-3">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-white/60">Borrow Utilization</span>
-                  <span>{((position.borrowed! / position.maxBorrow!) * 100).toFixed(1)}%</span>
-                </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all ${(position.borrowed! / position.maxBorrow!) >= 0.8 ? 'bg-red-500' :
-                      (position.borrowed! / position.maxBorrow!) >= 0.6 ? 'bg-yellow-500' :
-                        'bg-green-500'
-                      }`}
-                    style={{ width: `${(position.borrowed! / position.maxBorrow!) * 100}%` }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-    </div>
+          ))
+      }
+    </div >
   );
 
   const renderOfferings = () => (
@@ -476,7 +490,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         >
           All Types
         </button>
-        {(['LENDING', 'BORROWING', 'STAKING', 'POOL'] as Position['type'][]).map(type => (
+        {/* {(['LENDING', 'BORROWING', 'STAKING', 'POOL'] as Position['type'][]).map(type => (
           <button
             key={type}
             onClick={() => setSelectedPositionType(type)}
@@ -488,7 +502,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
             {getTypeIcon(type)}
             <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
           </button>
-        ))}
+        ))} */}
       </div>
 
       <div className="space-y-3">
@@ -500,11 +514,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
             >
               <div className="flex items-center gap-4">
-                <img
-                  src={offering.logo}
-                  alt={offering.protocol}
-                  className="w-10 h-10"
-                />
+                <TokenChainIcon src={offering.logo || ""} alt={offering.protocol || ""} size={"lg"} chainId={Number(offering.chainId)} />
 
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
@@ -514,75 +524,41 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     </span>
                     <span className="text-white/40">•</span>
                     <span className="text-sm text-white/60">
-                      {offering.token}
-                      {offering.pairToken && `/${offering.pairToken}`}
+                      {`${offering.tokens[0]?.symbol}/${offering.tokens[1]?.symbol} ${offering.tokens[2]?.symbol}`}
                     </span>
                   </div>
 
-                  <p className="text-sm text-white/60 mb-2">
-                    {offering.description}
-                  </p>
+                  {/* <p className="text-sm text-white/60 mb-2">
+                    this is description
+                  </p> */}
 
                   <div className="flex items-center gap-6">
                     <div>
                       <span className="text-sm text-white/60">Base APY</span>
                       <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
                         }`}>
-                        {offering.apy}%
+                        {offering.apy || "0"} %
                       </div>
                     </div>
-                    {offering.rewards && (
-                      <div>
-                        <span className="text-sm text-white/60">
-                          {offering.rewards.token} Rewards
-                        </span>
-                        <div className="text-blue-400">+{offering.rewards.apy}% APR</div>
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-sm text-white/60">TVL</span>
-                      <div>${(offering.tvl / 1000000).toFixed(1)}M</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-white/60">Risk Level</span>
-                      <div className={getRiskColor(offering.risk)}>{offering.risk}</div>
-                    </div>
-                    {offering.requirements?.minAmount && (
-                      <div>
-                        <span className="text-sm text-white/60">Min Amount</span>
-                        <div>{offering.requirements.minAmount} {offering.token}</div>
-                      </div>
-                    )}
-                    {offering.requirements?.lockupPeriod && (
-                      <div>
-                        <span className="text-sm text-white/60">Lock Period</span>
-                        <div>{offering.requirements.lockupPeriod}</div>
-                      </div>
-                    )}
-                    {offering.requirements?.collateralRatio && (
-                      <div>
-                        <span className="text-sm text-white/60">Collateral</span>
-                        <div>{offering.requirements.collateralRatio}%</div>
-                      </div>
-                    )}
                   </div>
                 </div>
 
                 <button
-                  // onClick={() => handleAction(
-                  //   offering.type === 'BORROWING' ? 'borrow' : 'deposit',
-                  //   {
-                  //     protocol: offering.protocol,
-                  //     type: offering.type,
-                  //     amount: 0,
-                  //     tokens: offering.tokens,
-                  //     apy: offering.apy,
-                  //     logo: offering.logo
-                  //   }
-                  // )}
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg"
+                  onClick={async () => {
+                    if (Number(chainId) === Number(offering.chainId)) {
+                      const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
+                      handleAction(
+                        'deposit',
+                        position || offering
+                      );
+                    } else {
+                      await switchChain(parseInt(numberToHex(Number(offering.chainId)), 16));
+                    }
+                  }
+                  }
+                  className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg`}
                 >
-                  Get Started
+                  {Number(chainId) === Number(offering.chainId) ? "Get Started" : "Switch Network"}
                 </button>
               </div>
             </div>
@@ -603,9 +579,11 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10">
+          {
+            hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[Number(chainId)]}/tx/${hash}`} />
+          }
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <button onClick={depositHandler}>test</button>
               <button
                 onClick={() => setSelectedTab('overview')}
                 className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'overview'
@@ -658,11 +636,14 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Total Value Locked</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    {formatNumberByFrac(protocol.total_usd_value)}
+                    {
+                      isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'2rem'}></Skeleton>
+                        : formatNumberByFrac(protocol.total_usd_value)
+                    }
                   </div>
                   <div className="flex items-center gap-1 text-emerald-400">
                     <TrendingUp className="w-4 h-4" />
-                    <span>+5.82%</span>
+                    <span>0 %</span>
                     <span className="text-white/60">24h</span>
                   </div>
                 </div>
@@ -673,7 +654,11 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Net APY</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    + {netAPY}%
+                    {
+                      isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'2rem'}></Skeleton>
+                        : `+ ${netAPY}%`
+                    }
+
                   </div>
                   <div className="text-sm text-white/60">
                     Across all positions
@@ -686,7 +671,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-sm text-white/60">Total Rewards</span>
                   </div>
                   <div className="text-2xl font-bold mb-1">
-                    +$ {protocol.total_unclaimed_usd_value}
+                    {
+                      isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'2rem'}></Skeleton>
+                        : `+$ ${protocol.total_unclaimed_usd_value}`
+                    }
                   </div>
                   <div className="text-sm text-white/60">
                     Unclaimed rewards
@@ -707,108 +695,85 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Position Type Filter */}
-              <div className="flex items-center gap-2 mb-6">
-                <button
-                  onClick={() => setSelectedPositionType('ALL')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
-                    ? 'bg-white/10'
-                    : 'hover:bg-white/5'
-                    }`}
-                >
-                  All Types
-                </button>
-                {protocolTypes.map(type => (
-                  <button
-                    key={type}
-                    onClick={() => setSelectedPositionType(type)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
-                      ? 'bg-white/10'
-                      : 'hover:bg-white/5'
-                      }`}
-                  >
-                    {getTypeIcon(type)}
-                    <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
-                  </button>
-                ))}
-              </div>
-
               {/* Positions */}
               {renderPositions()}
 
               {/* Protocol Statistics */}
-              <div className="grid grid-cols-2 gap-6 mt-6">
-                {/* Protocol Breakdown */}
-                <div className="bg-white/5 rounded-xl p-4">
-                  <h3 className="text-lg font-medium mb-4">Protocol Breakdown</h3>
-                  <div className="space-y-3">
-                    {positions.map((position) => {
-                      const protocol = position.protocol;
-                      const protocolPositions = positions.filter(p => p.protocol === protocol);
-                      const totalValue = protocolPositions.reduce((sum, p) => sum + p.amount, 0);
-                      const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
+              {
+                positions.length > 0 &&
+                <div className="grid grid-cols-2 gap-6 mt-6">
+                  {/* Protocol Breakdown */}
+                  <div className="bg-white/5 rounded-xl p-4">
+                    <h3 className="text-lg font-medium mb-4">Protocol Breakdown</h3>
+                    <div className="space-y-3">
+                      {positions.map((position) => {
+                        const protocol = position.protocol;
+                        const protocolPositions = positions.filter(p => p.protocol === protocol);
+                        const totalValue = protocolPositions.reduce((sum, p) => sum + p.amount, 0);
+                        const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
 
-                      return (
-                        <div key={protocol} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
-                          <img
-                            src={protocolPositions[0]?.logo}
-                            alt={protocol}
-                            className="w-8 h-8"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium">{protocol}</span>
-                              <span>${totalValue.toLocaleString()}</span>
+                        return (
+                          <div key={protocol} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
+                            <img
+                              src={protocolPositions[0]?.logo}
+                              alt={protocol}
+                              className="w-8 h-8"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium">{protocol}</span>
+                                <span>${totalValue.toLocaleString()}</span>
+                              </div>
+                              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-blue-500 transition-all"
+                                  style={{ width: `${(totalValue / totalTVL) * 100}%` }}
+                                />
+                              </div>
                             </div>
-                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Type Distribution */}
+                  <div className="bg-white/5 rounded-xl p-4">
+                    <h3 className="text-lg font-medium mb-4">Type Distribution</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {protocolTypes.map((type) => {
+                        const typePositions = positions.filter(p => p.type === type);
+                        const totalValue = typePositions.reduce((sum, p) => sum + p.amount, 0);
+                        const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
+
+                        return (
+                          <div key={type} className="p-4 bg-white/5 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {getTypeIcon(type)}
+                                <span className="font-medium">{type}</span>
+                              </div>
+                              <span className="text-sm text-white/60">
+                                {typePositions.length} positions
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-white/60">TVL Share</span>
+                              <span>{((totalValue / totalTVL) * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="h-2 bg-white/10 rounded-full overflow-hidden mt-2">
                               <div
                                 className="h-full bg-blue-500 transition-all"
                                 style={{ width: `${(totalValue / totalTVL) * 100}%` }}
                               />
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-
-                {/* Type Distribution */}
-                <div className="bg-white/5 rounded-xl p-4">
-                  <h3 className="text-lg font-medium mb-4">Type Distribution</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {protocolTypes.map((type) => {
-                      const typePositions = positions.filter(p => p.type === type);
-                      const totalValue = typePositions.reduce((sum, p) => sum + p.amount, 0);
-                      const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
-
-                      return (
-                        <div key={type} className="p-4 bg-white/5 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              {getTypeIcon(type)}
-                              <span className="font-medium">{type}</span>
-                            </div>
-                            <span className="text-sm text-white/60">
-                              {typePositions.length} positions
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-white/60">TVL Share</span>
-                            <span>{((totalValue / totalTVL) * 100).toFixed(1)}%</span>
-                          </div>
-                          <div className="h-2 bg-white/10 rounded-full overflow-hidden mt-2">
-                            <div
-                              className="h-full bg-blue-500 transition-all"
-                              style={{ width: `${(totalValue / totalTVL) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+              }
             </>
           ) : (
             renderOfferings()
@@ -816,15 +781,19 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      {modalState.type && modalState.position && (
+      {modalState.type && modalState.type === 'deposit' && modalState.position && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalState({ type: null })} />
           <div className="relative glass w-[400px] rounded-xl p-6">
             <div className="flex items-center justify-between mb-6">
+              {
+                showPreview &&
+                <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setShowPreview(false)}>
+                  <ArrowLeft />
+                </button>
+              }
               <h3 className="text-xl font-medium">
-                {modalState.type === 'deposit' ? 'Deposit' :
-                  modalState.type === 'withdraw' ? 'Withdraw' :
-                    modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
+                Deposit
               </h3>
               <button
                 onClick={() => setModalState({ type: null })}
@@ -848,111 +817,475 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 </div>
                 <div className="ml-auto text-right">
-                  <div className={`${modalState.type === 'borrow' || modalState.type === 'repay'
-                    ? 'text-red-400'
-                    : 'text-emerald-400'
-                    }`}>
+                  <div className={`text-emerald-400`}>
                     {modalState.position.apy || 0}% APY
                   </div>
-                  {modalState.position.rewards && (
-                    <div className="text-sm text-blue-400">
-                      +{modalState.position.rewards}% APR
+                </div>
+              </div>
+
+              {
+                showPreview ?
+                  <div className='mt-2 mb-2 flex flex-col gap-4'>
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2 text-2xl'>
+                          {`${formatNumberByFrac(Number(tokenAmount), 6)} ${tokenInfo1?.symbol}`}
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
+                      </div>
                     </div>
-                  )}
+
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2 text-2xl'>
+                          {`${formatNumberByFrac(Number(token2Amount), 6)} ${tokenInfo2?.symbol}`}
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
+                      </div>
+                    </div>
+
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2'>
+                          Rate
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <span className='ml-2'>
+                          1 {tokenInfo2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenInfo1?.symbol}
+                        </span>
+                      </div>
+                    </div>
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          New {tokenInfo1?.symbol || ""} Position
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                        <span className='ml-2'>
+                          {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted) + Number(tokenAmount))}
+                        </span>
+                        <span className='ml-1'>
+                          {tokenBalance2?.symbol || ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          New {tokenBalance2?.symbol || ""} Position
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                        <span className='ml-2'>
+                          {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted) + Number(token2Amount))}
+                        </span>
+                        <span className='ml-1'>
+                          {tokenInfo2?.symbol || ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          Network Fee
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <span className='ml-2'>
+                          {
+                            isGasEstimationLoading ?
+                              <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                              : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  :
+                  <>
+                    <div className="bg-white/5 rounded-xl p-4">
+                      <div className="text-sm text-white/60 mb-2">
+                        Amount
+                      </div>
+                      <div className='relative flex'>
+                        <input
+                          value={tokenAmount}
+                          onChange={(e) => {
+                            setTokenAmount(e.target.value);
+                            setToken2Amount((Number(e.target.value) * Number(priceRatio)).toString());
+                          }}
+                          type="text"
+                          className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""}`}
+                          placeholder="0.00"
+                        />
+                        <div className='flex items-center fixed right-12'>
+                          <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                          <span className='ml-2'>
+                            {tokenInfo1?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-2 text-sm">
+                        <span className="text-white/60">
+                          {`Balance: ${formatNumberByFrac(Number(tokenBalance1?.balance) || 0)}`}
+                        </span>
+                        <button className="text-blue-400" onClick={() => {
+                          setTokenAmount((tokenBalance1?.balance || "") + "");
+                          setToken2Amount((Number(tokenBalance1?.balance) * Number(priceRatio) || 0).toString());
+                        }}>MAX</button>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 rounded-xl p-4">
+                      <div className="text-sm text-white/60 mb-2">
+                        Amount
+                      </div>
+                      <div className='relative flex'>
+                        <input
+                          value={token2Amount}
+                          onChange={(e) => {
+                            setToken2Amount(e.target.value);
+                            setTokenAmount(((Number(e.target.value) / Number(priceRatio)) || 0).toString());
+                          }}
+                          type="text"
+                          className={`w-full bg-transparent text-2xl outline-none ${isErrorToken2Amount ? "text-red-500" : ""}`}
+                          placeholder="0.00"
+                        />
+                        <div className='flex items-center fixed right-12'>
+                          <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                          <span className='ml-2'>
+                            {tokenInfo2?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-2 text-sm">
+                        <span className="text-white/60">
+                          {`Balance: ${formatNumberByFrac(Number(tokenBalance2?.balance) || 0)}`}
+                        </span>
+                        <button className="text-blue-400" onClick={() => {
+                          setToken2Amount((tokenBalance2?.balance || "") + "");
+                          setTokenAmount(((Number(tokenBalance2?.balance) / Number(priceRatio)) || 0).toString());
+                        }}>MAX</button>
+                      </div>
+                    </div>
+
+                    <div className='mt-2 mb-2 flex flex-col gap-3'>
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            {tokenInfo1?.symbol || ""} Position
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                          <span className='ml-2'>
+                            {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted))}
+                          </span>
+                          <span className='ml-1'>
+                            {tokenInfo1?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            {tokenInfo2?.symbol || ""} Position
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                          <span className='ml-2'>
+                            {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted))}
+                          </span>
+                          <span className='ml-1'>
+                            {tokenInfo2?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            Network Fee
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <span className='ml-2'>
+                            {
+                              isGasEstimationLoading ?
+                                <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                                : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+              }
+
+              <button
+                className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || isErrorToken2Amount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
+                onClick={async () => {
+                  if (showPreview) {
+                    depositHandler()
+                  } else {
+                    setShowPreview(true);
+                  }
+                }}
+              >
+                {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Deposit" : "Next"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalState.type && modalState.type === 'redeem' && modalState.position && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalState({ type: null })} />
+          <div className="relative glass w-[400px] rounded-xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              {
+                showPreview &&
+                <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setShowPreview(false)}>
+                  <ArrowLeft />
+                </button>
+              }
+              <h3 className="text-xl font-medium">
+                Redeem
+              </h3>
+              <button
+                onClick={() => setModalState({ type: null })}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
+                <img
+                  src={modalState.position.logo}
+                  alt={modalState.position.protocol}
+                  className="w-8 h-8"
+                />
+                <div>
+                  <div className="font-medium">{modalState.position.protocol}</div>
+                  <div className="text-sm text-white/60">
+                    {`${modalState.position.tokens[0].symbol}/${modalState.position.tokens[1].symbol} ${modalState.position.tokens[2].symbol}`}
+                  </div>
+                </div>
+                <div className="ml-auto text-right">
+                  <div className={`text-emerald-400`}>
+                    {modalState.position.apy || 0}% APY
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-sm text-white/60 mb-2">
-                  Amount
-                </div>
-                <div className='relative flex'>
-                  <input
-                    value={inputAmountToken1}
-                    onChange={(e) => setInputAmountToken1(e.target.value)}
-                    type="text"
-                    className={`w-full bg-transparent text-2xl outline-none ${isErrorInputAmountToken1 ? "text-red-500" : ""}`}
-                    placeholder="0.00"
-                  />
-                  <div className='flex items-center fixed right-12'>
-                    <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(tokenBalance1?.chain)} />
-                    <span className='ml-2'>
-                      {tokenBalance1?.symbol || ""}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-2 text-sm">
-                  <span className="text-white/60">
-                    {modalState.type === 'borrow'
-                      ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
-                      } ${modalState.position.tokens}`
-                      : modalState.type === 'repay'
-                        ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
-                        : `Balance: ${formatNumberByFrac(tokenBalance1?.balance)}`
-                    }
-                  </span>
-                  <button className="text-blue-400">MAX</button>
-                </div>
-              </div>
+              {
+                showPreview ?
+                  <div className='mt-2 mb-2 flex flex-col gap-4'>
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2 text-2xl'>
+                          {`${formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenBalance1?.symbol}`}
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
+                      </div>
+                    </div>
 
-              <div className="bg-white/5 rounded-xl p-4">
-                <div className="text-sm text-white/60 mb-2">
-                  Amount
-                </div>
-                <div className='relative flex'>
-                  <input
-                    value={inputAmountToken1}
-                    onChange={(e) => setInputAmountToken1(e.target.value)}
-                    type="text"
-                    className={`w-full bg-transparent text-2xl outline-none ${isErrorInputAmountToken1 ? "text-red-500" : ""}`}
-                    placeholder="0.00"
-                  />
-                  <div className='flex items-center fixed right-12'>
-                    <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(tokenBalance2?.chain)} />
-                    <span className='ml-2'>
-                      {tokenBalance2?.symbol || ""}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-2 text-sm">
-                  <span className="text-white/60">
-                    {modalState.type === 'borrow'
-                      ? `Available to borrow: ${modalState.position.maxBorrow! - modalState.position.borrowed!
-                      } ${modalState.position.tokens}`
-                      : modalState.type === 'repay'
-                        ? `Borrowed: ${modalState.position.borrowed} ${modalState.position.tokens}`
-                        : `Balance: ${formatNumberByFrac(tokenBalance2?.balance)}`
-                    }
-                  </span>
-                  <button className="text-blue-400">MAX</button>
-                </div>
-              </div>
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2 text-2xl'>
+                          {`${formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenBalance2?.symbol}`}
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
+                      </div>
+                    </div>
 
-              {modalState.type === 'borrow' && (
-                <div className="p-3 bg-white/5 rounded-lg space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/60">Borrow APY</span>
-                    <span className="text-red-400">{modalState.position.apy}%</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/60">Health Factor</span>
-                    <span className={`${modalState.position.healthFactor! >= 1.5 ? 'text-green-400' :
-                      modalState.position.healthFactor! >= 1.1 ? 'text-yellow-400' : 'text-red-400'
-                      }`}>
-                      {modalState.position.healthFactor!.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/60">Liquidation at</span>
-                    <span className="text-white/80">&lt; 1.0</span>
-                  </div>
-                </div>
-              )}
+                    <div className='flex justify-between mt-2'>
+                      <div>
+                        <span className='ml-2'>
+                          Rate
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <span className='ml-2'>
+                          1 {tokenBalance2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenBalance1?.symbol}
+                        </span>
+                      </div>
+                    </div>
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          New {tokenBalance1?.symbol || ""} Position
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                        <span className='ml-2'>
+                          {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
+                        </span>
+                        <span className='ml-1'>
+                          {tokenBalance2?.symbol || ""}
+                        </span>
+                      </div>
+                    </div>
 
-              <button className="w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium" onClick={depositHandler}>
-                {modalState.type === 'deposit' ? 'Deposit' :
-                  modalState.type === 'withdraw' ? 'Withdraw' :
-                    modalState.type === 'borrow' ? 'Borrow' : 'Repay'}
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          New {tokenBalance2?.symbol || ""} Position
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                        <span className='ml-2'>
+                          {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
+                        </span>
+                        <span className='ml-1'>
+                          {tokenBalance2?.symbol || ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className='flex justify-between'>
+                      <div>
+                        <span className='ml-2'>
+                          Network Fee
+                        </span>
+                      </div>
+                      <div className='items-center flex'>
+                        <span className='ml-2'>
+                          {
+                            isGasEstimationLoading ?
+                              <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                              : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  :
+                  <>
+                    <div className="bg-white/5 rounded-xl p-4">
+                      <div className="text-sm text-white/60 mb-2">
+                        Withdrawal amount
+                      </div>
+                      <div className='relative flex flex-row items-center justify-center w-full'>
+                        <input
+                          minLength={1}
+                          maxLength={3}
+                          inputMode="numeric" autoComplete="off" autoCorrect="off" type="text" pattern="^\d*$"
+                          placeholder="0" spellCheck="false"
+                          value={withdrawPercent}
+                          onChange={(e) => {
+                            if (0 < Number(e.target.value) && Number(e.target.value) <= 100 && !isNaN(Number(e.target.value))) {
+                              setWithdrawPercent(e.target.value)
+                            }
+                          }}
+                          className={`bg-transparent text-5xl outline-none`}
+                          style={{ width: (withdrawPercent.length || 1) * 30 }}
+                        />
+                        <div className='text-4xl text-black ml-2'>%</div>
+                      </div>
+                      <div className='flex w-full items-center justify-center mt-4 gap-4'>
+                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                          onClick={() => setWithdrawPercent("25")}>
+                          25%
+                        </button>
+                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                          onClick={() => setWithdrawPercent("50")}>
+                          50%
+                        </button>
+                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                          onClick={() => setWithdrawPercent("75")}>
+                          75%
+                        </button>
+                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                          onClick={() => setWithdrawPercent("100")}>
+                          MAX
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className='mt-2 mb-2 flex flex-col gap-3'>
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            {tokenBalance1?.symbol || ""} Position
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                          <span className='ml-2'>
+                            {formatNumberByFrac(Number(modalState.position.tokens[0].balance_formatted))}
+                          </span>
+                          <span className='ml-1'>
+                            {tokenBalance2?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            {tokenBalance2?.symbol || ""} Position
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                          <span className='ml-2'>
+                            {formatNumberByFrac(Number(modalState.position.tokens[1].balance_formatted))}
+                          </span>
+                          <span className='ml-1'>
+                            {tokenBalance2?.symbol || ""}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className='flex justify-between'>
+                        <div>
+                          <span className='ml-2'>
+                            Network Fee
+                          </span>
+                        </div>
+                        <div className='items-center flex'>
+                          <span className='ml-2'>
+                            {
+                              isGasEstimationLoading ?
+                                <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                                : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+              }
+
+              <button
+                className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || isErrorToken2Amount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
+                onClick={async () => {
+                  if (showPreview) {
+                    redeemHandler()
+                  } else {
+                    setShowPreview(true);
+                  }
+                }}
+              >
+                {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Redeem" : "Next"}
               </button>
             </div>
           </div>
