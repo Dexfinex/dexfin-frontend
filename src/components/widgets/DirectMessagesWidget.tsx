@@ -288,7 +288,7 @@ export const DirectMessagesWidget: React.FC = () => {
               content: receivedMessage.message.content,
               fromAddress: extractAddress(receivedMessage.from),
               toAddress: extractAddress(receivedMessage.to[0]),
-              chatId: receivedMessage.chatId,
+              chatId: receivedMessage.reference,
               link: null,
               reaction: ""
             }]
@@ -307,7 +307,7 @@ export const DirectMessagesWidget: React.FC = () => {
                 content: receivedMessage.message.content,
                 fromAddress: extractAddress(receivedMessage.from),
                 toAddress: extractAddress(receivedMessage.to[0]),
-                chatId: receivedMessage.chatId,
+                chatId: receivedMessage.reference,
                 link: null,
                 reaction: ""
               }]

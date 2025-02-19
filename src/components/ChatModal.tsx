@@ -498,8 +498,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }
 
   const handleReceiveMsg = async () => {
-    console.log('handle receive message')
-
     // handle group messages
     if (receivedMessage?.meta?.group == true) {
       if (receivedMessage.origin == "other") {
