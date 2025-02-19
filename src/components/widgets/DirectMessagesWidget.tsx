@@ -761,9 +761,10 @@ export const DirectMessagesWidget: React.FC = () => {
       </div>}
 
       {/* Search */}
-      <button className='absolute top-8 right-2 hover:bg-white/10 p-2 rounded-lg' onClick={() => setIsOverlay(true)}>
+      {chatUser?.uid && <button className='absolute top-8 right-2 hover:bg-white/10 p-2 rounded-lg' onClick={() => setIsOverlay(true)}>
         <Search className='w-4 h-4' />
-      </button>
+      </button>}
+      
       {isOverlay && <Overlay isOpen={isOverlay} onClose={() => setIsOverlay(false)} selectedUser={selectedUser} setSelectedUser={setSelectedUser} />}
 
       {/* Messages */}
