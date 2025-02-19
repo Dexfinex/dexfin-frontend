@@ -1,6 +1,7 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X, ArrowLeft } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
+import { numberToHex } from 'viem';
 
 import { TokenChainIcon } from './swap/components/TokenIcon';
 
@@ -29,8 +30,13 @@ interface ModalState {
   position?: Position;
 }
 
-const offerings: Position[] = [
+interface Offering extends Position {
+  chainId: number;
+}
+
+const offerings: Offering[] = [
   {
+    "chainId": 56,
     "address": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2",
     "protocol": "Uniswap v2",
     "protocol_id": "uniswap-v2",
@@ -102,7 +108,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { mutate: sendDepositMutate } = useSendDepositMutation();
   const { mutate: redeemEnSoMutate } = useRedeemEnSoMutation();
 
-  const { chainId, address, signer } = useContext(Web3AuthContext);
+  const { chainId, address, signer, switchChain } = useContext(Web3AuthContext);
   const { positions, protocol, netAPY, healthFactor, protocolTypes } = useDefiStore();
 
   const { getTokenBalance } = useTokenBalanceStore();
@@ -477,11 +483,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
             >
               <div className="flex items-center gap-4">
-                <img
-                  src={offering.logo}
-                  alt={offering.protocol}
-                  className="w-10 h-10"
-                />
+                <TokenChainIcon src={offering.logo || ""} alt={offering.protocol || ""} size={"lg"} chainId={Number(offering.chainId)} />
 
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
@@ -511,18 +513,21 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 <button
-                  onClick={() => {
-                    const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
-
-                    handleAction(
-                      'deposit',
-                      position || offering
-                    );
+                  onClick={async () => {
+                    if (Number(chainId) === Number(offering.chainId)) {
+                      const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
+                      handleAction(
+                        'deposit',
+                        position || offering
+                      );
+                    } else {
+                      await switchChain(parseInt(numberToHex(Number(offering.chainId)), 16));
+                    }
                   }
                   }
                   className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg`}
                 >
-                  Get Started
+                  {Number(chainId) === Number(offering.chainId) ? "Get Started" : "Switch Network"}
                 </button>
               </div>
             </div>
