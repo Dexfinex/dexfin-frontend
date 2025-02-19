@@ -32,6 +32,7 @@ import { WithdrawProcess } from './components/WithdrawProcess.tsx';
 import { BorrowProcess } from './components/BorrowProcess.tsx';
 import { RepayProcess } from './components/RepayProcess.tsx';
 import { ENSRegisterProcess } from './components/ENSRegisterProcess.tsx';
+import { ENSRenewProcess } from './components/ENSRenewProcess.tsx';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -58,6 +59,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [showBorrowProcess, setShowBorrowProcess] = useState(false);
   const [showRepayProcess, setShowRepayProcess] = useState(false);
   const [showENSRegisterProcess, setShowENSRegisterProcess] = useState(false);
+  const [showENSRenewProcess, setShowENSRenewProcess] = useState(false);
   const { address, chainId, switchChain } = useContext(Web3AuthContext);
   const { tokenBalances } = useTokenBalanceStore();
 
@@ -86,6 +88,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowBorrowProcess(false);
     setShowRepayProcess(false);
     setShowENSRegisterProcess(false);
+    setShowENSRenewProcess(false);
   };
 
   const processCommandCase = async (command: string, address: string, chainId: number | undefined) => {
@@ -416,6 +419,16 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setSteps(data.steps);
             setEnsName(response.brianData.extractedParams.address);
             setShowENSRegisterProcess(true);
+          } else if (response.brianData.action == 'ENS Renewal') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+
+            setFromToken(data.fromToken);
+            setDescription(data.description);
+            setSteps(data.steps);
+            setEnsName(response.brianData.extractedParams.address);
+            setShowENSRenewProcess(true);
           }
         } else if (response.brianData.type == 'knowledge') {
           response = { text: convertBrianKnowledgeToPlainText(response.brianData.answer) };
@@ -535,7 +548,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setMessages([]);
   };
 
-
   if (!isOpen) return null;
 
   return (
@@ -615,6 +627,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         ) : showENSRegisterProcess && fromToken ? (
           <ENSRegisterProcess description = {description} steps={steps} ensName={ensName} fromToken={fromToken} onClose={() => {
             setShowENSRegisterProcess(false);
+            setMessages([]);
+          }} />
+        ) : showENSRenewProcess && fromToken ? (
+          <ENSRenewProcess description={description} steps={steps} ensName={ensName} fromToken={fromToken} onClose={() => {
+            setShowENSRenewProcess(false);
             setMessages([]);
           }} />
         ) : (
