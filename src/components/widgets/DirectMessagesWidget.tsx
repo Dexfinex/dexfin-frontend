@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useRef, useCallback } from 'react';
-import { Plus, Search, Send, MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'lucide-react';
+import { Share2, Search, Send, MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'lucide-react';
 import { useInView } from "react-intersection-observer";
 import EmojiPicker from 'emoji-picker-react';
 import GifPicker from 'gif-picker-react';
@@ -439,7 +439,7 @@ export const DirectMessagesWidget: React.FC = () => {
 
     try {
       if (selectedUser) {
-        setChatHistory(prev => [...prev, {
+        const updated = [...chatHistory, {
           timestamp: Math.floor(Date.now()),
           type,
           content,
@@ -448,18 +448,20 @@ export const DirectMessagesWidget: React.FC = () => {
           chatId: "",
           link: null,
           reaction: ""
-        }])
+        }]
+        setChatHistory(updated)
 
         const sentMedia = await chatUser.chat.send(selectedUser?.address, {
           type,
           content
         })
+        console.log('sent media: ', sentMedia)
 
         setNewMessage("")
-        console.log('sent media: ', sentMedia)
+        setChatHistory(updated.map((chat, index) => index == updated.length - 1 ? { ...chat, chatId: sentMedia.cid } : chat))
       }
     } catch (err) {
-      console.log('send gif err: ', err)
+      console.log('send media err: ', err)
       setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
     }
   }
@@ -467,6 +469,43 @@ export const DirectMessagesWidget: React.FC = () => {
   const handleGifClick = async (gifData: any) => {
     setIsGifOpen(false)
     sendMedia(gifData.url, "MediaEmbed")
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      if (file.size > 1 * 1024 * 1024) {
+        toast({
+          status: 'error',
+          description: `Please select a file smaller than 1MB.`,
+          duration: 3500
+        })
+        return
+      }
+
+      setSendingMessage(true)
+      const reader = new FileReader()
+      reader.readAsDataURL(file); // Convert file to Base64
+      reader.onload = async () => {
+        console.log("Base64:", reader.result); // Base64 string
+        const fileType = (file.type.startsWith("image/") ? "Image" : "File")
+        const content = {
+          content: reader.result,
+          name: file.name,
+          size: file.size,
+          type: file.type
+        }
+
+        event.target.value = "";
+
+        await sendMedia(JSON.stringify(content), fileType)
+        setSendingMessage(false)
+      };
+      reader.onerror = (err) => {
+        console.log("Base64 err:", err)
+      };
+    }
   }
 
   const handleEmojiClick = (emojiData: any) => {
@@ -836,6 +875,11 @@ export const DirectMessagesWidget: React.FC = () => {
               onGifClick={handleGifClick}
             />
           </div>}
+
+          <label className="cursor-pointer p-2 hover:bg-white/10 rounded-lg transition-colors">
+            <Share2 className="w-5 h-5" />
+            <input type="file" className="hidden" onChange={handleFileChange} />
+          </label>
 
           {!sendingMessage ? <button
             onClick={handleSendMessage}

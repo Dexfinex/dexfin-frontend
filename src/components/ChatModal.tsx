@@ -1249,7 +1249,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     try {
       if (chatMode === "group" && selectedGroup) {
         const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == address)
-        setChatHistory(prev => [...prev, {
+        const updated = [...chatHistory, {
           timestamp: Math.floor(Date.now()),
           type,
           content,
@@ -1259,7 +1259,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           link: null,
           image: found?.image || "",
           reaction: ""
-        }])
+        }]
+        setChatHistory(updated)
 
         const sentMedia = await chatUser.chat.send(selectedGroup?.groupId, {
           type,
@@ -1268,8 +1269,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
         setMessage("")
         console.log('sent media: ', sentMedia)
+        setChatHistory(updated.map((chat, index) => index == updated.length - 1 ? { ...chat, chatId: sentMedia.cid } : chat))
       } else if (chatMode === "p2p" && selectedUser) {
-        setChatHistory(prev => [...prev, {
+        const updated = [...chatHistory, {
           timestamp: Math.floor(Date.now()),
           type,
           content,
@@ -1278,7 +1280,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           chatId: "",
           link: null,
           reaction: ""
-        }])
+        }]
+        setChatHistory(updated)
 
         const sentMedia = await chatUser.chat.send(selectedUser?.address, {
           type,
@@ -1291,9 +1294,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           setConnectedUsers(prev => [{ ...searchedUser, unreadMessages: 0 }, ...prev])
         }
         console.log('sent media: ', sentMedia)
+        setChatHistory(updated.map((chat, index) => index == updated.length - 1 ? { ...chat, chatId: sentMedia.cid } : chat))
       }
     } catch (err) {
-      console.log('send gif err: ', err)
+      console.log('send media err: ', err)
       setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
     }
   }
