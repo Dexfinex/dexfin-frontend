@@ -1,6 +1,10 @@
 import React, { useEffect, useState, useContext, useRef, useCallback } from 'react';
 import { Plus, Search, Send, MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'lucide-react';
 import { useInView } from "react-intersection-observer";
+import EmojiPicker from 'emoji-picker-react';
+import GifPicker from 'gif-picker-react';
+import { Theme } from 'emoji-picker-react';
+import { Theme as GifTheme } from 'gif-picker-react';
 import { useStore } from '../../store/useStore';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
@@ -129,12 +133,50 @@ export const DirectMessagesWidget: React.FC = () => {
   const [isRequestUser, setIsRequestUser] = useState(false);
   const [isHandlingRequest, setIsHandlingRequest] = useState(false);
   const [firstLoadTop, setFirstLoadTop] = useState(true);
+  const [isGifOpen, setIsGifOpen] = useState(false);
+  const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const emojiPickRef = useRef<HTMLDivElement>(null);
+  const gifPickRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const emojiBtnRef = useRef<HTMLButtonElement>(null);
+  const gifBtnRef = useRef<HTMLButtonElement>(null);
   const toast = useToast()
 
   const { ref: topRef, inView: topInView } = useInView({ threshold: 1 }); // Detect top scroll
+
+  const handleClickOutside = (e: any) => {
+    if (emojiBtnRef.current && emojiBtnRef.current.contains(e.target as Node)) {
+      if (isGifOpen) {
+        setIsGifOpen(false)
+      }
+      return
+    }
+
+    if (gifBtnRef.current && gifBtnRef.current.contains(e.target as Node)) {
+      if (isEmojiOpen) {
+        setIsEmojiOpen(false)
+      }
+      return
+    }
+
+    if (gifPickRef.current && !gifPickRef.current.contains(e.target as Node)) {
+      setIsGifOpen(false)
+    }
+
+    if (emojiPickRef.current && !emojiPickRef.current.contains(e.target as Node)) {
+      setIsEmojiOpen(false)
+    }
+  }
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     console.log('selectedUser = ', selectedUser)
@@ -390,6 +432,46 @@ export const DirectMessagesWidget: React.FC = () => {
       textarea.style.height = "auto";
       textarea.style.height = textarea.scrollHeight + "px";
     }
+  }
+
+  const sendMedia = async (content: string, type: ChatType) => {
+    setToBottom(true)
+
+    try {
+      if (selectedUser) {
+        setChatHistory(prev => [...prev, {
+          timestamp: Math.floor(Date.now()),
+          type,
+          content,
+          fromAddress: address,
+          toAddress: selectedUser?.address,
+          chatId: "",
+          link: null,
+          reaction: ""
+        }])
+
+        const sentMedia = await chatUser.chat.send(selectedUser?.address, {
+          type,
+          content
+        })
+
+        setNewMessage("")
+        console.log('sent media: ', sentMedia)
+      }
+    } catch (err) {
+      console.log('send gif err: ', err)
+      setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
+    }
+  }
+
+  const handleGifClick = async (gifData: any) => {
+    setIsGifOpen(false)
+    sendMedia(gifData.url, "MediaEmbed")
+  }
+
+  const handleEmojiClick = (emojiData: any) => {
+    setNewMessage(newMessage + emojiData.emoji)
+    setIsEmojiOpen(false)
   }
 
   const renderChatBox = (chatId: string, type: ChatType, isOwner: boolean, content: string, address: string, reaction?: string) => {
@@ -720,9 +802,18 @@ export const DirectMessagesWidget: React.FC = () => {
       {/* Input */}
       {
         canAccessChat() && <div className="mt-2 flex items-center gap-2">
-          <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-            <Plus className="w-4 h-4" />
+          <button className="p-1 hover:bg-white/10 rounded-full transition-colors" ref={emojiBtnRef} onClick={() => setIsEmojiOpen(!isEmojiOpen)}>
+            <Smile className="w-4 h-4" />
           </button>
+
+          <div ref={emojiPickRef}
+            className='!absolute bottom-[62px] left-[16px]'>
+            <EmojiPicker open={isEmojiOpen}
+              onEmojiClick={handleEmojiClick}
+              theme={Theme.DARK}
+            />
+          </div>
+
           <textarea
             ref={textareaRef}
             value={newMessage}
@@ -732,6 +823,20 @@ export const DirectMessagesWidget: React.FC = () => {
             className="flex-1 bg-white/5 px-3 py-1.5 rounded-lg outline-none text-sm resize-none"
             rows={1}
           />
+
+          <button className="p-1 text-sm hover:bg-white/10 rounded-lg transition-colors" ref={gifBtnRef} onClick={() => setIsGifOpen(!isGifOpen)}>
+            Gif
+          </button>
+
+          {isGifOpen && <div ref={gifPickRef}
+            className='!absolute bottom-[62px] right-[16px]'>
+            <GifPicker
+              tenorApiKey={"AIzaSyBxr4hrP59kdbQV4xJ-t2CSQX0Y6q4gcbA"}
+              theme={GifTheme.DARK}
+              onGifClick={handleGifClick}
+            />
+          </div>}
+
           {!sendingMessage ? <button
             onClick={handleSendMessage}
             disabled={!newMessage.trim()}
