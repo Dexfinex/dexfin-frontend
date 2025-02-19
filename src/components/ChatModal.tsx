@@ -22,7 +22,7 @@ import { getAllChatData, getWalletProfile } from '../utils/chatApi';
 import { LIMIT } from '../utils/chatApi';
 import { EditChatProfileModal } from './EditChatProfileModal';
 import { ChatGroupModal } from './ChatGroupModal';
-import { IUser, IGroup, ChatType, IChat, ProfileType, ChatModeType } from '../types/chat.type';
+import { IUser, IGroup, ChatType, IChat, ProfileType, ChatModeType, ReactionType } from '../types/chat.type';
 import { ChatMessages } from './ChatMessages';
 
 interface ChatModalProps {
@@ -229,6 +229,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isGifOpen, setIsGifOpen] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<any>();
+  const [reactions, setReactions] = useState<Array<ReactionType>>([]);
   const emojiPickRef = useRef<HTMLDivElement>(null);
   const gifPickRef = useRef<HTMLDivElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
@@ -416,6 +417,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     setMessage("")
+    setReactions([])
   }, [selectedUser, selectedGroup])
 
   useEffect(() => {
@@ -953,7 +955,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       if (history.length > 0) {
         console.log('history = ', history)
         let chats: IChat[] = []
-        let reactions: any[] = []
+        let reactions: ReactionType[] = []
 
         history.forEach((data: any) => {
           if (data.messageType == "Reaction") {
@@ -985,6 +987,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         }
 
         setToBottom(true)
+        setReactions(reactions)
         setChatHistory(chats.reverse())
         clearUnreadMessages(user.address)
       }
@@ -1170,6 +1173,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         }
 
         setToBottom(true)
+        setReactions(reactions)
         setChatHistory(chats.reverse())
       }
     } catch (err) {
@@ -1891,6 +1895,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               loadingChatHistory={loadingChatHistory}
               toBottom={toBottom}
               setToBottom={setToBottom}
+              reactions={reactions}
             />
 
             {/* Chat Input */}

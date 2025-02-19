@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useInView } from "react-intersection-observer";
 import { useStore } from '../store/useStore';
-import { IGroup, IUser, IChat, ChatModeType, ChatType } from '../types/chat.type';
+import { IGroup, IUser, IChat, ChatModeType, ChatType, ReactionType } from '../types/chat.type';
 import { MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'lucide-react';
 import { Spinner, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
 import { downloadBase64File, shrinkAddress, getChatHistoryDate, extractAddress } from '../utils/common.util';
@@ -12,6 +12,7 @@ interface ChatMessagesProps {
     selectedGroup: IGroup | null;
     selectedUser: IUser | null;
     chatHistory: Array<IChat>;
+    reactions: ReactionType[];
     chatMode: ChatModeType;
     handleUserRequest: (isAccept: boolean) => Promise<void>;
     handleGroupRequest: (isAccept: boolean) => Promise<void>;
@@ -26,7 +27,7 @@ interface ChatMessagesProps {
 
 export const ChatMessages: React.FC<ChatMessagesProps> = ({
     selectedGroup, selectedUser, chatHistory, chatMode, isHandlingRequest, isJoiningGroup, loadingChatHistory,
-    handleUserRequest, handleGroupRequest, handleJoinGroup, setChatHistory, toBottom, setToBottom,
+    handleUserRequest, handleGroupRequest, handleJoinGroup, setChatHistory, toBottom, setToBottom, reactions
 }) => {
     const { ref: topRef, inView: topInView } = useInView(); // Detect top scroll
 
@@ -75,12 +76,11 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
         if (prevHistory.length > 0) {
             let chats: IChat[] = []
-            let reactions: any[] = []
+            let prevReactions: ReactionType[] = []
 
-            // todo should add reactions more
             prevHistory.forEach((data: any) => {
                 if (data.messageType == "Reaction") {
-                    reactions = [...reactions, data.messageObj]
+                    prevReactions = [...prevReactions, data.messageObj]
                 } else {
                     chats = [...chats, {
                         timestamp: data.timestamp,
@@ -95,9 +95,10 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
                 }
             })
 
-            if (reactions.length > 0) {
+            const totalReactions: ReactionType[] = [...reactions, ...prevReactions]
+            if (totalReactions.length > 0) {
                 chats = chats.map(chat => {
-                    const found = reactions.find(e => e.reference == chat.chatId)
+                    const found = totalReactions.find(e => e.reference == chat.chatId)
                     if (found) {
                         return {
                             ...chat,
