@@ -164,7 +164,7 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
           </button>
             <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="xs">
             <DrawerOverlay>
-              <DrawerContent bg='blackAlpha.900'>
+              <DrawerContent className="glass">
                 <DrawerCloseButton />
                 <DrawerHeader>Wallet</DrawerHeader>
                 <DrawerBody>
