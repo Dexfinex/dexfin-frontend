@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useContext, useEffect, useState, useRef, useMemo, useCallback, useLayoutEffect } from 'react';
 import { useInView } from "react-intersection-observer";
 import { useStore } from '../store/useStore';
 import { IGroup, IUser, IChat, ChatModeType, ChatType, ReactionType } from '../types/chat.type';
@@ -6,7 +6,8 @@ import { MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'luci
 import { Spinner, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
 import { downloadBase64File, shrinkAddress, getChatHistoryDate, extractAddress } from '../utils/common.util';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
-import { LIMIT } from '../utils/chatApi';
+import { LIMIT, BIG_IMAGE_WIDHT } from '../utils/chatApi';
+import { ImageWithSkeleton } from './common/ImageWithSkeleton';
 
 interface ChatMessagesProps {
     selectedGroup: IGroup | null;
@@ -57,11 +58,11 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
     const scrollBottom = useCallback(() => {
         if (chatScrollRef.current) {
-            chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" })
+            chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight })
         }
     }, [])
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         console.log('chat history = ', chatHistory)
         if (toBottom) {
             scrollBottom()
@@ -329,13 +330,13 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
             </div>
         } else if (type === "MediaEmbed") {
             return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
-                <img className={`w-52 h-auto`} src={messageContent} />
+                <ImageWithSkeleton src={messageContent} width={BIG_IMAGE_WIDHT} />
                 {renderReactionBtn()}
                 {reactionIcon()}
             </div>
         } else if (type === "Image") {
             return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
-                <img className={`w-52 h-auto`} src={messageContent} />
+                <ImageWithSkeleton src={messageContent} width={BIG_IMAGE_WIDHT} />
                 {renderReactionBtn()}
                 {reactionIcon()}
             </div>

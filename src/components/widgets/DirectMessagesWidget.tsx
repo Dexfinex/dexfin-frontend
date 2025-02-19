@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useContext, useRef, useCallback, useLayoutEffect } from 'react';
 import { Share2, Search, Send, MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'lucide-react';
 import { useInView } from "react-intersection-observer";
 import EmojiPicker from 'emoji-picker-react';
@@ -13,7 +13,8 @@ import { motion } from 'framer-motion';
 import { getWalletProfile } from '../../utils/chatApi';
 import { IUser, IChat, ChatType } from '../../types/chat.type';
 import { getEnsName, shrinkAddress, extractAddress, getChatHistoryDate, downloadBase64File } from '../../utils/common.util';
-import { LIMIT } from '../../utils/chatApi';
+import { LIMIT, BIG_IMAGE_WIDHT } from '../../utils/chatApi';
+import { ImageWithSkeleton } from '../common/ImageWithSkeleton';
 
 interface OverlayProps {
   isOpen: boolean;
@@ -218,7 +219,7 @@ export const DirectMessagesWidget: React.FC = () => {
     }
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (toBottom) {
       scrollBottom()
       setToBottom(false)
@@ -593,14 +594,14 @@ export const DirectMessagesWidget: React.FC = () => {
         </div>
       </div>
     } else if (type === "MediaEmbed") {
-      return <div className={`relative w-44 ${!isOwner ? '' : 'ml-auto'}`}>
-        <img className={`w-44 h-auto`} src={messageContent} />
+      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
+        <ImageWithSkeleton src={messageContent} width={BIG_IMAGE_WIDHT} />
         {renderReactionBtn()}
         {reactionIcon()}
       </div>
     } else if (type === "Image") {
-      return <div className={`relative w-44 ${!isOwner ? '' : 'ml-auto'}`}>
-        <img className={`w-44 h-auto`} src={messageContent} />
+      return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
+        <ImageWithSkeleton src={messageContent} width={BIG_IMAGE_WIDHT} />
         {renderReactionBtn()}
         {reactionIcon()}
       </div>
