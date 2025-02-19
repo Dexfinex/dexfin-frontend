@@ -15,7 +15,7 @@ const useGetTokenPrices = ({ chainId, tokenAddresses }: QuoteParam) => {
 
     const fetchPrices = useCallback(async () => {
         if (chainId === SOLANA_CHAIN_ID) {
-            const data = await birdeyeService.getMintPrices(tokenAddresses);
+            const {data} = await birdeyeService.getMintPrices(tokenAddresses);
             if (data) {
                 const resultData: Record<string, string> = {};
                 for (const address of Object.keys(data)) {

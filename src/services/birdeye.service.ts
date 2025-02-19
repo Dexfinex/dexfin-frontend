@@ -44,6 +44,6 @@ export const birdeyeService = {
         } catch (e) {
             console.log(e);
         }
-        return {}
+        return {data: {}}
     },
 }

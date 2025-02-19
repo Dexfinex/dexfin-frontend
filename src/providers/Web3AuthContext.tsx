@@ -25,7 +25,7 @@ import {
 } from "../constants";
 import {SavedWalletInfo, type SolanaWalletInfoType} from "../types/auth";
 import {generatePrivateKey, signTransactionWithEncryptedKey} from "@lit-protocol/wrapped-keys/src/lib/api";
-import {Transaction} from "@solana/web3.js";
+import {Transaction, VersionedTransaction} from "@solana/web3.js";
 import {SerializedTransaction} from "@lit-protocol/wrapped-keys";
 import {createPublicClient, createWalletClient, custom, publicActions, type WalletClient} from "viem";
 import {http} from "@wagmi/core";
@@ -77,7 +77,7 @@ interface Web3AuthContextType {
     setWalletClient: React.Dispatch<React.SetStateAction<WalletClient | undefined>>,
     isLoadingStoredWallet: boolean,
     solanaWalletInfo: SolanaWalletInfoType | undefined,
-    signSolanaTransaction: (solanaTransaction: Transaction) => Promise<string | null>
+    signSolanaTransaction: (solanaTransaction: Transaction | VersionedTransaction) => Promise<string | null>
 }
 
 
@@ -484,7 +484,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         await signInWithDiscord(redirectUri);
     }
 
-    const signSolanaTransaction = async (solanaTransaction: Transaction): Promise<string | null> => {
+    const signSolanaTransaction = async (solanaTransaction: Transaction | VersionedTransaction): Promise<string | null> => {
         if (solanaWalletInfo) {
             const serializedTransaction = solanaTransaction
                 .serialize({
@@ -495,7 +495,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
             const unsignedTransaction: SerializedTransaction = {
                 serializedTransaction,
-                chain: 'mainnet',
+                chain: 'mainnet-beta',
             };
 
             return await signTransactionWithEncryptedKey({
@@ -545,7 +545,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         }
     }
 
-    console.log("walletClient", walletClient, solanaWalletInfo)
+    // console.log("walletClient", walletClient, solanaWalletInfo)
 
     // console.log("switchChain", switchChain)
 

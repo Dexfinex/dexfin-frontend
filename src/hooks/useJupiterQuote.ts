@@ -30,7 +30,7 @@ const useJupiterQuote = ({
         queryKey: ['get-jupiter-quote', sellToken, buyToken, sellAmount],
         queryFn: async () => {
             // Construct the query URL with the parameters
-            const url = `https://quote-api.jup.ag/v6/quote?inputMint=${solToWSol(sellToken?.address)}&outputMint=${solToWSol(buyToken?.address)}&amount=${amount}&slippageBps=${slippageBps}&swapMode=ExactIn`
+            const url = `https://quote-api.jup.ag/v6/quote?inputMint=${solToWSol(sellToken?.address)}&outputMint=${solToWSol(buyToken?.address)}&amount=${amount}&slippageBps=${slippageBps}&swapMode=ExactIn&onlyDirectRoutes=true`
 
             // Make the API call
             const response = await fetch(url)
@@ -46,6 +46,18 @@ const useJupiterQuote = ({
         refetchInterval: 60_000,
     });
 
-    return {isLoading, refetch, data};
+    const decimals = buyToken?.decimals ?? 0
+    const formattedOutputAmount = (data && data.outAmount) ? (new Decimal(data.outAmount).div(10 ** (decimals)).toFixed((decimals))) : 0
+
+    return {
+        isLoading,
+        refetch,
+        data: {
+            ...data,
+            exchangeRate: Number(sellAmount) > 0 ? Number(formattedOutputAmount) / Number(sellAmount) : 0,
+            formattedOutputAmount,
+        },
+
+    };
 };
 export default useJupiterQuote;
