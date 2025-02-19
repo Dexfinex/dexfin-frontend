@@ -637,7 +637,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         ) : (
           <div className="flex flex-col h-full">
             {/* Header */}
-            <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} />
+            <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} setInput = {setInput} />
             <div className="flex h-full overflow-auto">
               {/* Main Content */}
               <div className="flex-1 flex flex-col relative overflow-auto">
