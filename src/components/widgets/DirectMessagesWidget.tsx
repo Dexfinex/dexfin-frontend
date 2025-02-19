@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useRef, useCallback } from 'react';
-import { Plus, Search, Send, MessageSquare, Smile, File, Download } from 'lucide-react';
+import { Plus, Search, Send, MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'lucide-react';
 import { useInView } from "react-intersection-observer";
 import { useStore } from '../../store/useStore';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
@@ -125,6 +125,9 @@ export const DirectMessagesWidget: React.FC = () => {
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
   const [loadingPrevChat, setLoadingPrevChat] = useState(false);
   const [toBottom, setToBottom] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [isRequestUser, setIsRequestUser] = useState(false);
+  const [isHandlingRequest, setIsHandlingRequest] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const [firstLoadTop, setFirstLoadTop] = useState(true);
@@ -227,6 +230,12 @@ export const DirectMessagesWidget: React.FC = () => {
 
     if (history.length > 0) {
       console.log('history = ', history)
+      if (history[0].listType == "REQUESTS" && extractAddress(history[0].toDID) == address) {
+        setIsRequestUser(true)
+      } else if (isRequestUser) {
+        setIsRequestUser(false)
+      }
+
       let chats: IChat[] = []
       let reactions: any[] = []
 
@@ -268,11 +277,88 @@ export const DirectMessagesWidget: React.FC = () => {
 
   const handleReceiveMsg = () => {
     console.log('handle receive message ', receivedMessage)
+
+    if (receivedMessage?.meta?.group == false && receivedMessage.origin == "other") {
+      if (receivedMessage.event == "chat.request") {
+        if (selectedUser?.address == extractAddress(receivedMessage.from)) {
+          setChatHistory(prev =>
+            [...prev, {
+              timestamp: Number(receivedMessage.timestamp),
+              type: receivedMessage.message.type,
+              content: receivedMessage.message.content,
+              fromAddress: extractAddress(receivedMessage.from),
+              toAddress: extractAddress(receivedMessage.to[0]),
+              chatId: receivedMessage.chatId,
+              link: null,
+              reaction: ""
+            }]
+          )
+        }
+      } else if (receivedMessage.event == "chat.message") {
+        if (extractAddress(receivedMessage.from) == selectedUser?.address) {
+          if (receivedMessage.message.type == "Reaction") {
+            setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
+          } else {
+            setToBottom(true)
+            setChatHistory(prev =>
+              [...prev, {
+                timestamp: Number(receivedMessage.timestamp),
+                type: receivedMessage.message.type,
+                content: receivedMessage.message.content,
+                fromAddress: extractAddress(receivedMessage.from),
+                toAddress: extractAddress(receivedMessage.to[0]),
+                chatId: receivedMessage.chatId,
+                link: null,
+                reaction: ""
+              }]
+            )
+          }
+        }
+      }
+    }
   }
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
+    if (sendingMessage) return;
 
+    setSendingMessage(true)
+    setToBottom(true)
+
+    if (selectedUser) {
+      const updatedChat: IChat[] = [...chatHistory, {
+        timestamp: Math.floor(Date.now()),
+        type: "Text",
+        content: newMessage.trim(),
+        fromAddress: address,
+        toAddress: selectedUser.address,
+        chatId: "",
+        link: null,
+        reaction: ""
+      }]
+      setChatHistory(updatedChat)
+
+      try {
+        console.log(selectedUser)
+        const sentMsg = await chatUser.chat.send(selectedUser.address, {
+          type: 'Text',
+          content: newMessage.trim()
+        })
+
+        setNewMessage("")
+        setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
+      } catch (err) {
+        toast({
+          status: 'error',
+          description: `Can't send a message. Please try again.`,
+          duration: 3500
+        })
+        setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
+        console.log('sent msg err: ', err)
+      }
+    }
+
+    setSendingMessage(false)
   }
 
   const renderChatBox = (chatId: string, type: ChatType, isOwner: boolean, content: string, address: string, reaction?: string) => {
@@ -302,6 +388,7 @@ export const DirectMessagesWidget: React.FC = () => {
     }
 
     const handleReaction = async (chatId: string, content: string) => {
+      if (!canAccessChat()) return
       const receipient = selectedUser ? selectedUser.address : ""
 
       if (!receipient) return
@@ -475,6 +562,44 @@ export const DirectMessagesWidget: React.FC = () => {
     }
   }
 
+  const handleUserRequest = async (isAccept: boolean) => {
+    setIsHandlingRequest(true)
+
+    if (isAccept) {
+      try {
+        const acceptRequest = await chatUser.chat.accept(selectedUser?.address)
+        console.log('accept request = ', acceptRequest)
+        setIsRequestUser(false)
+      } catch (err) {
+        console.log('request accept error: ', err)
+      }
+    } else {
+      try {
+        const rejectRequest = await chatUser.chat.reject(selectedUser?.address)
+        console.log('rejectRequest = ', rejectRequest)
+        setIsRequestUser(false)
+        setSelectedUser(null)
+        setChatHistory([])
+      } catch (err) {
+        console.log('request reject error: ', err)
+      }
+    }
+
+    setIsHandlingRequest(false)
+  }
+
+  const canAccessChat = () => {
+    if (!selectedUser) {
+      return false
+    }
+
+    if (isRequestUser) {
+      return false
+    }
+
+    return true
+  }
+
   return (
     <div className="p-2 h-full flex flex-col">
       {!chatUser?.uid && <div className='absolute top-[49px] right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10'>
@@ -499,30 +624,53 @@ export const DirectMessagesWidget: React.FC = () => {
             :
             chatHistory.length > 0 ? <>
               <div ref={topRef}></div>
-              {loadingPrevChat && <div className='w-full flex justify-center'>
-                <Spinner />
-              </div>}
-              {chatHistory.map((msg: IChat) => (
-                msg.type !== "Reaction" ? <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-                  {
-                    msg.fromAddress == selectedUser?.address &&
-                    < img
-                      src={selectedUser.profilePicture}
-                      className="w-8 h-8 rounded-full mt-1"
-                    />
-                  }
-                  <div className="flex-1 min-w-0">
-                    <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
-                      {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                      <span className="text-xs font-small text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
-                      <span className={`text-xs text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
-                    </div>
+              {
+                loadingPrevChat && <div className='w-full flex justify-center'>
+                  <Spinner />
+                </div>
+              }
+              {
+                chatHistory.map((msg: IChat) => (
+                  msg.type !== "Reaction" ? <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
                     {
-                      renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
+                      msg.fromAddress == selectedUser?.address &&
+                      < img
+                        src={selectedUser.profilePicture}
+                        className="w-8 h-8 rounded-full mt-1"
+                      />
                     }
+                    <div className="flex-1 min-w-0">
+                      <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+                        {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+                        <span className="text-xs font-small text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+                        <span className={`text-xs text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
+                      </div>
+                      {
+                        renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
+                      }
+                    </div>
+                  </div> : null
+                ))
+              }
+              {
+                isRequestUser && <div className='w-full flex justify-center'>
+                  <div className='w-[320px] rounded-lg p-3 bg-white/5'>
+                    <span className='text-white/40 text-sm'>This wallet wants to chat with you! Please accept to continue or reject to decline.</span>
+                    <div className='mt-2 flex gap-4 justify-center'>
+                      {
+                        isHandlingRequest ? <Spinner className='w-6 h-6' /> : <>
+                          <button onClick={() => handleUserRequest(true)}>
+                            <CheckCircle className='text-blue-500 w-6 h-6' />
+                          </button>
+                          <button onClick={() => handleUserRequest(false)}>
+                            <XCircle className='text-white/40 w-6 h-6' />
+                          </button>
+                        </>
+                      }
+                    </div>
                   </div>
-                </div> : null
-              ))}
+                </div>
+              }
             </>
               :
               !selectedUser ?
@@ -539,27 +687,29 @@ export const DirectMessagesWidget: React.FC = () => {
       </div>
 
       {/* Input */}
-      {selectedUser && <div className="mt-2 flex items-center gap-2">
-        <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-          <Plus className="w-4 h-4" />
-        </button>
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-          placeholder="Type a message..."
-          className="flex-1 bg-white/5 px-3 py-1.5 rounded-lg outline-none text-sm"
-        />
-        <button
-          onClick={handleSendMessage}
-          disabled={!newMessage.trim()}
-          className={`p-1.5 rounded-lg transition-colors ${newMessage.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
-            }`}
-        >
-          <Send className="w-4 h-4" />
-        </button>
-      </div>}
+      {
+        canAccessChat() && <div className="mt-2 flex items-center gap-2">
+          <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+            <Plus className="w-4 h-4" />
+          </button>
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            placeholder="Type a message..."
+            className="flex-1 bg-white/5 px-3 py-1.5 rounded-lg outline-none text-sm"
+          />
+          {!sendingMessage ? <button
+            onClick={handleSendMessage}
+            disabled={!newMessage.trim()}
+            className={`p-1.5 rounded-lg transition-colors ${newMessage.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
+              }`}
+          >
+            <Send className="w-4 h-4" />
+          </button> : <Spinner size={"sm"} />}
+        </div>
+      }
     </div>
   );
 };

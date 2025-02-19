@@ -221,7 +221,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
-  const [isFailedSent, setIsFailedSent] = useState(false);
   const [toBottom, setToBottom] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isHandlingRequest, setIsHandlingRequest] = useState(false);
@@ -422,16 +421,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     handleReceiveMsg()
   }, [receivedMessage])
-
-  useEffect(() => {
-    if (isFailedSent) {
-      toast({
-        status: 'error',
-        description: `Can't send a message. Please try again.`,
-        duration: 3500
-      })
-    }
-  }, [isFailedSent])
 
   // useEffect(() => {
   //   console.log('request users = ', requestUsers)
@@ -873,10 +862,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     if (!message.trim()) return;
     if (sendingMessage) return;
 
-    if (isFailedSent) {
-      setIsFailedSent(false)
-    }
-
     setSendingMessage(true)
     setToBottom(true)
 
@@ -909,7 +894,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
         setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
-        setIsFailedSent(true)
+        toast({
+          status: 'error',
+          description: `Can't send a message. Please try again.`,
+          duration: 3500
+        })
         setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
         console.log('sent msg err: ', err)
       }
@@ -939,7 +928,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         console.log('sent msg = ', sentMsg)
         setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
-        setIsFailedSent(true)
+        toast({
+          status: 'error',
+          description: `Can't send a message. Please try again.`,
+          duration: 3500
+        })
         setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
         console.log('sent msg err: ', err)
       }
