@@ -128,9 +128,10 @@ export const DirectMessagesWidget: React.FC = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isRequestUser, setIsRequestUser] = useState(false);
   const [isHandlingRequest, setIsHandlingRequest] = useState(false);
+  const [firstLoadTop, setFirstLoadTop] = useState(true);
   const [newMessage, setNewMessage] = useState('');
   const chatScrollRef = useRef<HTMLDivElement>(null);
-  const [firstLoadTop, setFirstLoadTop] = useState(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const toast = useToast()
 
   const { ref: topRef, inView: topInView } = useInView({ threshold: 1 }); // Detect top scroll
@@ -145,6 +146,15 @@ export const DirectMessagesWidget: React.FC = () => {
   useEffect(() => {
     handleReceiveMsg()
   }, [receivedMessage])
+
+  useEffect(() => {
+    if (!newMessage) {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.style.height = "32px";
+      }
+    }
+  }, [newMessage])
 
   useEffect(() => {
     if (firstLoadTop) {
@@ -276,7 +286,7 @@ export const DirectMessagesWidget: React.FC = () => {
   }
 
   const handleReceiveMsg = () => {
-    console.log('handle receive message ', receivedMessage)
+    console.log('handle receive message in DirectMessageWidget')
 
     if (receivedMessage?.meta?.group == false && receivedMessage.origin == "other") {
       if (receivedMessage.event == "chat.request") {
@@ -361,6 +371,27 @@ export const DirectMessagesWidget: React.FC = () => {
     setSendingMessage(false)
   }
 
+  const handleTextChange = (e: any) => {
+    setNewMessage(e.target.value)
+    adjustHeight()
+  }
+
+  const handleKeyDown = (e: any) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  }
+
+  const adjustHeight = () => {
+    const textarea = textareaRef.current;
+
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    }
+  }
+
   const renderChatBox = (chatId: string, type: ChatType, isOwner: boolean, content: string, address: string, reaction?: string) => {
     let messageContent = content
     let fileName = ""
@@ -434,7 +465,7 @@ export const DirectMessagesWidget: React.FC = () => {
 
     if (type === "Text") {
       return <div className={`flex ${!isOwner ? 'justify-start' : 'justify-end'}`}>
-        <div className={`relative rounded-lg p-2 text-sm max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+        <div className={`relative rounded-lg p-2 text-sm max-w-[368px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
           {messageContent}
           {renderReactionBtn()}
           {reactionIcon()}
@@ -692,13 +723,14 @@ export const DirectMessagesWidget: React.FC = () => {
           <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
             <Plus className="w-4 h-4" />
           </button>
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            onChange={handleTextChange}
+            onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="flex-1 bg-white/5 px-3 py-1.5 rounded-lg outline-none text-sm"
+            className="flex-1 bg-white/5 px-3 py-1.5 rounded-lg outline-none text-sm resize-none"
+            rows={1}
           />
           {!sendingMessage ? <button
             onClick={handleSendMessage}
