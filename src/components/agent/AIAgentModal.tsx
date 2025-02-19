@@ -16,7 +16,7 @@ import { TrendingCoins } from '../TrendingCoins.tsx';
 import { NewsWidget } from '../widgets/NewsWidget.tsx';
 import { YieldProcess } from '../YieldProcess.tsx';
 import { SwapProcess } from './components/SwapProcess.tsx';
-import { BridgeProcess } from '../BridgeProcess.tsx';
+import { BridgeProcess } from './components/BridgeProcess.tsx';
 import { PortfolioProcess } from '../PortfolioProcess.tsx';
 import { SendProcess } from './components/SendProcess.tsx';
 import { StakeProcess } from '../StakeProcess.tsx';
@@ -26,8 +26,13 @@ import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { useEvmWalletBalance } from '../../hooks/useBalance.tsx';
 import { convertCryptoAmount } from '../../utils/brian.tsx';
+import { DepositProcess } from './components/DepositProcess.tsx';
+import { WithdrawProcess } from './components/WithdrawProcess.tsx';
+import { BorrowProcess } from './components/BorrowProcess.tsx';
+import { RepayProcess } from './components/RepayProcess.tsx';
+import { ENSRegisterProcess } from './components/ENSRegisterProcess.tsx';
+
 interface AIAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -47,19 +52,25 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [showSendProcess, setShowSendProcess] = useState(false);
   const [showStakeProcess, setShowStakeProcess] = useState(false);
   const [showProjectAnalysis, setShowProjectAnalysis] = useState(false);
-  const [projectName, setProjectName] = useState('');
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
+  const [showDepositProcess, setShowDepositProcess] = useState(false);
+  const [showWithdrawProcess, setShowWithdrawProcess] = useState(false);
+  const [showBorrowProcess, setShowBorrowProcess] = useState(false);
+  const [showRepayProcess, setShowRepayProcess] = useState(false);
+  const [showENSRegisterProcess, setShowENSRegisterProcess] = useState(false);
   const { address, chainId, switchChain } = useContext(Web3AuthContext);
-  const { isLoading: isLoadingBalance } = useEvmWalletBalance();
-  const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
+  const { tokenBalances } = useTokenBalanceStore();
 
   const [fromToken, setFromToken] = useState<TokenType>();
   const [protocol, setProtocol] = useState<Protocol>();
   const [toToken, setToToken] = useState<TokenType>();
-  const [
-    fromAmount, setFromAmount] = useState('0');
+  const [fromAmount, setFromAmount] = useState('0');
+  const [toAmount, setToAmount] = useState('0');
   const [receiver, setReceiver] = useState('');
+  const [ensName, setEnsName] = useState('');
+  const [solver, setSolver] = useState('');
   const [steps, setSteps] = useState<Step[]>([]);
+  const [description, setDescription] = useState('');
 
   // Reset all process states
   const resetProcessStates = () => {
@@ -70,6 +81,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowSendProcess(false);
     setShowStakeProcess(false);
     setShowProjectAnalysis(false);
+    setShowDepositProcess(false);
+    setShowWithdrawProcess(false);
+    setShowBorrowProcess(false);
+    setShowRepayProcess(false);
+    setShowENSRegisterProcess(false);
   };
 
   const processCommandCase = async (command: string, address: string, chainId: number | undefined) => {
@@ -270,15 +286,15 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
 
         response = await generateResponse(normalizedCommand, address, chainId);
         console.log(response);
-        if (response.type == "action") {
+        if (response.type == "action" && response.brianData.type == "write") {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
             resetProcessStates();
             await switchChain(data.fromToken.chainId);
 
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
-            const token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
-
+            let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+            if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
             if (token && token.balance > amount) {
               setFromToken(data.fromToken);
               setToToken(data.toToken);
@@ -294,9 +310,10 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             const data = response.brianData.data;
             resetProcessStates();
             await switchChain(data.fromToken.chainId);
-
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
-            const token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+            let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+            if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
+
             if (token && token.balance > amount) {
               setFromToken(data.fromToken);
               setProtocol(data.protocol);
@@ -309,7 +326,99 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             else {
               response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
             }
+          } else if (response.brianData.action == 'bridge') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+            const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
+            let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+            if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
+
+            if (token && token.balance > amount) {
+              setFromToken(data.fromToken);
+              setProtocol(data.protocol);
+              setToToken(data.toToken);
+              setFromAmount(data.fromAmount);
+              setReceiver(data.receiver);
+              setSteps(data.steps);
+              setShowBridgeProcess(true);
+              setSolver(response.brianData.solver);
+            }
+            else {
+              response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
+            }
+          } else if (response.brianData.action == 'deposit') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+            const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
+            let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
+            if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
+
+            if (token && token.balance > amount) {
+              setFromToken(data.fromToken);
+              setProtocol(data.protocol);
+              setToToken(data.toToken);
+              setFromAmount(data.fromAmount);
+              setReceiver(data.receiver);
+              setSteps(data.steps);
+              setShowDepositProcess(true);
+            }
+            else {
+              response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
+            }
+          } else if (response.brianData.action == 'withdraw') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+
+            setFromToken(data.fromToken);
+            setProtocol(data.protocol);
+            setToToken(data.toToken);
+            setFromAmount(data.fromAmount);
+            setReceiver(data.receiver);
+            setSteps(data.steps);
+            setShowWithdrawProcess(true);
+          } else if (response.brianData.action == 'AAVE Borrow') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+
+            setFromToken(data.fromToken);
+            setProtocol(data.protocol);
+            setToToken(data.toToken);
+            setFromAmount(data.fromAmount);
+            setToAmount(data.toAmount);
+            
+            setReceiver(data.receiver);
+            setSteps(data.steps);
+            setShowBorrowProcess(true);
+          } else if (response.brianData.action == 'AAVE Repay') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+
+            setFromToken(data.fromToken);
+            setProtocol(data.protocol);
+            setToToken(data.toToken);
+            setFromAmount(data.fromAmount);
+            setToAmount(data.toAmount);
+            setReceiver(data.receiver);
+            setSteps(data.steps);
+            setShowRepayProcess(true);
+          } else if (response.brianData.action == 'ENS Registration') {
+            
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+            setFromToken(data.fromToken);
+            setDescription(data.description);
+            setSteps(data.steps);
+            setEnsName(response.brianData.extractedParams.address);
+            setShowENSRegisterProcess(true);
           }
+        } else if (response.brianData.type == 'knowledge') {
+          response = { text: convertBrianKnowledgeToPlainText(response.brianData.answer) };
         }
 
         if (response) {
@@ -334,7 +443,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           content: text
         }, {
           role: 'assistant',
-          content: "I'm not sure how to help with that. Try asking about prices, trending tokens, latest news, or use commands like 'stake ETH', 'send 100 USDC to vitalik', or 'analyze project wayfinder'."
+          content: "I'm not sure how to help with that. Try asking about prices, trending tokens, latest news, or use commands like 'stake ETH', 'send 100 USDC to vitalik', or 'analyze project'."
         }]);
       }
     } catch (error) {
@@ -443,24 +552,25 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setShowYieldProcess(false);
             setMessages([]);
           }} />
-        ) : showSwapProcess && fromToken && toToken && protocol ? (
-          <SwapProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol = {protocol}
+        ) : showSwapProcess && fromToken && toToken ? (
+          <SwapProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
             onClose={() => {
               setShowSwapProcess(false);
               setMessages([]);
             }} />
-        ) : showBridgeProcess ? (
-          <BridgeProcess onClose={() => {
-            setShowBridgeProcess(false);
-            setMessages([]);
-          }} />
+        ) : showBridgeProcess && fromToken && toToken ? (
+          <BridgeProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol} solver={solver}
+            onClose={() => {
+              setShowBridgeProcess(false);
+              setMessages([]);
+            }} />
         ) : showPortfolioProcess ? (
           <PortfolioProcess onClose={() => {
             setShowPortfolioProcess(false);
             setMessages([]);
           }} />
-        ) : showSendProcess && fromToken && toToken  ? (
-          <SendProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} 
+        ) : showSendProcess && fromToken && toToken ? (
+          <SendProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken}
             onClose={() => {
               setShowSendProcess(false);
               setMessages([]);
@@ -476,8 +586,37 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
               setShowProjectAnalysis(false);
               setMessages([]);
             }}
-            projectName={projectName}
+            projectName={''}
           />
+        ) : showDepositProcess && fromToken && toToken ? (
+          <DepositProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowDepositProcess(false);
+              setMessages([]);
+            }} />
+        ) : showWithdrawProcess && fromToken && toToken ? (
+          <WithdrawProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowWithdrawProcess(false);
+              setMessages([]);
+            }} />
+        ) : showBorrowProcess && fromToken && toToken ? (
+          <BorrowProcess steps={steps} receiver={receiver} toAmount={toAmount} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowBorrowProcess(false);
+              setMessages([]);
+            }} />
+        ) : showRepayProcess && fromToken && toToken ? (
+          <RepayProcess steps={steps} receiver={receiver} toAmount={toAmount} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowRepayProcess(false);
+              setMessages([]);
+            }} />
+        ) : showENSRegisterProcess && fromToken ? (
+          <ENSRegisterProcess description = {description} steps={steps} ensName={ensName} fromToken={fromToken} onClose={() => {
+            setShowENSRegisterProcess(false);
+            setMessages([]);
+          }} />
         ) : (
           <div className="flex flex-col h-full">
             {/* Header */}
@@ -506,7 +645,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                             <p className="whitespace-pre-wrap">{message.content}</p>
                             <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
                             {message.data && (
-                              <div className="w-[800px] mt-4">
+                              <div className="mt-4 w-full">
                                 <PriceChart data={message.data} />
                               </div>
                             )}
@@ -601,7 +740,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           { command: "What is the Bitcoin price?", description: "Get real-time BTC price" },
           { command: "Show me trending tokens", description: "View trending cryptocurrencies" },
           { command: "Show me the latest news", description: "Get latest crypto news" },
-          { command: "Evaluate project wayfinder", description: "Analyze project potential" }
+          { command: "Evaluate project", description: "Analyze project potential" }
         ]}
       />
     </div>

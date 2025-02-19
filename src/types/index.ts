@@ -171,11 +171,14 @@ export interface TokenPool {
     price_change_percentage: {
       h24?: string;
       h1?: string;
+      h6?: string;
+      m5?: string;
     };
     base_token_price_usd?: string;
     transactions?: {
-      h24?: number;
+      h24?: string;
     };
+
     volume_usd?: {
       h24?: string;
     };
@@ -216,7 +219,7 @@ export interface TransactionError extends Error {
 }
 export interface BrianTransactionData {
   message: string;
-  type:string;
+  type: string;
   data: {};
 }
 
@@ -254,4 +257,25 @@ export interface DefillamaCategory {
 }
 export interface BrianKnowledgeData {
   message: string;
+}
+
+export interface Ganiner {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  usd24hChange: number;
+  usd24hVol: number;
+}
+export interface Loser {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  usd24hChange: number;
+  usd24hVol: number;
 }

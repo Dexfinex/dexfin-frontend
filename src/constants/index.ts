@@ -36,6 +36,8 @@ export const BRIAN_BASE_URL = `https://${BASE_HOST_DOMAIN}/brian`;
 
 export const CRYPTONEWS_BASE_URL = `https://${BASE_HOST_DOMAIN}/crypto-news`;
 
+export const ENSO_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/enso';
+
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 
 export const ZEROX_BASE_URL = `https://${BASE_HOST_DOMAIN}/0x`;

@@ -1,16 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
+import { TokenType, Step, Protocol } from '../../../types/brian.type';
+import { convertCryptoAmount } from '../../../utils/brian';
+import { formatNumberByFrac } from '../../../utils/common.util';
+import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
 
-interface BridgeProcessProps {
+import { FailedTransaction } from '../modals/FailedTransaction.tsx';
+import { SuccessModal } from '../modals/SuccessModal.tsx';
+
+interface WithdrawProcessProps {
   onClose: () => void;
+  fromToken: TokenType;
+  toToken: TokenType;
+  fromAmount: string;
+  receiver: string;
+  steps: Step[];
+  protocol: Protocol | undefined;
 }
 
-export const BridgeProcess: React.FC<BridgeProcessProps> = ({ onClose }) => {
+export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol, onClose }) => {
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [failedTransaction, setFailedTransaction] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
+  const { mutate: sendTransactionMutate } = useBrianTransactionMutation();
+  const [scan, setScan] = useState<string>('https://etherscan.io/');
+
+  const handleTransaction = async (data: any) => {
+    try {
+      if (steps.length === 0) {
+        console.error("No transaction details available");
+        return;
+      }
+      setShowConfirmation(true);
+
+      sendTransactionMutate(
+        { transactions: data, duration: 0 },
+        {
+          onSuccess: (receipt) => {
+            setTransactionProgress(100);
+            setTransactionStatus('Transaction confirmed!');
+            setScan(receipt ?? '');
+          },
+          onError: (error) => {
+            console.log(error);
+            setShowConfirmation(false);
+            setFailedTransaction(true);
+          },
+        },
+      );
+
+    } catch (error) {
+      console.error("Error executing transactions:", error);
+      setShowConfirmation(false);
+      setFailedTransaction(true);
+    }
+  };
 
   useEffect(() => {
     if (step === 1) {
@@ -32,21 +79,21 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ onClose }) => {
     if (showConfirmation) {
       const stages = [
         { progress: 25, status: 'Preparing transaction...' },
-        { progress: 50, status: 'Submitting to deBridge...' },
+        { progress: 50, status: 'Submitting to Protocol...' },
         { progress: 75, status: 'Waiting for confirmation...' },
         { progress: 100, status: 'Transaction confirmed!' }
       ];
 
       let currentStage = 0;
       const timer = setInterval(() => {
-        if (currentStage < stages.length) {
+        if (currentStage < stages.length - 1) {
           setTransactionProgress(stages[currentStage].progress);
           setTransactionStatus(stages[currentStage].status);
           currentStage++;
         } else {
           clearInterval(timer);
         }
-      }, 500);
+      }, 1500);
 
       return () => clearInterval(timer);
     }
@@ -81,9 +128,9 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ onClose }) => {
           <Bot className="w-12 h-12 text-blue-500" />
         </div>
       </div>
-      <h3 className="mt-8 text-xl font-medium">Finding Best Route</h3>
+      <h3 className="mt-8 text-xl font-medium">Finding Best Pool</h3>
       <p className="mt-2 text-white/60 text-center max-w-md">
-        Analyzing optimal bridge route for USDC from Arbitrum to Solana...
+        Scanning liquidity pools for the best {fromToken.symbol} to {toToken.symbol} withdraw rate...
       </p>
     </div>
   );
@@ -91,66 +138,51 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ onClose }) => {
   const renderStep2 = () => (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 mb-6">
-        <img 
-          src="https://app.debridge.finance/assets/images/logo/debridge-dark.svg?dgsg=436"
-          alt="deBridge"
-          className="w-12 h-12"
-        />
         <div>
-          <h3 className="text-xl font-medium">Best Route Found</h3>
-          <p className="text-white/60">deBridge offers the best rate</p>
+          <h3 className="text-xl font-medium">Best Pool Found</h3>
+          <p className="text-white/60">{protocol?.name} offers the best rate</p>
         </div>
       </div>
 
       <div className="flex-1 bg-white/5 rounded-xl p-6">
         <div className="space-y-6">
-          <div className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
+          <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
-              <img 
-                src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" 
-                alt="USDC" 
-                className="w-10 h-10"
-              />
+              {fromToken.logoURI &&
+                <img
+                  src={fromToken.logoURI}
+                  alt={fromToken.symbol}
+                  className="w-10 h-10"
+                />
+              }
               <div>
-                <div className="text-sm text-white/60">You send</div>
-                <div className="text-xl font-medium">2000 USDC</div>
+                <div className="text-sm text-white/60">You withdraw</div>
+                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
             <div className="flex items-center gap-3">
-              <img 
-                src="https://cryptologos.cc/logos/solana-sol-logo.png" 
-                alt="SOL" 
-                className="w-10 h-10"
-              />
+              {toToken.logoURI &&
+                <img
+                  src={toToken.logoURI}
+                  alt={toToken.symbol}
+                  className="w-10 h-10"
+                />}
               <div>
                 <div className="text-sm text-white/60">You receive</div>
-                <div className="text-xl font-medium">9.073013 SOL</div>
+                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {toToken.symbol}</div>
               </div>
             </div>
           </div>
 
-          <div className="p-4 bg-white/5 rounded-lg space-y-3">
-            <div className="flex justify-between">
-              <span className="text-white/60">Estimated completion time</span>
-              <span className="font-medium">~2 seconds</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/60">Bridge Fee</span>
-              <span className="text-white/90">$10.15 (0.5075%)</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/60">Network Fee</span>
-              <span className="text-white/90">~$2.50</span>
-            </div>
-          </div>
+
         </div>
 
         <button
-          onClick={() => setShowConfirmation(true)}
+          onClick={() => handleTransaction(steps)}
           className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
         >
-          Confirm Bridge
+          Confirm Withdraw
         </button>
       </div>
     </div>
@@ -166,49 +198,34 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ onClose }) => {
               <span className="text-sm text-white/60">{transactionProgress}%</span>
             </div>
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-blue-500 transition-all duration-500"
                 style={{ width: `${transactionProgress}%` }}
               />
             </div>
           </div>
           <div className="flex items-center gap-4 animate-pulse">
-            <img 
-              src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png" 
-              alt="USDC" 
-              className="w-12 h-12"
-            />
+            {fromToken.logoURI &&
+              <img
+                src={fromToken.logoURI}
+                alt={fromToken.symbol}
+                className="w-12 h-12"
+              />
+            }
             <ArrowRight className="w-6 h-6 text-white/40" />
-            <img 
-              src="https://cryptologos.cc/logos/solana-sol-logo.png" 
-              alt="SOL" 
+            {toToken.logoURI && <img
+              src={toToken.logoURI}
+              alt={toToken.symbol}
               className="w-12 h-12"
             />
+            }
           </div>
           <p className="mt-4 text-white/60">
-            Bridging 2000 USDC to 9.073013 SOL via deBridge
+            Withdrawing {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} via {protocol?.name}
           </p>
         </>
       ) : (
-        <>
-          <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-6">
-            <CheckCircle2 className="w-8 h-8 text-green-500" />
-          </div>
-          <h3 className="text-xl font-medium mb-2">Bridge Successful!</h3>
-          <p className="text-white/60 mb-4">
-            Successfully bridged 2000 USDC to 9.073013 SOL
-          </p>
-          <div className="flex flex-col items-center text-sm text-white/60">
-            <p>Bridge Fee: $10.15 (0.5075%)</p>
-            <p>Network Fee: $2.50</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg mt-6"
-          >
-            Close
-          </button>
-        </>
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully withdrawn ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol}`} />
       )}
     </div>
   );
@@ -220,9 +237,8 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ onClose }) => {
           <div className="flex items-center">
             {[1, 2].map((s) => (
               <React.Fragment key={s}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  step >= s ? 'bg-blue-500' : 'bg-white/10'
-                }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= s ? 'bg-blue-500' : 'bg-white/10'
+                  }`}>
                   {step > s ? (
                     <CheckCircle2 className="w-4 h-4" />
                   ) : (
@@ -230,9 +246,8 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ onClose }) => {
                   )}
                 </div>
                 {s < 2 && (
-                  <div className={`w-12 h-0.5 ${
-                    step > s ? 'bg-blue-500' : 'bg-white/10'
-                  }`} />
+                  <div className={`w-12 h-0.5 ${step > s ? 'bg-blue-500' : 'bg-white/10'
+                    }`} />
                 )}
               </React.Fragment>
             ))}
@@ -245,8 +260,12 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ onClose }) => {
           <X className="w-4 h-4" />
         </button>
       </div>
-
-      {showConfirmation ? renderConfirmation() : (
+      {failedTransaction &&
+        <FailedTransaction
+          description={`Withdraw ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol} via ${protocol?.name}`}
+          onClose={onClose}
+        />}
+      {showConfirmation && !failedTransaction ? renderConfirmation() : (
         <div className="h-[calc(100%-60px)]">
           {step === 1 && renderStep1()}
           {step === 2 && renderStep2()}

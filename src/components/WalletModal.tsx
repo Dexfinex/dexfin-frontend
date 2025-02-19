@@ -4,7 +4,7 @@ import { X, Maximize2, Minimize2, ArrowDown, CreditCard, Send, Wallet, TrendingU
 import { SendDrawer } from './wallet/SendDrawer';
 import { ReceiveDrawer } from './wallet/ReceiveDrawer';
 import { BuyDrawer } from './wallet/BuyDrawer';
-import { mockTransactions, mockDeFiPositions, mockDeFiStats, formatTransactionAmount, formatUsdValue, formatApy, getHealthFactorColor, getTransactionStatusColor } from '../lib/wallet';
+import { mockDeFiPositions, mockDeFiStats, formatUsdValue, formatApy, getHealthFactorColor, } from '../lib/wallet';
 import { formatNumberByFrac } from '../utils/common.util.ts';
 import { TransactionType } from '../types/wallet';
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
@@ -31,12 +31,12 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
   const { isLoading: isLoadingBalance } = useEvmWalletBalance();
   const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
-  const { isLoading } = useEvmWalletTransfer();
+  useEvmWalletTransfer();
   const { transfers } = useTokenTransferStore();
 
   const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
 
-  const { address, chainId } = useContext(Web3AuthContext);
+  const { address, chainId, switchChain } = useContext(Web3AuthContext);
 
   const [isLargerThan1200] = useMediaQuery('(min-width: 1200px)');
   const [isLargerThan800] = useMediaQuery('(min-width: 800px)');
@@ -106,13 +106,16 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
               <button
                 key={position.chain + position.symbol}
                 className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                onClick={() => {
+                onClick={async () => {
+                  if (Number(chainId) !== Number(position.chain)) {
+                    await switchChain(Number(position.chain));
+                  }
                   setSelectedBalanceIndex(index);
                   setShowSendDrawer(true);
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(chainId)} />
+                  <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(position.chain)} />
                   <div className='flex flex-col justify-start items-start'>
                     <div className="font-medium">{position.symbol}</div>
                     <div className="text-sm text-white/60">
@@ -170,7 +173,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
               <div className="flex items-center gap-3">
                 <div>
                   <div className="text-sm">
-                    {formatTransactionAmount(tx.transferAmount, tx.tokenSymbol || '')}
+                    {tx.transactionType === TransactionType.Received ? "+" : "-"} {formatNumberByFrac(tx.transferAmount)} {tx.tokenSymbol || ''}
                   </div>
                 </div>
               </div>
@@ -362,7 +365,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
           address: p.address,
           symbol: p.symbol,
           amount: Number(p.balance),
-          logo: p.logo
+          logo: p.logo,
+          chain: p.chain,
         }))}
       />
 

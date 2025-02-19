@@ -66,6 +66,7 @@ export const useSendTransactionMutation = () => {
           gasLimit: data.gasLimit, // Example static gas limit
           value: 0n,
         };
+
         const transactionResponse = await data.signer?.sendTransaction(tx);
         const receipt = await transactionResponse.wait();
         console.log("Transaction successful:", receipt);

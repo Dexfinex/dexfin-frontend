@@ -50,3 +50,5 @@ export type ProfileType = {
     name: string,
     picture: string,
 }
+
+export type ChatModeType = 'group' | 'p2p'

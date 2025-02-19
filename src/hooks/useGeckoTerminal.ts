@@ -10,7 +10,7 @@ export const useGetTrendingPools = (network: string = 'eth') => {
         const data = await geckoterminalService.getTrendingPools(network);
 
         return data;
-    }, []);
+    }, [network]);
 
     const { isLoading, refetch, data, error } = useQuery<TokenPool[]>({
         queryKey: [`get-trending-pools-${network}`],
@@ -31,7 +31,7 @@ export const useGetNewPools = (network: string = 'eth') => {
         const data = await geckoterminalService.getNewPools(network);
 
         return data;
-    }, []);
+    }, [network]);
 
     const { isLoading, refetch, data, error } = useQuery<TokenPool[]>({
         queryKey: [`get-new-pools-${network}`],
@@ -52,7 +52,7 @@ export const useGetTopPools = (network: string = 'eth') => {
         const data = await geckoterminalService.getTopPools(network);
 
         return data;
-    }, []);
+    }, [network]);
 
     const { isLoading, refetch, data, error } = useQuery<TokenPool[]>({
         queryKey: [`get-top-pools-${network}`],
