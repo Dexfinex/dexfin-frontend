@@ -628,7 +628,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 ensName: "",
                 profilePicture: profile.picture,
                 address: extractAddress(receivedMessage.from),
-                chatId: receivedMessage.chatId,
+                chatId: receivedMessage.reference,
                 type: "Request",
                 unreadMessages: 0,
                 lastTimestamp: Number(receivedMessage.timestamp),
@@ -646,7 +646,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 content: receivedMessage.message.content,
                 fromAddress: extractAddress(receivedMessage.from),
                 toAddress: extractAddress(receivedMessage.to[0]),
-                chatId: receivedMessage.chatId,
+                chatId: receivedMessage.reference,
                 link: null,
                 reaction: ""
               }]
@@ -668,7 +668,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   content: receivedMessage.message.content,
                   fromAddress: extractAddress(receivedMessage.from),
                   toAddress: extractAddress(receivedMessage.to[0]),
-                  chatId: receivedMessage.chatId,
+                  chatId: receivedMessage.reference,
                   link: null,
                   reaction: ""
                 }]

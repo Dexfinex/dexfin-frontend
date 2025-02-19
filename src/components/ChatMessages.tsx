@@ -121,9 +121,9 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     }
 
     const handleReaction = async (chatId: string, content: string) => {
-        // console.log('reference: ', chatId)
-        // console.log('address: ', address)
-        // console.log('content: ', content)
+        console.log('reference: ', chatId)
+        console.log('address: ', address)
+        console.log('content: ', content)
 
         const receipient = selectedGroup ? selectedGroup.groupId : selectedUser ? selectedUser.address : ""
 
