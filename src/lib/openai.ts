@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { coingeckoService } from '../services/coingecko.service';
 import { cryptoNewsService } from "../services/cryptonews.service";
-import { brianService } from '../services/brian.services';
+import { brianService } from '../services/brian.service';
 
 import { wallpapers } from '../store/useStore';
 

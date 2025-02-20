@@ -252,8 +252,9 @@ export default {
                 periodParams.to ?? Date.now() / 1000, 
                 resolution
             );
-            
-            periodParams.from < 0 
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            (periodParams.from < 0 || a.length < 1)
                 ? onHistoryCallback([], { noData: true }) 
                 : onHistoryCallback(a, { noData: false });
         } catch (a) {
