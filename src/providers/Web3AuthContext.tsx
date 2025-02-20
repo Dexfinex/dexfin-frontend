@@ -498,6 +498,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 chain: 'mainnet-beta',
             };
 
+            // console.log("solanaWalletInfo.wrappedKeyId", solanaWalletInfo)
             return await signTransactionWithEncryptedKey({
                 pkpSessionSigs: sessionSigs!,
                 network: 'solana',

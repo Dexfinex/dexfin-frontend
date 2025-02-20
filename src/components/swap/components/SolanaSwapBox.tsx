@@ -7,13 +7,11 @@ import {Button, Flex, Skeleton} from '@chakra-ui/react';
 import {ZEROX_AFFILIATE_FEE} from "../../../constants";
 import useTokenStore from "../../../store/useTokenStore.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
-import useGasEstimation from "../../../hooks/useGasEstimation.ts";
 import {mapChainId2NativeAddress} from "../../../config/networks.ts";
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
 import useJupiterQuote from "../../../hooks/useJupiterQuote.ts";
 import {useSolanaBalance} from "../../../hooks/useSolanaBalance.tsx";
-import {LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, VersionedTransaction} from "@solana/web3.js";
-import {connection} from "../../../config/solana.ts";
+import {VersionedTransaction} from "@solana/web3.js";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -311,6 +309,7 @@ export function SolanaSwapBox({
             <TokenSelector
                 className="relative z-20 mb-2"
                 selectedToken={fromToken}
+                selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onFromTokenSelect}
                 amount={fromAmount}
                 usdAmount={fromUsdAmount.toString()}
@@ -333,6 +332,7 @@ export function SolanaSwapBox({
             <TokenSelector
                 className="relative z-10"
                 selectedToken={toToken}
+                selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onToTokenSelect}
                 amount={toAmount}
                 usdAmount={toUsdAmount.toString()}

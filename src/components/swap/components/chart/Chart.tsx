@@ -1,13 +1,12 @@
-import {Suspense, useEffect, useState} from 'react';
-import { ChartControls } from './ChartControls';
-import { ChartContainer } from './ChartContainer';
-import { ChartLoader } from './ChartLoader';
-import { ChartErrorBoundary } from './ChartErrorBoundary';
-import type { ChartType, TokenType, TimeRange } from '../../../../types/swap.type';
+import {Suspense, useState} from 'react';
+import {ChartControls} from './ChartControls';
+import {ChartContainer} from './ChartContainer';
+import {ChartLoader} from './ChartLoader';
+import {ChartErrorBoundary} from './ChartErrorBoundary';
+import type {ChartType, TimeRange, TokenType} from '../../../../types/swap.type';
 import {useChartData} from "../../../../hooks/useChartData.ts";
 import {TokenIcon} from "../TokenIcon.tsx";
 import {TokenPrice} from "../TokenPrice.tsx";
-import {coingeckoService} from "../../../../services/coingecko.service.ts";
 
 interface ChartProps {
   type: ChartType;
@@ -16,21 +15,8 @@ interface ChartProps {
 }
 
 export function Chart({ type, onTypeChange, token }: ChartProps) {
-  const [timeRange, setTimeRange] = useState<TimeRange>('24h');
-  const [geckoId, setGeckoId] = useState<string>('')
-  const { data, loading, error, refetch } = useChartData(geckoId, timeRange);
-
-  useEffect(() => {
-    (async () => {
-      if (token) {
-        if (token.address.startsWith('0x') || token.address.length > 40) {
-          setGeckoId(await coingeckoService.getCoinGeckoIdFrom(token, token.chainId))
-        } else {
-          setGeckoId(token.address)
-        }
-      }
-    })()
-  }, [token, type])
+  const [timeRange, setTimeRange] = useState<TimeRange>('15m');
+  const { data, loading, error, refetch } = useChartData(token, timeRange);
 
   const price = data[data.length - 1]?.close ?? 0
   const change = ((data[data.length - 1]?.close ?? 0) - (data[0]?.close ?? 0)) / (data[0]?.close ?? 1) * 100
@@ -65,7 +51,7 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
         <div className="flex items-center gap-2 group px-3 py-2 relative min-w-[180px]">
           <TokenIcon
               src={token.logoURI}
-              alt={token.symbol}
+              alt={token.symbol!}
               size="lg"
           />
           <div>

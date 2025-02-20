@@ -374,6 +374,7 @@ export function SwapBox({
             <TokenSelector
                 className="relative z-20 mb-2"
                 selectedToken={fromToken}
+                selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onFromTokenSelect}
                 amount={fromAmount}
                 usdAmount={fromUsdAmount.toString()}
@@ -396,6 +397,7 @@ export function SwapBox({
             <TokenSelector
                 className="relative z-10"
                 selectedToken={toToken}
+                selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onToTokenSelect}
                 amount={toAmount}
                 usdAmount={toUsdAmount.toString()}

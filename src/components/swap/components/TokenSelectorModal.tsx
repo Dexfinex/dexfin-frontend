@@ -18,6 +18,7 @@ const CATEGORIES = [
 interface TokenSelectorModalProps {
     isOpen: boolean;
     selectedToken?: TokenType | null;
+    selectedChainId?: number | null;
     onSelect: (token: TokenType) => void;
     onClose: () => void;
 }
@@ -25,9 +26,11 @@ interface TokenSelectorModalProps {
 export function TokenSelectorModal({
                                        isOpen,
                                        selectedToken,
+                                       selectedChainId,
                                        onSelect,
                                        onClose,
                                    }: TokenSelectorModalProps) {
+
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(null);
@@ -53,10 +56,10 @@ export function TokenSelectorModal({
     }, [tokens, searchQuery])
 
     useEffect(() => {
-        if (selectedToken) {
-            setSelectedNetwork(NETWORKS.filter(network => network.chainId === selectedToken.chainId)[0] ?? null)
+        if (selectedChainId) {
+            setSelectedNetwork(NETWORKS.filter(network => network.chainId === selectedChainId)[0] ?? null)
         }
-    }, [selectedToken, isOpen])
+    }, [selectedChainId, isOpen])
 
     /*
       useEffect(() => {

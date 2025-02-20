@@ -109,6 +109,20 @@ export type ChartDataPoint = {
     close: number;
 };
 
+export type birdeyeOHLCVResponse = {
+    items: {
+        o: number,
+        h: number,
+        l: number,
+        c: number,
+        v: number,
+        unixTime: number,
+        address: string,
+        type: string,
+        currency: string,
+    } []
+};
+
 export type PaymentMethod = {
     id: string;
     name: string;

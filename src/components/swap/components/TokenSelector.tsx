@@ -7,6 +7,7 @@ import {formatNumberByFrac} from "../../../utils/common.util.ts";
 
 interface TokenSelectorProps {
     selectedToken?: TokenType | null;
+    selectedChainId?: number | null;
     onSelect: (token: TokenType) => void;
     amount: string;
     usdAmount: string;
@@ -21,6 +22,7 @@ interface TokenSelectorProps {
 
 export function TokenSelector({
                                   selectedToken,
+                                  selectedChainId,
                                   onSelect,
                                   amount,
                                   usdAmount,
@@ -163,6 +165,7 @@ export function TokenSelector({
                 <TokenSelectorModal
                     isOpen={isOpen}
                     selectedToken={selectedToken}
+                    selectedChainId={selectedChainId}
                     onSelect={onSelect}
                     onClose={() => setIsOpen(false)}
                 />

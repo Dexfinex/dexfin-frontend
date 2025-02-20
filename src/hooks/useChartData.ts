@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import {ChartDataPoint, TimeRange} from "../types/swap.type.ts";
+import {ChartDataPoint, TimeRange, TokenType} from "../types/swap.type.ts";
 import {coingeckoService} from "../services/coingecko.service.ts";
 import {formatChartData} from "../utils/formatChartData";
+import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
+import {birdeyeService} from "../services/birdeye.service.ts";
 
-export function useChartData(symbol: string, timeRange: TimeRange) {
+export function useChartData(token: TokenType, timeRange: TimeRange) {
   const [data, setData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -32,11 +34,22 @@ export function useChartData(symbol: string, timeRange: TimeRange) {
       setLoading(true);
       setError(null);
 
-      if (!symbol) {
+      let symbol
+      let chartData: ChartDataPoint[] | null = null
+
+      if (token) {
+        if (token.chainId === SOLANA_CHAIN_ID) {
+          chartData = await birdeyeService.getOHLCV(token.address, timeRange)
+        } else if (token.address.startsWith('0x') || token.address.length > 40) {
+          symbol = await coingeckoService.getCoinGeckoIdFrom(token, token.chainId)
+          chartData = await coingeckoService.getOHLCV(symbol.toLowerCase(), getDays(timeRange));
+        }
+      }
+
+      if (!chartData) {
         throw new Error('Invalid token symbol');
       }
 
-      const chartData = await coingeckoService.getOHLCV(symbol.toLowerCase(), getDays(timeRange));
       const formattedData = formatChartData(chartData, timeRange);
       setData(formattedData);
     } catch (err) {
@@ -49,7 +62,7 @@ export function useChartData(symbol: string, timeRange: TimeRange) {
     } finally {
       setLoading(false);
     }
-  }, [symbol, timeRange, getDays]);
+  }, [token, timeRange, getDays]);
 
   // Cleanup function to abort any pending requests
   useEffect(() => {

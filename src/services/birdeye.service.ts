@@ -1,28 +1,30 @@
-import {birdeyeApi, coinGeckoApi} from "./api.service.ts";
-import {ChartDataPoint} from "../types/swap.type.ts";
+import {birdeyeApi} from "./api.service.ts";
+import {birdeyeOHLCVResponse, ChartDataPoint} from "../types/swap.type.ts";
 import axios from "axios";
 import {mintPriceResponse} from "../types/birdeye.type.ts";
 
 export const birdeyeService = {
-    getOHLCV: async (tokenId: string, days = 30) => {
+    getOHLCV: async (mintAddress: string, timeInterval = '15m') => {
         try {
-            // Ensure days is a valid number
-            const validDays = Math.max(1, Math.min(365, days));
-
-            const response = await coinGeckoApi.get(`/ohlcv/${tokenId}`, {
+            const response = await birdeyeApi.get<birdeyeOHLCVResponse>(`/ohlcv`, {
                 params: {
-                    vs_currency: 'usd',
-                    days: validDays.toString(),
-                    precision: 'full',
+                    address: mintAddress,
+                    currency: 'usd',
+                    type: timeInterval,
                 },
             });
 
-            if (!Array.isArray(response.data)) {
+            if (!response.data || !Array.isArray(response.data.items)) {
                 throw new Error('Invalid response format');
             }
 
-            // CoinGecko OHLC format: [timestamp, open, high, low, close]
-            const chartData: ChartDataPoint[] = response.data
+            const chartData: ChartDataPoint[] = response.data?.items.map((item) => ({
+                time: item.unixTime * 1000,
+                open: item.o,
+                high: item.h,
+                low: item.l,
+                close: item.c,
+            }));
             return chartData.sort((a, b) => a.time - b.time);
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 429) {
