@@ -709,6 +709,12 @@ export const DirectMessagesWidget: React.FC = () => {
       const encryption = await user.encryption.info()
 
       if (encryption?.decryptedPgpPrivateKey) {
+        const pk = {
+          account: user.account,
+          decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+        }
+        localStorage.setItem("PgpPK", JSON.stringify(pk))
+        
         setChatUser(user)
         initStream(user)
       }

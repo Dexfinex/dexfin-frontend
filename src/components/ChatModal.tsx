@@ -19,7 +19,7 @@ import { Spinner, Popover, PopoverTrigger, PopoverContent, Tooltip, useToast } f
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
-import { LIMIT } from '../utils/chatApi';
+import { LIMIT, KEY_NAME } from '../utils/chatApi';
 import { EditChatProfileModal } from './EditChatProfileModal';
 import { ChatGroupModal } from './ChatGroupModal';
 import { IUser, IGroup, ChatType, IChat, ProfileType, ChatModeType, ReactionType } from '../types/chat.type';
@@ -579,6 +579,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       const encryption = await user.encryption.info()
 
       if (encryption?.decryptedPgpPrivateKey) {
+        const pk = {
+          account: user.account,
+          decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+        }
+        localStorage.setItem(KEY_NAME, JSON.stringify(pk))
+        
         setChatUser(user)
         initStream(user)
       }
