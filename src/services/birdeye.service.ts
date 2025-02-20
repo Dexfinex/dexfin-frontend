@@ -4,13 +4,21 @@ import axios from "axios";
 import {mintPriceResponse} from "../types/birdeye.type.ts";
 
 export const birdeyeService = {
-    getOHLCV: async (mintAddress: string, timeInterval = '15m') => {
+    getOHLCV: async (
+        mintAddress: string,
+        timeInterval = '15m',
+        unixTimeFrom: number | undefined = undefined,
+        unixTimeTo: number | undefined = undefined) => {
         try {
             const response = await birdeyeApi.get<birdeyeOHLCVResponse>(`/ohlcv`, {
                 params: {
-                    address: mintAddress,
-                    currency: 'usd',
-                    type: timeInterval,
+                    ...{
+                        address: mintAddress,
+                        currency: 'usd',
+                        type: timeInterval,
+                        time_from: unixTimeFrom,
+                        time_to: unixTimeTo,
+                    }
                 },
             });
 
@@ -24,6 +32,7 @@ export const birdeyeService = {
                 high: item.h,
                 low: item.l,
                 close: item.c,
+                volume: item.v,
             }));
             return chartData.sort((a, b) => a.time - b.time);
         } catch (error) {

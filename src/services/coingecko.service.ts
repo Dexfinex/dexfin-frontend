@@ -1,14 +1,14 @@
-import { coinGeckoApi } from "./api.service.ts";
-import { CoinData, CoinGeckoToken, Ganiner, Loser, SearchResult, TrendingCoin } from "../types";
-import { ChartDataPoint, TokenType } from "../types/swap.type.ts";
-import { TokenTypeB } from "../types/cart.type.ts";
+import {coinGeckoApi} from "./api.service.ts";
+import {CoinData, CoinGeckoToken, Ganiner, Loser, SearchResult, TrendingCoin} from "../types";
+import {ChartDataPoint} from "../types/swap.type.ts";
+import {TokenTypeB} from "../types/cart.type.ts";
 import axios from "axios";
-import { MarketCapToken } from "../components/market/MarketCap.tsx";
+import {MarketCapToken} from "../components/market/MarketCap.tsx";
 
 export const coingeckoService = {
     getMemecoins: async () => {
         try {
-            const { data } = await coinGeckoApi.get<CoinGeckoToken[]>('/memecoins');
+            const {data} = await coinGeckoApi.get<CoinGeckoToken[]>('/memecoins');
             const memedata = data.map(token => ({
                 category: "meme",
                 chainId: token.chainId,
@@ -65,16 +65,21 @@ export const coingeckoService = {
             throw error;
         }
     },
-    getOHLCV: async (tokenId: string, days = 30) => {
+    getOHLCV: async (
+        tokenId: string,
+        timeInterval = '15m',
+        unixTimeFrom: number | undefined = undefined,
+        unixTimeTo: number | undefined = undefined) => {
         try {
-            // Ensure days is a valid number
-            const validDays = Math.max(1, Math.min(365, days));
-
             const response = await coinGeckoApi.get(`/ohlcv/${tokenId}`, {
                 params: {
-                    vs_currency: 'usd',
-                    days: validDays.toString(),
-                    precision: 'full',
+                    ...{
+                        tokenId,
+                        currency: 'usd',
+                        type: timeInterval,
+                        time_from: unixTimeFrom,
+                        time_to: unixTimeTo,
+                    }
                 },
             });
 
@@ -98,9 +103,9 @@ export const coingeckoService = {
             throw error;
         }
     },
-    getCoinGeckoIdFrom: async (token: TokenType, chainId: number): Promise<string> => {
+    getCoinGeckoIdFrom: async (tokenAddress: string, chainId: number): Promise<string> => {
         try {
-            const { data } = await coinGeckoApi.get<string>(`/token-id/${chainId}?addresses=${token.address}`);
+            const {data} = await coinGeckoApi.get<string>(`/token-id/${chainId}?addresses=${tokenAddress}`);
             return data;
         } catch (e) {
             console.log(e);
@@ -118,7 +123,7 @@ export const coingeckoService = {
     },
     getTrendingCoins: async (): Promise<TrendingCoin[]> => {
         try {
-            const { data } = await coinGeckoApi.get<TrendingCoin[]>('/trending/');
+            const {data} = await coinGeckoApi.get<TrendingCoin[]>('/trending/');
             return data;
         } catch (error) {
             console.error('Failed to fetch trending coins:', error);
@@ -128,7 +133,7 @@ export const coingeckoService = {
 
     getTopGainers: async (): Promise<Ganiner[]> => {
         try {
-            const { data } = await coinGeckoApi.get<Ganiner[]>('/top_gainers/');
+            const {data} = await coinGeckoApi.get<Ganiner[]>('/top_gainers/');
             return data;
         } catch (error) {
             console.error('Failed to fetch top gainers:', error);
@@ -138,7 +143,7 @@ export const coingeckoService = {
 
     getTopLosers: async (): Promise<Loser[]> => {
         try {
-            const { data } = await coinGeckoApi.get<Loser[]>('/top_losers/');
+            const {data} = await coinGeckoApi.get<Loser[]>('/top_losers/');
             return data;
         } catch (error) {
             console.error('Failed to fetch top losers:', error);
@@ -148,7 +153,7 @@ export const coingeckoService = {
 
     searchCoins: async (query: string): Promise<SearchResult[]> => {
         try {
-            const { data } = await coinGeckoApi.get<SearchResult[]>(`/search?query=${encodeURIComponent(query)}`);
+            const {data} = await coinGeckoApi.get<SearchResult[]>(`/search?query=${encodeURIComponent(query)}`);
             return data;
         } catch (error) {
             console.error('Error searching coins:', error);
@@ -158,7 +163,7 @@ export const coingeckoService = {
 
     getCoinPrice: async (coinId: string): Promise<CoinData> => {
         try {
-            const { data } = await coinGeckoApi.get<CoinData>(`/price/${coinId}`);
+            const {data} = await coinGeckoApi.get<CoinData>(`/price/${coinId}`);
             return data;
         } catch (error) {
             console.error('CoinGecko API Error:', {
@@ -171,7 +176,7 @@ export const coingeckoService = {
     },
     getMarketCap: async (page: number): Promise<MarketCapToken[]> => {
         try {
-            const { data } = await coinGeckoApi.get<MarketCapToken[]>(`/tokens/marketcap?page=${page}`);
+            const {data} = await coinGeckoApi.get<MarketCapToken[]>(`/tokens/marketcap?page=${page}`);
             return data;
         } catch (error) {
             console.error('Error searching coins:', error);

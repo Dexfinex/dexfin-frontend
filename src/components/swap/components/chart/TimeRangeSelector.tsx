@@ -6,13 +6,12 @@ interface TimeRangeSelectorProps {
 }
 
 const TIME_RANGES: { value: TimeRange; label: string }[] = [
+  { value: '1m', label: '1M' },
   { value: '5m', label: '5M' },
   { value: '15m', label: '15M' },
-  { value: '1H', label: '1H' },
-  { value: '24h', label: '24H' },
-  { value: '7d', label: '7D' },
-  { value: '30d', label: '30D' },
-  { value: '1y', label: '1Y' },
+  { value: '1h', label: '1H' },
+  { value: '4h', label: '4H' },
+  { value: '1d', label: '1D' },
 ];
 
 export function TimeRangeSelector({ value, onChange }: TimeRangeSelectorProps) {
