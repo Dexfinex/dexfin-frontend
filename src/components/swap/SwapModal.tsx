@@ -1,6 +1,6 @@
-import {useState} from 'react';
+import React, {useState} from 'react';
 import {Box, Flex, HStack, IconButton, Modal, ModalContent, ModalOverlay, Text,} from '@chakra-ui/react';
-import {Maximize2, X} from 'lucide-react';
+import {Maximize2, Settings, X} from 'lucide-react';
 import {SellBox} from "./components/SellBox";
 import {BuyBox} from "./components/BuyBox";
 import {SwapBox} from "./components/SwapBox";
@@ -95,7 +95,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
             >
                 <ModalOverlay backdropFilter="blur(4px)"/>
                 <ModalContent
-                    className="border border-white/10 shadow-lg transition-all duration-300 ease-in-out"
+                    className="border glass border-white/10 shadow-lg transition-all duration-300 ease-in-out"
                     borderRadius="xl"
                     p={0}
                     m={isMaximized ? 0 : 4}
@@ -121,22 +121,18 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                 <Text fontSize="xl" fontWeight="bold">Swap</Text>
                                 <HStack spacing={2}>
                                     <SlippageSettings value={slippage} onChange={setSlippage}/>
-                                    <IconButton
-                                        aria-label="Maximize"
-                                        icon={<Maximize2 size={16}/>}
-                                        variant="ghost"
-                                        size="sm"
+                                    <button
                                         onClick={() => setIsMaximized(!isMaximized)}
-                                        color="white"
-                                    />
-                                    <IconButton
-                                        aria-label="Close"
-                                        icon={<X size={16}/>}
-                                        variant="ghost"
-                                        size="sm"
+                                        className="p-2 rounded-lg hover:bg-white/5 transition-all hover:scale-110 active:scale-95"
+                                    >
+                                        <Maximize2 size={16}/>
+                                    </button>
+                                    <button
                                         onClick={onClose}
-                                        color="white"
-                                    />
+                                        className="p-2 rounded-lg hover:bg-white/5 transition-all hover:scale-110 active:scale-95"
+                                    >
+                                        <X size={16}/>
+                                    </button>
                                 </HStack>
                             </Flex>
 
@@ -144,7 +140,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                             {/* Swap Interface and Wallet */}
                             <div
                                 className="p-2.5 border border-white/5 relative z-50 w-full rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
-                                <div className="flex items-center justify-between mb-4 rounded-lg p-1">
+                            <div className="flex items-center justify-between mb-4 rounded-lg p-1">
                                     <div className="flex items-center gap-2 w-full me-2">
                                         <button
                                             onClick={() => setActiveTab('buy')}

@@ -99,7 +99,7 @@ export function TokenSelectorModal({
             isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         } transition-opacity duration-200`}>
             <div
-                className="bg-[#111]/95 rounded-2xl w-full max-w-xl border border-white/5 mt-[10vh] animate-modal-slide-down">
+                className="glass rounded-2xl w-full max-w-xl border border-white/5 mt-[10vh] animate-modal-slide-down">
                 <div className="p-4 border-b border-white/10">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-medium text-white">Select Token</h3>
@@ -145,7 +145,7 @@ export function TokenSelectorModal({
                             placeholder="Search by token name or paste address"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-[#191919] rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                            className="w-full glass rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                         />
                     </div>
                 </div>
@@ -155,7 +155,7 @@ export function TokenSelectorModal({
                         <button
                             onClick={() => setSelectedNetwork(null)}
                             className={`px-3 py-1.5 rounded-lg text-sm transition-colors border ${
-                                !selectedNetwork ? 'bg-[#222] border-[#355f97] text-white' : 'border-transparent bg-[#181818] text-gray-400 hover:text-white'
+                                !selectedNetwork ? 'text-white' : 'border-transparent hover:text-white'
                             }`}
                         >
                             All
@@ -165,7 +165,7 @@ export function TokenSelectorModal({
                                 key={network.id}
                                 onClick={() => setSelectedNetwork(network)}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border ${
-                                    selectedNetwork === network ? 'bg-[#222] border-[#355f97] text-white' : 'border-transparent bg-[#181818] text-gray-400 hover:text-white'
+                                    selectedNetwork === network ? 'text-white' : 'border-transparent hover:text-white'
                                 }`}
                             >
                                 <img src={network.icon} alt={network.name} className="w-5 h-5"/>
