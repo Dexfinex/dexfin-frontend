@@ -322,7 +322,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
         if (type === "Text") {
             return <div className={`flex ${!isOwner ? 'justify-start' : 'justify-end'}`}>
-                <div className={`relative rounded-lg p-3 max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+                <div className={`relative rounded-lg p-3 max-w-[360px] md:max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
                     {messageContent}
                     {renderReactionBtn()}
                     {reactionIcon()}

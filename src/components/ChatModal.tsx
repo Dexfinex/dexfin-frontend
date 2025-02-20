@@ -3,7 +3,8 @@ import {
   X, Maximize2, Minimize2, Search, Smile, Download,
   MessageSquare, Share2, Users, ArrowRight, Plus,
   Settings, User, Info, CheckCircle, XCircle, File,
-  Edit, Lock, Eye, HelpCircle
+  Edit, Lock, Eye, HelpCircle,
+  SidebarIcon
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import GifPicker from 'gif-picker-react';
@@ -65,12 +66,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isJoiningGroup, setIsJoiningGroup] = useState(false);
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [isGifOpen, setIsGifOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<any>();
   const [reactions, setReactions] = useState<Array<ReactionType>>([]);
   const emojiPickRef = useRef<HTMLDivElement>(null);
   const gifPickRef = useRef<HTMLDivElement>(null);
+  const sideBarRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
+  const navBtnRef = useRef<HTMLButtonElement>(null);
   const gifBtnRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -247,6 +252,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     setMessage("")
     setReactions([])
+    setIsSidebarOpen(false)
   }, [selectedUser, selectedGroup])
 
   useEffect(() => {
@@ -584,7 +590,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
         }
         localStorage.setItem(KEY_NAME, JSON.stringify(pk))
-        
+
         setChatUser(user)
         initStream(user)
       }
@@ -1049,6 +1055,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }
 
   const handleClickModal = (e: any) => {
+    if (sideBarRef.current && !sideBarRef.current.contains(e.target as Node)) {
+      if (navBtnRef.current && !navBtnRef.current.contains(e.target as Node)) {
+        setIsSidebarOpen(false)
+      }
+    }
+
     if (emojiBtnRef.current && emojiBtnRef.current.contains(e.target as Node)) {
       if (isGifOpen) {
         setIsGifOpen(false)
@@ -1497,6 +1509,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             : 'w-[90%] h-[90%] rounded-xl'
             }`}
           onClick={handleClickModal}
+          ref={chatContainerRef}
         >
           {!chatUser?.uid && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10'>
             <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm" onClick={handleUnlock}>
@@ -1509,7 +1522,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           </div>}
 
           {/* Left Sidebar */}
-          <div className="w-80 border-r border-white/10 relative">
+          <div className={`absolute md:relative flex flex-col rounded-tl-xl rounded-bl-xl bg-stone-950 bottom-0 top-0 left-0 w-80 border-r border-white/10 z-[1]
+                          transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+40px)] md:translate-x-0"}`}
+            ref={sideBarRef}>
             <div className="p-4 border-b border-white/10">
               <div className="flex items-center gap-2 mb-4">
                 <button
@@ -1559,11 +1574,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               )}
             </div>
 
-            <div className={`p-2 overflow-y-auto ai-chat-scrollbar ${chatMode === "group" ? "max-h-[calc(100%-238px)]" : "max-h-[calc(100%-188px)]"}`}>
+            <div className={`flex-1 p-2 overflow-y-auto ai-chat-scrollbar ${chatMode === "group" ? "max-h-[calc(100%-238px)]" : "max-h-[calc(100%-188px)]"}`}>
               {renderGroupsAndUsers()}
             </div>
 
-            <div className='border-t border-white/10 absolute left-0 right-0 bottom-[12px] pt-2 px-4'>
+            <div className='border-t border-white/10 bottom-[12px] pt-2 px-4'>
               {ownProfile && <div className='flex justify-between items-center'>
                 <div className='flex justify-center items-center gap-4'>
                   <img src={ownProfile.picture} className='rounded-full w-10 h-10' />
@@ -1579,6 +1594,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             {/* Chat Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/10">
               <div className="flex items-center gap-3">
+                <button className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setIsSidebarOpen(true)} ref={navBtnRef}>
+                  <SidebarIcon className="w-4 h-4" />
+                </button>
                 {selectedUser ? (
                   <>
                     <div className="relative flex items-center">
