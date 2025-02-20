@@ -39,10 +39,9 @@ interface TopBarProps {
   setInput: (value: string) => void;
 }
 
-export function TopBar({ processCommand, address, chainId, isFullscreen, setIsFullscreen, onClose, setInput }: TopBarProps) {
+export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: TopBarProps) {
   const { isOpen, onOpen, onClose: onDrawerClose } = useDisclosure();
 
-  const [showAaveActions, setShowAaveActions] = useState(false);
   const [showStakingActions, setShowStakingActions] = useState(false);
   const [showYieldActions, setShowYieldActions] = useState(false);
 
