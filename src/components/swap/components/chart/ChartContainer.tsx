@@ -18,7 +18,7 @@ export function ChartContainer({ type, data, loading, token }: ChartContainerPro
   if (data.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-gray-400 bg-[#191919] px-4 py-2 rounded-lg">
+        <div className="text-gray-400 px-4 py-2 rounded-lg">
           No data available
         </div>
       </div>

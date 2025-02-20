@@ -96,8 +96,6 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                 <ModalOverlay backdropFilter="blur(4px)"/>
                 <ModalContent
                     className="border border-white/10 shadow-lg transition-all duration-300 ease-in-out"
-                    bg="#0f1012"
-                    color="white"
                     borderRadius="xl"
                     p={0}
                     m={isMaximized ? 0 : 4}
@@ -130,7 +128,6 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                         size="sm"
                                         onClick={() => setIsMaximized(!isMaximized)}
                                         color="white"
-                                        _hover={{bg: 'whiteAlpha.200'}}
                                     />
                                     <IconButton
                                         aria-label="Close"
@@ -139,7 +136,6 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                         size="sm"
                                         onClick={onClose}
                                         color="white"
-                                        _hover={{bg: 'whiteAlpha.200'}}
                                     />
                                 </HStack>
                             </Flex>
@@ -148,13 +144,13 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                             {/* Swap Interface and Wallet */}
                             <div
                                 className="p-2.5 border border-white/5 relative z-50 w-full rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
-                                <div className="flex items-center justify-between mb-4 bg-[#1d2837] rounded-lg p-1">
+                                <div className="flex items-center justify-between mb-4 rounded-lg p-1">
                                     <div className="flex items-center gap-2 w-full me-2">
                                         <button
                                             onClick={() => setActiveTab('buy')}
                                             className={`px-4 py-2 rounded-lg ${
                                                 activeTab === 'buy'
-                                                    ? 'bg-[#111] text-blue-400'
+                                                    ? 'text-blue-400'
                                                     : 'text-gray-400 hover:text-white'
                                             }`}
                                         >
@@ -164,7 +160,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                             onClick={() => setActiveTab('sell')}
                                             className={`px-4 py-2 rounded-lg ${
                                                 activeTab === 'sell'
-                                                    ? 'bg-[#111] text-blue-400'
+                                                    ? 'text-blue-400'
                                                     : 'text-gray-400 hover:text-white'
                                             }`}
                                         >
@@ -174,7 +170,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                             onClick={() => setActiveTab('swap')}
                                             className={`px-4 py-2 rounded-lg ${
                                                 activeTab === 'swap'
-                                                    ? 'bg-[#111] text-blue-400'
+                                                    ? 'text-blue-400'
                                                     : 'text-gray-400 hover:text-white'
                                             }`}
                                         >
