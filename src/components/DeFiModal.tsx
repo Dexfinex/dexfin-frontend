@@ -1,7 +1,6 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
-import { BarChart2, Coins, Maximize2, Minimize2, Shield, TrendingUp, Wallet, X, ArrowLeft } from 'lucide-react';
+import { Maximize2, Minimize2, X, ArrowLeft } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
-import { numberToHex } from 'viem';
 
 import { TokenChainIcon } from './swap/components/TokenIcon';
 
@@ -15,10 +14,14 @@ import useGasEstimation from "../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../hooks/useGetTokenPrices';
 import useTokenStore from "../store/useTokenStore.ts";
 import { TransactionModal } from './swap/modals/TransactionModal.tsx';
+import { PositionList } from './defi/PositionList.tsx';
+import ProtocolStatistic from './defi/ProtocolStatistic.tsx';
 
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
 import { mapChainId2NativeAddress } from "../config/networks.ts";
 import { formatNumberByFrac } from '../utils/common.util';
+import { OfferingList } from './defi/OfferlingList.tsx';
+import GlobalMetric from './defi/GlobalMetric.tsx';
 
 interface DeFiModalProps {
   isOpen: boolean;
@@ -29,67 +32,6 @@ interface ModalState {
   type: 'deposit' | 'redeem' | 'borrow' | 'repay' | null;
   position?: Position;
 }
-
-interface Offering extends Position {
-  chainId: number;
-}
-
-const offerings: Offering[] = [
-  {
-    "chainId": 56,
-    "address": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2",
-    "protocol": "Uniswap v2",
-    "protocol_id": "uniswap-v2",
-    "type": "liquidity",
-    "amount": 0,
-    "apy": 0,
-    "tokens": [
-      {
-        "token_type": "supplied",
-        "name": "Tether USD",
-        "symbol": "USDT",
-        "contract_address": "0x55d398326f99059ff775485246999027b3197955",
-        "decimals": "18",
-        "logo": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
-        "thumbnail": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
-        "balance": "0",
-        "balance_formatted": "0",
-        "usd_price": 0,
-        "usd_value": 0
-      },
-      {
-        "token_type": "supplied",
-        "name": "USD Coin",
-        "symbol": "USDC",
-        "contract_address": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
-        "decimals": "18",
-        "logo": "https://logo.moralis.io/0x38_0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d_0ebe47803189a184e87d3b2531873502.png",
-        "thumbnail": "https://logo.moralis.io/0x38_0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d_0ebe47803189a184e87d3b2531873502.png",
-        "balance": "0",
-        "balance_formatted": "0",
-        "usd_price": 0,
-        "usd_value": 0
-      },
-      {
-        "token_type": "defi-token",
-        "name": "Uniswap V2",
-        "symbol": "UNI-V2",
-        "contract_address": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2",
-        "decimals": "18",
-        "logo": "",
-        "thumbnail": "",
-        "balance": "0",
-        "balance_formatted": "0",
-        "usd_price": 0,
-        "usd_value": 0
-      }
-    ],
-    "rewards": 0,
-    "healthFactor": 0,
-    "logo": "https://cdn.moralis.io/defi/uniswap.png",
-    "factory": "0x8909dc15e40173ff4699343b6eb8132c65e18ec6"
-  }
-];
 
 export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -108,8 +50,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { mutate: sendDepositMutate } = useSendDepositMutation();
   const { mutate: redeemEnSoMutate } = useRedeemEnSoMutation();
 
-  const { chainId, address, signer, switchChain } = useContext(Web3AuthContext);
-  const { positions, protocol, netAPY, healthFactor, protocolTypes } = useDefiStore();
+  const { chainId, address, signer, } = useContext(Web3AuthContext);
+  const { positions, } = useDefiStore();
 
   const { getTokenBalance } = useTokenBalanceStore();
   const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation()
@@ -177,45 +119,6 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
-
-  const getTypeIcon = (type: Position['type']) => {
-    switch (type.toUpperCase()) {
-      case 'LENDING':
-        return '💰';
-      case 'BORROWING':
-        return '🏦';
-      case 'STAKING':
-        return '🔒';
-      case 'POOL':
-        return '🌊';
-      default:
-        return '🎁'
-    }
-  };
-
-  const getTypeColor = (type: Position['type']) => {
-    switch (type) {
-      case 'LENDING':
-        return 'text-purple-400';
-      case 'BORROWING':
-        return 'text-red-400';
-      case 'STAKING':
-        return 'text-blue-400';
-      case 'POOL':
-        return 'text-green-400';
-    }
-  };
-
-  // const getRiskColor = (risk: Offering['risk']) => {
-  //   switch (risk) {
-  //     case 'LOW':
-  //       return 'text-green-400';
-  //     case 'MEDIUM':
-  //       return 'text-yellow-400';
-  //     case 'HIGH':
-  //       return 'text-red-400';
-  //   }
-  // };
 
   const handleAction = (type: 'deposit' | 'redeem' | 'borrow' | 'repay', position: Position) => {
     setModalState({ type, position });
@@ -321,252 +224,6 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     })
   }
 
-  const renderPositions = () => (
-    <div className="space-y-3">
-      {
-        positions.length > 0 && (
-          < div className="flex items-center gap-2 mb-6">
-            <button
-              onClick={() => setSelectedPositionType('ALL')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
-                ? 'bg-white/10'
-                : 'hover:bg-white/5'
-                }`}
-            >
-              All Types
-            </button>
-            {protocolTypes.map(type => (
-              <button
-                key={type}
-                onClick={() => setSelectedPositionType(type)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
-                  ? 'bg-white/10'
-                  : 'hover:bg-white/5'
-                  }`}
-              >
-                {getTypeIcon(type)}
-                <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
-              </button>
-            ))}
-          </div>
-        )
-      }
-
-      {
-        positions.length === 0 && isLoading && <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'}></Skeleton>
-      }
-      {
-        positions
-          .filter(p => selectedPositionType === 'ALL' || p.type === selectedPositionType)
-          .map((position, index) => (
-            isLoading ? <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'} key={`sk-${index}`}></Skeleton>
-              : <div
-                key={index}
-                className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={position.logo}
-                      alt={position.protocol}
-                      className="w-10 h-10"
-                    />
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-medium">{position.protocol}</h3>
-                        <span className={`text-sm ${getTypeColor(position.type)}`}>
-                          {position.type}
-                        </span>
-                        <span className="text-white/40">•</span>
-                        <span className="text-sm text-white/60">
-                          {`${position.tokens[0]?.symbol}/${position.tokens[1]?.symbol} ${position.tokens[2]?.symbol}`}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-6">
-                        <div>
-                          <span className="text-sm text-white/60">Amount</span>
-                          <div className="text-lg">${(position.amount || "0").toLocaleString()}</div>
-                        </div>
-                        <div>
-                          <span className="text-sm text-white/60">APY</span>
-                          <div className="text-emerald-400">{(position.apy || "0")}%</div>
-                        </div>
-                        {position.rewards && (
-                          <div>
-                            <span className="text-sm text-white/60">Rewards</span>
-                            <div className="text-blue-400">+{(position.rewards || "0")}% APR</div>
-                          </div>
-                        )}
-                        {!!position.healthFactor && (
-                          <div>
-                            <span className="text-sm text-white/60">Health Factor</span>
-                            <div className="text-green-400">{position.healthFactor}</div>
-                          </div>
-                        )}
-                        {position.poolShare && (
-                          <div>
-                            <span className="text-sm text-white/60">Pool Share</span>
-                            <div>{(position.poolShare * 100).toFixed(3)}%</div>
-                          </div>
-                        )}
-                        {position.collateralFactor && (
-                          <div>
-                            <span className="text-sm text-white/60">Collateral Factor</span>
-                            <div>{(position.collateralFactor * 100)}%</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {position.type === 'BORROWING' ? (
-                      <>
-                        <button
-                          onClick={() => handleAction('borrow', position)}
-                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
-                        >
-                          Borrow More
-                        </button>
-                        <button
-                          onClick={() => handleAction('repay', position)}
-                          className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
-                        >
-                          Repay
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleAction('deposit', position)}
-                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm"
-                        >
-                          Deposit
-                        </button>
-                        <button
-                          onClick={() => handleAction('redeem', position)}
-                          className="px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm"
-                        >
-                          Redeem
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {position.type === 'BORROWING' && (
-                  <div className="mt-3">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-white/60">Borrow Utilization</span>
-                      <span>{((position.borrowed! / position.maxBorrow!) * 100).toFixed(1)}%</span>
-                    </div>
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all ${(position.borrowed! / position.maxBorrow!) >= 0.8 ? 'bg-red-500' :
-                          (position.borrowed! / position.maxBorrow!) >= 0.6 ? 'bg-yellow-500' :
-                            'bg-green-500'
-                          }`}
-                        style={{ width: `${(position.borrowed! / position.maxBorrow!) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-          ))
-      }
-    </div >
-  );
-
-  const renderOfferings = () => (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-6">
-        <button
-          onClick={() => setSelectedPositionType('ALL')}
-          className={`px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
-            ? 'bg-white/10'
-            : 'hover:bg-white/5'
-            }`}
-        >
-          All Types
-        </button>
-        {/* {(['LENDING', 'BORROWING', 'STAKING', 'POOL'] as Position['type'][]).map(type => (
-          <button
-            key={type}
-            onClick={() => setSelectedPositionType(type)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
-              ? 'bg-white/10'
-              : 'hover:bg-white/5'
-              }`}
-          >
-            {getTypeIcon(type)}
-            <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
-          </button>
-        ))} */}
-      </div>
-
-      <div className="space-y-3">
-        {offerings
-          .filter(o => selectedPositionType === 'ALL' || o.type === selectedPositionType)
-          .map((offering, index) => (
-            <div
-              key={index}
-              className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <TokenChainIcon src={offering.logo || ""} alt={offering.protocol || ""} size={"lg"} chainId={Number(offering.chainId)} />
-
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-medium">{offering.protocol}</h3>
-                    <span className={`text-sm ${getTypeColor(offering.type)}`}>
-                      {offering.type}
-                    </span>
-                    <span className="text-white/40">•</span>
-                    <span className="text-sm text-white/60">
-                      {`${offering.tokens[0]?.symbol}/${offering.tokens[1]?.symbol} ${offering.tokens[2]?.symbol}`}
-                    </span>
-                  </div>
-
-                  {/* <p className="text-sm text-white/60 mb-2">
-                    this is description
-                  </p> */}
-
-                  <div className="flex items-center gap-6">
-                    <div>
-                      <span className="text-sm text-white/60">Base APY</span>
-                      <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
-                        }`}>
-                        {offering.apy || "0"} %
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={async () => {
-                    if (Number(chainId) === Number(offering.chainId)) {
-                      const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
-                      handleAction(
-                        'deposit',
-                        position || offering
-                      );
-                    } else {
-                      await switchChain(parseInt(numberToHex(Number(offering.chainId)), 16));
-                    }
-                  }
-                  }
-                  className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg`}
-                >
-                  {Number(chainId) === Number(offering.chainId) ? "Get Started" : "Switch Network"}
-                </button>
-              </div>
-            </div>
-          ))}
-      </div>
-    </div>
-  );
-
   if (!isOpen) return null;
 
   return (
@@ -629,154 +286,18 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           {selectedTab === 'overview' ? (
             <>
               {/* Global Metrics */}
-              <div className="grid grid-cols-4 gap-6 mb-6">
-                <div className="bg-white/5 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Wallet className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm text-white/60">Total Value Locked</span>
-                  </div>
-                  <div className="text-2xl font-bold mb-1">
-                    {
-                      isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'2rem'}></Skeleton>
-                        : formatNumberByFrac(protocol.total_usd_value)
-                    }
-                  </div>
-                  <div className="flex items-center gap-1 text-emerald-400">
-                    <TrendingUp className="w-4 h-4" />
-                    <span>0 %</span>
-                    <span className="text-white/60">24h</span>
-                  </div>
-                </div>
-
-                <div className="bg-white/5 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BarChart2 className="w-4 h-4 text-purple-400" />
-                    <span className="text-sm text-white/60">Net APY</span>
-                  </div>
-                  <div className="text-2xl font-bold mb-1">
-                    {
-                      isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'2rem'}></Skeleton>
-                        : `+ ${netAPY}%`
-                    }
-
-                  </div>
-                  <div className="text-sm text-white/60">
-                    Across all positions
-                  </div>
-                </div>
-
-                <div className="bg-white/5 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Coins className="w-4 h-4 text-green-400" />
-                    <span className="text-sm text-white/60">Total Rewards</span>
-                  </div>
-                  <div className="text-2xl font-bold mb-1">
-                    {
-                      isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'2rem'}></Skeleton>
-                        : `+$ ${protocol.total_unclaimed_usd_value}`
-                    }
-                  </div>
-                  <div className="text-sm text-white/60">
-                    Unclaimed rewards
-                  </div>
-                </div>
-
-                <div className="bg-white/5 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shield className="w-4 h-4 text-yellow-400" />
-                    <span className="text-sm text-white/60">Health Status</span>
-                  </div>
-                  <div className="text-2xl font-bold text-green-400 mb-1">
-                    Healthy
-                  </div>
-                  <div className="text-sm text-white/60">
-                    All positions safe ({healthFactor})
-                  </div>
-                </div>
-              </div>
+              <GlobalMetric isLoading={isLoading} />
 
               {/* Positions */}
-              {renderPositions()}
+              <PositionList setSelectedPositionType={setSelectedPositionType} selectedPositionType={selectedPositionType} isLoading={isLoading} handleAction={handleAction} />
 
               {/* Protocol Statistics */}
               {
-                positions.length > 0 &&
-                <div className="grid grid-cols-2 gap-6 mt-6">
-                  {/* Protocol Breakdown */}
-                  <div className="bg-white/5 rounded-xl p-4">
-                    <h3 className="text-lg font-medium mb-4">Protocol Breakdown</h3>
-                    <div className="space-y-3">
-                      {positions.map((position) => {
-                        const protocol = position.protocol;
-                        const protocolPositions = positions.filter(p => p.protocol === protocol);
-                        const totalValue = protocolPositions.reduce((sum, p) => sum + p.amount, 0);
-                        const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
-
-                        return (
-                          <div key={protocol} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
-                            <img
-                              src={protocolPositions[0]?.logo}
-                              alt={protocol}
-                              className="w-8 h-8"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="font-medium">{protocol}</span>
-                                <span>${totalValue.toLocaleString()}</span>
-                              </div>
-                              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-blue-500 transition-all"
-                                  style={{ width: `${(totalValue / totalTVL) * 100}%` }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Type Distribution */}
-                  <div className="bg-white/5 rounded-xl p-4">
-                    <h3 className="text-lg font-medium mb-4">Type Distribution</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      {protocolTypes.map((type) => {
-                        const typePositions = positions.filter(p => p.type === type);
-                        const totalValue = typePositions.reduce((sum, p) => sum + p.amount, 0);
-                        const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
-
-                        return (
-                          <div key={type} className="p-4 bg-white/5 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                {getTypeIcon(type)}
-                                <span className="font-medium">{type}</span>
-                              </div>
-                              <span className="text-sm text-white/60">
-                                {typePositions.length} positions
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-white/60">TVL Share</span>
-                              <span>{((totalValue / totalTVL) * 100).toFixed(1)}%</span>
-                            </div>
-                            <div className="h-2 bg-white/10 rounded-full overflow-hidden mt-2">
-                              <div
-                                className="h-full bg-blue-500 transition-all"
-                                style={{ width: `${(totalValue / totalTVL) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+                positions.length > 0 && <ProtocolStatistic />
               }
             </>
           ) : (
-            renderOfferings()
+            <OfferingList setSelectedPositionType={setSelectedPositionType} selectedPositionType={selectedPositionType} handleAction={handleAction} />
           )}
         </div>
       </div>
