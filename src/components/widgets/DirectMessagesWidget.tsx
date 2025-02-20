@@ -761,12 +761,26 @@ export const DirectMessagesWidget: React.FC = () => {
         </button>
       </div>}
 
-      {/* Search */}
-      {chatUser?.uid && <button className='absolute top-8 right-2 hover:bg-white/10 p-2 rounded-lg' onClick={() => setIsOverlay(true)}>
-        <Search className='w-4 h-4' />
-      </button>}
-      
       {isOverlay && <Overlay isOpen={isOverlay} onClose={() => setIsOverlay(false)} selectedUser={selectedUser} setSelectedUser={setSelectedUser} />}
+
+      {/* Search */}
+      {/* {chatUser?.uid && <button className='absolute top-8 right-2 hover:bg-white/10 p-2 rounded-lg' onClick={() => setIsOverlay(true)}>
+        <Search className='w-4 h-4' />
+      </button>} */}
+
+      <div className='border-b border-white/30 mx-4 flex items-center justify-between p-2'>
+        <div className='flex-1'>
+          {
+            selectedUser && <div className='flex items-center gap-4'>
+              <img src={selectedUser?.profilePicture} className='rounded-full w-6 h-6' />
+              <span className='text-sm text-white/50'>{selectedUser.name ? selectedUser.name + " | " + shrinkAddress(selectedUser.address) : selectedUser.address}</span>
+            </div>
+          }
+        </div>
+        <button className='hover:bg-white/10 p-2 rounded-lg' onClick={() => setIsOverlay(true)}>
+          <Search className='w-4 h-4' />
+        </button>
+      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-x-hidden overflow-y-auto ai-chat-scrollbar space-y-2" ref={chatScrollRef} >
