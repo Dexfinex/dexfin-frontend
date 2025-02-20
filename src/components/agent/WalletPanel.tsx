@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useMediaQuery, Skeleton, Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton, useDisclosure } from '@chakra-ui/react';
 
 import {
@@ -13,7 +13,7 @@ import { mockDeFiPositions, formatUsdValue } from '../../lib/wallet.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 import { useEvmWalletBalance } from '../../hooks/useBalance.tsx';
 import { TokenChainIcon } from './../swap/components/TokenIcon.tsx';
-import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
+
 import { formatNumberByFrac } from '../../utils/common.util.ts';
 
 interface WalletPanelProps {
@@ -26,11 +26,10 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
   const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
   const [activeWalletTab, setActiveWalletTab] = useState<WalletTab>('assets');
   const [isLargerThan962] = useMediaQuery('(min-width: 962px)');
-  
+
   const { isOpen, onOpen, onClose } = useDisclosure();
   // Filter positions correctly
   const defiPositions = mockDeFiPositions.filter(p => p.type === 'LENDING');
-  const { chainId } = useContext(Web3AuthContext);
   // Handle window resize to hide panel on mobile
   useEffect(() => {
     if (!isLargerThan962) {
@@ -162,7 +161,7 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
           >
             <Wallet className="w-5 h-5" />
           </button>
-            <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="xs">
+          <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="xs">
             <DrawerOverlay>
               <DrawerContent className="glass">
                 <DrawerCloseButton />

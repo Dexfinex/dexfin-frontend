@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Wallet, X, ShieldClose } from 'lucide-react';
+import { ArrowRight, Wallet, X } from 'lucide-react';
 
 import { TokenType, Step } from '../../../types/brian.type';
 import { convertCryptoAmount } from '../../../utils/brian';
@@ -19,7 +19,7 @@ interface SendProcessProps {
   steps: Step[];
 }
 
-export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromAmount, toToken, fromToken, onClose }) => {
+export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromAmount, fromToken, onClose }) => {
   const [step/*, setStep*/] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [failedTransaction, setFailedTransaction] = useState(false);
@@ -52,7 +52,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           },
         },
       );
-      
+
 
     } catch (error) {
       console.error("Error executing transactions:", error);
@@ -183,24 +183,6 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
       ) : (
         <SuccessModal onClose={onClose} scan={scan} description={`Successfully sent ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
       )}
-    </div>
-  );
-
-  const renderFailedTransaction = () => (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-      <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
-        <ShieldClose className="w-8 h-8 text-red-500" />
-      </div>
-      <h3 className="text-xl font-medium mb-2">Failed Transaction</h3>
-      <p className="text-white/60 mb-2">
-        Failed {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken?.symbol} to {shrinkAddress(receiver)}
-      </p>
-      <button
-        onClick={onClose}
-        className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg mt-6"
-      >
-        Close
-      </button>
     </div>
   );
 
