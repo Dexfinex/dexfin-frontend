@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
-import {Box, Flex, HStack, IconButton, Modal, ModalContent, ModalOverlay, Text,} from '@chakra-ui/react';
-import {Maximize2, Settings, X} from 'lucide-react';
+import {Box, Flex, HStack, Modal, ModalContent, ModalOverlay, Text,} from '@chakra-ui/react';
+import {Maximize2, X} from 'lucide-react';
 import {SellBox} from "./components/SellBox";
 import {BuyBox} from "./components/BuyBox";
 import {SwapBox} from "./components/SwapBox";
