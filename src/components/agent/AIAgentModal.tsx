@@ -42,7 +42,7 @@ interface AIAgentModalProps {
 export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [input, setInput] = useState('');
-  const [isListening, setIsListening] = useState(true);
+  const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
