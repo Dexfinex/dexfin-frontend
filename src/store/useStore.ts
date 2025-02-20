@@ -311,7 +311,7 @@ const useStore = create<StoreState>((set) => ({
       id: 'direct-messages',
       type: 'Direct Messages',
       position: { x: 780, y: 735 },
-      size: { width: 324, height: 360 }
+      size: { width: 480, height: 560 }
     }
   ],
   updateWidget: (id, updates) => set((state) => ({

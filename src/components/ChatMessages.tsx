@@ -1,17 +1,19 @@
-import React, { useContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useContext, useEffect, useState, useRef, useMemo, useCallback, useLayoutEffect } from 'react';
 import { useInView } from "react-intersection-observer";
 import { useStore } from '../store/useStore';
-import { IGroup, IUser, IChat, ChatModeType, ChatType } from '../types/chat.type';
+import { IGroup, IUser, IChat, ChatModeType, ChatType, ReactionType } from '../types/chat.type';
 import { MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'lucide-react';
 import { Spinner, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
 import { downloadBase64File, shrinkAddress, getChatHistoryDate, extractAddress } from '../utils/common.util';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
-import { LIMIT } from '../utils/chatApi';
+import { LIMIT, BIG_IMAGE_WIDHT } from '../utils/chatApi';
+import { ImageWithSkeleton } from './common/ImageWithSkeleton';
 
 interface ChatMessagesProps {
     selectedGroup: IGroup | null;
     selectedUser: IUser | null;
     chatHistory: Array<IChat>;
+    reactions: ReactionType[];
     chatMode: ChatModeType;
     handleUserRequest: (isAccept: boolean) => Promise<void>;
     handleGroupRequest: (isAccept: boolean) => Promise<void>;
@@ -26,7 +28,7 @@ interface ChatMessagesProps {
 
 export const ChatMessages: React.FC<ChatMessagesProps> = ({
     selectedGroup, selectedUser, chatHistory, chatMode, isHandlingRequest, isJoiningGroup, loadingChatHistory,
-    handleUserRequest, handleGroupRequest, handleJoinGroup, setChatHistory, toBottom, setToBottom,
+    handleUserRequest, handleGroupRequest, handleJoinGroup, setChatHistory, toBottom, setToBottom, reactions
 }) => {
     const { ref: topRef, inView: topInView } = useInView(); // Detect top scroll
 
@@ -56,11 +58,11 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
     const scrollBottom = useCallback(() => {
         if (chatScrollRef.current) {
-            chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" })
+            chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight })
         }
     }, [])
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         console.log('chat history = ', chatHistory)
         if (toBottom) {
             scrollBottom()
@@ -75,12 +77,11 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
         if (prevHistory.length > 0) {
             let chats: IChat[] = []
-            let reactions: any[] = []
+            let prevReactions: ReactionType[] = []
 
-            // todo should add reactions more
             prevHistory.forEach((data: any) => {
                 if (data.messageType == "Reaction") {
-                    reactions = [...reactions, data.messageObj]
+                    prevReactions = [...prevReactions, data.messageObj]
                 } else {
                     chats = [...chats, {
                         timestamp: data.timestamp,
@@ -95,9 +96,10 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
                 }
             })
 
-            if (reactions.length > 0) {
+            const totalReactions: ReactionType[] = [...reactions, ...prevReactions]
+            if (totalReactions.length > 0) {
                 chats = chats.map(chat => {
-                    const found = reactions.find(e => e.reference == chat.chatId)
+                    const found = totalReactions.find(e => e.reference == chat.chatId)
                     if (found) {
                         return {
                             ...chat,
@@ -120,9 +122,9 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     }
 
     const handleReaction = async (chatId: string, content: string) => {
-        // console.log('reference: ', chatId)
-        // console.log('address: ', address)
-        // console.log('content: ', content)
+        console.log('reference: ', chatId)
+        console.log('address: ', address)
+        console.log('content: ', content)
 
         const receipient = selectedGroup ? selectedGroup.groupId : selectedUser ? selectedUser.address : ""
 
@@ -328,13 +330,13 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
             </div>
         } else if (type === "MediaEmbed") {
             return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
-                <img className={`w-52 h-auto`} src={messageContent} />
+                <ImageWithSkeleton src={messageContent} width={BIG_IMAGE_WIDHT} />
                 {renderReactionBtn()}
                 {reactionIcon()}
             </div>
         } else if (type === "Image") {
             return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
-                <img className={`w-52 h-auto`} src={messageContent} />
+                <ImageWithSkeleton src={messageContent} width={BIG_IMAGE_WIDHT} />
                 {renderReactionBtn()}
                 {reactionIcon()}
             </div>

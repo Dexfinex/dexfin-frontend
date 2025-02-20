@@ -22,7 +22,7 @@ import { getAllChatData, getWalletProfile } from '../utils/chatApi';
 import { LIMIT } from '../utils/chatApi';
 import { EditChatProfileModal } from './EditChatProfileModal';
 import { ChatGroupModal } from './ChatGroupModal';
-import { IUser, IGroup, ChatType, IChat, ProfileType, ChatModeType } from '../types/chat.type';
+import { IUser, IGroup, ChatType, IChat, ProfileType, ChatModeType, ReactionType } from '../types/chat.type';
 import { ChatMessages } from './ChatMessages';
 
 interface ChatModalProps {
@@ -221,7 +221,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
-  const [isFailedSent, setIsFailedSent] = useState(false);
   const [toBottom, setToBottom] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isHandlingRequest, setIsHandlingRequest] = useState(false);
@@ -230,6 +229,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isGifOpen, setIsGifOpen] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<any>();
+  const [reactions, setReactions] = useState<Array<ReactionType>>([]);
   const emojiPickRef = useRef<HTMLDivElement>(null);
   const gifPickRef = useRef<HTMLDivElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
@@ -417,21 +417,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     setMessage("")
+    setReactions([])
   }, [selectedUser, selectedGroup])
 
   useEffect(() => {
     handleReceiveMsg()
   }, [receivedMessage])
-
-  useEffect(() => {
-    if (isFailedSent) {
-      toast({
-        status: 'error',
-        description: `Can't send a message. Please try again.`,
-        duration: 3500
-      })
-    }
-  }, [isFailedSent])
 
   // useEffect(() => {
   //   console.log('request users = ', requestUsers)
@@ -507,8 +498,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }
 
   const handleReceiveMsg = async () => {
-    console.log('handle receive message')
-
     // handle group messages
     if (receivedMessage?.meta?.group == true) {
       if (receivedMessage.origin == "other") {
@@ -637,7 +626,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 ensName: "",
                 profilePicture: profile.picture,
                 address: extractAddress(receivedMessage.from),
-                chatId: receivedMessage.chatId,
+                chatId: receivedMessage.reference,
                 type: "Request",
                 unreadMessages: 0,
                 lastTimestamp: Number(receivedMessage.timestamp),
@@ -655,7 +644,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 content: receivedMessage.message.content,
                 fromAddress: extractAddress(receivedMessage.from),
                 toAddress: extractAddress(receivedMessage.to[0]),
-                chatId: receivedMessage.chatId,
+                chatId: receivedMessage.reference,
                 link: null,
                 reaction: ""
               }]
@@ -677,7 +666,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   content: receivedMessage.message.content,
                   fromAddress: extractAddress(receivedMessage.from),
                   toAddress: extractAddress(receivedMessage.to[0]),
-                  chatId: receivedMessage.chatId,
+                  chatId: receivedMessage.reference,
                   link: null,
                   reaction: ""
                 }]
@@ -758,8 +747,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         env: CONSTANTS.ENV.PROD,
       });
 
-      setChatUser(user)
-      initStream(user)
+      const encryption = await user.encryption.info()
+
+      if (encryption?.decryptedPgpPrivateKey) {
+        setChatUser(user)
+        initStream(user)
+      }
     }
   }
 
@@ -869,10 +862,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     if (!message.trim()) return;
     if (sendingMessage) return;
 
-    if (isFailedSent) {
-      setIsFailedSent(false)
-    }
-
     setSendingMessage(true)
     setToBottom(true)
 
@@ -905,7 +894,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
         setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
-        setIsFailedSent(true)
+        toast({
+          status: 'error',
+          description: `Can't send a message. Please try again.`,
+          duration: 3500
+        })
         setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
         console.log('sent msg err: ', err)
       }
@@ -935,7 +928,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         console.log('sent msg = ', sentMsg)
         setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
-        setIsFailedSent(true)
+        toast({
+          status: 'error',
+          description: `Can't send a message. Please try again.`,
+          duration: 3500
+        })
         setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
         console.log('sent msg err: ', err)
       }
@@ -956,7 +953,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       if (history.length > 0) {
         console.log('history = ', history)
         let chats: IChat[] = []
-        let reactions: any[] = []
+        let reactions: ReactionType[] = []
 
         history.forEach((data: any) => {
           if (data.messageType == "Reaction") {
@@ -988,6 +985,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         }
 
         setToBottom(true)
+        setReactions(reactions)
         setChatHistory(chats.reverse())
         clearUnreadMessages(user.address)
       }
@@ -1113,7 +1111,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             link: data.link
           }
         })
-      setToBottom(true)
+        setToBottom(true)
         setChatHistory(tmp.reverse())
       }
     } catch (err) {
@@ -1172,7 +1170,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           })
         }
 
-      setToBottom(true)
+        setToBottom(true)
+        setReactions(reactions)
         setChatHistory(chats.reverse())
       }
     } catch (err) {
@@ -1250,7 +1249,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     try {
       if (chatMode === "group" && selectedGroup) {
         const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == address)
-        setChatHistory(prev => [...prev, {
+        const updated = [...chatHistory, {
           timestamp: Math.floor(Date.now()),
           type,
           content,
@@ -1260,7 +1259,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           link: null,
           image: found?.image || "",
           reaction: ""
-        }])
+        }]
+        setChatHistory(updated)
 
         const sentMedia = await chatUser.chat.send(selectedGroup?.groupId, {
           type,
@@ -1269,8 +1269,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
         setMessage("")
         console.log('sent media: ', sentMedia)
+        setChatHistory(updated.map((chat, index) => index == updated.length - 1 ? { ...chat, chatId: sentMedia.cid } : chat))
       } else if (chatMode === "p2p" && selectedUser) {
-        setChatHistory(prev => [...prev, {
+        const updated = [...chatHistory, {
           timestamp: Math.floor(Date.now()),
           type,
           content,
@@ -1279,7 +1280,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           chatId: "",
           link: null,
           reaction: ""
-        }])
+        }]
+        setChatHistory(updated)
 
         const sentMedia = await chatUser.chat.send(selectedUser?.address, {
           type,
@@ -1292,9 +1294,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           setConnectedUsers(prev => [{ ...searchedUser, unreadMessages: 0 }, ...prev])
         }
         console.log('sent media: ', sentMedia)
+        setChatHistory(updated.map((chat, index) => index == updated.length - 1 ? { ...chat, chatId: sentMedia.cid } : chat))
       }
     } catch (err) {
-      console.log('send gif err: ', err)
+      console.log('send media err: ', err)
       setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
     }
   }
@@ -1894,6 +1897,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               loadingChatHistory={loadingChatHistory}
               toBottom={toBottom}
               setToBottom={setToBottom}
+              reactions={reactions}
             />
 
             {/* Chat Input */}

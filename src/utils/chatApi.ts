@@ -1,13 +1,14 @@
-export const LIMIT = 12;
+export const LIMIT = 20;
+export const BIG_IMAGE_WIDHT = "208px";
 
-export const getWalletProfile = async (chatUser:any, address: string) => {
+export const getWalletProfile = async (chatUser: any, address: string) => {
     try {
-        const response = await chatUser.profile.info({overrideAccount: address});
+        const response = await chatUser.profile.info({ overrideAccount: address });
         return response
-    } catch(err) {
+    } catch (err) {
         console.log('get wallet profile err: ', err)
     }
-    
+
     return null
 }
 
@@ -18,12 +19,12 @@ export const getAllChatData = async (chatUser: any) => {
     try {
         let list = []
         do {
-            list = await chatUser.chat.list('CHATS', {page: page++, limit: LIMIT})
+            list = await chatUser.chat.list('CHATS', { page: page++, limit: LIMIT })
             result = [...result, ...list]
-        } while(list.length == LIMIT)
+        } while (list.length == LIMIT)
 
         return result
-    } catch(err) {
+    } catch (err) {
         console.log('get all chat data: err')
     }
 
