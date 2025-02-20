@@ -9,7 +9,7 @@ import {
   Send,
   Trash2,
 } from 'lucide-react';
-import { VoiceModal } from '../VoiceModal.tsx';
+import { VoiceModal } from './VoiceModal.tsx';
 import { Message } from '../../types/index.ts';
 import { PriceChart } from '../PriceChart.tsx';
 import { TrendingCoins } from '../TrendingCoins.tsx';
@@ -42,7 +42,7 @@ interface AIAgentModalProps {
 export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [input, setInput] = useState('');
-  const [isListening, setIsListening] = useState(false);
+  const [isListening, setIsListening] = useState(true);
   const [transcript, setTranscript] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -497,7 +497,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         if (event.results[i].isFinal) {
           finalTranscript = transcript;
           setTranscript(finalTranscript.trim());
-          processCommand(finalTranscript, address, chainId);
+          setInput(finalTranscript);
           stopListening();
         } else {
           interimTranscript += transcript;
@@ -757,7 +757,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           { command: "What is the Bitcoin price?", description: "Get real-time BTC price" },
           { command: "Show me trending tokens", description: "View trending cryptocurrencies" },
           { command: "Show me the latest news", description: "Get latest crypto news" },
-          { command: "Evaluate project", description: "Analyze project potential" }
+          { command: "Swap 1 USDC for ETH", description: "Execute token swap" }
         ]}
       />
     </div>
