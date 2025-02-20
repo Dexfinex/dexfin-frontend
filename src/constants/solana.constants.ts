@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import {SolanaTokenInfo} from "../types/jupiter-swap.type.ts";
+import {SolanaTokenInfo} from "../types/jupiterSwap.type.ts";
 
 export const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 

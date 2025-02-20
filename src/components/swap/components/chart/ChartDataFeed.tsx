@@ -3,6 +3,7 @@ import {ChartDataPoint, TokenType} from "../../../../types/swap.type.ts";
 import {SOLANA_CHAIN_ID} from "../../../../constants/solana.constants.ts";
 import {birdeyeService} from "../../../../services/birdeye.service.ts";
 import {coingeckoService} from "../../../../services/coingecko.service.ts";
+import {mapResolutionToTimeRange} from "../../../../constants/chart.constants.ts";
 
 interface ConfigurationData {
     supported_resolutions: string[];
@@ -59,25 +60,11 @@ interface PeriodParams {
     firstDataRequest?: boolean;
 }
 
-type ResolutionMapping = {
-    [key: string]: string;
-};
-
 const configurationData: ConfigurationData = {
-    supported_resolutions: ["5", "15", "30", "60", "240", "1D", "1W"],
+    supported_resolutions: ["1", "5", "15", "30", "60", "240", "1D"],
     supports_time: true,
     supports_marks: false,
     supports_timescale_marks: false
-};
-
-const Pn: ResolutionMapping = {
-    "5": "5m",
-    "15": "15m",
-    "30": "30m",
-    "60": "1h",
-    "240": "4h",
-    "1D": "1d",
-    "1W": "1w"
 };
 
 function e$(o: string | number, t: number, s: boolean = false): string {
@@ -107,12 +94,13 @@ const getKlines = async (symbolInfo: SymbolInfo, timeFrom: number, timeTo: numbe
     try {
         const {token} = symbolInfo;
         let chartData: ChartDataPoint[] | null = null
+        const timeRange = mapResolutionToTimeRange[resolution]
         if (token) {
             if (token.chainId === SOLANA_CHAIN_ID) {
-                chartData = await birdeyeService.getOHLCV(token.address, resolution, timeFrom, timeTo)
-            } else if (token.address.startsWith('0x') || token.address.length > 40) {
+                chartData = await birdeyeService.getOHLCV(token.address, timeRange, timeFrom, timeTo)
+            } else if (token.address.startsWith('0x')) {
                 const symbol = await coingeckoService.getCoinGeckoIdFrom(token.address, token.chainId)
-                chartData = await coingeckoService.getOHLCV(symbol.toLowerCase(), resolution);
+                chartData = await coingeckoService.getOHLCV(symbol.toLowerCase(), timeRange, timeFrom, timeTo);
             }
         }
 
@@ -165,14 +153,14 @@ export default {
                     logoURI: '',
                 },
                 minmov: 1,
-                pricescale: 7,
+                pricescale: 10 ** 3,
                 has_intraday: true,
                 has_daily: true,
                 has_weekly_and_monthly: false,
                 // visible_plots_set: 'ohlcv',
                 supported_resolutions: configurationData.supported_resolutions!,
                 volume_precision: 8,
-                data_status: 'streaming'
+                data_status: 'pulsed'
             })
         } catch (e) {
             onResolveErrorCallback(e as Error);
@@ -187,22 +175,38 @@ export default {
         onErrorCallback: (error: string) => void
     ): Promise<void> => {
         try {
-            const a = await getKlines(
+            const bars = await getKlines(
                 symbolInfo,
                 periodParams.from,
                 periodParams.to ?? Date.now() / 1000,
                 resolution
             );
 
+            // onHistoryCallback(bars, {noData: true})
+
             // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-            periodParams.from < 0
+            (periodParams.from < 0 || bars.length < 1)
                 ? onHistoryCallback([], {noData: true})
-                : onHistoryCallback(a, {noData: false});
+                : onHistoryCallback(bars, {noData: false});
         } catch (a) {
             console.error(a);
             if (typeof a === "string") {
                 onErrorCallback(a);
             }
         }
+    },
+
+    subscribeBars: (
+/*
+        symbolInfo: SymbolInfo,
+        resolution: string,
+        onRealtimeCallback: (bar: FormattedCandle) => void,
+        subscribeUID: string,
+        onResetCacheNeededCallback: () => void
+*/
+    ): void => {
+    },
+
+    unsubscribeBars: (/*subscriberUID: string*/): void => {
     },
 };

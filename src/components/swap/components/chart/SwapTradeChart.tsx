@@ -1,14 +1,16 @@
 import {useEffect, useRef, useState} from "react";
 import Datafeeds from "./ChartDataFeed";
-import {TimeRange} from "../../../../types/swap.type.ts";
+import {ChartType, TimeRange} from "../../../../types/swap.type.ts";
 import {useStore} from "../../../../store/useStore.ts";
+import {IChartingLibraryWidget} from "../../../../../public/charting_library";
+import {mapTimeRangeToResolution} from "../../../../constants/chart.constants.ts";
 
 declare global {
     interface Window {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         TradingView?: {
-            widget: new (config: WidgetConfig) => TradingViewWidget;
+            widget: new (config: WidgetConfig) => IChartingLibraryWidget;
         };
     }
 }
@@ -35,40 +37,16 @@ interface WidgetConfig {
         foregroundColor: string;
     };
 }
-
-interface TradingViewWidget {
-    onChartReady(callback: () => void): void;
-
-    headerReady(): Promise<void>;
-
-    createButton(): HTMLElement;
-
-    showNoticeDialog(params: {
-        title: string;
-        body: string;
-        callback: () => void;
-    }): void;
-
-    remove(): void;
-
-    setSymbol(
-        symbol: string,
-        interval: string | undefined,
-        callback: () => void
-    ): void;
-
-    symbolInterval(): { interval: string } | null;
-}
-
 interface TradeChartProps {
     tokenSymbol: string;
-    interval: TimeRange;
+    timeRange: TimeRange;
+    type: ChartType;
 }
 
-const SwapTradeChart: React.FC<TradeChartProps> = ({tokenSymbol, interval}) => {
+const SwapTradeChart: React.FC<TradeChartProps> = ({tokenSymbol, timeRange, type}) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const { theme } = useStore();
-    const [tvWidget, setTvWidget] = useState<TradingViewWidget | null>(null);
+    const [tvWidget, setTvWidget] = useState<IChartingLibraryWidget | null>(null);
     const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
     useEffect(() => {
@@ -108,13 +86,13 @@ const SwapTradeChart: React.FC<TradeChartProps> = ({tokenSymbol, interval}) => {
         if (!isScriptLoaded || !window.TradingView) {
             return;
         }
-        
+
         try {
             const widgetOptions: WidgetConfig = {
                 autosize: true,
-                toolbar_bg: theme === 'dark' ? '#000000' : '#ffffff',
+                toolbar_bg: theme === 'dark' ? '#101112' : '#ffffff',
                 symbol: tokenSymbol,
-                interval: "1D",
+                interval: mapTimeRangeToResolution[timeRange],
                 fullscreen: false,
                 container: "tv_chart_container",
                 datafeed: Datafeeds,
@@ -125,33 +103,38 @@ const SwapTradeChart: React.FC<TradeChartProps> = ({tokenSymbol, interval}) => {
                 theme: theme,
                 charts_storage_url: 'https://saveload.tradingview.com',
                 disabled_features: [
-                    "volume_force_overlay",
+                    "left_toolbar",
                     "timeframes_toolbar",
-                    "go_to_date",
+                    'volume_force_overlay',
+                    'timeframes_toolbar',
+                    'go_to_date',
                     'header_symbol_search',
                     'header_compare',
                     'header_undo_redo',
                     'control_bar',
                     'display_market_status',
                     'show_hide_button_in_legend',
-                    'edit_buttons_in_legend',
                     'header_chart_type',
-                    'volume_force_overlay',
                     'legend_context_menu',
-                    'use_localstorage_for_settings'
+                    'use_localstorage_for_settings',
+                    'symbol_info',
+                    'symbol_info_long_description',
+                    'context_menus',
+                    'edit_buttons_in_legend',
+                    'header_widget',
                 ],
                 enabled_features: ["study_templates"],
                 overrides: {
                     // Background and Grid
                     "paneProperties.backgroundType": "solid",
-                    "paneProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
-                    "paneProperties.vertGridProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    "paneProperties.horzGridProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
+                    "paneProperties.background": theme === 'dark' ? '#101112' : '#ffffff',
+                    "paneProperties.vertGridProperties.color": theme === 'dark' ? '#101112' : '#e1e3eb',
+                    "paneProperties.horzGridProperties.color": theme === 'dark' ? '#101112' : '#e1e3eb',
 
                     // Scales and Text
-                    "scalesProperties.backgroundColor": theme === 'dark' ? '#000000' : '#ffffff',
+                    "scalesProperties.backgroundColor": theme === 'dark' ? '#101112' : '#ffffff',
                     "scalesProperties.lineColor": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    "scalesProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000',
+                    "scalesProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#101112',
 
                     // Candle Colors - Keep consistent regardless of theme
                     "mainSeriesProperties.candleStyle.upColor": "#26a69a",
@@ -163,23 +146,23 @@ const SwapTradeChart: React.FC<TradeChartProps> = ({tokenSymbol, interval}) => {
 
                     // Additional UI Elements
                     "symbolWatermarkProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    "chartProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
+                    "chartProperties.background": theme === 'dark' ? '#101112' : '#ffffff',
                     "chartProperties.lineColor": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    "chartProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000',
+                    "chartProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#101112',
 
                     // Navigation Buttons and Toolbar
-                    "toolbarBg": theme === 'dark' ? '#000000' : '#ffffff',
-                    "toolbarIconColor": theme === 'dark' ? '#B2B5BE' : '#000000',
+                    "toolbarBg": theme === 'dark' ? '#101112' : '#ffffff',
+                    "toolbarIconColor": theme === 'dark' ? '#B2B5BE' : '#101112',
                     "toolbarIconHoverBg": theme === 'dark' ? '#363c4e' : '#e1e3eb',
 
                     // Left Toolbar Specific
-                    "paneProperties.leftAxisProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
-                    "paneProperties.leftAxisProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000',
-                    "paneProperties.legendProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
-                    "paneProperties.legendProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000'
+                    "paneProperties.leftAxisProperties.background": theme === 'dark' ? '#101112' : '#ffffff',
+                    "paneProperties.leftAxisProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#101112',
+                    "paneProperties.legendProperties.background": theme === 'dark' ? '#101112' : '#ffffff',
+                    "paneProperties.legendProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#101112'
                 },
                 loading_screen: {
-                    backgroundColor: theme === 'dark' ? '#000000' : '#ffffff',
+                    backgroundColor: theme === 'dark' ? '#101112' : '#ffffff',
                     foregroundColor: theme === 'dark' ? '#363c4e' : '#e1e3eb'
                 }
             };
@@ -195,7 +178,7 @@ const SwapTradeChart: React.FC<TradeChartProps> = ({tokenSymbol, interval}) => {
         } catch (error) {
             console.error('Error initializing TradingView widget:', error);
         }
-    }, [tokenSymbol, theme, isScriptLoaded]);
+    }, [tokenSymbol, theme, isScriptLoaded, timeRange]);
 
     useEffect(() => {
         if (tokenSymbol && tvWidget) {
@@ -210,6 +193,16 @@ const SwapTradeChart: React.FC<TradeChartProps> = ({tokenSymbol, interval}) => {
             }
         }
     }, [tokenSymbol, tvWidget]);
+
+    // switching line and ohlcv chart
+    useEffect(() => {
+        if (tvWidget) {
+            tvWidget?.applyOverrides({
+                'mainSeriesProperties.style': type === 'line' ? 2 : 1, // 1 for OHLCV, 2 for Line Chart
+            });
+        }
+    }, [type, tvWidget])
+
 
     return (
         <div

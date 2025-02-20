@@ -1,5 +1,5 @@
 import {create} from 'zustand';
-import {JupiterQuoteType, TxCallbackProps} from "../types/jupiter-swap.type.ts";
+import {JupiterQuoteType, TxCallbackProps} from "../types/jupiterSwap.type.ts";
 
 interface SwapStore {
     slippage: number

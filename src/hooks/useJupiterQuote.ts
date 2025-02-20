@@ -1,8 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import {TokenType} from "../types/swap.type.ts";
 import {solToWSol} from "../utils/solana.util.ts";
-import {useContext} from "react";
-import {Web3AuthContext} from "../providers/Web3AuthContext.tsx";
 import Decimal from "decimal.js";
 
 interface quoteParam {
@@ -19,10 +17,10 @@ const useJupiterQuote = ({
                              slippage,
                          }: quoteParam
 ) => {
-    const {solanaWalletInfo} = useContext(Web3AuthContext);
+    // const {solanaWalletInfo} = useContext(Web3AuthContext);
 
     const enabled =
-        !!sellToken && !!buyToken && !!solanaWalletInfo && !!sellAmount && Number(sellAmount) > 0;
+        !!sellToken && !!buyToken /*&& !!solanaWalletInfo*/ && !!sellAmount && Number(sellAmount) > 0;
     const amount = sellAmount ? new Decimal(sellAmount).mul(10 ** ((sellToken?.decimals) ?? 0)).toString() : '0'
     const slippageBps = slippage * 100
 

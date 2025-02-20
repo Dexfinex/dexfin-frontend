@@ -1,6 +1,6 @@
 import {PublicKey} from "@solana/web3.js";
 import {SOL_INFO, SOLMint, TOKEN_WSOL, WSOLMint} from "../constants/solana.constants.ts";
-import {ApiV3Token} from "../types/jupiter-swap.type.ts";
+import {ApiV3Token} from "../types/jupiterSwap.type.ts";
 
 export const wSolToSol = (key?: string): string | undefined => (key === WSOLMint.toBase58() ? SOLMint.toBase58() : key)
 export const solToWSol = (key?: string): string | undefined => (key === SOLMint.toBase58() ? WSOLMint.toBase58() : key)

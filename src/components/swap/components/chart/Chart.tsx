@@ -60,7 +60,8 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
               <div className="h-full relative">
                 <SwapTradeChart
                     tokenSymbol={currentTokenSymbol}
-                    interval={timeRange}
+                    timeRange={timeRange}
+                    type={type}
                 />
               </div>
             </Suspense>

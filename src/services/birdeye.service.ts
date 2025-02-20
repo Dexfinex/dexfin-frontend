@@ -27,14 +27,14 @@ export const birdeyeService = {
             }
 
             const chartData: ChartDataPoint[] = response.data?.items.map((item) => ({
-                time: item.unixTime * 1000,
+                time: item.unixTime,
                 open: item.o,
                 high: item.h,
                 low: item.l,
                 close: item.c,
                 volume: item.v,
             }));
-            return chartData.sort((a, b) => a.time - b.time);
+            return chartData
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 429) {
                 throw new Error('Rate limit exceeded. Please try again later.');

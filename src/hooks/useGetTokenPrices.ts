@@ -12,10 +12,11 @@ interface QuoteParam {
 
 const useGetTokenPrices = ({ chainId, tokenAddresses }: QuoteParam) => {
     const enabled = !!tokenAddresses && tokenAddresses.length > 0;
+    const uniqueTokenAddresses = [...new Set(tokenAddresses)].filter(item => item != null)
 
     const fetchPrices = useCallback(async () => {
         if (chainId === SOLANA_CHAIN_ID) {
-            const {data} = await birdeyeService.getMintPrices(tokenAddresses);
+            const {data} = await birdeyeService.getMintPrices(uniqueTokenAddresses);
             if (data) {
                 const resultData: Record<string, string> = {};
                 for (const address of Object.keys(data)) {
@@ -24,7 +25,7 @@ const useGetTokenPrices = ({ chainId, tokenAddresses }: QuoteParam) => {
                 return resultData;
             }
         } else {
-            const data = await coingeckoService.getTokenPrices(chainId, tokenAddresses);
+            const data = await coingeckoService.getTokenPrices(chainId, uniqueTokenAddresses);
             if (data) {
                 const resultData: Record<string, string> = {};
                 for (const address of Object.keys(data)) {
@@ -35,10 +36,10 @@ const useGetTokenPrices = ({ chainId, tokenAddresses }: QuoteParam) => {
         }
 
         return {};
-    }, [tokenAddresses, chainId]);
+    }, [uniqueTokenAddresses, chainId]);
 
     const { isLoading, refetch, data } = useQuery<Record<string, string>>({
-        queryKey: ["get-token-price", tokenAddresses, chainId],
+        queryKey: ["get-token-price", uniqueTokenAddresses, chainId],
         queryFn: fetchPrices,
         enabled,
         refetchInterval: 20_000,

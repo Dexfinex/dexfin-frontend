@@ -75,7 +75,6 @@ export const coingeckoService = {
                 params: {
                     ...{
                         tokenId,
-                        currency: 'usd',
                         type: timeInterval,
                         time_from: unixTimeFrom,
                         time_to: unixTimeTo,
@@ -86,10 +85,7 @@ export const coingeckoService = {
             if (!Array.isArray(response.data)) {
                 throw new Error('Invalid response format');
             }
-
-            // CoinGecko OHLC format: [timestamp, open, high, low, close]
-            const chartData: ChartDataPoint[] = response.data
-            return chartData.sort((a, b) => a.time - b.time);
+            return response.data as ChartDataPoint[]
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 429) {
                 throw new Error('Rate limit exceeded. Please try again later.');
@@ -130,7 +126,6 @@ export const coingeckoService = {
             throw error;
         }
     },
-
     getTopGainers: async (): Promise<Ganiner[]> => {
         try {
             const {data} = await coinGeckoApi.get<Ganiner[]>('/top_gainers/');
@@ -140,7 +135,6 @@ export const coingeckoService = {
             throw error;
         }
     },
-
     getTopLosers: async (): Promise<Loser[]> => {
         try {
             const {data} = await coinGeckoApi.get<Loser[]>('/top_losers/');
@@ -150,7 +144,6 @@ export const coingeckoService = {
             throw error;
         }
     },
-
     searchCoins: async (query: string): Promise<SearchResult[]> => {
         try {
             const {data} = await coinGeckoApi.get<SearchResult[]>(`/search?query=${encodeURIComponent(query)}`);
