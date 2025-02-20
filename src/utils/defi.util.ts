@@ -1,3 +1,4 @@
+import { mapChainId2ChainName } from "../config/networks";
 import { Position } from "../store/useDefiStore";
 
 export const getTypeIcon = (type: Position['type']) => {
@@ -8,7 +9,7 @@ export const getTypeIcon = (type: Position['type']) => {
             return '🏦';
         case 'STAKING':
             return '🔒';
-        case 'POOL':
+        case 'LIQUIDITY':
             return '🌊';
         default:
             return '🎁'
@@ -16,14 +17,14 @@ export const getTypeIcon = (type: Position['type']) => {
 };
 
 export const getTypeColor = (type: Position['type']) => {
-    switch (type) {
+    switch (type.toUpperCase()) {
         case 'LENDING':
             return 'text-purple-400';
         case 'BORROWING':
             return 'text-red-400';
         case 'STAKING':
             return 'text-blue-400';
-        case 'POOL':
+        case 'LIQUIDITY':
             return 'text-green-400';
     }
 };
@@ -38,3 +39,16 @@ export const getTypeColor = (type: Position['type']) => {
 //       return 'text-red-400';
 //   }
 // };
+
+export const getChainName = (chainName: string) => {
+    switch (chainName) {
+        case "BNB Chain":
+            return "bsc"
+        default:
+            return chainName;
+    }
+}
+
+export const getChainNameById = (chaiId: number): string => {
+    return getChainName(mapChainId2ChainName[chaiId]);
+}

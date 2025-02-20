@@ -270,7 +270,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      {modalState.type && modalState.type === 'deposit' && modalState.position && (
+      {modalState?.type === 'deposit' && modalState.position && (
         <DepositModal
           setModalState={setModalState}
           showPreview={showPreview}
@@ -285,7 +285,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         />
       )}
 
-      {modalState.type && modalState.type === 'redeem' && modalState.position && (
+      {modalState?.type === 'redeem' && modalState.position && (
         <RedeemModal
           setModalState={setModalState}
           showPreview={showPreview}

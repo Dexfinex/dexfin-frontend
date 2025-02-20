@@ -1,11 +1,10 @@
 import React, { useContext } from "react";
-import { numberToHex } from 'viem';
+import { numberToHex } from "viem";
 
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import { TokenChainIcon } from '../swap/components/TokenIcon';
-
 import useDefiStore, { Position } from '../../store/useDefiStore';
-import { getTypeIcon, getTypeColor } from "../../utils/defi.util";
+import { getTypeIcon, getTypeColor, } from "../../utils/defi.util";
 
 interface OfferingListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
@@ -76,8 +75,10 @@ const offerings: Offering[] = [
 
 export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionType, selectedPositionType, handleAction }) => {
 
+    const CATEGORY_LIST = ['LENDING', 'BORROWING', 'STAKING', 'LIQUIDITY'] as Position['type'][]
+
     const { chainId, switchChain } = useContext(Web3AuthContext);
-    const { positions } = useDefiStore();
+    const { positions, } = useDefiStore();
 
     return (
         <div className="space-y-4">
@@ -91,7 +92,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                 >
                     All Types
                 </button>
-                {(['LENDING', 'BORROWING', 'STAKING', 'POOL'] as Position['type'][]).map(type => (
+                {CATEGORY_LIST.map(type => (
                     <button
                         key={type}
                         onClick={() => setSelectedPositionType(type)}
@@ -101,14 +102,14 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                             }`}
                     >
                         {getTypeIcon(type)}
-                        <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
+                        <span>{type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()}</span>
                     </button>
                 ))}
             </div>
 
             <div className="space-y-3">
                 {offerings
-                    .filter(o => selectedPositionType === 'ALL' || o.type === selectedPositionType)
+                    .filter(o => selectedPositionType === 'ALL' || o.type.toLowerCase() === selectedPositionType.toLowerCase())
                     .map((offering, index) => (
                         <div
                             key={index}
