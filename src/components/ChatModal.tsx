@@ -3,7 +3,7 @@ import {
   X, Maximize2, Minimize2, Search, Smile, Download,
   MessageSquare, Share2, Users, ArrowRight, Plus,
   Settings, User, Info, CheckCircle, XCircle, File,
-  Edit, Lock, Eye
+  Edit, Lock, Eye, HelpCircle
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import GifPicker from 'gif-picker-react';
@@ -24,175 +24,12 @@ import { EditChatProfileModal } from './EditChatProfileModal';
 import { ChatGroupModal } from './ChatGroupModal';
 import { IUser, IGroup, ChatType, IChat, ProfileType, ChatModeType, ReactionType } from '../types/chat.type';
 import { ChatMessages } from './ChatMessages';
+import { ChatHelpModal } from './ChatHelpModal';
 
 interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-// interface ChatUser {
-//   id: string;
-//   name: string;
-//   ens: string;
-//   avatar: string;
-//   isOnline: boolean;
-//   lastSeen?: string;
-//   status?: string;
-//   nftAccess?: {
-//     collection: string;
-//     tokenId: string;
-//     image: string;
-//     verified: boolean;
-//   }[];
-// }
-
-// interface ChatGroup {
-//   id: string;
-//   name: string;
-//   description: string;
-//   members: ChatUser[];
-//   type: 'public' | 'private' | 'nft-gated';
-//   icon: string;
-//   requiredNft?: {
-//     collection: string;
-//     image: string;
-//   };
-// }
-
-// const mockUsers: ChatUser[] = [
-//   {
-//     id: '1',
-//     name: 'Alice',
-//     ens: 'alice.eth',
-//     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-//     isOnline: true,
-//     status: 'Trading BTC/ETH pairs 📈',
-//     nftAccess: [
-//       {
-//         collection: 'Bored Ape Yacht Club',
-//         tokenId: '#8817',
-//         image: 'https://i.seadn.io/gae/H-eyNE1MwL5ohL-tCfn_Xa1Sl9M9B4612tLYeUlQubzt4ewhr4huJIR5OLuyO3Z5PpJFSwdm7rq-TikAh7f5eUw338A2cy6HRH75?auto=format&dpr=1&w=256',
-//         verified: true
-//       }
-//     ]
-//   },
-//   {
-//     id: '2',
-//     name: 'Bob',
-//     ens: 'bob.eth',
-//     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
-//     isOnline: true,
-//     status: 'DeFi degen 🌾',
-//     nftAccess: [
-//       {
-//         collection: 'Azuki',
-//         tokenId: '#4391',
-//         image: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=256',
-//         verified: true
-//       }
-//     ]
-//   },
-//   {
-//     id: '3',
-//     name: 'Charlie',
-//     ens: 'charlie.eth',
-//     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=charlie',
-//     isOnline: false,
-//     lastSeen: '2 hours ago',
-//     nftAccess: [
-//       {
-//         collection: 'Pudgy Penguins',
-//         tokenId: '#2156',
-//         image: 'https://i.seadn.io/gae/yNi-XdGxsgQCPpqSio4o31ygAV6wURdIdInWRcFIl46UjUQ1eV7BEndGe8L661OoG-clRi7EgInLX4LPu9Jfw4fq0bnVYHqg7RFi?auto=format&dpr=1&w=256',
-//         verified: true
-//       }
-//     ]
-//   }
-// ];
-
-// const mockGroups: ChatGroup[] = [
-//   {
-//     id: 'wow',
-//     name: 'Wealth of Wisdom',
-//     description: 'Exclusive community for financial wisdom and insights',
-//     members: mockUsers.slice(0, 8),
-//     type: 'public',
-//     icon: 'https://wealthofwisdom.io/wp-content/uploads/2022/12/wow-logoi1.svg'
-//   },
-//   {
-//     id: 'trading',
-//     name: 'Trading Group',
-//     description: 'Discuss trading strategies and market analysis',
-//     members: mockUsers.slice(0, 5),
-//     type: 'public',
-//     icon: '📈'
-//   },
-//   {
-//     id: 'defi',
-//     name: 'DeFi Discussion',
-//     description: 'All things DeFi - yields, protocols, and strategies',
-//     members: mockUsers.slice(1, 6),
-//     type: 'public',
-//     icon: '🌾'
-//   },
-//   {
-//     id: 'bayc-alpha',
-//     name: 'BAYC Alpha',
-//     description: 'Exclusive BAYC holders chat',
-//     members: mockUsers.filter(user =>
-//       user.nftAccess?.some(nft => nft.collection === 'Bored Ape Yacht Club')
-//     ),
-//     type: 'nft-gated',
-//     icon: '🐵',
-//     requiredNft: {
-//       collection: 'Bored Ape Yacht Club',
-//       image: 'https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR-M9He2PjILP0oOvxE89AyiPPGtrR3gysu1Zgy0hjd2xKIgjJJtWIc0ybj4Vd7wv8t3pxDGHoJBzDB?auto=format&dpr=1&w=256'
-//     }
-//   },
-//   {
-//     id: 'azuki-dao',
-//     name: 'Azuki DAO',
-//     description: 'Azuki holders governance chat',
-//     members: mockUsers.filter(user =>
-//       user.nftAccess?.some(nft => nft.collection === 'Azuki')
-//     ),
-//     type: 'nft-gated',
-//     icon: '⛩️',
-//     requiredNft: {
-//       collection: 'Azuki',
-//       image: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=256'
-//     }
-//   }
-// ];
-
-// const tradingGroupMessages = [
-//   {
-//     id: '1',
-//     sender: {
-//       id: '4',
-//       name: 'CryptoWhale',
-//       ens: 'whale.eth',
-//       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=whale',
-//       isOnline: true,
-//       status: 'Trading 24/7 🐋'
-//     },
-//     content: "BTC looking bullish on the 4h chart. Clear breakout above resistance. 📈",
-//     timestamp: '10:30 AM',
-//     reactions: [
-//       { emoji: '🚀', count: 5, reacted: true },
-//       { emoji: '👀', count: 3, reacted: false }
-//     ]
-//   }
-// ];
-
-// const bobDirectMessages = [
-//   {
-//     id: '1',
-//     sender: mockUsers[1], // Bob
-//     content: "Hey! Just wanted to share my latest trade analysis. Looking at some interesting setups in the DeFi sector. 📊",
-//     timestamp: '11:15 AM'
-//   }
-// ];
 
 export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -206,6 +43,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isEditProfileActive, setIsEditProfileActive] = useState(false);
   const [isChatGroupModalActive, setIsChatGroupModalActive] = useState(false);
   const [isSendModalActive, setIsSendModalActive] = useState(false);
+  const [isHelpModalActive, setIsHelpModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
   const toast = useToast()
@@ -235,15 +73,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
   const gifBtnRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // const [currentUserNfts] = useState([
-  //   {
-  //     collection: 'Bored Ape Yacht Club',
-  //     tokenId: '#1234',
-  //     image: 'https://i.seadn.io/gae/H-eyNE1MwL5ohL-tCfn_Xa1Sl9M9B4612tLYeUlQubzt4ewhr4huJIR5OLuyO3Z5PpJFSwdm7rq-TikAh7f5eUw338A2cy6HRH75?auto=format&dpr=1&w=256',
-  //     verified: true
-  //   }
-  // ]);
 
   const setProfile = useCallback(async () => {
     const profile = await chatUser.profile.info()
@@ -1447,47 +1276,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     if (group?.type === "Searched") return false;
 
     if (group?.type === "Request") return false;
-    // if (group?.type === 'public') return true;
-    // if (group?.type === 'nft-gated') {
-    //   return currentUserNfts.some(nft =>
-    //     nft.collection === group.requiredNft?.collection
-    //   );
-    // }
-    // if (user?.nftAccess) {
-    //   return currentUserNfts.some(userNft =>
-    //     user.nftAccess?.some(requiredNft =>
-    //       requiredNft.collection === userNft.collection
-    //     )
-    //   );
-    // }
+
     return true;
   };
 
   const renderAccessBadge = (user: IUser | null, group: IGroup | null) => {
     if (!user && !group) return null;
 
-    // const hasAccess = canAccessChat(user, group);
-    // const requiredNft = group?.type === 'nft-gated' ? group.requiredNft :
-    //   user?.nftAccess?.[0];
-
-    // if (!requiredNft) return null;
-
-    // return (
-    //   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${hasAccess ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-    //     }`}>
-    //     {hasAccess ? (
-    //       <>
-    //         <ShieldCheck className="w-4 h-4" />
-    //         <span>Access Granted</span>
-    //       </>
-    //     ) : (
-    //       <>
-    //         <ShieldAlert className="w-4 h-4" />
-    //         <span>Requires {requiredNft.collection}</span>
-    //       </>
-    //     )}
-    //   </div>
-    // );
     return null
   };
 
@@ -1874,6 +1669,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   )}
                 </button>
                 <button
+                  onClick={() => setIsHelpModalActive(true)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                </button>
+                <button
                   onClick={onClose}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                 >
@@ -1991,6 +1792,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         onClose={() => setIsChatGroupModalActive(false)}
         group={selectedGroup}
         updateOneGroup={updateOneGroup}
+      />
+
+      <ChatHelpModal
+        isOpen={isHelpModalActive}
+        onClose={() => setIsHelpModalActive(false)}
       />
     </>
   );
