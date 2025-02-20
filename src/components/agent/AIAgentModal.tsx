@@ -497,7 +497,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         if (event.results[i].isFinal) {
           finalTranscript = transcript;
           setTranscript(finalTranscript.trim());
-          setInput(finalTranscript);
+          processCommand(finalTranscript, address, chainId);
           stopListening();
         } else {
           interimTranscript += transcript;
@@ -754,9 +754,9 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         isOpen={isListening}
         transcript={transcript}
         commands={[
-          { command: "What is the Bitcoin price?", description: "Get real-time BTC price" },
-          { command: "Show me trending tokens", description: "View trending cryptocurrencies" },
-          { command: "Show me the latest news", description: "Get latest crypto news" },
+          { command: "Stake 1 ETH on Lido", description: "Earn staking rewards" },
+          { command: "Deposit 1 USDC on Aave", description: "Earn lending interest" },
+          { command: "Withdraw 2 USDC on Aave", description: "Remove Deposited tokens" },
           { command: "Swap 1 USDC for ETH", description: "Execute token swap" }
         ]}
       />
