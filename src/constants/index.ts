@@ -34,6 +34,10 @@ export const CRYPTONEWS_BASE_URL = 'https://dexfinv3-backend-production.up.railw
 
 export const ENSO_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/enso';
 
+export const CALENDAR_BASE_URL='https://dexfinv3-backend-production.up.railway.app/calendar';
+
+export const USERAUTH_BASE_URL= "https://dexfinv3-backend-production.up.railway.app/graphql";
+
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 
 export const ZEROX_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/0x';
