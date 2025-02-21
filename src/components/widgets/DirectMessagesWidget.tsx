@@ -12,7 +12,7 @@ import { Spinner, useToast, Popover, PopoverTrigger, PopoverContent } from '@cha
 import { motion } from 'framer-motion';
 import { getWalletProfile } from '../../utils/chatApi';
 import { IUser, IChat, ChatType } from '../../types/chat.type';
-import { getEnsName, shrinkAddress, extractAddress, getChatHistoryDate, downloadBase64File } from '../../utils/common.util';
+import { getEnsName, shrinkAddress, extractAddress, getChatHistoryDate, downloadBase64File, getHourAndMinute } from '../../utils/common.util';
 import { LIMIT, BIG_IMAGE_WIDHT } from '../../utils/chatApi';
 import { ImageWithSkeleton } from '../common/ImageWithSkeleton';
 
@@ -709,6 +709,12 @@ export const DirectMessagesWidget: React.FC = () => {
       const encryption = await user.encryption.info()
 
       if (encryption?.decryptedPgpPrivateKey) {
+        const pk = {
+          account: user.account,
+          decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+        }
+        localStorage.setItem("PgpPK", JSON.stringify(pk))
+
         setChatUser(user)
         initStream(user)
       }
@@ -741,6 +747,45 @@ export const DirectMessagesWidget: React.FC = () => {
     setIsHandlingRequest(false)
   }
 
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(date);
+  }
+
+  const renderChatHistory = () => {
+    let lastDate: any = null;
+
+    return chatHistory.map((msg: IChat) => {
+      const messageDate = formatDate(new Date(msg.timestamp))
+      const showDateSeparator = lastDate != messageDate;
+      lastDate = messageDate;
+
+      return <div key={msg.timestamp}>
+        {showDateSeparator && <div className='w-full text-center my-5'>
+          <span className='text-sm bg-white/10 py-1 px-2 rounded-xl'>{messageDate}</span>
+        </div>}
+        <div className={`flex items-start gap-3 group`}>
+          {
+            msg.fromAddress == selectedUser?.address &&
+            < img
+              src={selectedUser.profilePicture}
+              className="w-8 h-8 rounded-full mt-1"
+            />
+          }
+          <div className="flex-1 min-w-0">
+            <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+              {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+              <span className="text-xs font-small text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+              <span className={`text-xs text-white/40`}>{getHourAndMinute(msg.timestamp)}</span>
+            </div>
+            {
+              renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
+            }
+          </div>
+        </div>
+      </div>
+    })
+  }
+
   const canAccessChat = () => {
     if (!selectedUser) {
       return false
@@ -761,12 +806,26 @@ export const DirectMessagesWidget: React.FC = () => {
         </button>
       </div>}
 
-      {/* Search */}
-      {chatUser?.uid && <button className='absolute top-8 right-2 hover:bg-white/10 p-2 rounded-lg' onClick={() => setIsOverlay(true)}>
-        <Search className='w-4 h-4' />
-      </button>}
-      
       {isOverlay && <Overlay isOpen={isOverlay} onClose={() => setIsOverlay(false)} selectedUser={selectedUser} setSelectedUser={setSelectedUser} />}
+
+      {/* Search */}
+      {/* {chatUser?.uid && <button className='absolute top-8 right-2 hover:bg-white/10 p-2 rounded-lg' onClick={() => setIsOverlay(true)}>
+        <Search className='w-4 h-4' />
+      </button>} */}
+
+      <div className='border-b border-white/30 mx-4 flex items-center justify-between p-2'>
+        <div className='flex-1'>
+          {
+            selectedUser && <div className='flex items-center gap-4'>
+              <img src={selectedUser?.profilePicture} className='rounded-full w-6 h-6' />
+              <span className='text-sm text-white/50'>{selectedUser.name ? selectedUser.name + " | " + shrinkAddress(selectedUser.address) : selectedUser.address}</span>
+            </div>
+          }
+        </div>
+        <button className='hover:bg-white/10 p-2 rounded-lg' onClick={() => setIsOverlay(true)}>
+          <Search className='w-4 h-4' />
+        </button>
+      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-x-hidden overflow-y-auto ai-chat-scrollbar space-y-2" ref={chatScrollRef} >
@@ -784,27 +843,7 @@ export const DirectMessagesWidget: React.FC = () => {
                 </div>
               }
               {
-                chatHistory.map((msg: IChat) => (
-                  msg.type !== "Reaction" ? <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-                    {
-                      msg.fromAddress == selectedUser?.address &&
-                      < img
-                        src={selectedUser.profilePicture}
-                        className="w-8 h-8 rounded-full mt-1"
-                      />
-                    }
-                    <div className="flex-1 min-w-0">
-                      <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
-                        {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                        <span className="text-xs font-small text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
-                        <span className={`text-xs text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
-                      </div>
-                      {
-                        renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
-                      }
-                    </div>
-                  </div> : null
-                ))
+                renderChatHistory()
               }
               {
                 isRequestUser && <div className='w-full flex justify-center'>
