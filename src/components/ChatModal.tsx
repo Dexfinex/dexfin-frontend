@@ -238,7 +238,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       console.log('get chat user')
       setProfile()
       getChatInformation()
-      // const profile = await getWalletProfile(chatUser, searchQuery)
     } else {
       clearValues()
     }

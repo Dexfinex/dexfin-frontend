@@ -72,50 +72,55 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
     const getPrevChatHistory = async (address: string, chatId: string) => {
         setLoadingPrevChat(true)
-        const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
-        console.log('prev history = ', prevHistory)
+        try {
 
-        if (prevHistory.length > 0) {
-            let chats: IChat[] = []
-            let prevReactions: ReactionType[] = []
+            const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
+            console.log('prev history = ', prevHistory)
 
-            prevHistory.forEach((data: any) => {
-                if (data.messageType == "Reaction") {
-                    prevReactions = [...prevReactions, data.messageObj]
-                } else {
-                    chats = [...chats, {
-                        timestamp: data.timestamp,
-                        type: data.messageType,
-                        content: data.messageContent,
-                        fromAddress: extractAddress(data.fromDID),
-                        toAddress: extractAddress(data.toDID),
-                        chatId: data.cid,
-                        link: data.link,
-                        image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
-                    } as IChat]
-                }
-            })
+            if (prevHistory.length > 0) {
+                let chats: IChat[] = []
+                let prevReactions: ReactionType[] = []
 
-            const totalReactions: ReactionType[] = [...reactions, ...prevReactions]
-            if (totalReactions.length > 0) {
-                chats = chats.map(chat => {
-                    const found = totalReactions.find(e => e.reference == chat.chatId)
-                    if (found) {
-                        return {
-                            ...chat,
-                            reaction: found.content
-                        }
+                prevHistory.forEach((data: any) => {
+                    if (data.messageType == "Reaction") {
+                        prevReactions = [...prevReactions, data.messageObj]
+                    } else {
+                        chats = [...chats, {
+                            timestamp: data.timestamp,
+                            type: data.messageType,
+                            content: data.messageContent,
+                            fromAddress: extractAddress(data.fromDID),
+                            toAddress: extractAddress(data.toDID),
+                            chatId: data.cid,
+                            link: data.link,
+                            image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
+                        } as IChat]
                     }
-                    return chat
                 })
-            }
 
-            chats.shift()
+                const totalReactions: ReactionType[] = [...reactions, ...prevReactions]
+                if (totalReactions.length > 0) {
+                    chats = chats.map(chat => {
+                        const found = totalReactions.find(e => e.reference == chat.chatId)
+                        if (found) {
+                            return {
+                                ...chat,
+                                reaction: found.content
+                            }
+                        }
+                        return chat
+                    })
+                }
 
-            if (chats.length > 0) {
-                const updatedChat = [...chats.reverse(), ...chatHistory]
-                setChatHistory(updatedChat)
+                chats.shift()
+
+                if (chats.length > 0) {
+                    const updatedChat = [...chats.reverse(), ...chatHistory]
+                    setChatHistory(updatedChat)
+                }
             }
+        } catch(err) {
+            console.log('get prev chat err: ', err)
         }
 
         setLoadingPrevChat(false)
