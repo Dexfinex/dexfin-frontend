@@ -264,7 +264,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
       if(data.response.priceData) {
         const { priceData } = data.response;
         return {
-          text: `The current Bitcoin price is $${priceData.price.toLocaleString()} (${priceData.change24h.toFixed(2)}% 24h change)\n ${data.response.response}`,
+          text: `The current ${data.response.name} price is $${priceData.price.toLocaleString()} (${priceData.change24h.toFixed(2)}% 24h change)\n ${data.response.response}`,
           priceData: {
             price: priceData.price,
             priceChange24h: priceData.change24h,
