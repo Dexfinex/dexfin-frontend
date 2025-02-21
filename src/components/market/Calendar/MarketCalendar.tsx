@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Tag, Clock, Globe, Plus, X } from 'lucide-react';
 import AddEventModal from './AddEventModal.tsx'
-import { useLoadEvents, useLoginUserId } from '../../../hooks/useCalendar';
-import { useAuth } from './AuthContext';
+import { useLoadEvents, useLoginUserId, useDeleteEvent, useEditEvent } from '../../../hooks/useCalendar';
 import EventDetailsModal from './EventDetailsModal.tsx';
 export interface DayEvent {
   id?: string;
@@ -12,37 +11,9 @@ export interface DayEvent {
   type: 'launch' | 'airdrop' | 'ama' | 'governance' | 'conference' | 'partnership' | 'custom';
   project?: string;
   location?: string;
+  userId?: string;
 }
 
-// const mockEvents: DayEvent[] = [
-//   {
-//     id: '1',
-//     title: 'ETH Shanghai Upgrade',
-//     description: 'Major Ethereum network upgrade implementing EIP-4895',
-//     date: '2025-02-19T14:00',
-//     type: 'launch',
-//     project: 'Ethereum',
-//     location: ''
-//   },
-//   {
-//     id: '2',
-//     title: 'Token 2024 Conference',
-//     description: 'Annual blockchain conference featuring industry leaders',
-//     date: '2025-02-22T09:00',
-//     type: 'conference',
-//     project: '',
-//     location: 'Singapore'
-//   },
-//   {
-//     id: '3',
-//     title: 'Layer Zero Airdrop',
-//     description: 'Token distribution for early protocol users',
-//     date: '2054-02-25T16:00',
-//     type: 'airdrop',
-//     project: 'LayerZero',
-//     location: ''
-//   }
-// ];
 
 const getEventTypeColor = (type: Event['type']) => {
   switch (type) {
@@ -72,14 +43,6 @@ export const MarketCalendar: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [userId, setuserId] = useState("")
 
-  const addEvent = (newEvent: Omit<DayEvent, 'id'>) => {
-    const event: DayEvent = {
-      ...newEvent,
-      id: Math.random().toString(36).substr(2, 9)
-    };
-    setEvents(prev => [...prev, event]);
-  };
-
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -90,8 +53,6 @@ export const MarketCalendar: React.FC = () => {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  // const { user } = useAuth();
-  // const [events, setEvents] = useState([]);
 
   useEffect(() => {
     // TODO: temporal code until we have concrete implementation of fetching access token
@@ -100,23 +61,19 @@ export const MarketCalendar: React.FC = () => {
 
   }, [userId])
   const loginUserId = async () => {
-    // if (!user) return;
     try {
       const response = await useLoginUserId("0x51FC897A1420FA4b027a0D9c121fd4fAa04ef9cC", "anyuser")
-      console.log(response)
       setuserId(response.accessToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     }
   }
   const loadEvents = async () => {
-    console.log(userId)
     try {
       if (!userId || userId?.trim() === '') {
         return;
       }
       const response = await useLoadEvents(userId);
-      console.log(response);
       setEvents(response)
       if (!response.ok) {
         throw new Error('Failed to create event');
@@ -140,15 +97,27 @@ export const MarketCalendar: React.FC = () => {
       setSelectedEvent(null);
   };
 
-  const handleEditEvent = (event: any) => {
-      // Add your edit logic here
-      console.log('Editing event:', event);
-      // You might want to open your existing AddEventModal here with pre-filled data
+  const handleEditEvent =  async  (event: any) => {
+      try {
+        const response = await useEditEvent(userId, event);
+        console.log(response)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      }
+      loadEvents();
+      setIsModalOpen(false);
+
   };
 
   const handleDeleteEvent = async (eventId: any) => {
-      // Add your delete logic here
-      console.log('Deleting event:', eventId);
+      try{
+        const response = await useDeleteEvent(userId, eventId);
+        console.log(response)
+      } catch(err){
+        setError(err instanceof Error ? err.message : 'An error occurred');
+
+      }
+      loadEvents();
       setIsModalOpen(false);
   };
 
@@ -157,17 +126,22 @@ export const MarketCalendar: React.FC = () => {
     const daysInMonth = getDaysInMonth(selectedDate);
     const firstDay = getFirstDayOfMonth(selectedDate);
 
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
         days.push(<div key={`empty-${i}`} className="h-24" />);
     }
 
-    // Add cells for each day of the month
     for (let day = 1; day <= daysInMonth; day++) {
         const currentDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day + 1);
         const dateString = currentDate.toISOString().slice(0, 10);
-
-        const currentDayEvents = events?.filter(event => {
+        if (!events || events.length==0){
+          days.push(
+            <div key={day} className="p-2 border min-h-24 border-white/10">
+                <div className="mb-2 font-medium">{day}</div>
+            </div>
+        );
+        }
+        else {
+          const currentDayEvents = events?.filter(event => {
             const eventDate = event.date.split('T')[0];
             return eventDate === dateString;
         });
@@ -189,7 +163,10 @@ export const MarketCalendar: React.FC = () => {
                 }
             </div>
         );
+        }
+
     }
+
 
     return (
         <>
@@ -206,6 +183,10 @@ export const MarketCalendar: React.FC = () => {
   };
 
 const renderListView = () => {
+  // if(events)
+    if (!events) {
+      return;
+    }
     const filteredEvents = events.filter(event => {
         const eventDate = new Date(event.date);
         return (
@@ -333,6 +314,7 @@ const renderListView = () => {
       <AddEventModal
         isOpen={showAddEvent}
         onClose={() => setShowAddEvent(false)}
+        onEventAdded={() => loadEvents()}
         userId={userId}
       />
     </div>

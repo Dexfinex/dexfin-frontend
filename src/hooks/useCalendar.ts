@@ -10,15 +10,22 @@ export const useLoginUserId = async (walletAddress: string, username: string) =>
 }
 
 export const useLoadEvents = async (Data: string) => {
-    console.log(Data)
     const data = await calendarService.loadEvents(Data);
     return data;
 }
 
-export const useAddEvent = async (accessToken: string, Data: DayEvent) => {
+export const useAddEvent = async (userId: string, Data: DayEvent) => {
     // const fetchAddEvent = useCallback(async () => {
-    const data = await calendarService.addEvent(accessToken, Data);
+    const data = await calendarService.addEvent(userId, Data);
 
     return data;
 };
+export const useDeleteEvent = async (userId:string, eventId: any)=>{
+    const data = await calendarService.deleteEvent(userId, eventId);
+    return data;
+}
+export const useEditEvent= async(userId: string, event:DayEvent)=>{
+    const data=await calendarService.editEvent(userId, event);
+    return data;
+}
 

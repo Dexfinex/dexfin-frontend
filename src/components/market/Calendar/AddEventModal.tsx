@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { useAddEvent, useLoginUserId } from '../../../hooks/useCalendar';
+import { useAddEvent } from '../../../hooks/useCalendar';
 import { DayEvent } from './MarketCalendar';
  
   
@@ -26,19 +26,7 @@ import { DayEvent } from './MarketCalendar';
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [loginToken, setLoginToken] = useState("");
 
-    // useEffect(()=>{
-    //   loginUserId();
-    // })
-    // const loginUserId= async ()=> {
-    //   try{
-    //     const response = await useLoginUserId("0x51FC897A1420FA4b027a0D9c121fd4fAa04ef9cC", "anyuser")
-    //     setLoginToken(response.accessToken);
-    //   } catch (err) {
-    //     setError(err instanceof Error ? err.message : 'An error occurred');
-    //   }
-    // }
     const addEventSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setIsSubmitting(true);
@@ -52,7 +40,6 @@ import { DayEvent } from './MarketCalendar';
           project: formData.project,
           location: formData.location
         };
-        console.log(userId)
         
         const response = await useAddEvent(userId, dataTosend)
 
@@ -63,17 +50,14 @@ import { DayEvent } from './MarketCalendar';
   
         const data = await response.json();
         
-        // Call the callback to refresh the events list
-        if (onEventAdded) {
-          onEventAdded();
-        }
-  
-        // Close the modal
-        onClose();
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setIsSubmitting(false);
+        if (onEventAdded) {
+          onEventAdded();
+        }
+        onClose();
       }
     };
   
@@ -143,7 +127,6 @@ import { DayEvent } from './MarketCalendar';
               <select
                 value={formData.type}
                 onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as DayEvent['type'] }))}
-                // className="w-full px-4 py-2 border rounded-lg outline-none bg-white/5 border-white/10 focus:border-white/20"
                 className="w-full px-4 py-2 border rounded-lg outline-none bg-white/5 border-white/10 focus:border-white/20 text-white [&>option]:bg-gray-800 [&>option]:text-white"
                 required
               >
@@ -189,7 +172,6 @@ import { DayEvent } from './MarketCalendar';
               </button>
               <button
                 type="submit"
-                // className="px-4 py-2 transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                 className="px-4 py-2 transition-colors bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isSubmitting}
               >

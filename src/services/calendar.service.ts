@@ -22,18 +22,7 @@ const REGISTER_MUTATION = `
     }
   }
 `;
-const ADD_EVENT_MUTATION = `
-  mutation AddEvent($input: EventInput!) {
-    addEvent(input: $input) {
-      title
-      description
-      date
-      type
-      project
-      location
-    }
-  }
-`;
+
 
 export const calendarService = {
     // loginUserId: async (email: string, password: string) => {
@@ -94,33 +83,76 @@ export const calendarService = {
             throw error;
         }
     },
-    addEvent: async (accessToken: string, Data: DayEvent) => {
-        try {
-            const variables = {
-                input: {
-                    title: Data.title,
-                    description: Data.description,
-                    date: Data.date,
-                    type: Data.type,
-                    project: Data.project,
-                    location: Data.location
-                }
-            };
-
-            const { data } = await calendarApi.post('', {
+    deleteEvent: async (userId:string, eventId: any) =>{
+        try{
+            const {data} = await calendarApi.delete(`/${eventId}`, {
                 headers: {
-                    'Authorization': `Bearer ${accessToken}`,
+                    'Authorization': `Bearer ${userId}`,
                     'Content-Type': 'application/json'
-                },
-                data: {
-                    query: ADD_EVENT_MUTATION,
-                    variables
                 }
-            })
+            });
             if (data.errors) {
                 throw new Error(data.errors[0].message);
             }
-            return data.data.addEvent
+            return data.data
+    }
+    catch (error) {
+        console.error('Error fetching calendar events:', {
+            error: error instanceof Error ? {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            } : error
+        });
+        throw error;
+    }
+},
+editEvent: async(userId:string, event: DayEvent)=>{
+    try {
+        console.log("ok")
+        console.log(event)
+        const {data} =await calendarApi.put(`/${event.id}`, {
+            title: event.title,
+            description: event.description,
+            date: event.date,
+            type: event.type,
+            project: event.project,
+            location: event.location
+        }, {
+            headers: {
+                'Authorization': `Bearer ${userId}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        console.log("no")
+
+        if (data.errors){
+            throw new Error(data.errors[0].message)
+        }
+        return data
+        
+    } catch (error) {
+        console.error('Error edit calendar events:', {
+            error: error instanceof Error ? {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            } : error
+        });
+        throw error;
+    }
+},
+
+    addEvent: async (userId: string, Data: DayEvent) => {
+        try {
+            const { data } = await calendarApi.post('',Data, {
+                headers: {
+                    'Authorization': `Bearer ${userId}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            return data.data
         } catch (error) {
             console.error('Error adding event', {
                 error: error instanceof Error ? {
@@ -147,13 +179,12 @@ export const calendarService = {
             }
         );
         try {
-            const { data } = await calendarApi.get("", {
+            const { data } = await calendarApi.get(``, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
                 }
             });
-            console.log(data)
             return data;
         } catch (error) {
             console.error('Error fetching calendar events:', {
