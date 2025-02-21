@@ -89,7 +89,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                 <div className="flex items-center gap-6">
                                                     <div>
                                                         <span className="text-sm text-white/60">Amount</span>
-                                                        <div className="text-lg">${(position.amount || "0").toLocaleString()}</div>
+                                                        <div className="text-lg">${formatNumberByFrac(position.amount)}</div>
                                                     </div>
                                                     <div>
                                                         <span className="text-sm text-white/60">APY</span>
@@ -145,7 +145,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                         <div className="mt-3">
                                             <div className="flex justify-between text-sm mb-1">
                                                 <span className="text-white/60">Borrow Utilization</span>
-                                                <span>{((position.borrowed! / position.maxBorrow!) * 100).toFixed(1)}%</span>
+                                                <span>{(formatNumberByFrac((position.borrowed! / position.maxBorrow!) * 100))}%</span>
                                             </div>
                                             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                                                 <div
