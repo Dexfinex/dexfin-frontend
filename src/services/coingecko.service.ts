@@ -1,9 +1,22 @@
-import {coinGeckoApi} from "./api.service.ts";
-import {CoinData, CoinGeckoToken, SearchResult, TrendingCoin} from "../types";
-import {ChartDataPoint, TokenType} from "../types/swap.type.ts";
-import {TokenTypeB} from "../types/cart.type.ts";
+import { coinGeckoApi } from "./api.service.ts";
+import { CoinData, CoinGeckoToken, Ganiner, Loser, SearchResult, TrendingCoin } from "../types";
+import { ChartDataPoint, TokenType } from "../types/swap.type.ts";
+import { TokenTypeB } from "../types/cart.type.ts";
 import axios from "axios";
-import {MarketCapToken} from "../components/market/MarketCap.tsx";
+import { MarketCapToken } from "../components/market/MarketCap.tsx";
+interface CoinGeckoStableToken {
+    id: string;
+    name: string;
+    symbol: string;
+    current_price: number;
+    market_cap: number;
+    total_supply: number;
+    image: string;
+}
+interface CexVolum {
+    trade_volume_24h_usd_sum: number;
+    trade_volume_24h_usd_normalized_sum: number;
+}
 
 export const coingeckoService = {
     getMemecoins: async () => {
@@ -62,6 +75,42 @@ export const coingeckoService = {
             return allTokens;
         } catch (error) {
             console.error('Failed to fetch token list:', error);
+            throw error;
+        }
+    },
+    getStablecoins: async (): Promise<CoinGeckoStableToken[]> => {
+        try {
+            const { data } = await coinGeckoApi.get<CoinGeckoStableToken[]>('/stablecoin?ids=tether%2Cusd-coin%2Cdai');
+            const stableTokens = data.map(token => ({
+                id: token.id,
+                name: token.name,
+                symbol: token.symbol,
+                current_price: token.current_price,
+                market_cap: token.market_cap,
+                total_supply: token.total_supply,
+                image: token.image,
+            }));
+            return stableTokens;
+        } catch (error) {
+            console.error('Failed to fetch memecoins:', error);
+            throw error;
+        }
+    },
+    getCexVolume: async (): Promise<CexVolum[]> => {
+        console.log("getCexVolume ....")
+        try {
+            const response = await coinGeckoApi.get<CexVolum[]>('/exchanges');
+            // console.log("getCexVolume data  ....")
+
+            // const tradeVolumeData = data.map(data => ({
+            //     trade_volume_24h_usd_sum: data.trade_volume_24h_usd_sum,
+            //     trade_volume_24h_usd_normalized_sum: data.trade_volume_24h_usd_normalized_sum,
+            // }));
+            const data: CexVolum[] = response.data; // Extract the array from the response
+            // console.log("tradeVolumeDataservice : ", data);
+            return data;
+        } catch (error) {
+            console.error('Failed to fetch memecoins:', error);
             throw error;
         }
     },
@@ -126,6 +175,26 @@ export const coingeckoService = {
         }
     },
 
+    getTopGainers: async (): Promise<Ganiner[]> => {
+        try {
+            const { data } = await coinGeckoApi.get<Ganiner[]>('/top_gainers/');
+            return data;
+        } catch (error) {
+            console.error('Failed to fetch top gainers:', error);
+            throw error;
+        }
+    },
+
+    getTopLosers: async (): Promise<Loser[]> => {
+        try {
+            const { data } = await coinGeckoApi.get<Loser[]>('/top_losers/');
+            return data;
+        } catch (error) {
+            console.error('Failed to fetch top losers:', error);
+            throw error;
+        }
+    },
+
     searchCoins: async (query: string): Promise<SearchResult[]> => {
         try {
             const { data } = await coinGeckoApi.get<SearchResult[]>(`/search?query=${encodeURIComponent(query)}`);
@@ -158,4 +227,5 @@ export const coingeckoService = {
             return [];
         }
     },
+
 }

@@ -216,7 +216,7 @@ export interface TransactionError extends Error {
 }
 export interface BrianTransactionData {
   message: string;
-  type:string;
+  type: string;
   data: {};
 }
 
@@ -238,6 +238,9 @@ export interface DefillamaProtocol {
   change_7d: number;
   tokenBreakdowns: Object;
   mcap?: number;
+  category: string;
+  dailyUsers: number;
+  weeklyRevenue: number;
 }
 
 export interface DefillamaPool {
@@ -252,6 +255,44 @@ export interface DefillamaCategory {
   tvl: number;
   change24h: number;
 }
+export interface DefillamaChainTVL {
+  gecko_id: string;
+  tvl: string;
+  tokenSymbol: string;
+  cmcId: string;
+  name: string;
+  chainId: number;
+}
+export interface DefillamaDexVolume {
+  total24h: number;
+  totalDataChart?: any[];
+  change_1d: number;
+  allChains?: any[];
+  protocols?: any[];
+}
+
+
 export interface BrianKnowledgeData {
   message: string;
+}
+
+export interface Ganiner {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  usd24hChange: number;
+  usd24hVol: number;
+}
+export interface Loser {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  usd24hChange: number;
+  usd24hVol: number;
 }
