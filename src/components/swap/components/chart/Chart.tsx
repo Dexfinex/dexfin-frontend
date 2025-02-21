@@ -15,7 +15,7 @@ interface ChartProps {
 }
 
 export function Chart({ type, onTypeChange, token }: ChartProps) {
-  const [timeRange, setTimeRange] = useState<TimeRange>('15m');
+  const [timeRange, setTimeRange] = useState<TimeRange>('1D');
   const {getTokenPrice} = useTokenStore()
 
   const price = token ? getTokenPrice(token?.address, token?.chainId) : 0
