@@ -223,15 +223,6 @@ const mockWhaleTransactions: WhaleTransaction[] = [
     }
 ];
 
-
-// const formatLargeNumber = (num: number) => {
-//     if (num >= 1000000000) {
-//         return `$${(num / 1000000000).toFixed(2)}B`;
-//     } else if (num >= 1000000) {
-//         return `$${(num / 1000000).toFixed(2)}M`;
-//     }
-//     return `$${num.toFixed(2)}`;
-// };
 const formatLargeNumber = (num: number | undefined | null): string => {
     if (num === undefined || num === null) return '$0';
 
@@ -253,45 +244,21 @@ const DeFiMarketDashboard: React.FC = () => {
 
     //usegetdexvolume
     const { DexVolume: dexVolume } = useGetDexVolume();
-    // console.log("dexVolume : ", dexVolume[0].total24h)
-    // const { data } = useFearGreedStore();
-    // const [chainTvl, setChainTvl] = useState<DefillamaChainTVL[]>([]);
     const { ChainTVLdata: chainTvlData, isLoading } = useGetChainTVL();
     const { Protocolsdata: protocolsData, ProtocolsisLoading } = useGetDefillamaProtocols();
     const [topProtocols, setTopProtocols] = useState<any[]>([]);
     const { getDeFiStats, getChainTVL, setChainTVLs } = useDefillamaStore();
+    const [tradeVolume, setTradeVolume] = useState<CexVolume | null>(null);
+    const DefistatusData = getDeFiStats();
+    const [spacialTvl, setSpacialTvl] = useState<SpecialTVL[]>([]);
     useEffect(() => {
         if (chainTvlData) {
             setChainTVLs(chainTvlData);
         }
     }, [chainTvlData]);
-
-    // const { chainTVLs } = getChainTVL();
-    // console.log("--------------Chain TVL Data : ", chainTVLs);
-    // console.log("Fear and Greed data : ", data);
-    const DefistatusData = getDeFiStats();
-    // const chainTvlData = getChainTVL();
-    // console.log("--------------Chain TVL Data : ", chainTvlData);
-    const [spacialTvl, setSpacialTvl] = useState<SpecialTVL[]>([]);
-    // console.log("Defi Status Data : ", DefistatusData);
     useEffect(() => {
         if (chainTvlData && Array.isArray(chainTvlData)) {
             console.log("filtering chain tvl data");
-            // const chainMapping = {
-            //     ETH: {
-            //         symbol: 'ETH',
-            //         logoUrl: spacialTvlLogo.ETH
-            //     },
-            //     SOL: {
-            //         symbol: 'SOL',
-            //         logoUrl: spacialTvlLogo.SOL
-            //     },
-            //     BNB: {
-            //         symbol: 'BNB',
-            //         logoUrl: spacialTvlLogo.BNB
-            //     }
-            // };
-
             const formattedSpecialTVL = chainTvlData
                 .filter(chain => {
                     console.log("filterchain......")
@@ -337,9 +304,6 @@ const DeFiMarketDashboard: React.FC = () => {
 
         fetchStablecoins();
     }, []);
-
-    const [tradeVolume, setTradeVolume] = useState<CexVolume | null>(null);
-
     useEffect(() => {
         const fetchTradeVolume = async () => {
             try {
@@ -353,12 +317,6 @@ const DeFiMarketDashboard: React.FC = () => {
 
         fetchTradeVolume();
     }, []);
-
-    // console.log("tradeVolume : ", tradeVolume);
-
-
-    // console.log("  protocolsData : ", protocolsData);
-
     //top protocols
     useEffect(() => {
         if (protocolsData && Array.isArray(protocolsData)) {
@@ -386,8 +344,6 @@ const DeFiMarketDashboard: React.FC = () => {
             console.log("Top non-CEX protocols:", sortedProtocols);
         }
     }, [protocolsData]);
-
-
     // console.log("stablecoins : ", stablecoins);
     const formattedTotalTvl = DefistatusData?.totalTvl
         ? formatLargeNumber(DefistatusData.totalTvl)
@@ -493,7 +449,6 @@ const DeFiMarketDashboard: React.FC = () => {
             </div>
             <div className="space-y-6">
                 {/* chain TVL */}
-
                 <div className="grid grid-cols-4 gap-4">
                     <div className="bg-white/5 rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
@@ -524,16 +479,6 @@ const DeFiMarketDashboard: React.FC = () => {
                             <div className="text-2xl font-bold mb-1">
                                 {formatLargeNumber(Number(network.tvl))}
                             </div>
-                            {/* <div className={`flex items-center gap-1 text-sm ${network.change24h >= 0 ? 'text-green-400' : 'text-red-400'
-                                }`}>
-                                {network.change24h >= 0 ? (
-                                    <TrendingUp className="w-4 h-4" />
-                                ) : (
-                                    <TrendingDown className="w-4 h-4" />
-                                )}
-                                <span>{Math.abs(network.change24h).toFixed(2)}%</span>
-                                <span className="text-white/60">24h</span>
-                            </div> */}
                         </div>
                     ))}
                 </div>
@@ -550,9 +495,6 @@ const DeFiMarketDashboard: React.FC = () => {
                                 <div className="text-2xl font-bold">
                                     {tradeVolume ? formatLargeNumber(tradeVolume.trade_volume_24h_usd_sum) : '0'}
                                 </div>
-                                {/* <div className="text-sm text-white/60 mt-1">
-                                    {((mockMarketOverview.cexVolume24h / (mockMarketOverview.cexVolume24h + mockMarketOverview.dexVolume24h)) * 100).toFixed(1)}% of total
-                                </div> */}
                             </div>
                             <div className="p-4 bg-white/5 rounded-lg">
                                 <div className="flex items-center gap-2 mb-2">
@@ -560,11 +502,8 @@ const DeFiMarketDashboard: React.FC = () => {
                                     <span className="text-sm">DEX Volume</span>
                                 </div>
                                 <div className="text-2xl font-bold">
-                                {dexVolume && dexVolume[0].total24h ? formatLargeNumber(dexVolume[0].total24h) : '$0'}
+                                    {dexVolume && dexVolume[0].total24h ? formatLargeNumber(dexVolume[0].total24h) : '$0'}
                                 </div>
-                                {/* <div className="text-sm text-white/60 mt-1">
-                                    {((mockMarketOverview.dexVolume24h / (mockMarketOverview.cexVolume24h + mockMarketOverview.dexVolume24h)) * 100).toFixed(1)}% of total
-                                </div> */}
                             </div>
                         </div>
                     </div>
@@ -662,40 +601,6 @@ const DeFiMarketDashboard: React.FC = () => {
                                     </tr>
                                 ))}
                             </tbody>
-                            {/* <tbody className="divide-y divide-white/10">
-                                {mockProtocols.map((protocol) => (
-                                    <tr key={protocol.name} className="hover:bg-white/5">
-                                        <td className="py-4">
-                                            <div className="flex items-center gap-3">
-                                                <img src={protocol.logo} alt={protocol.name} className="w-8 h-8" />
-                                                <span className="font-medium">{protocol.name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-4">
-                                            <span className="px-2 py-1 rounded-full text-sm bg-white/10">
-                                                {protocol.category}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 text-right font-medium">
-                                            ${protocol.tvl.toFixed(2)}B
-                                        </td>
-                                        <td className={`py-4 text-right ${protocol.change24h >= 0 ? 'text-green-400' : 'text-red-400'
-                                            }`}>
-                                            {protocol.change24h >= 0 ? '+' : ''}{protocol.change24h.toFixed(2)}%
-                                        </td>
-                                        <td className={`py-4 text-right ${protocol.change7d >= 0 ? 'text-green-400' : 'text-red-400'
-                                            }`}>
-                                            {protocol.change7d >= 0 ? '+' : ''}{protocol.change7d.toFixed(2)}%
-                                        </td>
-                                        <td className="py-4 text-right">
-                                            {protocol.dailyUsers.toLocaleString()}
-                                        </td>
-                                        <td className="py-4 text-right">
-                                            ${(protocol.weeklyRevenue / 1000).toFixed(1)}K
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody> */}
                         </table>
                     </div>
                 </div>
