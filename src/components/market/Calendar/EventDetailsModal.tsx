@@ -129,7 +129,7 @@ return (
               <select
                 value={editedEvent.type}
                 onChange={(e) => setEditedEvent({ ...editedEvent, type: e.target.value })}
-                className="w-full px-4 py-2 text-white border rounded-lg outline-none bg-white/5 border-white/10 focus:border-white/20"
+                className="w-full px-4 py-2 text-white border rounded-lg outline-none bg-white/5 border-white/10 focus:border-white/20 glass"
               >
                 <option value="launch">Launch</option>
                 <option value="airdrop">Airdrop</option>
