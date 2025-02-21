@@ -10,6 +10,7 @@ interface ProtocolStatisticProps {
 
 const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
     const { positions, protocolTypes } = useDefiStore();
+    const protocolList = [...new Set(positions.map((position) => (position.protocol)))]
 
     return (
         <div className="grid grid-cols-2 gap-6 mt-6">
@@ -17,8 +18,7 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
             <div className="bg-white/5 rounded-xl p-4">
                 <h3 className="text-lg font-medium mb-4">Protocol Breakdown</h3>
                 <div className="space-y-3">
-                    {positions.map((position) => {
-                        const protocol = position.protocol;
+                    {protocolList.map((protocol) => {
                         const protocolPositions = positions.filter(p => p.protocol === protocol);
                         const totalValue = protocolPositions.reduce((sum, p) => sum + p.amount, 0);
                         const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
