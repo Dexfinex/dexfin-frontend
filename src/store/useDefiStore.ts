@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { EvmDefiPosition, EvmDefiProtocol } from "../types/dexfinv3.type";
+import { capitalizeFirstLetter } from "../utils/defi.util";
 
 export interface PositionToken {
     token_type: string;
@@ -61,12 +62,12 @@ const useDefiStore = create<DefiStoreState>((set) => ({
     setPositions: (evmPositions) => {
         const netAPY = evmPositions.reduce((sum, p) => sum + (p?.account_data?.net_apy || 0), 0) / evmPositions.length || 0;
         const healthFactor = evmPositions.reduce((sum, p) => sum + (p?.account_data?.health_factor || 0), 0);
-        const protocolTypes = evmPositions.map((position) => (position.position.label));
+        const protocolTypes = [...new Set(evmPositions.map((position) => (capitalizeFirstLetter(position.position.label))))];
         const positions = evmPositions.map((position) => ({
             address: position.position.address,
             protocol: position.protocol_name,
             protocol_id: position.protocol_id,
-            type: position.position.label,
+            type: capitalizeFirstLetter(position.position.label),
             amount: position.position.balance_usd,
             tokens: position.position.tokens,
             apy: position.position?.position_details?.apy,
