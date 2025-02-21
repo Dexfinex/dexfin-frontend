@@ -72,50 +72,55 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
     const getPrevChatHistory = async (address: string, chatId: string) => {
         setLoadingPrevChat(true)
-        const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
-        console.log('prev history = ', prevHistory)
+        try {
 
-        if (prevHistory.length > 0) {
-            let chats: IChat[] = []
-            let prevReactions: ReactionType[] = []
+            const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
+            console.log('prev history = ', prevHistory)
 
-            prevHistory.forEach((data: any) => {
-                if (data.messageType == "Reaction") {
-                    prevReactions = [...prevReactions, data.messageObj]
-                } else {
-                    chats = [...chats, {
-                        timestamp: data.timestamp,
-                        type: data.messageType,
-                        content: data.messageContent,
-                        fromAddress: extractAddress(data.fromDID),
-                        toAddress: extractAddress(data.toDID),
-                        chatId: data.cid,
-                        link: data.link,
-                        image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
-                    } as IChat]
-                }
-            })
+            if (prevHistory.length > 0) {
+                let chats: IChat[] = []
+                let prevReactions: ReactionType[] = []
 
-            const totalReactions: ReactionType[] = [...reactions, ...prevReactions]
-            if (totalReactions.length > 0) {
-                chats = chats.map(chat => {
-                    const found = totalReactions.find(e => e.reference == chat.chatId)
-                    if (found) {
-                        return {
-                            ...chat,
-                            reaction: found.content
-                        }
+                prevHistory.forEach((data: any) => {
+                    if (data.messageType == "Reaction") {
+                        prevReactions = [...prevReactions, data.messageObj]
+                    } else {
+                        chats = [...chats, {
+                            timestamp: data.timestamp,
+                            type: data.messageType,
+                            content: data.messageContent,
+                            fromAddress: extractAddress(data.fromDID),
+                            toAddress: extractAddress(data.toDID),
+                            chatId: data.cid,
+                            link: data.link,
+                            image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
+                        } as IChat]
                     }
-                    return chat
                 })
-            }
 
-            chats.shift()
+                const totalReactions: ReactionType[] = [...reactions, ...prevReactions]
+                if (totalReactions.length > 0) {
+                    chats = chats.map(chat => {
+                        const found = totalReactions.find(e => e.reference == chat.chatId)
+                        if (found) {
+                            return {
+                                ...chat,
+                                reaction: found.content
+                            }
+                        }
+                        return chat
+                    })
+                }
 
-            if (chats.length > 0) {
-                const updatedChat = [...chats.reverse(), ...chatHistory]
-                setChatHistory(updatedChat)
+                chats.shift()
+
+                if (chats.length > 0) {
+                    const updatedChat = [...chats.reverse(), ...chatHistory]
+                    setChatHistory(updatedChat)
+                }
             }
+        } catch(err) {
+            console.log('get prev chat err: ', err)
         }
 
         setLoadingPrevChat(false)
@@ -176,7 +181,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
                         <div className="flex-1 min-w-0">
                             <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
                                 {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                                <span className="font-medium text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+                                <span className="text-sm text-white/40">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
                                 <span className={`text-sm text-white/40`}>{getHourAndMinute(msg.timestamp)}</span>
                             </div>
                             {
@@ -208,7 +213,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
                         <div className="flex-1 min-w-0">
                             <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
                                 {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                                <span className="font-medium text-white/70">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+                                <span className="text-sm text-white/40">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
                                 <span className={`text-sm text-white/40`}>{getHourAndMinute(msg.timestamp)}</span>
                             </div>
                             {
@@ -540,7 +545,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     };
 
     return (
-        <div ref={chatScrollRef} className="flex-1 p-4 overflow-x-hidden overflow-y-auto ai-chat-scrollbar">
+        <div ref={chatScrollRef} className="flex-1 p-2 sm:p-4 overflow-x-hidden overflow-y-auto ai-chat-scrollbar">
             {renderMessages()}
         </div>
     )
