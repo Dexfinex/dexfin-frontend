@@ -101,7 +101,7 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol, theme }) => {
         try {
             const widgetOptions: WidgetConfig = {
                 autosize: true,
-                toolbar_bg: theme === 'dark' ? '#000000' : '#ffffff',
+                toolbar_bg: theme === 'dark' ? '#141415' : '#ffffff',
                 symbol: pairSymbol,
                 interval: "1D",
                 fullscreen: false,
@@ -133,14 +133,14 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol, theme }) => {
                 overrides: {
                     // Background and Grid
                     "paneProperties.backgroundType": "solid",
-                    "paneProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
+                    "paneProperties.background": theme === 'dark' ? '#141415' : '#ffffff',
                     "paneProperties.vertGridProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
                     "paneProperties.horzGridProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
                     
                     // Scales and Text
-                    "scalesProperties.backgroundColor": theme === 'dark' ? '#000000' : '#ffffff',
+                    "scalesProperties.backgroundColor": theme === 'dark' ? '#141415' : '#ffffff',
                     "scalesProperties.lineColor": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    "scalesProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000',
+                    "scalesProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#141415',
                     
                     // Candle Colors - Keep consistent regardless of theme
                     "mainSeriesProperties.candleStyle.upColor": "#26a69a",
@@ -152,41 +152,28 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol, theme }) => {
                     
                     // Additional UI Elements
                     "symbolWatermarkProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    "chartProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
+                    "chartProperties.background": theme === 'dark' ? '#141415' : '#ffffff',
                     "chartProperties.lineColor": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    "chartProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000',
+                    "chartProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#141415',
                     
                     // Navigation Buttons and Toolbar
-                    "toolbarBg": theme === 'dark' ? '#000000' : '#ffffff',
-                    "toolbarIconColor": theme === 'dark' ? '#B2B5BE' : '#000000',
+                    "toolbarBg": theme === 'dark' ? '#141415' : '#ffffff',
+                    "toolbarIconColor": theme === 'dark' ? '#B2B5BE' : '#141415',
                     "toolbarIconHoverBg": theme === 'dark' ? '#363c4e' : '#e1e3eb',
                     
                     // Left Toolbar Specific
-                    "paneProperties.leftAxisProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
-                    "paneProperties.leftAxisProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000',
-                    "paneProperties.legendProperties.background": theme === 'dark' ? '#000000' : '#ffffff',
-                    "paneProperties.legendProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#000000'
+                    "paneProperties.leftAxisProperties.background": theme === 'dark' ? '#141415' : '#ffffff',
+                    "paneProperties.leftAxisProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#141415',
+                    "paneProperties.legendProperties.background": theme === 'dark' ? '#141415' : '#ffffff',
+                    "paneProperties.legendProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#141415'
                 },
                 loading_screen: {
-                    backgroundColor: theme === 'dark' ? '#000000' : '#ffffff',
+                    backgroundColor: theme === 'dark' ? '#141415' : '#ffffff',
                     foregroundColor: theme === 'dark' ? '#363c4e' : '#e1e3eb'
                 }
             };
 
             const tvWidget_ = new window.TradingView.widget(widgetOptions);
-            
-            tvWidget_.onChartReady(() => {
-                console.log('Chart is ready');
-                // Apply additional theme-specific styles to the DOM
-                const chartContainer = document.getElementById('tv_chart_container');
-                if (chartContainer) {
-                    const toolbars = chartContainer.querySelectorAll('.toolbar');
-                    toolbars.forEach(toolbar => {
-                        toolbar.setAttribute('style', `background-color: ${theme === 'dark' ? '#000000' : '#ffffff'} !important`);
-                    });
-                }
-            });
-
             setTvWidget(tvWidget_);
 
             return () => {
@@ -219,7 +206,7 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol, theme }) => {
             ref={chartContainerRef}
             className="w-full h-full trade-chart-container"
             style={{
-                backgroundColor: theme === 'dark' ? '#000000' : '#ffffff'
+                backgroundColor: theme === 'dark' ? '#141415' : '#ffffff'
             }}
         />
     );

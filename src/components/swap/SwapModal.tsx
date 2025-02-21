@@ -1,6 +1,6 @@
-import  {useState} from 'react';
-import {Box, Flex, HStack, IconButton, Modal, ModalContent, ModalOverlay, Text,} from '@chakra-ui/react';
-import {Maximize2, Settings2, X} from 'lucide-react';
+import React, {useState} from 'react';
+import {Box, Flex, HStack, Modal, ModalContent, ModalOverlay, Text,} from '@chakra-ui/react';
+import {Maximize2, X} from 'lucide-react';
 import {SellBox} from "./components/SellBox";
 import {BuyBox} from "./components/BuyBox";
 import {SwapBox} from "./components/SwapBox";
@@ -9,6 +9,7 @@ import {SlippageSettings} from "./SlippageSettings";
 import {Chart} from "./components/chart/Chart.tsx";
 import {ConfirmSwapModal} from "./modals/ConfirmSwapModal.tsx";
 import {NULL_ADDRESS} from "../../constants";
+import {SolanaSwapBox} from "./components/SolanaSwapBox.tsx";
 
 interface SwapModalProps {
     isOpen: boolean;
@@ -40,7 +41,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
     const [toAmount, setToAmount] = useState('');
     const [usdAmount, setUsdAmount] = useState('');
     const [slippage, setSlippage] = useState<SlippageOption>(0.5);
-    const [chartType, setChartType] = useState<ChartType>('line');
+    const [chartType, setChartType] = useState<ChartType>('tradingview');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const handleSwitch = () => {
@@ -50,12 +51,12 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
         setToAmount(fromAmount);
     };
 
-/*
-    const handleSwap = () => {
-        if (!fromAmount || !toAmount) return;
-        setShowConfirmModal(true);
-    };
-*/
+    /*
+        const handleSwap = () => {
+            if (!fromAmount || !toAmount) return;
+            setShowConfirmModal(true);
+        };
+    */
 
     const handleConfirmSwap = () => {
         // TODO: Implement actual swap logic
@@ -94,9 +95,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
             >
                 <ModalOverlay backdropFilter="blur(4px)"/>
                 <ModalContent
-                    className="border border-white/10 shadow-lg transition-all duration-300 ease-in-out"
-                    bg="#0f1012"
-                    color="white"
+                    className="border glass border-white/10 shadow-lg transition-all duration-300 ease-in-out"
                     borderRadius="xl"
                     p={0}
                     m={isMaximized ? 0 : 4}
@@ -121,32 +120,19 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                             <Flex justify="space-between" align="center" mb={6}>
                                 <Text fontSize="xl" fontWeight="bold">Swap</Text>
                                 <HStack spacing={2}>
-                                    <IconButton
-                                        aria-label="Settings"
-                                        icon={<Settings2 size={16}/>}
-                                        variant="ghost"
-                                        size="sm"
-                                        color="white"
-                                        _hover={{bg: 'whiteAlpha.200'}}
-                                    />
-                                    <IconButton
-                                        aria-label="Maximize"
-                                        icon={<Maximize2 size={16}/>}
-                                        variant="ghost"
-                                        size="sm"
+                                    <SlippageSettings value={slippage} onChange={setSlippage}/>
+                                    <button
                                         onClick={() => setIsMaximized(!isMaximized)}
-                                        color="white"
-                                        _hover={{bg: 'whiteAlpha.200'}}
-                                    />
-                                    <IconButton
-                                        aria-label="Close"
-                                        icon={<X size={16}/>}
-                                        variant="ghost"
-                                        size="sm"
+                                        className="p-2 rounded-lg hover:bg-white/5 transition-all hover:scale-110 active:scale-95"
+                                    >
+                                        <Maximize2 size={16}/>
+                                    </button>
+                                    <button
                                         onClick={onClose}
-                                        color="white"
-                                        _hover={{bg: 'whiteAlpha.200'}}
-                                    />
+                                        className="p-2 rounded-lg hover:bg-white/5 transition-all hover:scale-110 active:scale-95"
+                                    >
+                                        <X size={16}/>
+                                    </button>
                                 </HStack>
                             </Flex>
 
@@ -154,13 +140,13 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                             {/* Swap Interface and Wallet */}
                             <div
                                 className="p-2.5 border border-white/5 relative z-50 w-full rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
-                                <div className="flex items-center justify-between mb-4 bg-[#1d2837] rounded-lg p-1">
+                            <div className="flex items-center justify-between mb-4 rounded-lg p-1">
                                     <div className="flex items-center gap-2 w-full me-2">
                                         <button
                                             onClick={() => setActiveTab('buy')}
                                             className={`px-4 py-2 rounded-lg ${
                                                 activeTab === 'buy'
-                                                    ? 'bg-[#111] text-blue-400'
+                                                    ? 'text-blue-400'
                                                     : 'text-gray-400 hover:text-white'
                                             }`}
                                         >
@@ -170,7 +156,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                             onClick={() => setActiveTab('sell')}
                                             className={`px-4 py-2 rounded-lg ${
                                                 activeTab === 'sell'
-                                                    ? 'bg-[#111] text-blue-400'
+                                                    ? 'text-blue-400'
                                                     : 'text-gray-400 hover:text-white'
                                             }`}
                                         >
@@ -180,15 +166,12 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                             onClick={() => setActiveTab('swap')}
                                             className={`px-4 py-2 rounded-lg ${
                                                 activeTab === 'swap'
-                                                    ? 'bg-[#111] text-blue-400'
+                                                    ? 'text-blue-400'
                                                     : 'text-gray-400 hover:text-white'
                                             }`}
                                         >
                                             Swap
                                         </button>
-                                        <div className="flex items-center justify-end w-full">
-                                            <SlippageSettings value={slippage} onChange={setSlippage}/>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -209,18 +192,33 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                         onAmountChange={setFromAmount}
                                     />
                                 ) : (
-                                    <SwapBox
-                                        fromToken={fromToken}
-                                        toToken={toToken}
-                                        fromAmount={fromAmount}
-                                        toAmount={toAmount}
-                                        onFromTokenSelect={onFromTokenSelect}
-                                        onToTokenSelect={onToTokenSelect}
-                                        onFromAmountChange={setFromAmount}
-                                        onToAmountChange={setToAmount}
-                                        onSwitch={handleSwitch}
-                                        slippage={slippage}
-                                    />
+                                    fromToken?.chainId === 900 ? (
+                                        <SolanaSwapBox
+                                            fromToken={fromToken}
+                                            toToken={toToken}
+                                            fromAmount={fromAmount}
+                                            toAmount={toAmount}
+                                            onFromTokenSelect={onFromTokenSelect}
+                                            onToTokenSelect={onToTokenSelect}
+                                            onFromAmountChange={setFromAmount}
+                                            onToAmountChange={setToAmount}
+                                            onSwitch={handleSwitch}
+                                            slippage={slippage}
+                                        />
+                                    ) : (
+                                        <SwapBox
+                                            fromToken={fromToken}
+                                            toToken={toToken}
+                                            fromAmount={fromAmount}
+                                            toAmount={toAmount}
+                                            onFromTokenSelect={onFromTokenSelect}
+                                            onToTokenSelect={onToTokenSelect}
+                                            onFromAmountChange={setFromAmount}
+                                            onToAmountChange={setToAmount}
+                                            onSwitch={handleSwitch}
+                                            slippage={slippage}
+                                        />
+                                    )
                                 )}
                             </div>
 

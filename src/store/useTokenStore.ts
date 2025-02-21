@@ -25,7 +25,7 @@ const useTokenStore = create<TokenStoreState>((set) => ({
     }), // Update the token prices
   getTokenPrice: (address: string, chainId: number) => {
     const state = useTokenStore.getState() as TokenStoreState;
-    const value = state.tokenPrices[`${chainId}:${address.toLowerCase()}`];
+    const value = state.tokenPrices[`${chainId}:${address?.toLowerCase()}`];
     return value ? Number(value) : 0;
   },
   tokenMetadataList: {},

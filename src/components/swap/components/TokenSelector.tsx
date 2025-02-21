@@ -7,6 +7,7 @@ import {formatNumberByFrac} from "../../../utils/common.util.ts";
 
 interface TokenSelectorProps {
     selectedToken?: TokenType | null;
+    selectedChainId?: number | null;
     onSelect: (token: TokenType) => void;
     amount: string;
     usdAmount: string;
@@ -21,6 +22,7 @@ interface TokenSelectorProps {
 
 export function TokenSelector({
                                   selectedToken,
+                                  selectedChainId,
                                   onSelect,
                                   amount,
                                   usdAmount,
@@ -37,7 +39,7 @@ export function TokenSelector({
     return (
         <>
             <div
-                className={`bg-[#1d2837]/20 rounded-xl p-4 w-full border border-white/5 hover:border-blue-500/20 transition-all duration-200 hover:shadow-[0_8px_32px_rgba(59,130,246,0.15)] ${className}`}>
+                className={`rounded-xl p-4 w-full border border-white/5 hover:border-blue-500/20 transition-all duration-200 hover:shadow-[0_8px_32px_rgba(59,130,246,0.15)] ${className}`}>
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                         <label
@@ -81,7 +83,7 @@ export function TokenSelector({
                 <div className="flex items-center gap-3 mt-2 group/input">
                     <div
                         onClick={() => setIsOpen(true)}
-                        className="flex items-center gap-2 bg-[#111] rounded-lg px-3 py-2 transition-all cursor-pointer w-[140px] shrink-0 group ring-1 ring-white/10 hover:ring-blue-500/20 hover:bg-[#1d2837] hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] hover-effect glass-effect relative overflow-hidden"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 transition-all cursor-pointer w-[140px] shrink-0 group ring-1 ring-white/10 hover:ring-blue-500/20 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] hover-effect glass-effect relative overflow-hidden"
                     >
                         <div
                             className="absolute inset-0 bg-gradient-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 group-hover:translate-x-full duration-1000 transition-transform ease-in-out"/>
@@ -163,6 +165,7 @@ export function TokenSelector({
                 <TokenSelectorModal
                     isOpen={isOpen}
                     selectedToken={selectedToken}
+                    selectedChainId={selectedChainId}
                     onSelect={onSelect}
                     onClose={() => setIsOpen(false)}
                 />

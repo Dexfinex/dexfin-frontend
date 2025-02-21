@@ -1,13 +1,7 @@
 export function convertBrianKnowledgeToPlainText(text: string) {
   return text
-    .replace(/"\n+/g, '')
-    .replace(/###?.*?\n/g, '')
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .replace(/-\s+/g, '')
-    .replace(/\d+\.\s+/g, '')
-    .replace(/\n{2,}/g, ' ')
-    .replace(/\n/g, ' ')
-    .trim();
+  .replace(/^###\s*(\d+\.)\s*\*\*(.*?)\*\*/gm, '$1 $2') // Remove ### and bold from numbered headings
+  .replace(/\*\*(.*?)\*\*:/g, '$1:'); // Convert "**Tokens:**" to "<b>Tokens</b>:"
 }
 
 export const parseChainedCommands = (message: string): string[] => {

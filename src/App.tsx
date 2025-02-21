@@ -14,10 +14,12 @@ import { GamesModal } from './components/GamesModal';
 import { RewardsModal } from './components/RewardsModal';
 import SignupModal from "./components/SignupModal.tsx";
 import SigninModal from "./components/SigninModal.tsx";
-import {AuthMethodType} from "@lit-protocol/constants";
-import {Web3AuthContext} from "./providers/Web3AuthContext.tsx";
-import {LOCAL_STORAGE_AUTH_REDIRECT_TYPE} from "./constants";
+import { AuthMethodType } from "@lit-protocol/constants";
+import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
+import { LOCAL_STORAGE_AUTH_REDIRECT_TYPE } from "./constants";
 import { TradingViewModal } from './components/TradingViewModal.tsx';
+import { KEY_NAME } from './utils/chatApi.ts';
+import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 
 export default function App() {
     const { theme } = useStore();
@@ -48,13 +50,16 @@ export default function App() {
         setIsSigninModalOpen,
         istrade,
         setTradeOpen,
-        menuItems
+        menuItems,
+        chatUser,
+        setChatUser
     } = useStore();
 
     const {
         authMethod,
         // accounts,
         // setAuthMethod,
+        address,
         isConnected,
     } = useContext(Web3AuthContext);
 
@@ -75,18 +80,41 @@ export default function App() {
         if (isConnected) {
             setIsSigninModalOpen(false)
             setIsSignupModalOpen(false)
+
+            if (!chatUser) {
+                // unlock chat profile
+                unlockProfile()
+            }
         }
     }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen]);
 
+    const unlockProfile = async () => {
+        // const chatKey = localStorage.getItem(KEY_NAME)
+
+        // if (chatKey) {
+        //     const key: { account: string; decryptedPgpPrivateKey: string } = JSON.parse(chatKey)
+
+        //     if (address === key.account) {
+        //         const pushUser = await PushAPI.initialize({
+        //             decryptedPGPPrivateKey: key.decryptedPgpPrivateKey,
+        //             env: CONSTANTS.ENV.STAGING,
+        //             account: key.account,
+        //         })
+                
+        //         setChatUser(pushUser)
+        //     }
+        // }
+    }
+
     // remove authMethod state when need to create new one
     // TODO: why need this?
-/*
-    useEffect(() => {
-        if (!isSigninModalOpen && authMethod && accounts.length === 0)
-            setAuthMethod(undefined)
-
-    }, [accounts.length, authMethod, isSigninModalOpen, setAuthMethod])
-*/
+    /*
+        useEffect(() => {
+            if (!isSigninModalOpen && authMethod && accounts.length === 0)
+                setAuthMethod(undefined)
+    
+        }, [accounts.length, authMethod, isSigninModalOpen, setAuthMethod])
+    */
 
     useEffect(() => {
         // Check if the previous trigger was set and authMethod has become undefined
