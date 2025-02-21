@@ -23,7 +23,7 @@ import {DeFiOverview} from './market/DeFiOverview';
 import {MarketNews} from './market/MarketNews';
 import {MarketAlerts} from './market/MarketAlerts';
 import {TechnicalAnalysis} from './market/Technical/TechnicalAnalysis';
-import {MarketCalendar} from './market/MarketCalendar';
+import {MarketCalendar} from './market/Calendar/MarketCalendar';
 import {MarketFeed} from './market/MarketFeed';
 import {MarketCap} from './market/MarketCap';
 
@@ -118,7 +118,7 @@ export const MarketDataModal: React.FC<MarketDataModalProps> = ({ isOpen, onClos
                       className="fixed inset-0 z-20"
                       onClick={() => setShowMenu(false)}
                     />
-                    <div className="absolute top-full left-0 mt-2 w-56 py-2 glass border border-white/10 rounded-xl z-30">
+                    <div className="absolute left-0 z-30 w-56 py-2 mt-2 border top-full glass border-white/10 rounded-xl">
                       {views.map(({ id, label, icon: Icon }) => (
                         <button
                           key={id}
@@ -143,7 +143,7 @@ export const MarketDataModal: React.FC<MarketDataModalProps> = ({ isOpen, onClos
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleFullscreen}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 transition-colors rounded-lg hover:bg-white/10"
               >
                 {isFullscreen ? (
                   <Minimize2 className="w-4 h-4" />
@@ -153,7 +153,7 @@ export const MarketDataModal: React.FC<MarketDataModalProps> = ({ isOpen, onClos
               </button>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 transition-colors rounded-lg hover:bg-white/10"
               >
                 <X className="w-4 h-4" />
               </button>

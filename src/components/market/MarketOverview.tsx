@@ -12,7 +12,6 @@ export const MarketOverview: React.FC = () => {
 
   const { data } = useFearGreedStore();
   const { getDeFiStats } = useDefillamaStore();
-console.log(data)
   const defiStats = getDeFiStats();
   const {marketsentimentdata} = useMarketSentimentStore();
 
