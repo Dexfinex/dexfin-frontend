@@ -97,7 +97,7 @@ const AddWalletModal: React.FC<AddWalletModalProps> = ({ isOpen, onClose, groupI
 
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-[520px] glass border border-white/10 rounded-xl overflow-hidden">
+            <div className="relative w-[340px] md:w-[520px] glass border border-white/10 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
                     <h2 className="text-xl font-semibold">Group Info</h2>
                     <button
@@ -233,7 +233,7 @@ export const ChatGroupModal: React.FC<ChatGroupModalProps> = ({ isOpen, onClose,
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-[520px] glass border border-white/10 rounded-xl overflow-hidden">
+            <div className="relative w-[340px] md:w-[520px] glass border border-white/10 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
                     <h2 className="text-xl font-semibold">Group Info</h2>
                     <button
@@ -296,13 +296,13 @@ export const ChatGroupModal: React.FC<ChatGroupModalProps> = ({ isOpen, onClose,
                         <p className='text-white/80'>Members</p>
                         {
                             group.members.length > 0 && group.members.map(member => <div key={member.wallet} className='border-b border-white/20 p-2 flex items-center gap-4 justify-between'>
-                                <div className='flex items-center gap-4'>
+                                <div className='flex items-center gap-1 sm:gap-4 justify-between'>
                                     <img src={member.image} className='w-10 h-10 rounded-full' />
                                     <span className='text-white/80'>{shrinkAddress(extractAddress(member.wallet))}</span>
                                 </div>
                                 {
                                     member.isAdmin ? <Badge colorScheme='red' className='p-2'>Admin</Badge> :
-                                        isAdmin ? !isHanding ? <div>
+                                        isAdmin ? !isHanding ? <div className='text-right'>
                                             <Button colorScheme='blue' variant='ghost' size={'xs'} onClick={() => handleMakeAdmin(member.wallet)}>
                                                 Make Admin
                                             </Button>

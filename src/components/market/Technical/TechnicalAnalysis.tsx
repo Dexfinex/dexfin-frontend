@@ -3,7 +3,7 @@ import ChartLibrary from "./ChartLibrary";
 
 export const TechnicalAnalysis: React.FC = () => {
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('dark');
-
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     // Initial theme detection
     const detectTheme = () => {
@@ -31,10 +31,12 @@ export const TechnicalAnalysis: React.FC = () => {
 
     return () => observer.disconnect();
   }, []);
-
+  const handleChartLoad = () => {
+    setIsLoading(false);
+  };
   return (
     <div className="w-full h-full overflow-hidden">
-      <ChartLibrary currentTheme={currentTheme} />
+      <ChartLibrary currentTheme={currentTheme} onLoad={handleChartLoad} />
     </div>
   );
 };

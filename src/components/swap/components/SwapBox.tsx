@@ -374,6 +374,7 @@ export function SwapBox({
             <TokenSelector
                 className="relative z-20 mb-2"
                 selectedToken={fromToken}
+                selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onFromTokenSelect}
                 amount={fromAmount}
                 usdAmount={fromUsdAmount.toString()}
@@ -386,7 +387,7 @@ export function SwapBox({
                 <div className="z-30">
                     <button
                         onClick={onSwitch}
-                        className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
+                        className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
                     >
                         <ArrowDownUp className="w-4 h-4"/>
                     </button>
@@ -396,6 +397,7 @@ export function SwapBox({
             <TokenSelector
                 className="relative z-10"
                 selectedToken={toToken}
+                selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onToTokenSelect}
                 amount={toAmount}
                 usdAmount={toUsdAmount.toString()}

@@ -1,6 +1,3 @@
-import BaseChainIcon from "./assets/base.svg"
-import ArbitrumChainIcon from "./assets/arbitrum.svg"
-
 export function getChainIcon(chainId?: number) {
     switch (chainId) {
         case 1:
@@ -14,9 +11,9 @@ export function getChainIcon(chainId?: number) {
         case 10:
             return "https://cdn.moralis.io/optimism/0x.png";
         case 42161:
-            return ArbitrumChainIcon;
+            return "https://cryptologos.cc/logos/arbitrum-arb-logo.svg";
         case 8453:
-            return BaseChainIcon;
+            return "https://assets.coingecko.com/asset_platforms/images/131/small/base-network.png";
         default:
             return null;
     }

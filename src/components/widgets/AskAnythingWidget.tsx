@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {Mic, Send} from 'lucide-react';
 import {useStore} from '../../store/useStore';
-import {VoiceModal} from '../VoiceModal';
+import {VoiceModal} from '../agent/VoiceModal';
 
 interface VoiceCommand {
   command: string;

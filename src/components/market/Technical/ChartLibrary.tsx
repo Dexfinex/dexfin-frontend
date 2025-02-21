@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 
 interface ChartLibraryProps {
   currentTheme: 'light' | 'dark';
+  onLoad?: () => void;
 }
 
 const ChartLibrary: React.FC<ChartLibraryProps> = ({ currentTheme }) => {

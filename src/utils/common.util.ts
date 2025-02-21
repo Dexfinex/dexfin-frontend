@@ -19,14 +19,34 @@ export const extractAddress = (fullAddress: string): string => {
     return address;
 }
 
+
+export const downloadBase64File = (base64Data: string, fileName: string, fileType: string) => {
+    // Convert Base64 to a Blob
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) => byteCharacters.charCodeAt(i));
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: fileType });
+
+    // Create a temporary link element and trigger the download
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+};
+
 export const getEnsName = async (address: string): Promise<string> => {
     const provider = new ethers.providers.JsonRpcProvider("https://eth-mainnet.g.alchemy.com/v2/YhklBkpnW3RdeoL0fw-I6CRkGG1cu2-z");
 
     try {
         const ensName = await provider.lookupAddress(address);
-        console.log("ENS Name:", ensName || "No ENS name found");
+        // console.log("ENS Name:", ensName || "No ENS name found");
         const result = (ensName ? ensName : "");
-        
+
         return result
     } catch (error) {
         console.error("Error fetching ENS name:", error);
@@ -51,6 +71,15 @@ export const getChatHistoryDate = (timestamp: number) => {
     } else {
         return `${diffDays} days ago, ${timeString}`; // Show x days ago + time
     }
+}
+
+export const getHourAndMinute = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+    const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return timeString;
 }
 
 /**
@@ -145,3 +174,10 @@ export const formatNumberByFrac = (
 
     return getFixedNum(num, fixedCount);
 };
+
+export const formatHealthFactor = (num: number) => {
+    if (num > 1e9) {
+        return "∞";
+    }
+    return formatNumberByFrac(num);
+}

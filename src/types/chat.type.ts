@@ -50,3 +50,10 @@ export type ProfileType = {
     name: string,
     picture: string,
 }
+
+export type ReactionType = {
+    content: string,
+    reference: string
+}
+
+export type ChatModeType = 'group' | 'p2p'
