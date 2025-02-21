@@ -160,19 +160,19 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
 
                                 <div className='flex justify-between mt-2'>
                                     <div>
-                                        <span className='ml-2'>
+                                        <span className='ml-2 text-sm text-white/60'>
                                             Rate
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <span className='ml-2'>
+                                        <span className='ml-2 text-sm text-white/60'>
                                             1 {tokenInfo2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenInfo1?.symbol}
                                         </span>
                                     </div>
                                 </div>
                                 <div className='flex justify-between'>
                                     <div>
-                                        <span className='ml-2'>
+                                        <span className='ml-2 text-sm text-white/60'>
                                             New {tokenInfo1?.symbol || ""} Position
                                         </span>
                                     </div>
@@ -181,7 +181,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                         <span className='ml-2'>
                                             {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted) + Number(tokenAmount))}
                                         </span>
-                                        <span className='ml-1'>
+                                        <span className='ml-1 text-sm text-white/60'>
                                             {tokenBalance2?.symbol || ""}
                                         </span>
                                     </div>
@@ -189,7 +189,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
 
                                 <div className='flex justify-between'>
                                     <div>
-                                        <span className='ml-2'>
+                                        <span className='ml-2 text-sm text-white/60'>
                                             New {tokenBalance2?.symbol || ""} Position
                                         </span>
                                     </div>
@@ -198,7 +198,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                         <span className='ml-2'>
                                             {formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted) + Number(token2Amount))}
                                         </span>
-                                        <span className='ml-1'>
+                                        <span className='ml-1 text-sm text-white/60'>
                                             {tokenInfo2?.symbol || ""}
                                         </span>
                                     </div>
@@ -206,7 +206,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
 
                                 <div className='flex justify-between'>
                                     <div>
-                                        <span className='ml-2'>
+                                        <span className='ml-2 text-sm text-white/60'>
                                             Network Fee
                                         </span>
                                     </div>
@@ -291,7 +291,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                 <div className='mt-2 mb-2 flex flex-col gap-3'>
                                     <div className='flex justify-between'>
                                         <div>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm text-white/60'>
                                                 {tokenInfo1?.symbol || ""} Position
                                             </span>
                                         </div>
@@ -300,7 +300,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                             <span className='ml-2'>
                                                 {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted))}
                                             </span>
-                                            <span className='ml-1'>
+                                            <span className='ml-1 text-sm text-white/60'>
                                                 {tokenInfo1?.symbol || ""}
                                             </span>
                                         </div>
@@ -308,7 +308,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
 
                                     <div className='flex justify-between'>
                                         <div>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm text-white/60'>
                                                 {tokenInfo2?.symbol || ""} Position
                                             </span>
                                         </div>
@@ -317,7 +317,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                             <span className='ml-2'>
                                                 {formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted))}
                                             </span>
-                                            <span className='ml-1'>
+                                            <span className='ml-1 text-sm text-white/60'>
                                                 {tokenInfo2?.symbol || ""}
                                             </span>
                                         </div>
@@ -325,12 +325,12 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
 
                                     <div className='flex justify-between'>
                                         <div>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm text-white/60'>
                                                 Network Fee
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm'>
                                                 {
                                                     isGasEstimationLoading ?
                                                         <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>

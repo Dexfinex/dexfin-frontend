@@ -267,7 +267,7 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                 <div className='mt-2 mb-2 flex flex-col gap-3'>
                                     <div className='flex justify-between'>
                                         <div>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm text-white/60'>
                                                 {tokenBalance1?.symbol || ""} Position
                                             </span>
                                         </div>
@@ -276,7 +276,7 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                             <span className='ml-2'>
                                                 {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted))}
                                             </span>
-                                            <span className='ml-1'>
+                                            <span className='ml-1 text-sm text-white/60'>
                                                 {tokenBalance2?.symbol || ""}
                                             </span>
                                         </div>
@@ -284,7 +284,7 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
 
                                     <div className='flex justify-between'>
                                         <div>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm text-white/60'>
                                                 {tokenBalance2?.symbol || ""} Position
                                             </span>
                                         </div>
@@ -293,7 +293,7 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                             <span className='ml-2'>
                                                 {formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted))}
                                             </span>
-                                            <span className='ml-1'>
+                                            <span className='ml-1 text-sm text-white/60'>
                                                 {tokenBalance2?.symbol || ""}
                                             </span>
                                         </div>
@@ -301,12 +301,12 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
 
                                     <div className='flex justify-between'>
                                         <div>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm text-white/60'>
                                                 Network Fee
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm '>
                                                 {
                                                     isGasEstimationLoading ?
                                                         <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
