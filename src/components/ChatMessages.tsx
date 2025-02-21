@@ -3,8 +3,8 @@ import { useInView } from "react-intersection-observer";
 import { useStore } from '../store/useStore';
 import { IGroup, IUser, IChat, ChatModeType, ChatType, ReactionType } from '../types/chat.type';
 import { MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'lucide-react';
-import { Spinner, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
-import { downloadBase64File, shrinkAddress, getChatHistoryDate, extractAddress } from '../utils/common.util';
+import { Spinner, Popover, PopoverTrigger, PopoverContent, Box, Divider, AbsoluteCenter } from '@chakra-ui/react';
+import { downloadBase64File, shrinkAddress, getChatHistoryDate, extractAddress, getHourAndMinute } from '../utils/common.util';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { LIMIT, BIG_IMAGE_WIDHT } from '../utils/chatApi';
 import { ImageWithSkeleton } from './common/ImageWithSkeleton';
@@ -148,60 +148,84 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
         }
     }
 
+    const formatDate = (date: Date) => {
+        return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(date);
+    }
+
     const renderChatHistory = () => {
+        let lastDate: any = null;
+
         if (chatMode === "p2p") {
-            return chatHistory.map((msg: IChat) => (
-                msg.type !== "Reaction" ? <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-                    {
-                        msg.fromAddress == selectedUser?.address &&
-                        < img
-                            src={selectedUser.profilePicture}
-                            className="w-8 h-8 rounded-full mt-1"
-                        />
-                    }
-                    <div className="flex-1 min-w-0">
-                        <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
-                            {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                            <span className="font-medium text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
-                            <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
-                        </div>
+            return chatHistory.map((msg: IChat) => {
+                const messageDate = formatDate(new Date(msg.timestamp))
+                const showDateSeparator = lastDate != messageDate;
+                lastDate = messageDate;
+
+                return <div key={msg.timestamp}>
+                    {showDateSeparator && <div className='w-full text-center my-5'>
+                        <span className='text-sm bg-white/10 py-2 px-4 rounded-xl'>{messageDate}</span>
+                    </div>}
+                    <div className={`flex items-start gap-3 group`}>
                         {
-                            renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
-                        }
-                    </div>
-                </div> : null
-            ))
-        } else if (chatMode === "group") {
-            return chatHistory.map((msg) => (
-                <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-                    {
-                        msg.fromAddress != address ? msg.image ?
+                            msg.fromAddress == selectedUser?.address &&
                             < img
-                                src={msg.image}
+                                src={selectedUser.profilePicture}
                                 className="w-8 h-8 rounded-full mt-1"
                             />
-                            : null : null
-                    }
-                    <div className="flex-1 min-w-0">
-                        <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
-                            {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                            <span className="font-medium text-white/70">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
-                            <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
-                        </div>
-                        {
-                            renderChatBox(msg.chatId, msg.type, msg.fromAddress == address, msg.content, "", msg.reaction)
                         }
+                        <div className="flex-1 min-w-0">
+                            <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+                                {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+                                <span className="font-medium text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+                                <span className={`text-sm text-white/40`}>{getHourAndMinute(msg.timestamp)}</span>
+                            </div>
+                            {
+                                renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
+                            }
+                        </div>
                     </div>
-                    {
-                        msg.fromAddress == address ? msg.image ?
-                            < img
-                                src={msg.image}
-                                className="w-8 h-8 rounded-full mt-1"
-                            />
-                            : null : null
-                    }
                 </div>
-            ))
+            })
+        } else if (chatMode === "group") {
+            return chatHistory.map((msg) => {
+                const messageDate = formatDate(new Date(msg.timestamp))
+                const showDateSeparator = lastDate != messageDate;
+                lastDate = messageDate;
+
+                return <div key={msg.timestamp}>
+                    {showDateSeparator && <div className='w-full text-center my-5'>
+                        <span className='text-sm bg-white/10 py-2 px-4 rounded-xl'>{messageDate}</span>
+                    </div>}
+                    <div className={`flex items-start gap-3 group`}>
+                        {
+                            msg.fromAddress != address ? msg.image ?
+                                < img
+                                    src={msg.image}
+                                    className="w-8 h-8 rounded-full mt-1"
+                                />
+                                : null : null
+                        }
+                        <div className="flex-1 min-w-0">
+                            <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+                                {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+                                <span className="font-medium text-white/70">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+                                <span className={`text-sm text-white/40`}>{getHourAndMinute(msg.timestamp)}</span>
+                            </div>
+                            {
+                                renderChatBox(msg.chatId, msg.type, msg.fromAddress == address, msg.content, "", msg.reaction)
+                            }
+                        </div>
+                        {
+                            msg.fromAddress == address ? msg.image ?
+                                < img
+                                    src={msg.image}
+                                    className="w-8 h-8 rounded-full mt-1"
+                                />
+                                : null : null
+                        }
+                    </div>
+                </div>
+            })
         }
     }
 
@@ -209,7 +233,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     const isGroupRequest = useMemo(() => selectedGroup?.type === "Request", [selectedGroup])
     const isGroupSearch = useMemo(() => selectedGroup?.type === "Searched", [selectedGroup])
 
-    const renderButtonsInHistory = () => {
+    const renderRequestButtons = () => {
         if (isUserRequest) {
             return <div className='w-full flex justify-center'>
                 <div className='w-[320px] rounded-lg p-3 bg-white/5'>
@@ -388,13 +412,13 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
                         renderChatHistory()
                     }
                     {
-                        renderButtonsInHistory()
+                        renderRequestButtons()
                     }
                 </div>
             )
         } else {
             return (
-                renderButtonsInHistory() ||
+                renderRequestButtons() ||
                 <div className="flex flex-col items-center justify-center h-full text-white/40">
                     <MessageSquare className="w-12 h-12 mb-4" />
                     <p>No messages yet</p>

@@ -16,7 +16,7 @@ import { SendFileModal } from './SendFileModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
-import { Spinner, Popover, PopoverTrigger, PopoverContent, Tooltip, useToast } from '@chakra-ui/react';
+import { Spinner, Tooltip, useToast } from '@chakra-ui/react';
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
