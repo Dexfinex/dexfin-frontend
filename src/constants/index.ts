@@ -20,17 +20,23 @@ export const mapRpcUrls: Record<number, string> = {
     [avalanche.id]: 'https://avalanche-mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',
 }
 
-export const COINGECKO_BASE_URL ="https://dexfinv3-backend-production.up.railway.app/coingecko"
+const BASE_HOST_DOMAIN = 'dexfinv3-backend-production.up.railway.app'
 
-export const DEFILLAMA_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/defillama";
+export const COINGECKO_BASE_URL =`https://${BASE_HOST_DOMAIN}/coingecko`
 
-export const FEARGREED_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/fear-greed";
+export const BIRDEYE_BASE_URL =`https://${BASE_HOST_DOMAIN}/birdeye`
 
-export const GECKOTERMINAL_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/gecko-terminal";
+export const DEFILLAMA_BASE_URL = `https://${BASE_HOST_DOMAIN}/defillama`;
 
-export const BRIAN_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/brian";
+export const FEARGREED_BASE_URL = `https://${BASE_HOST_DOMAIN}/fear-greed`;
 
-export const CRYPTONEWS_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/crypto-news';
+export const GECKOTERMINAL_BASE_URL = `https://${BASE_HOST_DOMAIN}/gecko-terminal`;
+
+export const BRIAN_BASE_URL = `https://${BASE_HOST_DOMAIN}/brian`;
+
+export const CRYPTONEWS_BASE_URL = `https://${BASE_HOST_DOMAIN}/crypto-news`;
+
+export const OPENAI_BASE_URL = `https://${BASE_HOST_DOMAIN}/openai`;
 
 export const ENSO_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/enso';
 
@@ -40,9 +46,9 @@ export const USERAUTH_BASE_URL= "https://dexfinv3-backend-production.up.railway.
 
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 
-export const ZEROX_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/0x';
+export const ZEROX_BASE_URL = `https://${BASE_HOST_DOMAIN}/0x`;
 // export const ZEROX_BASE_URL = 'http://localhost:3000/0x';
-export const DEXFIN_BACKEND_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app';
+export const DEXFIN_BACKEND_BASE_URL = `https://${BASE_HOST_DOMAIN}`;
 export const ZEROX_AFFILIATE_FEE = 50; // 0.5% affiliate fee. Denoted in Bps.
 
 export const defaultMaxPriorityFee = ethers.utils.parseUnits('1.5', 'gwei');

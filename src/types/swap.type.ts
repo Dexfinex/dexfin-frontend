@@ -80,8 +80,7 @@ export type NetworkType = {
 export type OrderType = 'market' | 'limit';
 
 export type ChartType = 'line' | 'tradingview';
-
-export type TimeRange = '5m' | '15m' | '1H' | '24h' | '7d' | '30d' | '1y';
+export type TimeRange = '1m' | '5m' | '15m' | '1H' | '4H' | '1D';
 
 export type SlippageOption = 0.1 | 0.5 | 1 | number;
 
@@ -107,6 +106,21 @@ export type ChartDataPoint = {
     high: number;
     low: number;
     close: number;
+    volume: number;
+};
+
+export type birdeyeOHLCVResponse = {
+    items: {
+        o: number,
+        h: number,
+        l: number,
+        c: number,
+        v: number,
+        unixTime: number,
+        address: string,
+        type: string,
+        currency: string,
+    } []
 };
 
 export type PaymentMethod = {

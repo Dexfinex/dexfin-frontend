@@ -78,7 +78,7 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
       setShowConfirmation(true);
 
       sendTransactionMutate(
-        { transactions: data },
+        { transactions: data, duration: 0 },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);
@@ -163,7 +163,7 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
               />
               <div>
                 <div className="text-sm text-white/60">You send</div>
-                <div className="text-xl font-medium">{convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol}</div>
+                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
@@ -232,11 +232,11 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
             />
           </div>
           <p className="mt-4 text-white/60">
-            Bridging {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol} ( {mapChainId2ViemChain[fromToken.chainId].name} ) to {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} ( {mapChainId2ViemChain[toToken.chainId].name} ) via {solver}
+            Bridging {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} ( {mapChainId2ViemChain[fromToken.chainId].name} ) to {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} ( {mapChainId2ViemChain[toToken.chainId].name} ) via {solver}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`Successfully bridged ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} ( ${mapChainId2ViemChain[fromToken.chainId].name} ) to ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} ( ${mapChainId2ViemChain[toToken.chainId].name} )`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`Successfully bridged ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} ( ${mapChainId2ViemChain[fromToken.chainId].name} ) to ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} ( ${mapChainId2ViemChain[toToken.chainId].name} )`} />
       )}
     </div>
   );
@@ -273,7 +273,7 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Bridge ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} ( ${mapChainId2ViemChain[fromToken.chainId].name} ) to ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} ( ${mapChainId2ViemChain[toToken.chainId].name} ) via ${solver}`}
+          description={`Bridge ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} ( ${mapChainId2ViemChain[fromToken.chainId].name} ) to ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} ( ${mapChainId2ViemChain[toToken.chainId].name} ) via ${solver}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (

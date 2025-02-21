@@ -1,6 +1,7 @@
 import React from 'react';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import { Widget } from './Widget';
+import { ResizableWidget } from './ResizableWidget';
 import { AskAnythingWidget } from './widgets/AskAnythingWidget';
 import { useStore } from '../store/useStore';
 
@@ -29,7 +30,7 @@ export const Workspace: React.FC = () => {
       <div className="relative w-full h-full p-6">
         <DndContext onDragEnd={handleDragEnd}>
           {visibleWidgets.map((widget) => (
-            <Widget
+            <ResizableWidget
               key={widget.id}
               id={widget.id}
               type={widget.type}

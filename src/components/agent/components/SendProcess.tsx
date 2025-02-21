@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Wallet, X, ShieldClose } from 'lucide-react';
+import { ArrowRight, Wallet, X } from 'lucide-react';
 
 import { TokenType, Step } from '../../../types/brian.type';
 import { convertCryptoAmount } from '../../../utils/brian';
@@ -8,6 +8,7 @@ import { mapChainId2ViemChain } from '../../../config/networks';
 import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
 import { FailedTransaction } from '../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../modals/SuccessModal.tsx';
+import { formatNumberByFrac } from '../../../utils/common.util';
 
 interface SendProcessProps {
   onClose: () => void;
@@ -18,7 +19,7 @@ interface SendProcessProps {
   steps: Step[];
 }
 
-export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromAmount, toToken, fromToken, onClose }) => {
+export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromAmount, fromToken, onClose }) => {
   const [step/*, setStep*/] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [failedTransaction, setFailedTransaction] = useState(false);
@@ -37,7 +38,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
       setShowConfirmation(true);
 
       sendTransactionMutate(
-        { transactions: data },
+        { transactions: data, duration: 0 },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);
@@ -51,7 +52,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
           },
         },
       );
-      
+
 
     } catch (error) {
       console.error("Error executing transactions:", error);
@@ -107,7 +108,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
               />
               <div>
                 <div className="text-sm text-white/60">Amount</div>
-                <div className="text-xl font-medium">{fromToken ? convertCryptoAmount(fromAmount, fromToken.decimals) : ''} {fromToken?.symbol}</div>
+                <div className="text-xl font-medium">{fromToken ? formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals)) : ''} {fromToken?.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40 hidden md:block" />
@@ -131,7 +132,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
             </div>
             <div className="flex justify-between">
               <span className="text-white/60">Amount</span>
-              <span className="font-medium">{convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol}</span>
+              <span className="font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken?.symbol}</span>
             </div>
           </div>
         </div>
@@ -176,30 +177,12 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
             />
           </div>
           <p className="mt-4 text-white/60">
-            Sending {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
+            Sending {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken?.symbol} to {shrinkAddress(receiver)}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`Successfully sent ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`Successfully sent ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
       )}
-    </div>
-  );
-
-  const renderFailedTransaction = () => (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-      <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
-        <ShieldClose className="w-8 h-8 text-red-500" />
-      </div>
-      <h3 className="text-xl font-medium mb-2">Failed Transaction</h3>
-      <p className="text-white/60 mb-2">
-        Failed {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken?.symbol} to {shrinkAddress(receiver)}
-      </p>
-      <button
-        onClick={onClose}
-        className="px-6 py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg mt-6"
-      >
-        Close
-      </button>
     </div>
   );
 
@@ -222,7 +205,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
         </button>
       </div>
       {failedTransaction &&
-        <FailedTransaction onClose={onClose} description={`Send ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
+        <FailedTransaction onClose={onClose} description={`Send ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
       }
       {showConfirmation && !failedTransaction ? renderConfirmation() : (
         <div className="h-[calc(100%-60px)]">

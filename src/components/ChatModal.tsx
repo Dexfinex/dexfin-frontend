@@ -3,7 +3,8 @@ import {
   X, Maximize2, Minimize2, Search, Smile, Download,
   MessageSquare, Share2, Users, ArrowRight, Plus,
   Settings, User, Info, CheckCircle, XCircle, File,
-  Edit, Lock, Eye
+  Edit, Lock, Eye, HelpCircle,
+  SidebarIcon
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import GifPicker from 'gif-picker-react';
@@ -15,184 +16,21 @@ import { SendFileModal } from './SendFileModal';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
-import { Spinner, Popover, PopoverTrigger, PopoverContent, Tooltip, useToast } from '@chakra-ui/react';
+import { Spinner, Tooltip, useToast } from '@chakra-ui/react';
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
 import { getAllChatData, getWalletProfile } from '../utils/chatApi';
-import { LIMIT } from '../utils/chatApi';
+import { LIMIT, KEY_NAME } from '../utils/chatApi';
 import { EditChatProfileModal } from './EditChatProfileModal';
 import { ChatGroupModal } from './ChatGroupModal';
-import { IUser, IGroup, ChatType, IChat, ProfileType, ChatModeType } from '../types/chat.type';
+import { IUser, IGroup, ChatType, IChat, ProfileType, ChatModeType, ReactionType } from '../types/chat.type';
 import { ChatMessages } from './ChatMessages';
+import { ChatHelpModal } from './ChatHelpModal';
 
 interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-// interface ChatUser {
-//   id: string;
-//   name: string;
-//   ens: string;
-//   avatar: string;
-//   isOnline: boolean;
-//   lastSeen?: string;
-//   status?: string;
-//   nftAccess?: {
-//     collection: string;
-//     tokenId: string;
-//     image: string;
-//     verified: boolean;
-//   }[];
-// }
-
-// interface ChatGroup {
-//   id: string;
-//   name: string;
-//   description: string;
-//   members: ChatUser[];
-//   type: 'public' | 'private' | 'nft-gated';
-//   icon: string;
-//   requiredNft?: {
-//     collection: string;
-//     image: string;
-//   };
-// }
-
-// const mockUsers: ChatUser[] = [
-//   {
-//     id: '1',
-//     name: 'Alice',
-//     ens: 'alice.eth',
-//     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-//     isOnline: true,
-//     status: 'Trading BTC/ETH pairs 📈',
-//     nftAccess: [
-//       {
-//         collection: 'Bored Ape Yacht Club',
-//         tokenId: '#8817',
-//         image: 'https://i.seadn.io/gae/H-eyNE1MwL5ohL-tCfn_Xa1Sl9M9B4612tLYeUlQubzt4ewhr4huJIR5OLuyO3Z5PpJFSwdm7rq-TikAh7f5eUw338A2cy6HRH75?auto=format&dpr=1&w=256',
-//         verified: true
-//       }
-//     ]
-//   },
-//   {
-//     id: '2',
-//     name: 'Bob',
-//     ens: 'bob.eth',
-//     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
-//     isOnline: true,
-//     status: 'DeFi degen 🌾',
-//     nftAccess: [
-//       {
-//         collection: 'Azuki',
-//         tokenId: '#4391',
-//         image: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=256',
-//         verified: true
-//       }
-//     ]
-//   },
-//   {
-//     id: '3',
-//     name: 'Charlie',
-//     ens: 'charlie.eth',
-//     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=charlie',
-//     isOnline: false,
-//     lastSeen: '2 hours ago',
-//     nftAccess: [
-//       {
-//         collection: 'Pudgy Penguins',
-//         tokenId: '#2156',
-//         image: 'https://i.seadn.io/gae/yNi-XdGxsgQCPpqSio4o31ygAV6wURdIdInWRcFIl46UjUQ1eV7BEndGe8L661OoG-clRi7EgInLX4LPu9Jfw4fq0bnVYHqg7RFi?auto=format&dpr=1&w=256',
-//         verified: true
-//       }
-//     ]
-//   }
-// ];
-
-// const mockGroups: ChatGroup[] = [
-//   {
-//     id: 'wow',
-//     name: 'Wealth of Wisdom',
-//     description: 'Exclusive community for financial wisdom and insights',
-//     members: mockUsers.slice(0, 8),
-//     type: 'public',
-//     icon: 'https://wealthofwisdom.io/wp-content/uploads/2022/12/wow-logoi1.svg'
-//   },
-//   {
-//     id: 'trading',
-//     name: 'Trading Group',
-//     description: 'Discuss trading strategies and market analysis',
-//     members: mockUsers.slice(0, 5),
-//     type: 'public',
-//     icon: '📈'
-//   },
-//   {
-//     id: 'defi',
-//     name: 'DeFi Discussion',
-//     description: 'All things DeFi - yields, protocols, and strategies',
-//     members: mockUsers.slice(1, 6),
-//     type: 'public',
-//     icon: '🌾'
-//   },
-//   {
-//     id: 'bayc-alpha',
-//     name: 'BAYC Alpha',
-//     description: 'Exclusive BAYC holders chat',
-//     members: mockUsers.filter(user =>
-//       user.nftAccess?.some(nft => nft.collection === 'Bored Ape Yacht Club')
-//     ),
-//     type: 'nft-gated',
-//     icon: '🐵',
-//     requiredNft: {
-//       collection: 'Bored Ape Yacht Club',
-//       image: 'https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR-M9He2PjILP0oOvxE89AyiPPGtrR3gysu1Zgy0hjd2xKIgjJJtWIc0ybj4Vd7wv8t3pxDGHoJBzDB?auto=format&dpr=1&w=256'
-//     }
-//   },
-//   {
-//     id: 'azuki-dao',
-//     name: 'Azuki DAO',
-//     description: 'Azuki holders governance chat',
-//     members: mockUsers.filter(user =>
-//       user.nftAccess?.some(nft => nft.collection === 'Azuki')
-//     ),
-//     type: 'nft-gated',
-//     icon: '⛩️',
-//     requiredNft: {
-//       collection: 'Azuki',
-//       image: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=256'
-//     }
-//   }
-// ];
-
-// const tradingGroupMessages = [
-//   {
-//     id: '1',
-//     sender: {
-//       id: '4',
-//       name: 'CryptoWhale',
-//       ens: 'whale.eth',
-//       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=whale',
-//       isOnline: true,
-//       status: 'Trading 24/7 🐋'
-//     },
-//     content: "BTC looking bullish on the 4h chart. Clear breakout above resistance. 📈",
-//     timestamp: '10:30 AM',
-//     reactions: [
-//       { emoji: '🚀', count: 5, reacted: true },
-//       { emoji: '👀', count: 3, reacted: false }
-//     ]
-//   }
-// ];
-
-// const bobDirectMessages = [
-//   {
-//     id: '1',
-//     sender: mockUsers[1], // Bob
-//     content: "Hey! Just wanted to share my latest trade analysis. Looking at some interesting setups in the DeFi sector. 📊",
-//     timestamp: '11:15 AM'
-//   }
-// ];
 
 export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -206,6 +44,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isEditProfileActive, setIsEditProfileActive] = useState(false);
   const [isChatGroupModalActive, setIsChatGroupModalActive] = useState(false);
   const [isSendModalActive, setIsSendModalActive] = useState(false);
+  const [isHelpModalActive, setIsHelpModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
   const { setChatUser, chatUser } = useStore();
   const toast = useToast()
@@ -221,29 +60,25 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
-  const [isFailedSent, setIsFailedSent] = useState(false);
   const [toBottom, setToBottom] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isHandlingRequest, setIsHandlingRequest] = useState(false);
   const [isJoiningGroup, setIsJoiningGroup] = useState(false);
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [isGifOpen, setIsGifOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<any>();
+  const [reactions, setReactions] = useState<Array<ReactionType>>([]);
+  const [gifAndEmojiWidth, setGifAndEmojiWidth] = useState("350px");
   const emojiPickRef = useRef<HTMLDivElement>(null);
   const gifPickRef = useRef<HTMLDivElement>(null);
+  const sideBarRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
+  const navBtnRef = useRef<HTMLButtonElement>(null);
   const gifBtnRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // const [currentUserNfts] = useState([
-  //   {
-  //     collection: 'Bored Ape Yacht Club',
-  //     tokenId: '#1234',
-  //     image: 'https://i.seadn.io/gae/H-eyNE1MwL5ohL-tCfn_Xa1Sl9M9B4612tLYeUlQubzt4ewhr4huJIR5OLuyO3Z5PpJFSwdm7rq-TikAh7f5eUw338A2cy6HRH75?auto=format&dpr=1&w=256',
-  //     verified: true
-  //   }
-  // ]);
 
   const setProfile = useCallback(async () => {
     const profile = await chatUser.profile.info()
@@ -385,11 +220,24 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }, [])
 
   useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 640) {
+        setGifAndEmojiWidth("350px")
+      } else {
+        setGifAndEmojiWidth("300px")
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, [])
+
+  useEffect(() => {
     if (isOpen && chatUser?.uid) {
       console.log('get chat user')
       setProfile()
       getChatInformation()
-      // const profile = await getWalletProfile(chatUser, searchQuery)
     } else {
       clearValues()
     }
@@ -417,21 +265,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     setMessage("")
+    setReactions([])
+    setIsSidebarOpen(false)
   }, [selectedUser, selectedGroup])
 
   useEffect(() => {
     handleReceiveMsg()
   }, [receivedMessage])
-
-  useEffect(() => {
-    if (isFailedSent) {
-      toast({
-        status: 'error',
-        description: `Can't send a message. Please try again.`,
-        duration: 3500
-      })
-    }
-  }, [isFailedSent])
 
   // useEffect(() => {
   //   console.log('request users = ', requestUsers)
@@ -507,8 +347,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }
 
   const handleReceiveMsg = async () => {
-    console.log('handle receive message')
-
     // handle group messages
     if (receivedMessage?.meta?.group == true) {
       if (receivedMessage.origin == "other") {
@@ -637,7 +475,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 ensName: "",
                 profilePicture: profile.picture,
                 address: extractAddress(receivedMessage.from),
-                chatId: receivedMessage.chatId,
+                chatId: receivedMessage.reference,
                 type: "Request",
                 unreadMessages: 0,
                 lastTimestamp: Number(receivedMessage.timestamp),
@@ -655,7 +493,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 content: receivedMessage.message.content,
                 fromAddress: extractAddress(receivedMessage.from),
                 toAddress: extractAddress(receivedMessage.to[0]),
-                chatId: receivedMessage.chatId,
+                chatId: receivedMessage.reference,
                 link: null,
                 reaction: ""
               }]
@@ -677,7 +515,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   content: receivedMessage.message.content,
                   fromAddress: extractAddress(receivedMessage.from),
                   toAddress: extractAddress(receivedMessage.to[0]),
-                  chatId: receivedMessage.chatId,
+                  chatId: receivedMessage.reference,
                   link: null,
                   reaction: ""
                 }]
@@ -758,8 +596,18 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         env: CONSTANTS.ENV.PROD,
       });
 
-      setChatUser(user)
-      initStream(user)
+      const encryption = await user.encryption.info()
+
+      if (encryption?.decryptedPgpPrivateKey) {
+        const pk = {
+          account: user.account,
+          decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+        }
+        localStorage.setItem(KEY_NAME, JSON.stringify(pk))
+
+        setChatUser(user)
+        initStream(user)
+      }
     }
   }
 
@@ -869,10 +717,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     if (!message.trim()) return;
     if (sendingMessage) return;
 
-    if (isFailedSent) {
-      setIsFailedSent(false)
-    }
-
     setSendingMessage(true)
     setToBottom(true)
 
@@ -905,7 +749,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
         setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
-        setIsFailedSent(true)
+        toast({
+          status: 'error',
+          description: `Can't send a message. Please try again.`,
+          duration: 3500
+        })
         setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
         console.log('sent msg err: ', err)
       }
@@ -935,7 +783,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         console.log('sent msg = ', sentMsg)
         setChatHistory(updatedChat.map((chat, index) => index == updatedChat.length - 1 ? { ...chat, chatId: sentMsg.cid } : chat))
       } catch (err) {
-        setIsFailedSent(true)
+        toast({
+          status: 'error',
+          description: `Can't send a message. Please try again.`,
+          duration: 3500
+        })
         setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
         console.log('sent msg err: ', err)
       }
@@ -956,7 +808,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       if (history.length > 0) {
         console.log('history = ', history)
         let chats: IChat[] = []
-        let reactions: any[] = []
+        let reactions: ReactionType[] = []
 
         history.forEach((data: any) => {
           if (data.messageType == "Reaction") {
@@ -988,6 +840,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         }
 
         setToBottom(true)
+        setReactions(reactions)
         setChatHistory(chats.reverse())
         clearUnreadMessages(user.address)
       }
@@ -1113,7 +966,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             link: data.link
           }
         })
-      setToBottom(true)
+        setToBottom(true)
         setChatHistory(tmp.reverse())
       }
     } catch (err) {
@@ -1172,7 +1025,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           })
         }
 
-      setToBottom(true)
+        setToBottom(true)
+        setReactions(reactions)
         setChatHistory(chats.reverse())
       }
     } catch (err) {
@@ -1215,6 +1069,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   }
 
   const handleClickModal = (e: any) => {
+    if (sideBarRef.current && !sideBarRef.current.contains(e.target as Node)) {
+      if (navBtnRef.current && !navBtnRef.current.contains(e.target as Node)) {
+        setIsSidebarOpen(false)
+      }
+    }
+
     if (emojiBtnRef.current && emojiBtnRef.current.contains(e.target as Node)) {
       if (isGifOpen) {
         setIsGifOpen(false)
@@ -1250,7 +1110,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     try {
       if (chatMode === "group" && selectedGroup) {
         const found = selectedGroup?.members.find(member => extractAddress(member.wallet) == address)
-        setChatHistory(prev => [...prev, {
+        const updated = [...chatHistory, {
           timestamp: Math.floor(Date.now()),
           type,
           content,
@@ -1260,7 +1120,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           link: null,
           image: found?.image || "",
           reaction: ""
-        }])
+        }]
+        setChatHistory(updated)
 
         const sentMedia = await chatUser.chat.send(selectedGroup?.groupId, {
           type,
@@ -1269,8 +1130,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
         setMessage("")
         console.log('sent media: ', sentMedia)
+        setChatHistory(updated.map((chat, index) => index == updated.length - 1 ? { ...chat, chatId: sentMedia.cid } : chat))
       } else if (chatMode === "p2p" && selectedUser) {
-        setChatHistory(prev => [...prev, {
+        const updated = [...chatHistory, {
           timestamp: Math.floor(Date.now()),
           type,
           content,
@@ -1279,7 +1141,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           chatId: "",
           link: null,
           reaction: ""
-        }])
+        }]
+        setChatHistory(updated)
 
         const sentMedia = await chatUser.chat.send(selectedUser?.address, {
           type,
@@ -1292,9 +1155,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           setConnectedUsers(prev => [{ ...searchedUser, unreadMessages: 0 }, ...prev])
         }
         console.log('sent media: ', sentMedia)
+        setChatHistory(updated.map((chat, index) => index == updated.length - 1 ? { ...chat, chatId: sentMedia.cid } : chat))
       }
     } catch (err) {
-      console.log('send gif err: ', err)
+      console.log('send media err: ', err)
       setChatHistory(prev => [...prev.slice(0, prev.length - 1)])
     }
   }
@@ -1444,47 +1308,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     if (group?.type === "Searched") return false;
 
     if (group?.type === "Request") return false;
-    // if (group?.type === 'public') return true;
-    // if (group?.type === 'nft-gated') {
-    //   return currentUserNfts.some(nft =>
-    //     nft.collection === group.requiredNft?.collection
-    //   );
-    // }
-    // if (user?.nftAccess) {
-    //   return currentUserNfts.some(userNft =>
-    //     user.nftAccess?.some(requiredNft =>
-    //       requiredNft.collection === userNft.collection
-    //     )
-    //   );
-    // }
+
     return true;
   };
 
   const renderAccessBadge = (user: IUser | null, group: IGroup | null) => {
     if (!user && !group) return null;
 
-    // const hasAccess = canAccessChat(user, group);
-    // const requiredNft = group?.type === 'nft-gated' ? group.requiredNft :
-    //   user?.nftAccess?.[0];
-
-    // if (!requiredNft) return null;
-
-    // return (
-    //   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${hasAccess ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-    //     }`}>
-    //     {hasAccess ? (
-    //       <>
-    //         <ShieldCheck className="w-4 h-4" />
-    //         <span>Access Granted</span>
-    //       </>
-    //     ) : (
-    //       <>
-    //         <ShieldAlert className="w-4 h-4" />
-    //         <span>Requires {requiredNft.collection}</span>
-    //       </>
-    //     )}
-    //   </div>
-    // );
     return null
   };
 
@@ -1693,6 +1523,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             : 'w-[90%] h-[90%] rounded-xl'
             }`}
           onClick={handleClickModal}
+          ref={chatContainerRef}
         >
           {!chatUser?.uid && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10'>
             <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm" onClick={handleUnlock}>
@@ -1705,7 +1536,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           </div>}
 
           {/* Left Sidebar */}
-          <div className="w-80 border-r border-white/10 relative">
+          <div className={`absolute md:relative flex flex-col rounded-tl-xl rounded-bl-xl bg-stone-950 bottom-0 top-0 left-0 w-80 border-r border-white/10 z-[1]
+                          transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+40px)] md:translate-x-0"}`}
+            ref={sideBarRef}>
             <div className="p-4 border-b border-white/10">
               <div className="flex items-center gap-2 mb-4">
                 <button
@@ -1755,11 +1588,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               )}
             </div>
 
-            <div className={`p-2 overflow-y-auto ai-chat-scrollbar ${chatMode === "group" ? "max-h-[calc(100%-238px)]" : "max-h-[calc(100%-188px)]"}`}>
+            <div className={`flex-1 p-2 overflow-y-auto ai-chat-scrollbar ${chatMode === "group" ? "max-h-[calc(100%-238px)]" : "max-h-[calc(100%-188px)]"}`}>
               {renderGroupsAndUsers()}
             </div>
 
-            <div className='border-t border-white/10 absolute left-0 right-0 bottom-[12px] pt-2 px-4'>
+            <div className='border-t border-white/10 bottom-[12px] pt-2 px-4'>
               {ownProfile && <div className='flex justify-between items-center'>
                 <div className='flex justify-center items-center gap-4'>
                   <img src={ownProfile.picture} className='rounded-full w-10 h-10' />
@@ -1773,8 +1606,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col">
             {/* Chat Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between p-2 sm:p-4 border-b border-white/10">
+              <div className="flex items-center sm:gap-3">
+                <button className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setIsSidebarOpen(true)} ref={navBtnRef}>
+                  <SidebarIcon className="w-4 h-4" />
+                </button>
                 {selectedUser ? (
                   <>
                     <div className="relative flex items-center">
@@ -1835,11 +1671,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     </div> */}
                   </div>
                 ) : (
-                  <div className="text-white/40">Select a chat to start messaging</div>
+                  <div className="text-sm sm:text-md text-white/40">Select a chat to start messaging</div>
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center sm:gap-2">
                 {renderAccessBadge(selectedUser, selectedGroup)}
                 {/* {selectedUser?.isOnline && (
                   <>
@@ -1856,13 +1692,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     selectedGroup?.public == false ? <Tooltip label="Private"><Lock className='w-4 h-4 text-white/50' /></Tooltip> : null
                 }
                 {selectedGroup && (
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setIsChatGroupModalActive(true)}>
+                  <button className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setIsChatGroupModalActive(true)}>
                     <Settings className="w-4 h-4" />
                   </button>
                 )}
                 <button
                   onClick={toggleFullscreen}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
                 >
                   {isFullscreen ? (
                     <Minimize2 className="w-4 h-4" />
@@ -1871,8 +1707,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   )}
                 </button>
                 <button
+                  onClick={() => setIsHelpModalActive(true)}
+                  className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                </button>
+                <button
                   onClick={onClose}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1894,21 +1736,24 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               loadingChatHistory={loadingChatHistory}
               toBottom={toBottom}
               setToBottom={setToBottom}
+              reactions={reactions}
             />
 
             {/* Chat Input */}
             {canAccessChat(selectedUser, selectedGroup) && (
-              <div className="p-4 border-t border-white/10 relative">
-                <div className="flex items-center gap-3">
-                  <button className="p-2 hover:bg-white/10 rounded-full transition-colors" ref={emojiBtnRef} onClick={() => setIsEmojiOpen(!isEmojiOpen)}>
-                    <Smile className="w-5 h-5" />
+              <div className="p-2 sm:p-4 border-t border-white/10 relative">
+                <div className="flex items-center gap-1 sm:gap-3">
+                  <button className="p-1 sm:p-2 hover:bg-white/10 rounded-full transition-colors" ref={emojiBtnRef} onClick={() => setIsEmojiOpen(!isEmojiOpen)}>
+                    <Smile className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
 
                   <div ref={emojiPickRef}
                     className='!absolute bottom-[62px] left-[16px]'>
-                    <EmojiPicker open={isEmojiOpen}
+                    <EmojiPicker
+                      open={isEmojiOpen}
                       onEmojiClick={handleEmojiClick}
                       theme={Theme.DARK}
+                      width={gifAndEmojiWidth}
                     />
                   </div>
 
@@ -1922,7 +1767,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     rows={1} // Adjust rows dynamically
                   />
 
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" ref={gifBtnRef} onClick={() => setIsGifOpen(!isGifOpen)}>
+                  <button className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors" ref={gifBtnRef} onClick={() => setIsGifOpen(!isGifOpen)}>
                     Gif
                   </button>
 
@@ -1932,21 +1777,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       tenorApiKey={"AIzaSyBxr4hrP59kdbQV4xJ-t2CSQX0Y6q4gcbA"}
                       theme={GifTheme.DARK}
                       onGifClick={handleGifClick}
+                      width={gifAndEmojiWidth}
                     />
                   </div>}
 
-                  <label className="cursor-pointer p-2 hover:bg-white/10 rounded-lg transition-colors">
-                    <Share2 className="w-5 h-5" />
+                  <label className="cursor-pointer p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
                     <input type="file" className="hidden" onChange={handleFileChange} />
                   </label>
                   {
                     !sendingMessage ? <button
                       onClick={handleSendMessage}
                       disabled={!message.trim()}
-                      className={`p-2 rounded-lg transition-colors ${message.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
+                      className={`p-1 sm:p-2 rounded-lg transition-colors ${message.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
                         }`}
                     >
-                      <ArrowRight className="w-5 h-5" />
+                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button> : <Spinner />
                   }
                 </div>
@@ -1987,6 +1833,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         onClose={() => setIsChatGroupModalActive(false)}
         group={selectedGroup}
         updateOneGroup={updateOneGroup}
+      />
+
+      <ChatHelpModal
+        isOpen={isHelpModalActive}
+        onClose={() => setIsHelpModalActive(false)}
       />
     </>
   );

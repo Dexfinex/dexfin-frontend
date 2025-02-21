@@ -37,7 +37,7 @@ export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmo
       setShowConfirmation(true);
 
       sendTransactionMutate(
-        { transactions: data },
+        { transactions: data, duration: 0 },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);
@@ -157,7 +157,7 @@ export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmo
               }
               <div>
                 <div className="text-sm text-white/60">You withdraw</div>
-                <div className="text-xl font-medium">{convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol}</div>
+                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
@@ -221,11 +221,11 @@ export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmo
             }
           </div>
           <p className="mt-4 text-white/60">
-            Withdrawing {convertCryptoAmount(fromAmount, fromToken.decimals)} {fromToken.symbol} via {protocol?.name}
+            Withdrawing {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} via {protocol?.name}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully withdrawn ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully withdrawn ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol}`} />
       )}
     </div>
   );
@@ -262,7 +262,7 @@ export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmo
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Withdraw ${convertCryptoAmount(fromAmount, fromToken.decimals)} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol} via ${protocol?.name}`}
+          description={`Withdraw ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol} via ${protocol?.name}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (

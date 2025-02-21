@@ -2,14 +2,14 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 import { coingeckoService } from '../../services/coingecko.service';
 import { cryptoNewsService } from '../../services/cryptonews.service.ts';
-import { brianService } from '../../services/brian.services';
+import { brianService } from '../../services/brian.service';
 import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/brian.tsx';
 import {
   Mic,
   Send,
   Trash2,
 } from 'lucide-react';
-import { VoiceModal } from '../VoiceModal.tsx';
+import { VoiceModal } from './VoiceModal.tsx';
 import { Message } from '../../types/index.ts';
 import { PriceChart } from '../PriceChart.tsx';
 import { TrendingCoins } from '../TrendingCoins.tsx';
@@ -29,6 +29,11 @@ import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 import { convertCryptoAmount } from '../../utils/brian.tsx';
 import { DepositProcess } from './components/DepositProcess.tsx';
 import { WithdrawProcess } from './components/WithdrawProcess.tsx';
+import { BorrowProcess } from './components/BorrowProcess.tsx';
+import { RepayProcess } from './components/RepayProcess.tsx';
+import { ENSRegisterProcess } from './components/ENSRegisterProcess.tsx';
+import { ENSRenewProcess } from './components/ENSRenewProcess.tsx';
+import { openaiService } from '../../services/openai.services.ts';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -52,17 +57,23 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
   const [showDepositProcess, setShowDepositProcess] = useState(false);
   const [showWithdrawProcess, setShowWithdrawProcess] = useState(false);
+  const [showBorrowProcess, setShowBorrowProcess] = useState(false);
+  const [showRepayProcess, setShowRepayProcess] = useState(false);
+  const [showENSRegisterProcess, setShowENSRegisterProcess] = useState(false);
+  const [showENSRenewProcess, setShowENSRenewProcess] = useState(false);
   const { address, chainId, switchChain } = useContext(Web3AuthContext);
   const { tokenBalances } = useTokenBalanceStore();
 
   const [fromToken, setFromToken] = useState<TokenType>();
   const [protocol, setProtocol] = useState<Protocol>();
   const [toToken, setToToken] = useState<TokenType>();
-  const [
-    fromAmount, setFromAmount] = useState('0');
+  const [fromAmount, setFromAmount] = useState('0');
+  const [toAmount, setToAmount] = useState('0');
   const [receiver, setReceiver] = useState('');
+  const [ensName, setEnsName] = useState('');
   const [solver, setSolver] = useState('');
   const [steps, setSteps] = useState<Step[]>([]);
+  const [description, setDescription] = useState('');
 
   // Reset all process states
   const resetProcessStates = () => {
@@ -75,6 +86,10 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowProjectAnalysis(false);
     setShowDepositProcess(false);
     setShowWithdrawProcess(false);
+    setShowBorrowProcess(false);
+    setShowRepayProcess(false);
+    setShowENSRegisterProcess(false);
+    setShowENSRenewProcess(false);
   };
 
   const processCommandCase = async (command: string, address: string, chainId: number | undefined) => {
@@ -124,7 +139,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
       } else {
         const brianKnowledgeData = await brianService.getBrianKnowledgeData(command);
         return {
-          text: convertBrianKnowledgeToPlainText(brianKnowledgeData.message)
+          text: convertBrianKnowledgeToPlainText(brianKnowledgeData.message),
+          type:"knowledge",
         }
       }
     } catch (e) {
@@ -242,6 +258,22 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
 
   const findFallbackResponse = async (message: string) => {
     const normalizedMessage = message.toLowerCase();
+    const data = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
+    if(data && data.response) {
+      if(data.response.priceData) {
+        const { priceData } = data.response;
+        return {
+          text: `The current Bitcoin price is $${priceData.price.toLocaleString()} (${priceData.change24h.toFixed(2)}% 24h change)\n ${data.response.response}`,
+          priceData: {
+            price: priceData.price,
+            priceChange24h: priceData.priceChange24h,
+            marketCap: priceData.marketCap,
+            volume24h: priceData.volume24h,
+            chartData: data.response.history
+          }
+        };
+      }
+    }
 
     for (const [key, response] of Object.entries(fallbackResponses)) {
       if (normalizedMessage.includes(key)) {
@@ -368,9 +400,58 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setReceiver(data.receiver);
             setSteps(data.steps);
             setShowWithdrawProcess(true);
+          } else if (response.brianData.action == 'AAVE Borrow') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+
+            setFromToken(data.fromToken);
+            setProtocol(data.protocol);
+            setToToken(data.toToken);
+            setFromAmount(data.fromAmount);
+            setToAmount(data.toAmount);
+            
+            setReceiver(data.receiver);
+            setSteps(data.steps);
+            setShowBorrowProcess(true);
+          } else if (response.brianData.action == 'AAVE Repay') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+
+            setFromToken(data.fromToken);
+            setProtocol(data.protocol);
+            setToToken(data.toToken);
+            setFromAmount(data.fromAmount);
+            setToAmount(data.toAmount);
+            setReceiver(data.receiver);
+            setSteps(data.steps);
+            setShowRepayProcess(true);
+          } else if (response.brianData.action == 'ENS Registration') {
+            
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+            setFromToken(data.fromToken);
+            setDescription(data.description);
+            setSteps(data.steps);
+            setEnsName(response.brianData.extractedParams.address);
+            setShowENSRegisterProcess(true);
+          } else if (response.brianData.action == 'ENS Renewal') {
+            const data = response.brianData.data;
+            resetProcessStates();
+            await switchChain(data.fromToken.chainId);
+
+            setFromToken(data.fromToken);
+            setDescription(data.description);
+            setSteps(data.steps);
+            setEnsName(response.brianData.extractedParams.address);
+            setShowENSRenewProcess(true);
           }
         } else if (response.type == "action" && response.brianData.type == 'knowledge') {
-          response = { text: convertBrianKnowledgeToPlainText(response.brianData.answer) };
+          response = { text: convertBrianKnowledgeToPlainText(response.brianData.answer).replace(/brian/gi, "Dexfin") };
+        } else if(response.type == "knowledge") {
+          response = { text: response.text.replace(/brian/gi, "Dexfin") };
         }
 
         if (response) {
@@ -381,7 +462,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             role: 'assistant',
             content: response.text,
             tip: response.insufficient,
-            data: response.data,
+            priceData: response.priceData,
             trending: response.trending,
             news: response.news
           }]);
@@ -487,7 +568,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setMessages([]);
   };
 
-
   if (!isOpen) return null;
 
   return (
@@ -552,10 +632,32 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
               setShowWithdrawProcess(false);
               setMessages([]);
             }} />
+        ) : showBorrowProcess && fromToken && toToken ? (
+          <BorrowProcess steps={steps} receiver={receiver} toAmount={toAmount} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowBorrowProcess(false);
+              setMessages([]);
+            }} />
+        ) : showRepayProcess && fromToken && toToken ? (
+          <RepayProcess steps={steps} receiver={receiver} toAmount={toAmount} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowRepayProcess(false);
+              setMessages([]);
+            }} />
+        ) : showENSRegisterProcess && fromToken ? (
+          <ENSRegisterProcess description = {description} steps={steps} ensName={ensName} fromToken={fromToken} onClose={() => {
+            setShowENSRegisterProcess(false);
+            setMessages([]);
+          }} />
+        ) : showENSRenewProcess && fromToken ? (
+          <ENSRenewProcess description={description} steps={steps} ensName={ensName} fromToken={fromToken} onClose={() => {
+            setShowENSRenewProcess(false);
+            setMessages([]);
+          }} />
         ) : (
           <div className="flex flex-col h-full">
             {/* Header */}
-            <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} />
+            <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} setInput = {setInput} />
             <div className="flex h-full overflow-auto">
               {/* Main Content */}
               <div className="flex-1 flex flex-col relative overflow-auto">
@@ -579,9 +681,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                           >
                             <p className="whitespace-pre-wrap">{message.content}</p>
                             <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
-                            {message.data && (
+                            {message.priceData && (
                               <div className="mt-4 w-full">
-                                <PriceChart data={message.data} />
+                                <PriceChart
+                                data={message.priceData}
+                                />
                               </div>
                             )}
                             {message.trending && <TrendingCoins coins={message.trending} />}
@@ -672,10 +776,10 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         isOpen={isListening}
         transcript={transcript}
         commands={[
-          { command: "What is the Bitcoin price?", description: "Get real-time BTC price" },
-          { command: "Show me trending tokens", description: "View trending cryptocurrencies" },
-          { command: "Show me the latest news", description: "Get latest crypto news" },
-          { command: "Evaluate project", description: "Analyze project potential" }
+          { command: "Stake 1 ETH on Lido", description: "Earn staking rewards" },
+          { command: "Deposit 1 USDC on Aave", description: "Earn lending interest" },
+          { command: "Withdraw 2 USDC on Aave", description: "Remove Deposited tokens" },
+          { command: "Swap 1 USDC for ETH", description: "Execute token swap" }
         ]}
       />
     </div>

@@ -73,6 +73,15 @@ export const getChatHistoryDate = (timestamp: number) => {
     }
 }
 
+export const getHourAndMinute = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+    const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return timeString;
+}
+
 /**
  * Compares two wallet addresses in uppercase.
  * @param address1 - The first wallet address.
@@ -165,3 +174,10 @@ export const formatNumberByFrac = (
 
     return getFixedNum(num, fixedCount);
 };
+
+export const formatHealthFactor = (num: number) => {
+    if (num > 1e9) {
+        return "∞";
+    }
+    return formatNumberByFrac(num);
+}

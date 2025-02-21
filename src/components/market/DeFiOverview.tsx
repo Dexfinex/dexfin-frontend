@@ -17,15 +17,8 @@ import { useGetDefillamaPools, useGetDefillamaProtocols } from '../../hooks/useD
 import useDefillamaStore from '../../store/useDefillamaStore';
 import { mapChainId2ChainName } from '../../config/networks';
 import { getChainIcon } from '../../utils/getChainIcon';
+import { getChainName } from '../../utils/defi.util';
 
-const getChainName = (chainName: string) => {
-  switch (chainName) {
-    case "BNB Chain":
-      return "BSC"
-    default:
-      return chainName;
-  }
-}
 
 export const DeFiOverview: React.FC = () => {
   const { isLoading: isLoadingProtocol, error: errorProtocol, refetch: refetchProtocol } = useGetDefillamaProtocols();

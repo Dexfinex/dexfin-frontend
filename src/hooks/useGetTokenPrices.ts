@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
 import { coingeckoService } from "../services/coingecko.service";
 import useTokenStore from "../store/useTokenStore";
+import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
+import {birdeyeService} from "../services/birdeye.service.ts";
 
 interface QuoteParam {
     tokenAddresses: (string | null)[];
@@ -10,24 +12,37 @@ interface QuoteParam {
 
 const useGetTokenPrices = ({ chainId, tokenAddresses }: QuoteParam) => {
     const enabled = !!tokenAddresses && tokenAddresses.length > 0;
+    const uniqueTokenAddresses = [...new Set(tokenAddresses)].filter(item => item != null)
 
     const fetchPrices = useCallback(async () => {
-        const data = await coingeckoService.getTokenPrices(chainId, tokenAddresses);
-        if (data) {
-            const resultData: Record<string, string> = {};
-            for (const address of Object.keys(data)) {
-                resultData[`${chainId}:${address.toLowerCase()}`] = data[address];
+        if (chainId === SOLANA_CHAIN_ID) {
+            const {data} = await birdeyeService.getMintPrices(uniqueTokenAddresses);
+            if (data) {
+                const resultData: Record<string, string> = {};
+                for (const address of Object.keys(data)) {
+                    resultData[`${chainId}:${address.toLowerCase()}`] = data[address].value?.toString();
+                }
+                return resultData;
             }
-            return resultData;
+        } else {
+            const data = await coingeckoService.getTokenPrices(chainId, uniqueTokenAddresses);
+            if (data) {
+                const resultData: Record<string, string> = {};
+                for (const address of Object.keys(data)) {
+                    resultData[`${chainId}:${address.toLowerCase()}`] = data[address];
+                }
+                return resultData;
+            }
         }
+
         return {};
-    }, [tokenAddresses, chainId]);
+    }, [uniqueTokenAddresses, chainId]);
 
     const { isLoading, refetch, data } = useQuery<Record<string, string>>({
-        queryKey: ["get-token-price", tokenAddresses, chainId],
+        queryKey: ["get-token-price", uniqueTokenAddresses, chainId],
         queryFn: fetchPrices,
         enabled,
-        refetchInterval: 10_000,
+        refetchInterval: 20_000,
     });
 
     useEffect(() => {

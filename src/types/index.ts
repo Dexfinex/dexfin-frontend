@@ -22,7 +22,7 @@ export interface Message {
   role: string;
   content: string;
   tip?: string;
-  data?: CoinData;
+  priceData?: CoinData;
   trending?: TrendingCoin[];
   news?: NewsItem[];
 }
@@ -249,6 +249,8 @@ export interface DefillamaPool {
   chain: string;
   apy: number;
   tvlUsd: number;
+  logo: string[];
+  underlyingTokens: string[];
 }
 export interface DefillamaCategory {
   name: string;

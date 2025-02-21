@@ -9,6 +9,7 @@ import {
 } from "viem/chains";
 import { TokenType } from "../types/swap.type.ts";
 import { NULL_ADDRESS } from "../constants";
+import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
 
 export interface NETWORK {
     id: string;
@@ -69,7 +70,7 @@ export const NETWORKS: NETWORK[] = [
         id: 'solana',
         name: 'Solana',
         icon: 'https://cryptologos.cc/logos/solana-sol-logo.svg',
-        chainId: 0,
+        chainId: SOLANA_CHAIN_ID,
     },
 ] as const;
 

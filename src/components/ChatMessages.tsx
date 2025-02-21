@@ -1,17 +1,19 @@
-import React, { useContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useContext, useEffect, useState, useRef, useMemo, useCallback, useLayoutEffect } from 'react';
 import { useInView } from "react-intersection-observer";
 import { useStore } from '../store/useStore';
-import { IGroup, IUser, IChat, ChatModeType, ChatType } from '../types/chat.type';
+import { IGroup, IUser, IChat, ChatModeType, ChatType, ReactionType } from '../types/chat.type';
 import { MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'lucide-react';
-import { Spinner, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
-import { downloadBase64File, shrinkAddress, getChatHistoryDate, extractAddress } from '../utils/common.util';
+import { Spinner, Popover, PopoverTrigger, PopoverContent, Box, Divider, AbsoluteCenter } from '@chakra-ui/react';
+import { downloadBase64File, shrinkAddress, getChatHistoryDate, extractAddress, getHourAndMinute } from '../utils/common.util';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
-import { LIMIT } from '../utils/chatApi';
+import { LIMIT, BIG_IMAGE_WIDHT } from '../utils/chatApi';
+import { ImageWithSkeleton } from './common/ImageWithSkeleton';
 
 interface ChatMessagesProps {
     selectedGroup: IGroup | null;
     selectedUser: IUser | null;
     chatHistory: Array<IChat>;
+    reactions: ReactionType[];
     chatMode: ChatModeType;
     handleUserRequest: (isAccept: boolean) => Promise<void>;
     handleGroupRequest: (isAccept: boolean) => Promise<void>;
@@ -26,7 +28,7 @@ interface ChatMessagesProps {
 
 export const ChatMessages: React.FC<ChatMessagesProps> = ({
     selectedGroup, selectedUser, chatHistory, chatMode, isHandlingRequest, isJoiningGroup, loadingChatHistory,
-    handleUserRequest, handleGroupRequest, handleJoinGroup, setChatHistory, toBottom, setToBottom,
+    handleUserRequest, handleGroupRequest, handleJoinGroup, setChatHistory, toBottom, setToBottom, reactions
 }) => {
     const { ref: topRef, inView: topInView } = useInView(); // Detect top scroll
 
@@ -56,11 +58,11 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
     const scrollBottom = useCallback(() => {
         if (chatScrollRef.current) {
-            chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" })
+            chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight })
         }
     }, [])
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         console.log('chat history = ', chatHistory)
         if (toBottom) {
             scrollBottom()
@@ -70,59 +72,64 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
     const getPrevChatHistory = async (address: string, chatId: string) => {
         setLoadingPrevChat(true)
-        const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
-        console.log('prev history = ', prevHistory)
+        try {
 
-        if (prevHistory.length > 0) {
-            let chats: IChat[] = []
-            let reactions: any[] = []
+            const prevHistory = await chatUser.chat.history(address, { reference: chatId, limit: LIMIT })
+            console.log('prev history = ', prevHistory)
 
-            // todo should add reactions more
-            prevHistory.forEach((data: any) => {
-                if (data.messageType == "Reaction") {
-                    reactions = [...reactions, data.messageObj]
-                } else {
-                    chats = [...chats, {
-                        timestamp: data.timestamp,
-                        type: data.messageType,
-                        content: data.messageContent,
-                        fromAddress: extractAddress(data.fromDID),
-                        toAddress: extractAddress(data.toDID),
-                        chatId: data.cid,
-                        link: data.link,
-                        image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
-                    } as IChat]
-                }
-            })
+            if (prevHistory.length > 0) {
+                let chats: IChat[] = []
+                let prevReactions: ReactionType[] = []
 
-            if (reactions.length > 0) {
-                chats = chats.map(chat => {
-                    const found = reactions.find(e => e.reference == chat.chatId)
-                    if (found) {
-                        return {
-                            ...chat,
-                            reaction: found.content
-                        }
+                prevHistory.forEach((data: any) => {
+                    if (data.messageType == "Reaction") {
+                        prevReactions = [...prevReactions, data.messageObj]
+                    } else {
+                        chats = [...chats, {
+                            timestamp: data.timestamp,
+                            type: data.messageType,
+                            content: data.messageContent,
+                            fromAddress: extractAddress(data.fromDID),
+                            toAddress: extractAddress(data.toDID),
+                            chatId: data.cid,
+                            link: data.link,
+                            image: selectedGroup ? selectedGroup?.members.find(member => member.wallet == data.fromDID)?.image : undefined
+                        } as IChat]
                     }
-                    return chat
                 })
-            }
 
-            chats.shift()
+                const totalReactions: ReactionType[] = [...reactions, ...prevReactions]
+                if (totalReactions.length > 0) {
+                    chats = chats.map(chat => {
+                        const found = totalReactions.find(e => e.reference == chat.chatId)
+                        if (found) {
+                            return {
+                                ...chat,
+                                reaction: found.content
+                            }
+                        }
+                        return chat
+                    })
+                }
 
-            if (chats.length > 0) {
-                const updatedChat = [...chats.reverse(), ...chatHistory]
-                setChatHistory(updatedChat)
+                chats.shift()
+
+                if (chats.length > 0) {
+                    const updatedChat = [...chats.reverse(), ...chatHistory]
+                    setChatHistory(updatedChat)
+                }
             }
+        } catch(err) {
+            console.log('get prev chat err: ', err)
         }
 
         setLoadingPrevChat(false)
     }
 
     const handleReaction = async (chatId: string, content: string) => {
-        // console.log('reference: ', chatId)
-        // console.log('address: ', address)
-        // console.log('content: ', content)
+        console.log('reference: ', chatId)
+        console.log('address: ', address)
+        console.log('content: ', content)
 
         const receipient = selectedGroup ? selectedGroup.groupId : selectedUser ? selectedUser.address : ""
 
@@ -146,60 +153,84 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
         }
     }
 
+    const formatDate = (date: Date) => {
+        return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(date);
+    }
+
     const renderChatHistory = () => {
+        let lastDate: any = null;
+
         if (chatMode === "p2p") {
-            return chatHistory.map((msg: IChat) => (
-                msg.type !== "Reaction" ? <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-                    {
-                        msg.fromAddress == selectedUser?.address &&
-                        < img
-                            src={selectedUser.profilePicture}
-                            className="w-8 h-8 rounded-full mt-1"
-                        />
-                    }
-                    <div className="flex-1 min-w-0">
-                        <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
-                            {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                            <span className="font-medium text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
-                            <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
-                        </div>
+            return chatHistory.map((msg: IChat) => {
+                const messageDate = formatDate(new Date(msg.timestamp))
+                const showDateSeparator = lastDate != messageDate;
+                lastDate = messageDate;
+
+                return <div key={msg.timestamp}>
+                    {showDateSeparator && <div className='w-full text-center my-5'>
+                        <span className='text-sm bg-white/10 py-2 px-4 rounded-xl'>{messageDate}</span>
+                    </div>}
+                    <div className={`flex items-start gap-3 group`}>
                         {
-                            renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
-                        }
-                    </div>
-                </div> : null
-            ))
-        } else if (chatMode === "group") {
-            return chatHistory.map((msg) => (
-                <div key={msg.timestamp} className={`flex items-start gap-3 group`}>
-                    {
-                        msg.fromAddress != address ? msg.image ?
+                            msg.fromAddress == selectedUser?.address &&
                             < img
-                                src={msg.image}
+                                src={selectedUser.profilePicture}
                                 className="w-8 h-8 rounded-full mt-1"
                             />
-                            : null : null
-                    }
-                    <div className="flex-1 min-w-0">
-                        <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
-                            {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                            <span className="font-medium text-white/70">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
-                            <span className={`text-sm text-white/40`}>{getChatHistoryDate(msg.timestamp)}</span>
-                        </div>
-                        {
-                            renderChatBox(msg.chatId, msg.type, msg.fromAddress == address, msg.content, "", msg.reaction)
                         }
+                        <div className="flex-1 min-w-0">
+                            <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+                                {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+                                <span className="text-sm text-white/40">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+                                <span className={`text-sm text-white/40`}>{getHourAndMinute(msg.timestamp)}</span>
+                            </div>
+                            {
+                                renderChatBox(msg.chatId, msg.type, msg.fromAddress != selectedUser?.address, msg.content, msg.fromAddress, msg.reaction)
+                            }
+                        </div>
                     </div>
-                    {
-                        msg.fromAddress == address ? msg.image ?
-                            < img
-                                src={msg.image}
-                                className="w-8 h-8 rounded-full mt-1"
-                            />
-                            : null : null
-                    }
                 </div>
-            ))
+            })
+        } else if (chatMode === "group") {
+            return chatHistory.map((msg) => {
+                const messageDate = formatDate(new Date(msg.timestamp))
+                const showDateSeparator = lastDate != messageDate;
+                lastDate = messageDate;
+
+                return <div key={msg.timestamp}>
+                    {showDateSeparator && <div className='w-full text-center my-5'>
+                        <span className='text-sm bg-white/10 py-2 px-4 rounded-xl'>{messageDate}</span>
+                    </div>}
+                    <div className={`flex items-start gap-3 group`}>
+                        {
+                            msg.fromAddress != address ? msg.image ?
+                                < img
+                                    src={msg.image}
+                                    className="w-8 h-8 rounded-full mt-1"
+                                />
+                                : null : null
+                        }
+                        <div className="flex-1 min-w-0">
+                            <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
+                                {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
+                                <span className="text-sm text-white/40">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+                                <span className={`text-sm text-white/40`}>{getHourAndMinute(msg.timestamp)}</span>
+                            </div>
+                            {
+                                renderChatBox(msg.chatId, msg.type, msg.fromAddress == address, msg.content, "", msg.reaction)
+                            }
+                        </div>
+                        {
+                            msg.fromAddress == address ? msg.image ?
+                                < img
+                                    src={msg.image}
+                                    className="w-8 h-8 rounded-full mt-1"
+                                />
+                                : null : null
+                        }
+                    </div>
+                </div>
+            })
         }
     }
 
@@ -207,7 +238,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     const isGroupRequest = useMemo(() => selectedGroup?.type === "Request", [selectedGroup])
     const isGroupSearch = useMemo(() => selectedGroup?.type === "Searched", [selectedGroup])
 
-    const renderButtonsInHistory = () => {
+    const renderRequestButtons = () => {
         if (isUserRequest) {
             return <div className='w-full flex justify-center'>
                 <div className='w-[320px] rounded-lg p-3 bg-white/5'>
@@ -320,7 +351,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
         if (type === "Text") {
             return <div className={`flex ${!isOwner ? 'justify-start' : 'justify-end'}`}>
-                <div className={`relative rounded-lg p-3 max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
+                <div className={`relative rounded-lg p-3 max-w-[360px] md:max-w-[480px] inline-block ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
                     {messageContent}
                     {renderReactionBtn()}
                     {reactionIcon()}
@@ -328,13 +359,13 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
             </div>
         } else if (type === "MediaEmbed") {
             return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
-                <img className={`w-52 h-auto`} src={messageContent} />
+                <ImageWithSkeleton src={messageContent} width={BIG_IMAGE_WIDHT} />
                 {renderReactionBtn()}
                 {reactionIcon()}
             </div>
         } else if (type === "Image") {
             return <div className={`relative w-52 ${!isOwner ? '' : 'ml-auto'}`}>
-                <img className={`w-52 h-auto`} src={messageContent} />
+                <ImageWithSkeleton src={messageContent} width={BIG_IMAGE_WIDHT} />
                 {renderReactionBtn()}
                 {reactionIcon()}
             </div>
@@ -386,13 +417,13 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
                         renderChatHistory()
                     }
                     {
-                        renderButtonsInHistory()
+                        renderRequestButtons()
                     }
                 </div>
             )
         } else {
             return (
-                renderButtonsInHistory() ||
+                renderRequestButtons() ||
                 <div className="flex flex-col items-center justify-center h-full text-white/40">
                     <MessageSquare className="w-12 h-12 mb-4" />
                     <p>No messages yet</p>
@@ -514,7 +545,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     };
 
     return (
-        <div ref={chatScrollRef} className="flex-1 p-4 overflow-x-hidden overflow-y-auto ai-chat-scrollbar">
+        <div ref={chatScrollRef} className="flex-1 p-2 sm:p-4 overflow-x-hidden overflow-y-auto ai-chat-scrollbar">
             {renderMessages()}
         </div>
     )

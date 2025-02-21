@@ -6,18 +6,17 @@ interface TimeRangeSelectorProps {
 }
 
 const TIME_RANGES: { value: TimeRange; label: string }[] = [
+  { value: '1m', label: '1M' },
   { value: '5m', label: '5M' },
   { value: '15m', label: '15M' },
   { value: '1H', label: '1H' },
-  { value: '24h', label: '24H' },
-  { value: '7d', label: '7D' },
-  { value: '30d', label: '30D' },
-  { value: '1y', label: '1Y' },
+  { value: '4H', label: '4H' },
+  { value: '1D', label: '1D' },
 ];
 
 export function TimeRangeSelector({ value, onChange }: TimeRangeSelectorProps) {
   return (
-    <div className="flex items-center gap-0.5 bg-[#1d2837] rounded-lg p-1 shadow-lg ring-1 ring-white/10">
+    <div className="flex items-center gap-0.5 rounded-lg p-1 shadow-lg ring-1 ring-white/10">
       {TIME_RANGES.map((range) => (
         <button
           key={range.value}
