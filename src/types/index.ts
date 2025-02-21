@@ -249,6 +249,8 @@ export interface DefillamaPool {
   chain: string;
   apy: number;
   tvlUsd: number;
+  logo: string[];
+  underlyingTokens: string[];
 }
 export interface DefillamaCategory {
   name: string;
