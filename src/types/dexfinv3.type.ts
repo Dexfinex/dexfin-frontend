@@ -58,6 +58,7 @@ export interface EvmDefiPosition {
       is_variable_debt: boolean;
       is_stable_debt: boolean;
       apy: number;
+      factory: string;
       projected_earnings_usd: {
         daily: number;
         weekly: number;

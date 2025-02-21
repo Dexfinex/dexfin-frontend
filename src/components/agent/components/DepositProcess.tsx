@@ -7,7 +7,8 @@ import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.
 
 import { FailedTransaction } from '../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../modals/SuccessModal.tsx';
-interface SwapProcessProps {
+
+interface DepositProcessProps {
   onClose: () => void;
   fromToken: TokenType;
   toToken: TokenType;
@@ -17,7 +18,7 @@ interface SwapProcessProps {
   protocol: Protocol | undefined;
 }
 
-export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol, onClose }) => {
+export const DepositProcess: React.FC<DepositProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol, onClose }) => {
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -57,7 +58,6 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
       setFailedTransaction(true);
     }
   };
-
 
   useEffect(() => {
     if (step === 1) {
@@ -128,9 +128,9 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
           <Bot className="w-12 h-12 text-blue-500" />
         </div>
       </div>
-      <h3 className="mt-8 text-xl font-medium">Finding Best Rate</h3>
+      <h3 className="mt-8 text-xl font-medium">Finding Best Pool</h3>
       <p className="mt-2 text-white/60 text-center max-w-md">
-        Scanning DEXs for the best {fromToken.symbol} to {toToken.symbol} swap rate...
+        Scanning liquidity pools for the best {fromToken.symbol} to {toToken.symbol} deposit rate...
       </p>
     </div>
   );
@@ -138,13 +138,8 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
   const renderStep2 = () => (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 mb-6">
-        {/* <img 
-          src={protocol.logoURI??''}
-          alt={protocol?.name}
-          className="w-12 h-12"
-        /> */}
         <div>
-          <h3 className="text-xl font-medium">Best Rate Found</h3>
+          <h3 className="text-xl font-medium">Best Pool Found</h3>
           <p className="text-white/60">{protocol?.name} offers the best rate</p>
         </div>
       </div>
@@ -153,43 +148,41 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
-              <img
-                src={fromToken.logoURI}
-                alt={fromToken.symbol}
-                className="w-10 h-10"
-              />
+              {fromToken.logoURI &&
+                <img
+                  src={fromToken.logoURI}
+                  alt={fromToken.symbol}
+                  className="w-10 h-10"
+                />
+              }
               <div>
-                <div className="text-sm text-white/60">You pay</div>
+                <div className="text-sm text-white/60">You deposit</div>
                 <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
             <div className="flex items-center gap-3">
-              <img
-                src={toToken.logoURI}
-                alt={toToken.symbol}
-                className="w-10 h-10"
-              />
+              {toToken.logoURI &&
+                <img
+                  src={toToken.logoURI}
+                  alt={toToken.symbol}
+                  className="w-10 h-10"
+                />}
               <div>
                 <div className="text-sm text-white/60">You receive</div>
-                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol}</div>
+                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {toToken.symbol}</div>
               </div>
             </div>
           </div>
 
-          <div className="p-4 bg-white/5 rounded-lg space-y-3">
-            <div className="flex justify-between">
-              <span className="text-white/60">Rate</span>
-              <span className="font-medium">1 {fromToken.symbol} = {formatNumberByFrac(Number(fromToken.priceUSD)/Number(toToken.priceUSD), 2)} {toToken.symbol} </span>
-            </div>
-          </div>
+
         </div>
 
         <button
           onClick={() => handleTransaction(steps)}
           className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
         >
-          Confirm Swap
+          Confirm Deposit
         </button>
       </div>
     </div>
@@ -212,24 +205,27 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
             </div>
           </div>
           <div className="flex items-center gap-4 animate-pulse">
-            <img
-              src={fromToken.logoURI}
-              alt={fromToken.symbol}
-              className="w-12 h-12"
-            />
+            {fromToken.logoURI &&
+              <img
+                src={fromToken.logoURI}
+                alt={fromToken.symbol}
+                className="w-12 h-12"
+              />
+            }
             <ArrowRight className="w-6 h-6 text-white/40" />
-            <img
+            {toToken.logoURI && <img
               src={toToken.logoURI}
               alt={toToken.symbol}
               className="w-12 h-12"
             />
+            }
           </div>
           <p className="mt-4 text-white/60">
-            Swapping {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} for {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} via {protocol?.name}
+            Depositing {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} via {protocol?.name}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully deposited ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol}`} />
       )}
     </div>
   );
@@ -266,7 +262,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Swap ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} via ${protocol?.name}`}
+          description={`Deposit ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol} via ${protocol?.name}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (

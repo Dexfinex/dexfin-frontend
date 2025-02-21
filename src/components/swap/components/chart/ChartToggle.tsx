@@ -9,7 +9,7 @@ interface ChartToggleProps {
 export function ChartToggle({type, onTypeChange}: ChartToggleProps) {
 
     return (
-        <div className="relative p-0.5 bg-[#191919] rounded-lg shadow-xl ring-1 ring-white/10 mr-2">
+        <div className="relative p-0.5 rounded-lg shadow-xl ring-1 ring-white/10 mr-2">
             {/* Background Slider */}
             <div
                 className={`absolute inset-y-0.5 w-[calc(50%-2px)] bg-gradient-to-r from-blue-500/20 via-blue-400/20 to-blue-500/20 rounded-md transition-all duration-300 ease-out ${

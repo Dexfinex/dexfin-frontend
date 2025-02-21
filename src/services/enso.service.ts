@@ -14,7 +14,7 @@ export interface EnSoResponse {
 }
 
 export const enSoService = {
-    sendBundle: async ({ fromAddress, chainId, routingStrategy = "delegate", actions }: { fromAddress: string, chainId: number, routingStrategy: string, actions: any[] }) => {
+    sendBundle: async ({ fromAddress, chainId, routingStrategy = "router", actions }: { fromAddress: string, chainId: number, routingStrategy: string, actions: any[] }) => {
         try {
             const { data } = await enSoApi.post<EnSoResponse>(`/bundle?chainId=${chainId}&fromAddress=${fromAddress}&routingStrategy=${routingStrategy}`,
                 actions

@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState } from "react";
-import Datafeeds from "./DataFeed";
+import {useEffect, useRef, useState} from "react";
+import Datafeeds from "./ChartDataFeed";
+import {ChartType, TimeRange} from "../../../../types/swap.type.ts";
+import {useStore} from "../../../../store/useStore.ts";
+import {IChartingLibraryWidget} from "../../../../../public/charting_library";
+import {mapTimeRangeToResolution} from "../../../../constants/chart.constants.ts";
 
 declare global {
     interface Window {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
         TradingView?: {
-            widget: new (config: WidgetConfig) => TradingViewWidget;
+            widget: new (config: WidgetConfig) => IChartingLibraryWidget;
         };
     }
 }
@@ -31,33 +37,16 @@ interface WidgetConfig {
         foregroundColor: string;
     };
 }
-
-interface TradingViewWidget {
-    onChartReady(callback: () => void): void;
-    headerReady(): Promise<void>;
-    createButton(): HTMLElement;
-    showNoticeDialog(params: { 
-        title: string; 
-        body: string; 
-        callback: () => void; 
-    }): void;
-    remove(): void;
-    setSymbol(
-        symbol: string, 
-        interval: string | undefined, 
-        callback: () => void
-    ): void;
-    symbolInterval(): { interval: string } | null;
-}
-
 interface TradeChartProps {
-    pairSymbol: string;
-    theme: 'dark' | 'light';
+    tokenSymbol: string;
+    timeRange: TimeRange;
+    type: ChartType;
 }
 
-const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol, theme }) => {
+const SwapTradeChart: React.FC<TradeChartProps> = ({tokenSymbol, timeRange, type}) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
-    const [tvWidget, setTvWidget] = useState<TradingViewWidget | null>(null);
+    const { theme } = useStore();
+    const [tvWidget, setTvWidget] = useState<IChartingLibraryWidget | null>(null);
     const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
     useEffect(() => {
@@ -68,7 +57,7 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol, theme }) => {
                 script.src = '/charting_library/charting_library.js';
                 script.type = 'text/javascript';
                 script.async = true;
-                
+
                 script.onload = () => {
                     setIsScriptLoaded(true);
                 };
@@ -101,9 +90,9 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol, theme }) => {
         try {
             const widgetOptions: WidgetConfig = {
                 autosize: true,
-                toolbar_bg: theme === 'dark' ? '#141415' : '#ffffff',
-                symbol: pairSymbol,
-                interval: "1D",
+                toolbar_bg: theme === 'dark' ? '#101112' : '#ffffff',
+                symbol: tokenSymbol,
+                interval: mapTimeRangeToResolution[timeRange],
                 fullscreen: false,
                 container: "tv_chart_container",
                 datafeed: Datafeeds,
@@ -114,34 +103,39 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol, theme }) => {
                 theme: theme,
                 charts_storage_url: 'https://saveload.tradingview.com',
                 disabled_features: [
-                    "volume_force_overlay",
+                    "left_toolbar",
                     "timeframes_toolbar",
-                    "go_to_date",
+                    'volume_force_overlay',
+                    'timeframes_toolbar',
+                    'go_to_date',
                     'header_symbol_search',
                     'header_compare',
                     'header_undo_redo',
                     'control_bar',
                     'display_market_status',
                     'show_hide_button_in_legend',
-                    'edit_buttons_in_legend',
                     'header_chart_type',
-                    'volume_force_overlay',
                     'legend_context_menu',
-                    'use_localstorage_for_settings'
+                    'use_localstorage_for_settings',
+                    'symbol_info',
+                    'symbol_info_long_description',
+                    'context_menus',
+                    'edit_buttons_in_legend',
+                    'header_widget',
                 ],
                 enabled_features: ["study_templates"],
                 overrides: {
                     // Background and Grid
                     "paneProperties.backgroundType": "solid",
-                    "paneProperties.background": theme === 'dark' ? '#141415' : '#ffffff',
-                    "paneProperties.vertGridProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    "paneProperties.horzGridProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    
+                    "paneProperties.background": theme === 'dark' ? '#101112' : '#ffffff',
+                    "paneProperties.vertGridProperties.color": theme === 'dark' ? '#101112' : '#e1e3eb',
+                    "paneProperties.horzGridProperties.color": theme === 'dark' ? '#101112' : '#e1e3eb',
+
                     // Scales and Text
-                    "scalesProperties.backgroundColor": theme === 'dark' ? '#141415' : '#ffffff',
+                    "scalesProperties.backgroundColor": theme === 'dark' ? '#101112' : '#ffffff',
                     "scalesProperties.lineColor": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    "scalesProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#141415',
-                    
+                    "scalesProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#101112',
+
                     // Candle Colors - Keep consistent regardless of theme
                     "mainSeriesProperties.candleStyle.upColor": "#26a69a",
                     "mainSeriesProperties.candleStyle.downColor": "#ef5350",
@@ -149,26 +143,26 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol, theme }) => {
                     "mainSeriesProperties.candleStyle.wickDownColor": "#ef5350",
                     "mainSeriesProperties.candleStyle.borderUpColor": "#26a69a",
                     "mainSeriesProperties.candleStyle.borderDownColor": "#ef5350",
-                    
+
                     // Additional UI Elements
                     "symbolWatermarkProperties.color": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    "chartProperties.background": theme === 'dark' ? '#141415' : '#ffffff',
+                    "chartProperties.background": theme === 'dark' ? '#101112' : '#ffffff',
                     "chartProperties.lineColor": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    "chartProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#141415',
-                    
+                    "chartProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#101112',
+
                     // Navigation Buttons and Toolbar
-                    "toolbarBg": theme === 'dark' ? '#141415' : '#ffffff',
-                    "toolbarIconColor": theme === 'dark' ? '#B2B5BE' : '#141415',
+                    "toolbarBg": theme === 'dark' ? '#101112' : '#ffffff',
+                    "toolbarIconColor": theme === 'dark' ? '#B2B5BE' : '#101112',
                     "toolbarIconHoverBg": theme === 'dark' ? '#363c4e' : '#e1e3eb',
-                    
+
                     // Left Toolbar Specific
-                    "paneProperties.leftAxisProperties.background": theme === 'dark' ? '#141415' : '#ffffff',
-                    "paneProperties.leftAxisProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#141415',
-                    "paneProperties.legendProperties.background": theme === 'dark' ? '#141415' : '#ffffff',
-                    "paneProperties.legendProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#141415'
+                    "paneProperties.leftAxisProperties.background": theme === 'dark' ? '#101112' : '#ffffff',
+                    "paneProperties.leftAxisProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#101112',
+                    "paneProperties.legendProperties.background": theme === 'dark' ? '#101112' : '#ffffff',
+                    "paneProperties.legendProperties.textColor": theme === 'dark' ? '#B2B5BE' : '#101112'
                 },
                 loading_screen: {
-                    backgroundColor: theme === 'dark' ? '#141415' : '#ffffff',
+                    backgroundColor: theme === 'dark' ? '#101112' : '#ffffff',
                     foregroundColor: theme === 'dark' ? '#363c4e' : '#e1e3eb'
                 }
             };
@@ -184,32 +178,39 @@ const TradeChart: React.FC<TradeChartProps> = ({ pairSymbol, theme }) => {
         } catch (error) {
             console.error('Error initializing TradingView widget:', error);
         }
-    }, [isScriptLoaded, pairSymbol, theme]);
+    }, [tokenSymbol, theme, isScriptLoaded, timeRange]);
 
     useEffect(() => {
-        if (pairSymbol && tvWidget) {
+        if (tokenSymbol && tvWidget) {
             try {
                 tvWidget.setSymbol(
-                    pairSymbol, 
-                    tvWidget.symbolInterval()?.interval, 
+                    tokenSymbol,
+                    tvWidget.symbolInterval()?.interval,
                     () => null
                 );
             } catch (error) {
                 console.error('Error setting symbol:', error);
             }
         }
-    }, [pairSymbol, tvWidget]);
+    }, [tokenSymbol, tvWidget]);
+
+    // switching line and ohlcv chart
+    useEffect(() => {
+        if (tvWidget) {
+            tvWidget?.applyOverrides({
+                'mainSeriesProperties.style': type === 'line' ? 2 : 1, // 1 for OHLCV, 2 for Line Chart
+            });
+        }
+    }, [type, tvWidget])
+
 
     return (
         <div
             id="tv_chart_container"
             ref={chartContainerRef}
-            className="w-full h-full trade-chart-container"
-            style={{
-                backgroundColor: theme === 'dark' ? '#141415' : '#ffffff'
-            }}
+            className="w-full h-full"
         />
     );
 };
 
-export default TradeChart;
+export default SwapTradeChart;

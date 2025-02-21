@@ -1,16 +1,21 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { AlertCircle, Filter, RefreshCw, Search, TrendingDown, TrendingUp, ArrowUpDown } from 'lucide-react';
 import _ from 'lodash';
 import { formatAge, formatNumber } from '../../utils';
 import { getChainIcon } from '../../utils/getChainIcon';
 
 import { useGetTrendingPools, useGetNewPools, useGetTopPools } from '../../hooks/useGeckoTerminal';
+import {LoadingSpinner} from './LoadingSpinner'
+
 
 const networks = [
   { id: 'eth', name: 'Ethereum', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
   { id: 'base', name: 'Base', logo: getChainIcon(8453) },
   { id: 'solana', name: 'Solana', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
-
+  {id: 'arbitrum', name: 'Arbitrum', logo: "https://cryptologos.cc/logos/arbitrum-arb-logo.png"},
+  {id: 'optimism', name: "Optimism", logo: "https://cryptologos.cc/logos/optimism-ethereum-op-logo.png"},
+  {id: "matic-network", name: "Polygon", logo: "https://cryptologos.cc/logos/polygon-matic-logo.png"},
+  {id: "avalanche", name: "Avalanche", logo: "https://cryptologos.cc/logos/avalanche-avax-logo.png"}
 ];
 
 interface BaseToken {
@@ -24,6 +29,8 @@ interface BaseToken {
 }
 
 export const DexExplorer: React.FC = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [network, setNetwork] = useState<string>('eth');
   const [view, setView] = useState<'trending' | 'new' | 'top'>('trending');
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,20 +39,42 @@ export const DexExplorer: React.FC = () => {
     key: '',
     direction: 'desc'
   });
+
+
+
   const handleSort = (key: string) => {
     let direction = 'desc';
 
-    if (sortConfig.key === key && sortConfig.direction === 'desc') {
-      direction = 'asc';
-    }
 
+    if (sortConfig.key === key) {
+      direction = sortConfig.direction === 'desc' ? 'asc' : 'desc';
+    }
     setSortConfig({ key, direction });
   };
+  
   const { data: trendingPoolsData, error: trendingError, isLoading: isLoadingTrending, refetch: refetchTrend } = useGetTrendingPools(network);
   const { data: newPoolsData, error: newError, isLoading: isLoadingNew, refetch: refetchNew } = useGetNewPools(network);
   const { data: topPoolsData, error: topError, isLoading: isLoadingTop, refetch: refetchTop } = useGetTopPools(network);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [network, sortConfig, searchQuery, view]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  
+useEffect(() => {
+  const fetchInitialData = async () => {
+    setIsInitialLoading(true);
+    try {
+      if (view === 'trending') await refetchTrend();
+      if (view === 'new') await refetchNew();
+      if (view === 'top') await refetchTop();
+    } finally {
+      setIsInitialLoading(false);
+    }
+  };
 
+  fetchInitialData();
+}, [network, view]);
   const SortIndicator = ({ currentKey }: { currentKey: string }) => {
     if (sortConfig.key !== currentKey) {
       return <ArrowUpDown className="w-4 h-4 ml-1 opacity-50" />;
@@ -57,18 +86,7 @@ export const DexExplorer: React.FC = () => {
     );
   };
 
-  const pools = useMemo(() => {
-    switch (view) {
-      case 'trending':
-        return trendingPoolsData;
-      case 'new':
-        return newPoolsData;
-      case 'top':
-        return topPoolsData;
-      default:
-        return trendingPoolsData;
-    }
-  }, [view, trendingPoolsData, newPoolsData, topPoolsData])
+
 
   const error = useMemo(() => {
     return trendingError || newError || topError
@@ -100,12 +118,32 @@ export const DexExplorer: React.FC = () => {
     }
   };
 
+
   const handleNetworkChange = (newNetwork: string) => {
     setNetwork(newNetwork);
     setShowNetworkSelector(false);
+    setView('trending');
+    setSearchQuery('');
   };
+  const pools = useMemo(() => {
+    switch (view) {
+      case 'trending':
+        return trendingPoolsData;
+      case 'new':
+        return newPoolsData;
+      case 'top':
+        return topPoolsData;
+      default:
+        return trendingPoolsData;
+    }
+  }, [view, trendingPoolsData, newPoolsData, topPoolsData, network]);
 
-  const selectedNetwork = networks.find(n => n.id === network);
+  
+  const selectedNetwork = useMemo(()=>{
+    return networks.find(n=>n.id === network)
+  }, [network])
+  
+  // const selectedNetwork = networks.find(n => n.id === network);
 
   const filteredPools = (pools || []).filter(pool => {
     const searchLower = searchQuery.toLowerCase();
@@ -122,130 +160,103 @@ export const DexExplorer: React.FC = () => {
       quoteToken?.attributes.symbol.toLowerCase().includes(searchLower)
     );
   });
-  const sortedPools = useMemo(() => {
-    if (!sortConfig.key) return filteredPools;
+const sortedPools = useMemo(() => {
+    if (!sortConfig.key || !filteredPools) return filteredPools;
 
     return [...filteredPools].sort((a, b) => {
-      let aValue, bValue;
+      let aValue: number = 0;
+      let bValue: number = 0;
+      
       const parseFormattedNumber = (value: string): number => {
         if (!value) return 0;
-        
-        const multipliers = {
-          'K': 1000,
-          'M': 1000000,
-          'B': 1000000000
-        };
-      
-        // Remove any commas and convert to uppercase for consistency
         const cleanValue = value.replace(/,/g, '').toUpperCase();
-        
-        // Extract the number and suffix
+        const multipliers = { 'K': 1000, 'M': 1000000, 'B': 1000000000 };
         const match = cleanValue.match(/^([\d.]+)([KMB])?$/);
-        
         if (!match) return 0;
-        
         const [, number, suffix] = match;
         const baseValue = parseFloat(number);
-        
-        if (suffix && multipliers[suffix]) {
-          return baseValue * multipliers[suffix];
-        }
-        
-        return baseValue;
+        return suffix && multipliers[suffix] ? baseValue * multipliers[suffix] : baseValue;
       };
+
       const parseAgeToMinutes = (age: string): number => {
         if (!age) return 0;
-        
-        // Convert to lowercase and trim for consistency
         const cleanAge = age.toLowerCase().trim();
-        
-        // Match number and unit
         const match = cleanAge.match(/^(\d+)(y|mth|d|h|m)$/);
         if (!match) return 0;
-        
         const [, value, unit] = match;
         const numValue = parseInt(value);
-        
-        
-        switch (unit) {
-          case 'y':
-            return numValue * 525600;
-          case 'mth':
-            return numValue * 43800;  
-          case 'd':
-            return numValue * 1440; 
-          case 'h':
-            return numValue * 60;
-          case 'm':
-            return numValue;
-          default:
-            return 0;
-        }
+        const multipliers = {
+          'y': 525600,
+          'mth': 43800,
+          'd': 1440,
+          'h': 60,
+          'm': 1
+        };
+        return numValue * (multipliers[unit] || 0);
       };
-      switch (sortConfig.key) {
-        case 'price':
-          aValue = parseFloat(a.attributes.base_token_price_usd || '0');
-          bValue = parseFloat(b.attributes.base_token_price_usd || '0');
-          break;
-        case '5m':
-          aValue = parseFloat(a.attributes.price_change_percentage?.m5 || '0');
-          bValue = parseFloat(b.attributes.price_change_percentage?.m5 || '0');
-          break;
-        case '1h':
-          aValue = parseFloat(a.attributes.price_change_percentage?.h1 || '0');
-          bValue = parseFloat(b.attributes.price_change_percentage?.h1 || '0');
-          break;
-        case '6h':
-          aValue = parseFloat(a.attributes.price_change_percentage?.h6 || '0');
-          bValue = parseFloat(b.attributes.price_change_percentage?.h6 || '0');
-          break;
-        case '24h':
-          aValue = parseFloat(a.attributes.price_change_percentage?.h24 || '0');
-          bValue = parseFloat(b.attributes.price_change_percentage?.h24 || '0');
-          break;
+
+      try {
+        switch (sortConfig.key) {
+          case 'price':
+            aValue = parseFormattedNumber(a.attributes.base_token_price_usd || '0');
+            bValue = parseFormattedNumber(b.attributes.base_token_price_usd || '0');
+            break;
+          case '5m':
+            aValue = parseFloat(a.attributes.price_change_percentage?.m5 || '0');
+            bValue = parseFloat(b.attributes.price_change_percentage?.m5 || '0');
+            break;
+          case '1h':
+            aValue = parseFloat(a.attributes.price_change_percentage?.h1 || '0');
+            bValue = parseFloat(b.attributes.price_change_percentage?.h1 || '0');
+            break;
+          case '6h':
+            aValue = parseFloat(a.attributes.price_change_percentage?.h6 || '0');
+            bValue = parseFloat(b.attributes.price_change_percentage?.h6 || '0');
+            break;
+          case '24h':
+            aValue = parseFloat(a.attributes.price_change_percentage?.h24 || '0');
+            bValue = parseFloat(b.attributes.price_change_percentage?.h24 || '0');
+            break;
           case 'volume':
             aValue = parseFormattedNumber(a.attributes.volume_usd?.h24 || '0');
             bValue = parseFormattedNumber(b.attributes.volume_usd?.h24 || '0');
             break;
-            case 'tvl':
-              aValue = parseFormattedNumber(a.attributes.reserve_in_usd || '0');
-              bValue = parseFormattedNumber(b.attributes.reserve_in_usd || '0');
-              break;
-              case 'transactions':
-                let aTransactions, bTransactions;
-                try {
-                  // Safely parse JSON and handle potential parsing errors
-                  aTransactions = typeof a.attributes.transactions?.h24 === 'string' 
-                    ? JSON.parse(a.attributes.transactions.h24) 
-                    : a.attributes.transactions?.h24 || { buyers: 0, sellers: 0 };
-                  
-                  bTransactions = typeof b.attributes.transactions?.h24 === 'string'
-                    ? JSON.parse(b.attributes.transactions.h24)
-                    : b.attributes.transactions?.h24 || { buyers: 0, sellers: 0 };
-                  
-                  // Ensure we're working with numbers
-                  aValue = Number(aTransactions.buyers || 0) + Number(aTransactions.sellers || 0);
-                  bValue = Number(bTransactions.buyers || 0) + Number(bTransactions.sellers || 0);
-                } catch (error) {
-                  // If there's any error in parsing, default to 0
-                  aValue = 0;
-                  bValue = 0;
-                }
-                break;
+          case 'tvl':
+            aValue = parseFormattedNumber(a.attributes.reserve_in_usd || '0');
+            bValue = parseFormattedNumber(b.attributes.reserve_in_usd || '0');
+            break;
+          case 'transactions':
+            const aTransactions = typeof a.attributes.transactions?.h24 === 'string'
+              ? JSON.parse(a.attributes.transactions.h24)
+              : a.attributes.transactions?.h24 || { buyers: 0, sellers: 0 };
+            const bTransactions = typeof b.attributes.transactions?.h24 === 'string'
+              ? JSON.parse(b.attributes.transactions.h24)
+              : b.attributes.transactions?.h24 || { buyers: 0, sellers: 0 };
+            aValue = Number(aTransactions.buyers || 0) + Number(aTransactions.sellers || 0);
+            bValue = Number(bTransactions.buyers || 0) + Number(bTransactions.sellers || 0);
+            break;
           case 'age':
             aValue = parseAgeToMinutes(formatAge(a.attributes.pool_created_at));
             bValue = parseAgeToMinutes(formatAge(b.attributes.pool_created_at));
             break;
-        default:
-          return 0;
+          default:
+            return 0;
+        }
+      } catch (error) {
+        console.error('Sorting error:', error);
+        return 0;
       }
 
-      if (sortConfig.direction === 'asc') {
-        return aValue - bValue;
-      }
-      return bValue - aValue;
+      const multiplier = sortConfig.direction === 'asc' ? 1 : -1;
+      return (aValue - bValue) * multiplier;
     });
   }, [filteredPools, sortConfig]);
+
+  const paginatedItems = useMemo(() => {
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return sortedPools.slice(indexOfFirstItem, indexOfLastItem);
+  }, [sortedPools, currentPage, itemsPerPage]);
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center">
@@ -260,7 +271,62 @@ export const DexExplorer: React.FC = () => {
       </div>
     );
   }
-
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = sortedPools.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sortedPools.length / itemsPerPage);
+  
+  const PaginationButton = ({ page, isActive, onClick }) => (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-lg transition-colors ${
+        isActive 
+          ? 'bg-white/10' 
+          : 'hover:bg-white/5'
+      }`}
+    >
+      {page}
+    </button>
+  );
+  const Pagination = () => {
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i);
+    }
+  
+    return (
+      <div className="flex items-center justify-center gap-2 mt-6">
+        <button
+          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          className={`px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5 ${
+            currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        >
+          ‹ Prev
+        </button>
+        
+        {pages.map(page => (
+          <PaginationButton
+            key={page}
+            page={page}
+            isActive={currentPage === page}
+            onClick={() => setCurrentPage(page)}
+          />
+        ))}
+  
+        <button
+          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+          className={`px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5 ${
+            currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        >
+          Next ›
+        </button>
+      </div>
+    );
+  };
   return (
     <div className="h-full p-6">
       {/* Header Controls */}
@@ -275,6 +341,7 @@ export const DexExplorer: React.FC = () => {
               {selectedNetwork && (
                 <img
                   src={selectedNetwork.logo ? selectedNetwork.logo : ''}
+                  // src={selectedNetwork.logo}
                   alt={selectedNetwork.name}
                   className="w-5 h-5"
                 />
@@ -306,6 +373,7 @@ export const DexExplorer: React.FC = () => {
                         }`}
                     >
                       <img src={n.logo ? n.logo : ''} alt={n.name} className="w-5 h-5" />
+                      {/* <img src={n.logo} alt={n.name} className="w-5 h-5" /> */}
                       <span>{n.name}</span>
                     </button>
                   ))}
@@ -466,7 +534,7 @@ export const DexExplorer: React.FC = () => {
 
                 </tr>
               ))
-            ) : sortedPools.length === 0 ? (
+            ) : paginatedItems.length === 0 ? (
               <tr>
                 <td colSpan={10} className="py-12 text-center">
                   <Search className="w-12 h-12 mx-auto mb-4 text-white/40" />
@@ -477,23 +545,23 @@ export const DexExplorer: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              sortedPools.map((pool) => {
+              paginatedItems.map((pool) => {
                 const baseToken = pool.included?.tokens.find(t =>
                   t.id === pool.relationships.base_token.data.id
                 );
                 const quoteToken = pool.included?.tokens.find(t =>
                   t.id === pool.relationships.quote_token.data.id
                 );
+                const Token_price=parseFloat(pool.attributes.base_token_price_usd || '0');
                 const priceChange5m = parseFloat(pool.attributes.price_change_percentage?.m5 || '0');
                 const priceChange1h = parseFloat(pool.attributes.price_change_percentage?.h1 || '0');
                 const priceChange6h = parseFloat(pool.attributes.price_change_percentage?.h6 || '0');
                 const priceChange24h = parseFloat(pool.attributes.price_change_percentage?.h24 || '0');
-                const volume24h = pool.attributes.volume_usd?.h24;
-                const tvl = pool.attributes.reserve_in_usd;
+                const volume24h = parseFloat(pool.attributes.volume_usd?.h24 || '0');
+                const tvl = parseFloat(pool.attributes.reserve_in_usd || '0');
                 const transactions24h_json = JSON.stringify(pool.attributes.transactions?.h24 || 0);
                 const token_age = pool.attributes.pool_created_at;
-                const transactions24h=Number(JSON.parse(transactions24h_json).buyers) + Number(JSON.parse(transactions24h_json).sellers)
-
+                const transactions24h = Number(JSON.parse(transactions24h_json).buyers) + Number(JSON.parse(transactions24h_json).sellers)
 
                 return (
                   <tr key={pool.id} className="transition-colors hover:bg-white/5">
@@ -534,7 +602,7 @@ export const DexExplorer: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      ${formatNumber(pool.attributes.base_token_price_usd || '0')}
+                      ${formatNumber(Token_price)}
                     </td>
                     <td className="px-4 py-4">
                       <div className={`flex items-center gap-1 ${priceChange5m >= 0 ? 'text-green-400' : 'text-red-400'
@@ -580,9 +648,9 @@ export const DexExplorer: React.FC = () => {
                         <span>{Math.abs(priceChange24h).toFixed(2)}%</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4">{volume24h}</td>
-                    <td className="px-4 py-4">{tvl}</td>
-                    <td className="px-4 py-4">{transactions24h}</td>
+                    <td className="px-4 py-4">${formatNumber(volume24h)}</td>
+                    <td className="px-4 py-4">${formatNumber(tvl)}</td>
+                    <td className="px-4 py-4">{formatNumber(transactions24h)}</td>
                     <td className="px-4 py-4 text-white/60">
                       {formatAge(token_age)}
                     </td>
@@ -593,7 +661,9 @@ export const DexExplorer: React.FC = () => {
             )}
           </tbody>
         </table>
-      </div>
+        </div>
+  <Pagination />
+  {isInitialLoading && <LoadingSpinner />}
     </div>
   );
 };

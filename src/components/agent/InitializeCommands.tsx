@@ -11,7 +11,7 @@ interface InitializeCommands {
   setInput: (value: string) => void;
 }
 
-export function InitializeCommands({ processCommand, address, chainId, setInput }: InitializeCommands) {
+export function InitializeCommands({ setInput }: InitializeCommands) {
 
   return (
     <div className="flex flex-col items-center justify-center h-full p-4">
@@ -36,13 +36,11 @@ export function InitializeCommands({ processCommand, address, chainId, setInput 
               { command: "What is the Bitcoin price?", description: "Get real-time BTC price" },
               { command: "Show me trending tokens", description: "View trending cryptocurrencies" },
               { command: "Show me the latest news", description: "Get latest crypto news" },
-              { command: "Evaluate project", description: "Analyze project potential" }
             ].map((cmd) => (
               <button
                 key={cmd.command}
                 onClick={() => {
-                  processCommand(cmd.command, address, chainId);
-                  setInput('');
+                  setInput(cmd.command);
                 }}
                 className="w-full p-4 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-xl hover:from-white/15 hover:to-white/10 transition-all hover:scale-[1.02]"
               >
@@ -59,20 +57,19 @@ export function InitializeCommands({ processCommand, address, chainId, setInput 
         <div className="space-y-4">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Wallet className="w-5 h-5 text-blue-400" />
-            <span>Trading & Portfolio</span>
+            <span>Trading & DeFi</span>
           </h2>
           <div className="space-y-2">
             {[
-              { command: "Transfer 10 USDC to vitalik.eth", description: "Transfer USDC to vitalik.eth" },
+              { command: "Transfer 10 USDC to dexfin.eth", description: "Transfer USDC to dexfin.eth" },
               { command: "I want to swap 10 USDC for ETH", description: "Swap USDC for ETH" },
               { command: "Stake 1 ETH", description: "Stake ETH" },
-              { command: "Deposit 100 USDC on Aave", description: "Deposit USDC" },
+              
             ].map((cmd) => (
               <button
                 key={cmd.command}
                 onClick={() => {
-                  processCommand(cmd.command, address, chainId);
-                  setInput('');
+                  setInput(cmd.command);
                 }}
                 className="w-full p-4 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-xl hover:from-white/15 hover:to-white/10 transition-all hover:scale-[1.02]"
               >
