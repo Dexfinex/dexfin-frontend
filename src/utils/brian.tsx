@@ -1,7 +1,7 @@
 export function convertBrianKnowledgeToPlainText(text: string) {
   return text
-  .replace(/^###\s*(\d+\.)\s*\*\*(.*?)\*\*/gm, '$1 $2') // Remove ### and bold from numbered headings
-  .replace(/\*\*(.*?)\*\*:/g, '$1:'); // Convert "**Tokens:**" to "<b>Tokens</b>:"
+    .replace(/^###\s*(\d+\.)\s*\*\*(.*?)\*\*/gm, '$1 $2') // Remove ### and bold from numbered headings
+    .replace(/\*\*(.*?)\*\*:/g, '$1:'); // Convert "**Tokens:**" to "<b>Tokens</b>:"
 }
 
 export const parseChainedCommands = (message: string): string[] => {
@@ -13,3 +13,12 @@ export const parseChainedCommands = (message: string): string[] => {
 export function convertCryptoAmount(fromAmount: string, decimal: number): number {
   return parseFloat(fromAmount) / Math.pow(10, decimal);
 }
+
+export function formatVolume(num: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(num);
+};
