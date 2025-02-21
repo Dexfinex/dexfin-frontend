@@ -22,7 +22,7 @@ export interface Message {
   role: string;
   content: string;
   tip?: string;
-  data?: CoinData;
+  priceData?: CoinData;
   trending?: TrendingCoin[];
   news?: NewsItem[];
 }
