@@ -70,6 +70,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [receivedMessage, setReceivedMessage] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<any>();
   const [reactions, setReactions] = useState<Array<ReactionType>>([]);
+  const [gifAndEmojiWidth, setGifAndEmojiWidth] = useState("350px");
   const emojiPickRef = useRef<HTMLDivElement>(null);
   const gifPickRef = useRef<HTMLDivElement>(null);
   const sideBarRef = useRef<HTMLDivElement>(null);
@@ -216,6 +217,20 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setSearchedGroup(null)
     setIsEmojiOpen(false)
     setIsGifOpen(false)
+  }, [])
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 640) {
+        setGifAndEmojiWidth("350px")
+      } else {
+        setGifAndEmojiWidth("300px")
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
   }, [])
 
   useEffect(() => {
@@ -1592,8 +1607,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col">
             {/* Chat Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between p-2 sm:p-4 border-b border-white/10">
+              <div className="flex items-center sm:gap-3">
                 <button className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setIsSidebarOpen(true)} ref={navBtnRef}>
                   <SidebarIcon className="w-4 h-4" />
                 </button>
@@ -1657,11 +1672,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     </div> */}
                   </div>
                 ) : (
-                  <div className="text-white/40">Select a chat to start messaging</div>
+                  <div className="text-sm sm:text-md text-white/40">Select a chat to start messaging</div>
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center sm:gap-2">
                 {renderAccessBadge(selectedUser, selectedGroup)}
                 {/* {selectedUser?.isOnline && (
                   <>
@@ -1678,13 +1693,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     selectedGroup?.public == false ? <Tooltip label="Private"><Lock className='w-4 h-4 text-white/50' /></Tooltip> : null
                 }
                 {selectedGroup && (
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setIsChatGroupModalActive(true)}>
+                  <button className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setIsChatGroupModalActive(true)}>
                     <Settings className="w-4 h-4" />
                   </button>
                 )}
                 <button
                   onClick={toggleFullscreen}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
                 >
                   {isFullscreen ? (
                     <Minimize2 className="w-4 h-4" />
@@ -1694,13 +1709,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 </button>
                 <button
                   onClick={() => setIsHelpModalActive(true)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
                 >
                   <HelpCircle className="w-4 h-4" />
                 </button>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1727,17 +1742,19 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
             {/* Chat Input */}
             {canAccessChat(selectedUser, selectedGroup) && (
-              <div className="p-4 border-t border-white/10 relative">
-                <div className="flex items-center gap-3">
-                  <button className="p-2 hover:bg-white/10 rounded-full transition-colors" ref={emojiBtnRef} onClick={() => setIsEmojiOpen(!isEmojiOpen)}>
-                    <Smile className="w-5 h-5" />
+              <div className="p-2 sm:p-4 border-t border-white/10 relative">
+                <div className="flex items-center gap-1 sm:gap-3">
+                  <button className="p-1 sm:p-2 hover:bg-white/10 rounded-full transition-colors" ref={emojiBtnRef} onClick={() => setIsEmojiOpen(!isEmojiOpen)}>
+                    <Smile className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
 
                   <div ref={emojiPickRef}
                     className='!absolute bottom-[62px] left-[16px]'>
-                    <EmojiPicker open={isEmojiOpen}
+                    <EmojiPicker
+                      open={isEmojiOpen}
                       onEmojiClick={handleEmojiClick}
                       theme={Theme.DARK}
+                      width={gifAndEmojiWidth}
                     />
                   </div>
 
@@ -1751,7 +1768,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     rows={1} // Adjust rows dynamically
                   />
 
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" ref={gifBtnRef} onClick={() => setIsGifOpen(!isGifOpen)}>
+                  <button className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors" ref={gifBtnRef} onClick={() => setIsGifOpen(!isGifOpen)}>
                     Gif
                   </button>
 
@@ -1761,21 +1778,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                       tenorApiKey={"AIzaSyBxr4hrP59kdbQV4xJ-t2CSQX0Y6q4gcbA"}
                       theme={GifTheme.DARK}
                       onGifClick={handleGifClick}
+                      width={gifAndEmojiWidth}
                     />
                   </div>}
 
-                  <label className="cursor-pointer p-2 hover:bg-white/10 rounded-lg transition-colors">
-                    <Share2 className="w-5 h-5" />
+                  <label className="cursor-pointer p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
                     <input type="file" className="hidden" onChange={handleFileChange} />
                   </label>
                   {
                     !sendingMessage ? <button
                       onClick={handleSendMessage}
                       disabled={!message.trim()}
-                      className={`p-2 rounded-lg transition-colors ${message.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
+                      className={`p-1 sm:p-2 rounded-lg transition-colors ${message.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
                         }`}
                     >
-                      <ArrowRight className="w-5 h-5" />
+                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button> : <Spinner />
                   }
                 </div>

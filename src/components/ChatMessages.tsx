@@ -176,7 +176,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
                         <div className="flex-1 min-w-0">
                             <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
                                 {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                                <span className="font-medium text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+                                <span className="text-sm text-white/40">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
                                 <span className={`text-sm text-white/40`}>{getHourAndMinute(msg.timestamp)}</span>
                             </div>
                             {
@@ -208,7 +208,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
                         <div className="flex-1 min-w-0">
                             <div className={`${msg.fromAddress != address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
                                 {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-                                <span className="font-medium text-white/70">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+                                <span className="text-sm text-white/40">{msg.fromAddress != address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
                                 <span className={`text-sm text-white/40`}>{getHourAndMinute(msg.timestamp)}</span>
                             </div>
                             {
@@ -540,7 +540,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     };
 
     return (
-        <div ref={chatScrollRef} className="flex-1 p-4 overflow-x-hidden overflow-y-auto ai-chat-scrollbar">
+        <div ref={chatScrollRef} className="flex-1 p-2 sm:p-4 overflow-x-hidden overflow-y-auto ai-chat-scrollbar">
             {renderMessages()}
         </div>
     )

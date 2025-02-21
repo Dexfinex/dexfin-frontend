@@ -774,7 +774,7 @@ export const DirectMessagesWidget: React.FC = () => {
           <div className="flex-1 min-w-0">
             <div className={`${msg.fromAddress == selectedUser?.address ? "" : "justify-end"} flex items-center gap-2 mb-1`}>
               {/* <span className="text-sm text-white/60">{"sender ens"}</span> */}
-              <span className="text-xs font-small text-white/70">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
+              <span className="text-xs text-white/40">{msg.fromAddress == selectedUser?.address ? shrinkAddress(extractAddress(msg.fromAddress)) : ""}</span>
               <span className={`text-xs text-white/40`}>{getHourAndMinute(msg.timestamp)}</span>
             </div>
             {

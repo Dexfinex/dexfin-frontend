@@ -316,7 +316,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onCl
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-[480px] glass border border-white/10 rounded-xl overflow-hidden">
+      <div className="relative w-[340px] md:w-[480px] glass border border-white/10 rounded-xl overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           {step > 1 && <button
             onClick={() => setStep(step - 1)}
