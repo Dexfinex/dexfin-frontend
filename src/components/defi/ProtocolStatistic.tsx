@@ -3,6 +3,7 @@ import React from "react";
 import useDefiStore from '../../store/useDefiStore';
 
 import { getTypeIcon } from "../../utils/defi.util";
+import { formatNumberByFrac } from "../../utils/common.util";
 
 interface ProtocolStatisticProps {
 
@@ -33,7 +34,7 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
                                 <div className="flex-1">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="font-medium">{protocol}</span>
-                                        <span>${totalValue.toLocaleString()}</span>
+                                        <span>${formatNumberByFrac(totalValue)}</span>
                                     </div>
                                     <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                                         <div
@@ -70,7 +71,7 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-white/60">TVL Share</span>
-                                    <span>{((totalValue / totalTVL) * 100).toFixed(1)}%</span>
+                                    <span>{formatNumberByFrac((totalValue / totalTVL) * 100)}%</span>
                                 </div>
                                 <div className="h-2 bg-white/10 rounded-full overflow-hidden mt-2">
                                     <div
