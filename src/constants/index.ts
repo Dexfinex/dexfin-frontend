@@ -30,6 +30,8 @@ export const GECKOTERMINAL_BASE_URL = "https://dexfinv3-backend-production.up.ra
 
 export const BRIAN_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/brian";
 
+export const OPENAI_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/openai";
+
 export const CRYPTONEWS_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/crypto-news';
 
 export const ENSO_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/enso';
