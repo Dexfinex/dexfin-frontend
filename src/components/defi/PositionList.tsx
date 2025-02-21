@@ -3,6 +3,7 @@ import { Skeleton } from '@chakra-ui/react';
 
 import useDefiStore, { Position } from '../../store/useDefiStore';
 import { getTypeIcon, getTypeColor } from "../../utils/defi.util";
+import { formatNumberByFrac, formatHealthFactor } from "../../utils/common.util";
 
 interface PositionListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
@@ -15,7 +16,7 @@ interface PositionListProps {
 export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionType, selectedPositionType, isLoading, handleAction }) => {
 
     const { positions, protocolTypes } = useDefiStore();
-    
+
 
     return (
         <div className="space-y-3">
@@ -75,7 +76,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                 </span>
                                                 <span className="text-white/40">•</span>
                                                 <span className="text-sm text-white/60">
-                                                    {`${position.tokens[0]?.symbol}/${position.tokens[1]?.symbol} ${position.tokens[2]?.symbol}`}
+                                                    {`${position.tokens[0]?.symbol}/${position.tokens[1]?.symbol}`}
                                                 </span>
                                             </div>
 
@@ -86,30 +87,30 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                 </div>
                                                 <div>
                                                     <span className="text-sm text-white/60">APY</span>
-                                                    <div className="text-emerald-400">{(position.apy || "0")}%</div>
+                                                    <div className="text-emerald-400">{(formatNumberByFrac(position.apy) || "0")}%</div>
                                                 </div>
                                                 {position.rewards && (
                                                     <div>
                                                         <span className="text-sm text-white/60">Rewards</span>
-                                                        <div className="text-blue-400">+{(position.rewards || "0")}% APR</div>
+                                                        <div className="text-blue-400">+{(formatNumberByFrac(position.rewards) || "0")}% APR</div>
                                                     </div>
                                                 )}
                                                 {!!position.healthFactor && (
                                                     <div>
                                                         <span className="text-sm text-white/60">Health Factor</span>
-                                                        <div className="text-green-400">{position.healthFactor}</div>
+                                                        <div className="text-green-400">{formatHealthFactor(position.healthFactor)}</div>
                                                     </div>
                                                 )}
                                                 {position.poolShare && (
                                                     <div>
                                                         <span className="text-sm text-white/60">Pool Share</span>
-                                                        <div>{(position.poolShare * 100).toFixed(3)}%</div>
+                                                        <div>{formatNumberByFrac(position.poolShare, 3)}%</div>
                                                     </div>
                                                 )}
                                                 {position.collateralFactor && (
                                                     <div>
                                                         <span className="text-sm text-white/60">Collateral Factor</span>
-                                                        <div>{(position.collateralFactor * 100)}%</div>
+                                                        <div>{(formatNumberByFrac(position.collateralFactor * 100))}%</div>
                                                     </div>
                                                 )}
                                             </div>

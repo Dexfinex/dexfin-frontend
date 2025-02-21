@@ -4,7 +4,7 @@ import { Skeleton } from '@chakra-ui/react';
 
 import useDefiStore from "../../store/useDefiStore";
 
-import { formatNumberByFrac } from "../../utils/common.util";
+import { formatHealthFactor, formatNumberByFrac } from "../../utils/common.util";
 
 interface GlobalMetricProps {
     isLoading: boolean,
@@ -42,7 +42,7 @@ const GlobalMetric: React.FC<GlobalMetricProps> = ({ isLoading, }) => {
                 <div className="text-2xl font-bold mb-1">
                     {
                         isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'2rem'}></Skeleton>
-                            : `+ ${netAPY}%`
+                            : `+ ${formatNumberByFrac(netAPY)}%`
                     }
 
                 </div>
@@ -76,7 +76,7 @@ const GlobalMetric: React.FC<GlobalMetricProps> = ({ isLoading, }) => {
                     Healthy
                 </div>
                 <div className="text-sm text-white/60">
-                    All positions safe ({healthFactor})
+                    All positions safe ({formatHealthFactor(healthFactor)})
                 </div>
             </div>
         </div>
