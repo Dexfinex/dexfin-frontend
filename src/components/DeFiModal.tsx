@@ -33,7 +33,7 @@ interface ModalState {
 
 export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'explore'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'explore'>('explore');
   const [selectedPositionType, setSelectedPositionType] = useState<Position['type'] | 'ALL'>('ALL');
   const [modalState, setModalState] = useState<ModalState>({ type: null });
   const [tokenAmount, setTokenAmount] = useState("");
@@ -211,18 +211,6 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  setSelectedTab('overview');
-                  setSelectedPositionType("ALL");
-                }}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'overview'
-                  ? 'bg-white/10'
-                  : 'hover:bg-white/5'
-                  }`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => {
                   setSelectedTab('explore');
                   setSelectedPositionType("ALL");
                 }}
@@ -232,6 +220,18 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                   }`}
               >
                 Explore
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedTab('overview');
+                  setSelectedPositionType("ALL");
+                }}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'overview'
+                  ? 'bg-white/10'
+                  : 'hover:bg-white/5'
+                  }`}
+              >
+                Overview
               </button>
             </div>
           </div>
