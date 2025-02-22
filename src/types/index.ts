@@ -1,3 +1,5 @@
+import { BrianCoinData } from "./brian.type";
+
 // Add missing types
 export interface CoinData {
   id: string;
@@ -22,7 +24,7 @@ export interface Message {
   role: string;
   content: string;
   tip?: string;
-  priceData?: CoinData;
+  priceData?: BrianCoinData;
   trending?: TrendingCoin[];
   news?: NewsItem[];
 }

@@ -24,3 +24,18 @@ export type Step = {
   to: string;
   value: string;
 }
+
+export interface BrianCoinData {
+  id: string;
+  price: number;
+  priceChange24h: number;
+  marketCap: number;
+  volume24h: number;
+  symbol: string;
+  logoURI: string;
+  name: string;
+  chartData: {
+    timestamp: number;
+    price: number;
+  }[];
+}

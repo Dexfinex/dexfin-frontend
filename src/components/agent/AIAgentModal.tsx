@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { VoiceModal } from './VoiceModal.tsx';
 import { Message } from '../../types/index.ts';
-import { PriceChart } from '../PriceChart.tsx';
 import { TrendingCoins } from '../TrendingCoins.tsx';
 import { NewsWidget } from '../widgets/NewsWidget.tsx';
 import { YieldProcess } from '../YieldProcess.tsx';
@@ -34,6 +33,7 @@ import { RepayProcess } from './components/RepayProcess.tsx';
 import { ENSRegisterProcess } from './components/ENSRegisterProcess.tsx';
 import { ENSRenewProcess } from './components/ENSRenewProcess.tsx';
 import { openaiService } from '../../services/openai.services.ts';
+import { PriceCard } from './components/Analytics/PriceCard.tsx';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -259,17 +259,21 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const findFallbackResponse = async (message: string) => {
     const normalizedMessage = message.toLowerCase();
     const data = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
+    console.log(data);
     if(data && data.response) {
       if(data.response.priceData) {
         const { priceData } = data.response;
         return {
-          text: `The current Bitcoin price is $${priceData.price.toLocaleString()} (${priceData.change24h.toFixed(2)}% 24h change)\n ${data.response.response}`,
+          text: `The current ${data.response.name} price is $${priceData.price.toLocaleString()} (${priceData.change24h.toFixed(2)}% 24h change)\n ${data.response.response}`,
           priceData: {
             price: priceData.price,
-            priceChange24h: priceData.priceChange24h,
+            priceChange24h: priceData.change24h,
             marketCap: priceData.marketCap,
             volume24h: priceData.volume24h,
-            chartData: data.response.history
+            chartData: data.response.history,
+            name:data.response.name,
+            symbol:data.response.symbol,
+            logoURI:data.response.logo.thumb,
           }
         };
       }
@@ -676,20 +680,22 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                           <div
                             className={`max-w-[90%] p-4 rounded-xl ${message.role === 'user'
                               ? 'bg-blue-500/20 ml-auto'
-                              : 'bg-white/10'
+                              : 'glass border border-white/10'
                               }`}
                           >
-                            <p className="whitespace-pre-wrap">{message.content}</p>
-                            <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
+                            
                             {message.priceData && (
                               <div className="mt-4 w-full">
-                                <PriceChart
+                                {/* <PriceChart
                                 data={message.priceData}
-                                />
+                                /> */}
+                                <PriceCard data={message.priceData} isLoading={false}></PriceCard>
                               </div>
                             )}
                             {message.trending && <TrendingCoins coins={message.trending} />}
                             {message.news && <NewsWidget />}
+                            <p className="whitespace-pre-wrap">{message.content}</p>
+                            <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
                           </div>
                         </div>
                       ))
