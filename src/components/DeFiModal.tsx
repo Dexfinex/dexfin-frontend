@@ -210,7 +210,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setSelectedTab('overview')}
+                onClick={() => {
+                  setSelectedTab('overview');
+                  setSelectedPositionType("ALL");
+                }}
                 className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'overview'
                   ? 'bg-white/10'
                   : 'hover:bg-white/5'
@@ -219,7 +222,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
                 Overview
               </button>
               <button
-                onClick={() => setSelectedTab('explore')}
+                onClick={() => {
+                  setSelectedTab('explore');
+                  setSelectedPositionType("ALL");
+                }}
                 className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'explore'
                   ? 'bg-white/10'
                   : 'hover:bg-white/5'

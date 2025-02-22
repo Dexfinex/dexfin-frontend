@@ -16,7 +16,7 @@ const GlobalMetric: React.FC<GlobalMetricProps> = ({ isLoading, }) => {
     const isHealthy = formatHealthFactor(healthFactor) === "∞";
 
     return (
-        <div className="grid grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <div className="bg-white/5 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                     <Wallet className="w-4 h-4 text-blue-400" />
