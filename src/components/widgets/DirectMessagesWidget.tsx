@@ -646,15 +646,7 @@ export const DirectMessagesWidget: React.FC = () => {
         localStorage.setItem("PgpPK", JSON.stringify(pk))
 
         setChatUser(user)
-        if (stream) {
-          const streamStatus = await stream.connected();
-          console.log('streamStatus = ', streamStatus)
-          if (!streamStatus) {
-            initStream(user)
-          }
-        } else {
-          initStream(user)
-        }
+        initStream(user)
       }
     }
   }
