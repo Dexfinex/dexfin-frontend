@@ -267,7 +267,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
               {/* Protocol Statistics */}
               {
-                positions.length > 0 && <ProtocolStatistic />
+                <ProtocolStatistic />
               }
             </>
           ) : (

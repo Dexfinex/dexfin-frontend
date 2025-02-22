@@ -46,6 +46,12 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
                             </div>
                         );
                     })}
+                    {
+                        protocolList.length === 0 &&
+                        <div className='w-full h-[100px] flex justify-center items-center align-center'>
+                            <h2 className='text-white/60 italic'>No data</h2>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -83,6 +89,12 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
                         );
                     })}
                 </div>
+                {
+                    protocolTypes.length === 0 &&
+                    <div className='w-full h-[100px] flex justify-center items-center align-center'>
+                        <h2 className='text-white/60 italic'>No data</h2>
+                    </div>
+                }
             </div>
         </div>
     )
