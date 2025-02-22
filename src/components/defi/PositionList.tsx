@@ -25,10 +25,10 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
         <div className="space-y-3">
             {
                 positions.length > 0 && (
-                    < div className="flex items-center gap-2 mb-6">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 mb-6">
                         <button
                             onClick={() => setSelectedPositionType('ALL')}
-                            className={`px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
+                            className={`w-full sm:w-auto px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === 'ALL'
                                 ? 'bg-white/10'
                                 : 'hover:bg-white/5'
                                 }`}
@@ -39,7 +39,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                             <button
                                 key={type}
                                 onClick={() => setSelectedPositionType(type)}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
+                                className={`w-full sm:w-auto px-3 py-1.5 rounded-lg transition-colors ${selectedPositionType === type
                                     ? 'bg-white/10'
                                     : 'hover:bg-white/5'
                                     }`}
@@ -67,8 +67,8 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                     key={index}
                                     className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
+                                    <div className="flex items-between sm:items-center justify-between flex-col sm:flex-row">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                                             <img
                                                 src={position.logo}
                                                 alt={position.protocol}
@@ -77,16 +77,16 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                             <div>
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <h3 className="font-medium">{position.protocol}</h3>
-                                                    <span className={`text-sm ${getTypeColor(position.type)}`}>
+                                                    <span className={`text-sm ${getTypeColor(position.type)} hidden sm:block`}>
                                                         {position.type}
                                                     </span>
-                                                    <span className="text-white/40">•</span>
+                                                    <span className="text-white/40 hidden sm:block">•</span>
                                                     <span className="text-sm text-white/60">
                                                         {`${position.tokens[0]?.symbol}/${position.tokens[1]?.symbol}`}
                                                     </span>
                                                 </div>
 
-                                                <div className="flex items-center gap-6">
+                                                <div className="flex items-center justify-items-stretch gap-4 sm:gap-6 flex-wrap">
                                                     <div>
                                                         <span className="text-sm text-white/60">Amount</span>
                                                         <div className="text-lg">${formatNumberByFrac(position.amount)}</div>
@@ -123,7 +123,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 mt-2 sm:mt-0">
                                             <button
                                                 onClick={() => handleAction('deposit', position)}
                                                 className={`px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm ${isEnabled ? "" : "opacity-70"}`}

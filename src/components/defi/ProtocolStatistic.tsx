@@ -14,7 +14,7 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
     const protocolList = [...new Set(positions.map((position) => (position.protocol)))]
 
     return (
-        <div className="grid grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             {/* Protocol Breakdown */}
             <div className="bg-white/5 rounded-xl p-4">
                 <h3 className="text-lg font-medium mb-4">Protocol Breakdown</h3>
@@ -52,7 +52,7 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
             {/* Type Distribution */}
             <div className="bg-white/5 rounded-xl p-4">
                 <h3 className="text-lg font-medium mb-4">Type Distribution</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {protocolTypes.map((type) => {
                         const typePositions = positions.filter(p => p.type === type);
                         const totalValue = typePositions.reduce((sum, p) => sum + p.amount, 0);
