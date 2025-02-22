@@ -121,7 +121,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
 };
 
 export const DirectMessagesWidget: React.FC = () => {
-  const { chatUser, setChatUser, receivedMessage, stream } = useStore();
+  const { chatUser, setChatUser, receivedMessage, selectedUserInChatModal, isChatOpen } = useStore();
   const { signer, address } = useContext(Web3AuthContext);
   const [isOverlay, setIsOverlay] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
@@ -177,6 +177,20 @@ export const DirectMessagesWidget: React.FC = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isChatOpen) {
+      if (!selectedUser) {
+        setSelectedUser(selectedUserInChatModal)
+        handleSelectUser()
+      } else if (selectedUser.address != selectedUserInChatModal?.address) {
+        setSelectedUser(selectedUserInChatModal)
+        handleSelectUser()
+      } else {
+        handleSelectUser()
+      }
+    }
+  }, [selectedUserInChatModal, isChatOpen])
 
   useEffect(() => {
     console.log('selectedUser = ', selectedUser)
@@ -328,7 +342,7 @@ export const DirectMessagesWidget: React.FC = () => {
   }
 
   const handleReceiveMsg = () => {
-    console.log('handle receive message in DirectMessageWidget')
+    console.log('--------handle receive message in DirectMessageWidget------------')
 
     if (receivedMessage?.meta?.group == false && receivedMessage.origin == "other") {
       if (receivedMessage.event == "chat.request") {

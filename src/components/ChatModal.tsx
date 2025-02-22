@@ -47,7 +47,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSendModalActive, setIsSendModalActive] = useState(false);
   const [isHelpModalActive, setIsHelpModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
-  const { setChatUser, chatUser, receivedMessage, stream } = useStore();
+  const { setChatUser, chatUser, receivedMessage, setSelectedUserInChatModal } = useStore();
   const toast = useToast()
 
   const [loading, setLoading] = useState(false);
@@ -731,6 +731,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setLoadingChatHistory(true)
     setChatHistory([])
     setSelectedUser(user)
+    setSelectedUserInChatModal(user)
     console.log('user = ', user)
 
     try {

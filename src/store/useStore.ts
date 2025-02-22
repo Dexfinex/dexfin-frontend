@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { IUser } from '../types/chat.type';
 
 interface MenuItem {
   id: string;
@@ -208,6 +209,8 @@ interface StoreState {
   setStream: (stream: any) => void;
   receivedMessage: any;
   setReceivedMessage: (message: any) => void;
+  selectedUserInChatModal: IUser | null;
+  setSelectedUserInChatModal: (user: IUser) => void;
 }
 
 const useStore = create<StoreState>((set) => ({
@@ -563,7 +566,9 @@ const useStore = create<StoreState>((set) => ({
   receivedMessage: null,
   setReceivedMessage: message => set({ receivedMessage: message }),
   stream: null,
-  setStream: stream => set({ stream: stream })
+  setStream: stream => set({ stream: stream }),
+  selectedUserInChatModal: null,
+  setSelectedUserInChatModal: user => set({ selectedUserInChatModal: user })
 }));
 
 export { useStore };
