@@ -20,6 +20,8 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
     const { chainId, switchChain } = useContext(Web3AuthContext);
     const { positions, } = useDefiStore();
 
+    const filteredOfferings = offerings.filter(o => selectedPositionType === 'ALL' || o.type.toLowerCase() === selectedPositionType.toLowerCase());
+
     return (
         <div className="space-y-4">
             <div className="flex flex-col sm:flex-row items-center gap-2 mb-6">
@@ -48,63 +50,67 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
             </div>
 
             <div className="space-y-3">
-                {offerings
-                    .filter(o => selectedPositionType === 'ALL' || o.type.toLowerCase() === selectedPositionType.toLowerCase())
-                    .map((offering, index) => {
-                        const isEnabled = offering.chainId === Number(chainId);
-                        return (
-                            <div
-                                key={index}
-                                className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
-                            >
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                    <TokenChainIcon src={offering.logo || ""} alt={offering.protocol || ""} size={"lg"} chainId={Number(offering.chainId)} />
+                {filteredOfferings.map((offering, index) => {
+                    const isEnabled = offering.chainId === Number(chainId);
+                    return (
+                        <div
+                            key={index}
+                            className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
+                        >
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                <TokenChainIcon src={offering.logo || ""} alt={offering.protocol || ""} size={"lg"} chainId={Number(offering.chainId)} />
 
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <h3 className="font-medium">{offering.protocol}</h3>
-                                            <span className={`text-sm ${getTypeColor(offering.type)} hidden sm:block`}>
-                                                {offering.type}
-                                            </span>
-                                            <span className="text-white/40 hidden sm:block">•</span>
-                                            <span className="text-sm text-white/60">
-                                                {`${offering.tokens[0]?.symbol}/${offering.tokens[1]?.symbol}`}
-                                            </span>
-                                        </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h3 className="font-medium">{offering.protocol}</h3>
+                                        <span className={`text-sm ${getTypeColor(offering.type)} hidden sm:block`}>
+                                            {offering.type}
+                                        </span>
+                                        <span className="text-white/40 hidden sm:block">•</span>
+                                        <span className="text-sm text-white/60">
+                                            {`${offering.tokens[0]?.symbol}/${offering.tokens[1]?.symbol}`}
+                                        </span>
+                                    </div>
 
-                                        <div className="flex items-center gap-6">
-                                            <div>
-                                                <span className="text-sm text-white/60">Base APY</span>
-                                                <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
-                                                    }`}>
-                                                    {offering.apy || "0"} %
-                                                </div>
+                                    <div className="flex items-center gap-6">
+                                        <div>
+                                            <span className="text-sm text-white/60">Base APY</span>
+                                            <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
+                                                }`}>
+                                                {offering.apy || "0"} %
                                             </div>
                                         </div>
                                     </div>
-
-                                    <button
-                                        onClick={async () => {
-                                            if (Number(chainId) === Number(offering.chainId)) {
-                                                const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
-                                                handleAction(
-                                                    'deposit',
-                                                    position || offering
-                                                );
-                                            } else {
-                                                await switchChain(parseInt(numberToHex(Number(offering.chainId)), 16));
-                                            }
-                                        }
-                                        }
-                                        className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg ${isEnabled ? "" : "opacity-70"}`}
-                                        disabled={!isEnabled}
-                                    >
-                                        Get Started
-                                    </button>
                                 </div>
+
+                                <button
+                                    onClick={async () => {
+                                        if (Number(chainId) === Number(offering.chainId)) {
+                                            const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
+                                            handleAction(
+                                                'deposit',
+                                                position || offering
+                                            );
+                                        } else {
+                                            await switchChain(parseInt(numberToHex(Number(offering.chainId)), 16));
+                                        }
+                                    }
+                                    }
+                                    className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg ${isEnabled ? "" : "opacity-70"}`}
+                                    disabled={!isEnabled}
+                                >
+                                    Get Started
+                                </button>
                             </div>
-                        )
-                    })}
+                        </div>
+                    )
+                })}
+                {
+                    filteredOfferings.length === 0 &&
+                    <div className='w-full h-[30vh] flex justify-center items-center align-center'>
+                        <h2 className='text-white/60 italic'>Empty list</h2>
+                    </div>
+                }
             </div>
         </div>
     )
