@@ -10,7 +10,7 @@ import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
 import { Spinner, useToast, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { getWalletProfile } from '../../utils/chatApi';
+import { getWalletProfile, initStream } from '../../utils/chatApi';
 import { IUser, IChat, ChatType } from '../../types/chat.type';
 import { getEnsName, shrinkAddress, extractAddress, getChatHistoryDate, downloadBase64File, getHourAndMinute } from '../../utils/common.util';
 import { LIMIT, BIG_IMAGE_WIDHT } from '../../utils/chatApi';
@@ -121,9 +121,8 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
 };
 
 export const DirectMessagesWidget: React.FC = () => {
-  const { chatUser, setChatUser } = useStore();
+  const { chatUser, setChatUser, receivedMessage, stream } = useStore();
   const { signer, address } = useContext(Web3AuthContext);
-  const [receivedMessage, setReceivedMessage] = useState<any>(null);
   const [isOverlay, setIsOverlay] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
@@ -621,75 +620,6 @@ export const DirectMessagesWidget: React.FC = () => {
     }
   }
 
-  const initStream = async (user: any) => {
-    const stream = await user.initStream(
-      [
-        CONSTANTS.STREAM.CHAT, // Listen for chat messages
-        CONSTANTS.STREAM.NOTIF, // Listen for notifications
-        CONSTANTS.STREAM.CONNECT, // Listen for connection events
-        CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
-      ],
-      {
-        // Filter options:
-        filter: {
-          // Listen to all channels and chats (default):
-          channels: ['*'],
-          chats: ['*'],
-
-          // Listen to specific channels and chats:
-          // channels: ['channel-id-1', 'channel-id-2'],
-          // chats: ['chat-id-1', 'chat-id-2'],
-
-          // Listen to events with a specific recipient:
-          // recipient: '0x...' (replace with recipient wallet address)
-        },
-        // Connection options:
-        connection: {
-          retries: 3, // Retry connection 3 times if it fails
-        },
-        raw: false, // Receive events in structured format
-      }
-    );
-
-    // Stream connection established:
-    stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
-      console.log('Stream Connected ', a);
-
-      // // Send initial message to PushAI Bot:
-      // console.log('Sending message to PushAI Bot');
-
-      // await userAlice.chat.send(pushAIWalletAddress, {
-      //   content: 'Hello, from Alice',
-      //   type: 'Text',
-      // });
-
-      // console.log('Message sent to PushAI Bot');
-    });
-
-    stream.on(CONSTANTS.STREAM.CHAT, (message: any) => {
-      console.log('Encrypted Message Received');
-      console.log(message); // Log the message payload
-      setReceivedMessage(message)
-    });
-
-    // Setup event handling
-    stream.on(CONSTANTS.STREAM.NOTIF, (data: any) => {
-      console.log('notify data = ', data);
-    });
-
-    // Chat operation received:
-    stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
-      console.log('Chat operation received.');
-      console.log(data); // Log the chat operation data
-    });
-
-    await stream.connect(); // Establish the connection after setting up listeners
-    // Stream disconnection:
-    stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
-      console.log('Stream Disconnected');
-    });
-  }
-
   const handleUnlock = async () => {
     if (!signer) {
       toast({
@@ -716,7 +646,15 @@ export const DirectMessagesWidget: React.FC = () => {
         localStorage.setItem("PgpPK", JSON.stringify(pk))
 
         setChatUser(user)
-        initStream(user)
+        if (stream) {
+          const streamStatus = await stream.connected();
+          console.log('streamStatus = ', streamStatus)
+          if (!streamStatus) {
+            initStream(user)
+          }
+        } else {
+          initStream(user)
+        }
       }
     }
   }
