@@ -37,71 +37,94 @@ export const getAllChatData = async (chatUser: any) => {
 }
 
 export const initStream = async (user: any) => {
-    const stream = await user.initStream(
-        [
-            CONSTANTS.STREAM.CHAT, // Listen for chat messages
-            CONSTANTS.STREAM.NOTIF, // Listen for notifications
-            CONSTANTS.STREAM.CONNECT, // Listen for connection events
-            CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
-        ],
-        {
-            // Filter options:
-            filter: {
-                // Listen to all channels and chats (default):
-                channels: ['*'],
-                chats: ['*'],
+    let reconnectAttempts = 0;
+    const maxRetries = 5; // Set max retry attempts
+    const retryDelay = (attempt: number) => Math.min(2000 * 2 ** attempt, 30000); // Exponential backoff (max 30s)
 
-                // Listen to specific channels and chats:
-                // channels: ['channel-id-1', 'channel-id-2'],
-                // chats: ['chat-id-1', 'chat-id-2'],
+    const connectStream = async () => {
+        const stream = await user.initStream(
+            [
+                CONSTANTS.STREAM.CHAT, // Listen for chat messages
+                CONSTANTS.STREAM.NOTIF, // Listen for notifications
+                CONSTANTS.STREAM.CONNECT, // Listen for connection events
+                CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
+            ],
+            {
+                // Filter options:
+                filter: {
+                    // Listen to all channels and chats (default):
+                    channels: ['*'],
+                    chats: ['*'],
 
-                // Listen to events with a specific recipient:
-                // recipient: '0x...' (replace with recipient wallet address)
-            },
-            // Connection options:
-            connection: {
-                retries: 3, // Retry connection 3 times if it fails
-            },
-            raw: false, // Receive events in structured format
+                    // Listen to specific channels and chats:
+                    // channels: ['channel-id-1', 'channel-id-2'],
+                    // chats: ['chat-id-1', 'chat-id-2'],
+
+                    // Listen to events with a specific recipient:
+                    // recipient: '0x...' (replace with recipient wallet address)
+                },
+                // Connection options:
+                connection: {
+                    retries: 3, // Retry connection 3 times if it fails
+                },
+                raw: false, // Receive events in structured format
+            }
+        );
+
+        // Stream connection established:
+        stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
+            console.log('Stream Connected ', a);
+
+            // // Send initial message to PushAI Bot:
+            // console.log('Sending message to PushAI Bot');
+
+            // await userAlice.chat.send(pushAIWalletAddress, {
+            //   content: 'Hello, from Alice',
+            //   type: 'Text',
+            // });
+
+            // console.log('Message sent to PushAI Bot');
+        });
+
+        stream.on(CONSTANTS.STREAM.CHAT, (message: any) => {
+            console.log('Encrypted Message Received');
+            console.log(message); // Log the message payload
+            setReceivedMessage(message)
+        });
+
+        // Setup event handling
+        stream.on(CONSTANTS.STREAM.NOTIF, (data: any) => {
+            console.log('notify data = ', data);
+        });
+
+        // Chat operation received:
+        stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
+            console.log('Chat operation received.');
+            console.log(data); // Log the chat operation data
+        });
+
+        await stream.connect(); // Establish the connection after setting up listeners
+        setStream(stream)
+        // Stream disconnection:
+        stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
+            console.log('🚫🚫🚫🚫🚫Stream Disconnected');
+            handleReconnection()
+        });
+    }
+
+    const handleReconnection = () => {
+        if (reconnectAttempts < maxRetries) {
+            const delay = retryDelay(reconnectAttempts);
+            console.log(`🔄 Reconnecting in ${delay / 1000}s... (Attempt ${reconnectAttempts + 1}/${maxRetries})`);
+
+            setTimeout(() => {
+                reconnectAttempts++;
+                connectStream();
+            }, delay);
+        } else {
+            console.error('🚫 Max reconnection attempts reached. Stopping retries.');
         }
-    );
-
-    // Stream connection established:
-    stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
-        console.log('Stream Connected ', a);
-
-        // // Send initial message to PushAI Bot:
-        // console.log('Sending message to PushAI Bot');
-
-        // await userAlice.chat.send(pushAIWalletAddress, {
-        //   content: 'Hello, from Alice',
-        //   type: 'Text',
-        // });
-
-        // console.log('Message sent to PushAI Bot');
-    });
-
-    stream.on(CONSTANTS.STREAM.CHAT, (message: any) => {
-        console.log('Encrypted Message Received');
-        console.log(message); // Log the message payload
-        setReceivedMessage(message)
-    });
-
-    // Setup event handling
-    stream.on(CONSTANTS.STREAM.NOTIF, (data: any) => {
-        console.log('notify data = ', data);
-    });
-
-    // Chat operation received:
-    stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
-        console.log('Chat operation received.');
-        console.log(data); // Log the chat operation data
-    });
-
-    await stream.connect(); // Establish the connection after setting up listeners
-    setStream(stream)
-    // Stream disconnection:
-    stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
-        console.log('Stream Disconnected');
-    });
+    };
+    
+    connectStream()
 }
