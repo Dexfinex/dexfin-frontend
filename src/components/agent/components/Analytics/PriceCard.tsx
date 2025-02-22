@@ -1,7 +1,7 @@
 import React from 'react';
-import { Box, Flex, Text, Skeleton,  VStack } from '@chakra-ui/react';
+import { Box, Flex, Text, Skeleton, HStack, VStack } from '@chakra-ui/react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { ComposedChart, Area,  XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { ComposedChart, Area, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { BrianCoinData } from '../../../../types/brian.type.ts';
 import { formatVolume } from '../../../../utils/brian.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
