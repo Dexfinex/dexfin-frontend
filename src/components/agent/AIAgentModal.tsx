@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { VoiceModal } from './VoiceModal.tsx';
 import { Message } from '../../types/index.ts';
-import { PriceChart } from '../PriceChart.tsx';
 import { TrendingCoins } from '../TrendingCoins.tsx';
 import { NewsWidget } from '../widgets/NewsWidget.tsx';
 import { YieldProcess } from '../YieldProcess.tsx';
@@ -265,7 +264,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
       if(data.response.priceData) {
         const { priceData } = data.response;
         return {
-          text: `The current Bitcoin price is $${priceData.price.toLocaleString()} (${priceData.change24h.toFixed(2)}% 24h change)\n ${data.response.response}`,
+          text: `The current ${data.response.name} price is $${priceData.price.toLocaleString()} (${priceData.change24h.toFixed(2)}% 24h change)\n ${data.response.response}`,
           priceData: {
             price: priceData.price,
             priceChange24h: priceData.change24h,
