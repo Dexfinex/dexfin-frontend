@@ -1,6 +1,6 @@
 import { CONSTANTS } from "@pushprotocol/restapi";
 import { getStore } from "../store/useStore";
-const { setReceivedMessage, setStream } = getStore();
+const { setReceivedMessage } = getStore();
 
 export const LIMIT = 20;
 export const BIG_IMAGE_WIDHT = "208px";
@@ -36,12 +36,18 @@ export const getAllChatData = async (chatUser: any) => {
     return []
 }
 
+let existingStream: any = null; // Global variable to track the stream instance
 export const initStream = async (user: any) => {
     let reconnectAttempts = 0;
     const maxRetries = 5; // Set max retry attempts
     const retryDelay = (attempt: number) => Math.min(2000 * 2 ** attempt, 30000); // Exponential backoff (max 30s)
 
     const connectStream = async () => {
+        if (existingStream) {
+            console.log('Stream already exists. Skipping reinitialization.');
+            return;
+        }
+
         const stream = await user.initStream(
             [
                 CONSTANTS.STREAM.CHAT, // Listen for chat messages
@@ -103,11 +109,14 @@ export const initStream = async (user: any) => {
             console.log(data); // Log the chat operation data
         });
 
+        // Store the instance globally
+        existingStream = stream;
+
         await stream.connect(); // Establish the connection after setting up listeners
-        setStream(stream)
         // Stream disconnection:
         stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
             console.log('🚫🚫🚫🚫🚫Stream Disconnected');
+            existingStream = null;
             handleReconnection()
         });
     }
@@ -125,6 +134,6 @@ export const initStream = async (user: any) => {
             console.error('🚫 Max reconnection attempts reached. Stopping retries.');
         }
     };
-    
+
     connectStream()
 }
