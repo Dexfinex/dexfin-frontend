@@ -14,7 +14,7 @@ import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
 
 interface ModalState {
-    type: 'deposit' | 'redeem' | 'borrow' | 'repay' | null;
+    type: string | null;
     position?: Position;
 }
 
@@ -37,9 +37,9 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
     const { chainId } = useContext(Web3AuthContext);
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation()
 
-    const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0].contract_address, Number(chainId)) : null;
+    const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0]?.contract_address, Number(chainId)) : null;
     const tokenInfo1 = modalState?.position ? modalState.position.tokens[0] : null;
-    const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1].contract_address, Number(chainId)) : null;
+    const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1]?.contract_address, Number(chainId)) : null;
     const tokenInfo2 = modalState?.position ? modalState.position.tokens[1] : null;
 
     const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
@@ -183,7 +183,7 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                             {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
                                         </span>
                                         <span className='ml-1 text-sm text-white/60'>
-                                            {tokenBalance2?.symbol || ""}
+                                            {tokenBalance1?.symbol || ""}
                                         </span>
                                     </div>
                                 </div>

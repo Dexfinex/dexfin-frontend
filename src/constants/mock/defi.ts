@@ -2,12 +2,17 @@ import { Position } from "../../store/useDefiStore";
 
 export const ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN: Record<number, Record<string, string>> = {
     56: {
-        "uniswap-v2": "USDT,USDC,UNI-V2"
+        "uniswap-v2": "USDT,USDC,UNI-V2",
+        "type": "Liquidity"
+    },
+    1: {
+        "lido": "stETH",
+        "type": "Staking"
     }
 }
 
-export const isEnabledPosition = ({ chainId, protocol, tokenPair }: { chainId: number, protocol: string, tokenPair: string }) => {
-    if (ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId] && ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol] && ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol] === tokenPair) {
+export const isEnabledPosition = ({ chainId, protocol, tokenPair, type }: { chainId: number, protocol: string, tokenPair: string, type: string }) => {
+    if (ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId] && ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol] && ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol] === tokenPair && ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId]["type"] === type) {
         return true;
     }
 
@@ -72,5 +77,32 @@ export const offerings: Offering[] = [
         "healthFactor": 0,
         "logo": "https://cdn.moralis.io/defi/uniswap.png",
         "factory": "0x8909dc15e40173ff4699343b6eb8132c65e18ec6"
+    },
+    {
+        "chainId": 1,
+        "apy": 0,
+        "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+        "protocol": "Lido",
+        "protocol_id": "lido",
+        "type": "Staking",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "defi-token",
+                "name": "Liquid staked Ether 2.0",
+                "symbol": "stETH",
+                "contract_address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+                "decimals": "18",
+                "logo": "https://logo.moralis.io/0x1_0xae7ab96520de3a18e5e111b5eaab095312d7fe84_cd0f5053ccb543e08f65554bf642d751.png",
+                "thumbnail": "https://logo.moralis.io/0x1_0xae7ab96520de3a18e5e111b5eaab095312d7fe84_cd0f5053ccb543e08f65554bf642d751.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 0,
+        "logo": "https://cdn.moralis.io/defi/lido.png"
     }
 ];

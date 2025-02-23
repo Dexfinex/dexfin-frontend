@@ -20,6 +20,7 @@ import { OfferingList } from './defi/OfferlingList.tsx';
 import GlobalMetric from './defi/GlobalMetric.tsx';
 import RedeemModal from './defi/RedeemModal.tsx';
 import DepositModal from './defi/DepositModal.tsx';
+import StakeModal from './defi/StakeModal.tsx';
 
 interface DeFiModalProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ interface DeFiModalProps {
 }
 
 interface ModalState {
-  type: 'deposit' | 'redeem' | 'borrow' | 'repay' | null;
+  type: string | null;
   position?: Position;
 }
 
@@ -49,7 +50,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { mutate: redeemEnSoMutate } = useRedeemEnSoMutation();
 
   const { chainId, address, signer, } = useContext(Web3AuthContext);
-  const { positions, } = useDefiStore();
+  useDefiStore();
 
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation()
@@ -81,14 +82,14 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const isLoading = isLoadingPosition || isLoadingProtocol;
 
-  const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0].contract_address, Number(chainId)) : null;
-  const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1].contract_address, Number(chainId)) : null;
+  const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0]?.contract_address, Number(chainId)) : null;
+  const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1]?.contract_address, Number(chainId)) : null;
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const handleAction = (type: 'deposit' | 'redeem' | 'borrow' | 'repay', position: Position) => {
+  const handleAction = (type: string, position: Position) => {
     setModalState({ type, position });
   };
 
@@ -278,6 +279,21 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
       {modalState?.type === 'deposit' && modalState.position && (
         <DepositModal
+          setModalState={setModalState}
+          showPreview={showPreview}
+          modalState={modalState}
+          setShowPreview={setShowPreview}
+          tokenAmount={tokenAmount}
+          token2Amount={token2Amount}
+          confirming={confirming}
+          depositHandler={depositHandler}
+          setTokenAmount={setTokenAmount}
+          setToken2Amount={setToken2Amount}
+        />
+      )}
+
+      {modalState?.type === 'stake' && modalState.position && (
+        <StakeModal
           setModalState={setModalState}
           showPreview={showPreview}
           modalState={modalState}

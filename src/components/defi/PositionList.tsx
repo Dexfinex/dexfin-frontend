@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useMemo } from "react";
 import { Skeleton } from '@chakra-ui/react';
 
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
@@ -8,11 +8,12 @@ import { formatNumberByFrac, formatHealthFactor } from "../../utils/common.util"
 
 import { isEnabledPosition } from "../../constants/mock/defi";
 
+
 interface PositionListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
     selectedPositionType: Position['type'] | 'ALL',
     isLoading: boolean,
-    handleAction: (type: 'deposit' | 'redeem' | 'borrow' | 'repay', position: Position) => void,
+    handleAction: (type: string, position: Position) => void,
 
 }
 
@@ -20,6 +21,58 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
 
     const { chainId } = useContext(Web3AuthContext)
     const { positions, protocolTypes } = useDefiStore();
+
+    const getAddLabelName = ({ type }: { type: string }) => {
+        switch (type.toLowerCase()) {
+            case "staking":
+                return "Stake";
+            case "liquidity":
+                return "Deposit";
+            case "supplied":
+                return "Deposit";
+            default:
+                return "";
+        }
+    }
+
+    const getRemoveLabelName = ({ type }: { type: string }) => {
+        switch (type.toLowerCase()) {
+            case "staking":
+                return "Withdraw";
+            case "liquidity":
+                return "Redeem";
+            case "supplied":
+                return "Withdraw";
+            default:
+                return "";
+        }
+    }
+
+    const getAddActionName = ({ type }: { type: string }) => {
+        switch (type.toLowerCase()) {
+            case "staking":
+                return "stake";
+            case "liquidity":
+                return "deposit";
+            case "supplied":
+                return "deposit";
+            default:
+                return "";
+        }
+    }
+
+    const getRemoveActionName = ({ type }: { type: string }) => {
+        switch (type.toLowerCase()) {
+            case "staking":
+                return "unstake";
+            case "liquidity":
+                return "redeem";
+            case "supplied":
+                return "redeem";
+            default:
+                return "";
+        }
+    }
 
     return (
         <div className="space-y-3">
@@ -60,7 +113,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                     .filter(p => selectedPositionType === 'ALL' || p.type === selectedPositionType)
                     .map((position, index) => {
                         const tokenList = position.tokens.map((token) => token.symbol);
-                        const isEnabled = isEnabledPosition({ chainId: Number(chainId), protocol: position.protocol_id, tokenPair: tokenList.toString() || "" })
+                        const isEnabled = isEnabledPosition({ chainId: Number(chainId), protocol: position.protocol_id, tokenPair: tokenList.toString() || "", type: position.type })
                         return (
                             isLoading ? <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'} key={`sk-${index}`}></Skeleton>
                                 : <div
@@ -81,9 +134,13 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                         {position.type}
                                                     </span>
                                                     <span className="text-white/40 hidden sm:block">•</span>
-                                                    <span className="text-sm text-white/60">
-                                                        {`${position.tokens[0]?.symbol}/${position.tokens[1]?.symbol}`}
-                                                    </span>
+                                                    {
+                                                        position.tokens.map((token) => {
+                                                            return (
+                                                                `${token?.symbol} `
+                                                            )
+                                                        })
+                                                    }
                                                 </div>
 
                                                 <div className="flex items-center justify-items-stretch gap-4 sm:gap-6 flex-wrap">
@@ -125,18 +182,18 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
 
                                         <div className="flex items-center gap-2 mt-2 sm:mt-0">
                                             <button
-                                                onClick={() => handleAction('deposit', position)}
+                                                onClick={() => handleAction(getAddActionName({ type: position.type }), position)}
                                                 className={`px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm ${isEnabled ? "" : "opacity-70"}`}
                                                 disabled={!isEnabled}
                                             >
-                                                Deposit
+                                                {getAddLabelName({ type: position.type })}
                                             </button>
                                             <button
-                                                onClick={() => handleAction('redeem', position)}
+                                                onClick={() => handleAction(getRemoveActionName({ type: position.type }), position)}
                                                 className={`px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm ${isEnabled ? "" : "opacity-70"}`}
                                                 disabled={!isEnabled}
                                             >
-                                                Redeem
+                                                {getRemoveLabelName({ type: position.type })}
                                             </button>
                                         </div>
                                     </div>

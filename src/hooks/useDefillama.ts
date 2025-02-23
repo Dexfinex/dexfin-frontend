@@ -25,7 +25,7 @@ export const useGetDefillamaProtocols = () => {
     }, [data])
 
     return {
-        ProtocolsisLoading: isLoading,
+        isLoading,
         refetch,
         Protocolsdata: data,
         error
