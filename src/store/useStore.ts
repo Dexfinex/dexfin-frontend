@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { IUser } from '../types/chat.type';
 
 interface MenuItem {
   id: string;
@@ -202,6 +203,14 @@ interface StoreState {
   // Chat
   chatUser: any;
   setChatUser: (user: any) => void;
+
+  // Stream Message
+  stream: any;
+  setStream: (stream: any) => void;
+  receivedMessage: any;
+  setReceivedMessage: (message: any) => void;
+  selectedUserInChatModal: IUser | null;
+  setSelectedUserInChatModal: (user: IUser) => void;
 }
 
 const useStore = create<StoreState>((set) => ({
@@ -551,9 +560,17 @@ const useStore = create<StoreState>((set) => ({
   theme: 'dark',
   toggleTheme: () => set(state => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
 
+  // Chat
   chatUser: "",
-  setChatUser: (user) => set({chatUser: user})
+  setChatUser: (user) => set({ chatUser: user }),
+  receivedMessage: null,
+  setReceivedMessage: message => set({ receivedMessage: message }),
+  stream: null,
+  setStream: stream => set({ stream: stream }),
+  selectedUserInChatModal: null,
+  setSelectedUserInChatModal: user => set({ selectedUserInChatModal: user })
 }));
 
 export { useStore };
+export const getStore = useStore.getState;
 export const wallpapers = wallpapersList;
