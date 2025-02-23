@@ -32,6 +32,7 @@
     "@solana/spl-token": "^0.4.12",
     "@solana/web3.js": "^1.98.0",
     "@stytch/react": "^19.1.1",
+    "@tanstack/react-query": "^5.66.9",
     "@uniswap/v2-core": "^1.0.1",
     "@zerodev/ecdsa-validator": "^5.4.1",
     "@zerodev/hooks": "^5.3.0",
