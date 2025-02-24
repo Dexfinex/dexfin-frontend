@@ -35,16 +35,16 @@ export const generateEnSoApproveAction = ({ tokens, amounts, chainId }: { tokens
 
 export const generateEnSoExecuteAction = (
     { action, protocol, tokenIn, tokenOut, amountIn, chainId, receiver }
-        : { action: string, protocol: string, tokenIn: string[], tokenOut: string, amountIn: string[], chainId: number, receiver: string }
+        : { action: string, protocol: string, tokenIn: string[], tokenOut: string[], amountIn: string[], chainId: number, receiver: string }
 ) => {
     return [
         {
             "action": action,
             "protocol": protocol,
             "args": {
-                "tokenIn": tokenIn,
-                "tokenOut": tokenOut.toString(),
-                "amountIn": amountIn,
+                "tokenIn": tokenIn.length === 1 ? tokenIn[0].toString() : tokenIn,
+                "tokenOut": tokenOut.length === 1 ? tokenOut[0].toString() : tokenOut,
+                "amountIn": amountIn.length === 1 ? amountIn[0].toString() : amountIn,
                 "primaryAddress": getPrimaryAddress({ chainId, protocol }),
                 "receiver": receiver
             }

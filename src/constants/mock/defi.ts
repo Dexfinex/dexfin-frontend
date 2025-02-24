@@ -23,6 +23,32 @@ export interface Offering extends Position {
     chainId: number;
 }
 
+export const stakingTokens = [
+    {
+        "protocol": "Lido",
+        "logo": "https://cdn.moralis.io/defi/lido.png",
+        "chainId": 1,
+        "tokenIn": [{
+            "token_type": "native",
+            "name": "ETH",
+            "symbol": "ETH",
+            "contract_address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+            "decimals": "18",
+            "logo": "https://cdn.moralis.io/eth/0x.png",
+            "thumbnail": "https://cdn.moralis.io/eth/0x.png",
+        }],
+        "tokenOut": [{
+            "token_type": "defi-token",
+            "name": "Liquid staked Ether 2.0",
+            "symbol": "stETH",
+            "contract_address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+            "decimals": "18",
+            "logo": "https://logo.moralis.io/0x1_0xae7ab96520de3a18e5e111b5eaab095312d7fe84_cd0f5053ccb543e08f65554bf642d751.png",
+            "thumbnail": "https://logo.moralis.io/0x1_0xae7ab96520de3a18e5e111b5eaab095312d7fe84_cd0f5053ccb543e08f65554bf642d751.png",
+        }]
+    }
+]
+
 export const offerings: Offering[] = [
     {
         "chainId": 56,

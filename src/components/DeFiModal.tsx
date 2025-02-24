@@ -5,8 +5,7 @@ import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useD
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import useDefiStore, { Position } from '../store/useDefiStore';
 import useTokenBalanceStore from '../store/useTokenBalanceStore';
-import { useSendDepositMutation } from '../hooks/useDeposit';
-import { useRedeemEnSoMutation } from '../hooks/useRedeemEnSo.ts';
+import { useEnSoActionMutation } from '../hooks/useActionEnSo.ts';
 import useGasEstimation from "../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../hooks/useGetTokenPrices';
 import useTokenStore from "../store/useTokenStore.ts";
@@ -46,8 +45,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const [withdrawPercent, setWithdrawPercent] = useState("1");
 
-  const { mutate: sendDepositMutate } = useSendDepositMutation();
-  const { mutate: redeemEnSoMutate } = useRedeemEnSoMutation();
+  const { mutate: enSoActionMutation } = useEnSoActionMutation();
 
   const { chainId, address, signer, } = useContext(Web3AuthContext);
   useDefiStore();
@@ -97,16 +95,15 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     if (signer && Number(tokenAmount) > 0 && Number(token2Amount) > 0) {
       setConfirming("Approving...");
 
-      sendDepositMutate({
+      enSoActionMutation({
         chainId: Number(chainId),
         fromAddress: address,
         routingStrategy: "router",
         action: "deposit",
         protocol: (modalState.position?.protocol_id || "").toLowerCase(),
         tokenIn: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
-        tokenOut: modalState?.position?.address || "",
+        tokenOut: [modalState?.position?.address || ""],
         amountIn: [Number(tokenAmount), Number(token2Amount || 0)],
-        primaryAddress: modalState.position?.factory || "",
         signer: signer,
         receiver: address,
         gasPrice: gasData.gasPrice,
@@ -149,15 +146,15 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
     setConfirming("Approving...");
 
-    redeemEnSoMutate({
+    enSoActionMutation({
       chainId: Number(chainId),
       fromAddress: address,
       routingStrategy: "router",
       action: "redeem",
       protocol: (modalState.position?.protocol_id || "").toLowerCase(),
-      tokenIn: modalState?.position?.address || "",
+      tokenIn: [modalState?.position?.address || ""],
       tokenOut: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
-      withdrawPercent: Number(withdrawPercent),
+      amountIn: [Number(withdrawPercent)],
       signer: signer,
       receiver: address,
       gasPrice: gasData.gasPrice,
