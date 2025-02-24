@@ -119,7 +119,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
                     setChatHistory(updatedChat)
                 }
             }
-        } catch(err) {
+        } catch (err) {
             console.log('get prev chat err: ', err)
         }
 
@@ -331,7 +331,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
         const renderReactionBtn = () => <div className={`absolute ${!isOwner ? 'right-[-20px]' : 'left-[-20px]'} bottom-[2px]`}>
             <Popover>
                 <PopoverTrigger>
-                    <Smile className={`text-white/50 w-4 h-4 cursor-pointer`} />
+                    <Smile className={`w-4 h-4 cursor-pointer`} />
                 </PopoverTrigger>
                 <PopoverContent className='!bg-transparent !border-transparent !w-[200px]'>
                     <div className='flex gap-1'>
@@ -372,8 +372,8 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
         } else if (type === "File") {
             return <div className={`relative flex flex-col gap-4 items-center w-56 h-20 rounded-lg justify-center  ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
                 <div className='flex gap-4 items-center'>
-                    <File className='w-10 h-10 text-white/50' />
-                    <div className='flex flex-col text-white/50'>
+                    <File className='w-10 h-10' />
+                    <div className='flex flex-col'>
                         <span className='text-md'>{fileName}</span>
                         <span className='text-sm text-center'>{fileSize}B</span>
                     </div>

@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import { VoiceModal } from './VoiceModal.tsx';
 import { Message } from '../../types/index.ts';
-import { TrendingCoins } from '../TrendingCoins.tsx';
+import { TrendingCoins } from './components/Analysis/TrendingCoins.tsx';
+import { TopCoins } from './components/Analysis/TopCoins.tsx'
 import { NewsWidget } from '../widgets/NewsWidget.tsx';
 import { YieldProcess } from '../YieldProcess.tsx';
 import { SwapProcess } from './components/SwapProcess.tsx';
@@ -33,7 +34,7 @@ import { RepayProcess } from './components/RepayProcess.tsx';
 import { ENSRegisterProcess } from './components/ENSRegisterProcess.tsx';
 import { ENSRenewProcess } from './components/ENSRenewProcess.tsx';
 import { openaiService } from '../../services/openai.services.ts';
-import { PriceCard } from './components/Analytics/PriceCard.tsx';
+import { PriceCard } from './components/Analysis/PriceCard.tsx';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -140,7 +141,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         const brianKnowledgeData = await brianService.getBrianKnowledgeData(command);
         return {
           text: convertBrianKnowledgeToPlainText(brianKnowledgeData.message),
-          type:"knowledge",
+          type: "knowledge",
         }
       }
     } catch (e) {
@@ -224,16 +225,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     text: string;
     action?: (param?: string) => Promise<any>;
   }> = {
-    'bitcoin price': {
-      text: 'Let me fetch the current Bitcoin price for you.',
-      action: async () => {
-        const data = await coingeckoService.getCoinPrice('bitcoin');
-        return {
-          text: `The current Bitcoin price is $${data.price.toLocaleString()} (${data.priceChange24h.toFixed(2)}% 24h change)`,
-          data
-        };
-      }
-    },
     'trending tokens': {
       text: 'Here are the currently trending tokens:',
       action: async () => {
@@ -244,38 +235,70 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         };
       }
     },
-    'latest news': {
-      text: 'Here are the latest crypto news updates:',
-      action: async () => {
-        const news = await cryptoNewsService.getLatestNews();
-        return {
-          text: 'Here are the latest crypto news updates:',
-          news
-        };
-      }
-    },
+
   };
 
   const findFallbackResponse = async (message: string) => {
     const normalizedMessage = message.toLowerCase();
     const data = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
     console.log(data);
-    if(data && data.response) {
-      if(data.response.priceData) {
+    if (data && data.response) {
+      if (data.response.priceData) {
         const { priceData } = data.response;
         return {
-          text: `The current ${data.response.name} price is $${priceData.price.toLocaleString()} (${priceData.change24h.toFixed(2)}% 24h change)\n ${data.response.response}`,
+          text: `The current ${data.response.name} price is $${priceData.price.toLocaleString()} (${priceData.change24h.toFixed(2)}% 24h change)\n`,
           priceData: {
             price: priceData.price,
             priceChange24h: priceData.change24h,
             marketCap: priceData.marketCap,
             volume24h: priceData.volume24h,
             chartData: data.response.history,
-            name:data.response.name,
-            symbol:data.response.symbol,
-            logoURI:data.response.logo.thumb,
+            name: data.response.name,
+            symbol: data.response.symbol,
+            logoURI: data.response.logo.thumb,
+            analysis: data.response.response,
           }
         };
+      }
+    } else if (data && data.news_items) {
+      return {
+        text: 'Here are the latest crypto news updates',
+        news: data.news_items,
+      };
+    } else if (data && data.trending_coins) {
+      return {
+        text: 'Here are the currently trending tokens:',
+        trending: data.trending_coins
+      };
+    } else if (data && data.losers) {
+      return {
+        text: 'Here are the top losers',
+        losers: data.losers.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          symbol: item.symbol,
+          thumb: item.image,
+          marketCapRank: item.market_cap_rank,
+          priceUsd: item.current_price,
+          usd24hChange: item.price_change_24h,
+          usd24hVol: item.volume_24h,
+          analysis: item.analysis,
+        }))
+      }
+    } else if (data && data.gainers) {
+      return {
+        text: 'Here are the top gainers',
+        gainers: data.gainers.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          symbol: item.symbol,
+          thumb: item.image,
+          marketCapRank: item.market_cap_rank,
+          priceUsd: item.current_price,
+          usd24hChange: item.price_change_24h,
+          usd24hVol: item.volume_24h,
+          analysis: item.analysis,
+        }))
       }
     }
 
@@ -414,7 +437,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setToToken(data.toToken);
             setFromAmount(data.fromAmount);
             setToAmount(data.toAmount);
-            
+
             setReceiver(data.receiver);
             setSteps(data.steps);
             setShowBorrowProcess(true);
@@ -432,7 +455,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setSteps(data.steps);
             setShowRepayProcess(true);
           } else if (response.brianData.action == 'ENS Registration') {
-            
+
             const data = response.brianData.data;
             resetProcessStates();
             await switchChain(data.fromToken.chainId);
@@ -454,7 +477,9 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           }
         } else if (response.type == "action" && response.brianData.type == 'knowledge') {
           response = { text: convertBrianKnowledgeToPlainText(response.brianData.answer).replace(/brian/gi, "Dexfin") };
-        } else if(response.type == "knowledge") {
+        } else if (response.type == "action" && response.brianData.action == 'Onramp') {
+          response = { text: response.text, link: response.brianData.data.value }
+        } else if (response.type == "knowledge") {
           response = { text: response.text.replace(/brian/gi, "Dexfin") };
         }
 
@@ -466,8 +491,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             role: 'assistant',
             content: response.text,
             tip: response.insufficient,
+            link: response.link,
             priceData: response.priceData,
             trending: response.trending,
+            losers: response.losers,
+            gainers: response.gainers,
             news: response.news
           }]);
         }
@@ -649,7 +677,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
               setMessages([]);
             }} />
         ) : showENSRegisterProcess && fromToken ? (
-          <ENSRegisterProcess description = {description} steps={steps} ensName={ensName} fromToken={fromToken} onClose={() => {
+          <ENSRegisterProcess description={description} steps={steps} ensName={ensName} fromToken={fromToken} onClose={() => {
             setShowENSRegisterProcess(false);
             setMessages([]);
           }} />
@@ -661,7 +689,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         ) : (
           <div className="flex flex-col h-full">
             {/* Header */}
-            <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} setInput = {setInput} />
+            <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} setInput={setInput} />
             <div className="flex h-full overflow-auto">
               {/* Main Content */}
               <div className="flex-1 flex flex-col relative overflow-auto">
@@ -683,19 +711,22 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                               : 'glass border border-white/10'
                               }`}
                           >
-                            
+                            <p className="whitespace-pre-wrap">{message.content}</p>
+                            <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
+                            {message.link && (
+                              <a href={message.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 float-right">
+                                Open link
+                              </a>
+                            )}
                             {message.priceData && (
                               <div className="mt-4 w-full">
-                                {/* <PriceChart
-                                data={message.priceData}
-                                /> */}
                                 <PriceCard data={message.priceData} isLoading={false}></PriceCard>
                               </div>
                             )}
                             {message.trending && <TrendingCoins coins={message.trending} />}
+                            {message.losers && <TopCoins type="loser" coins={message.losers} />}
+                            {message.gainers && <TopCoins type="gainer" coins={message.gainers} />}
                             {message.news && <NewsWidget />}
-                            <p className="whitespace-pre-wrap">{message.content}</p>
-                            <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
                           </div>
                         </div>
                       ))
