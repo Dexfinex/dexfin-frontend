@@ -1,5 +1,5 @@
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X, Maximize2, Minimize2, TrendingUp, TrendingDown } from "lucide-react"
 import { Line } from "react-chartjs-2"
 import {
@@ -143,6 +143,44 @@ const chartOptions = {
     x: {
       grid: {
         display: false,
+        color: "rgba(0, 0, 0, 0.1)",
+      },
+      ticks: {
+        color: "rgba(0, 0, 0, 0.6)",
+        maxRotation: 0,
+        autoSkipPadding: 15,
+        font: {
+          size: 11,
+        },
+      },
+    },
+    y: {
+      grid: {
+        color: "rgba(0, 0, 0, 0.1)",
+      },
+      ticks: {
+        color: "rgba(0, 0, 0, 0.6)",
+        callback: (value: number) => "$" + value.toLocaleString(),
+        font: {
+          size: 11,
+        },
+      },
+    },
+  },
+}
+
+const darkChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false,
+    },
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false,
         color: "rgba(255, 255, 255, 0.1)",
       },
       ticks: {
@@ -173,6 +211,35 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [selectedTimeframe, setSelectedTimeframe] = useState("24h")
   const [selectedTab, setSelectedTab] = useState("tokens")
+  const [isDarkMode, setIsDarkMode] = useState(true)
+  
+  // Check if document exists and set up a listener for theme changes
+  useEffect(() => {
+    const checkTheme = () => {
+      if (document.documentElement.classList.contains('dark')) {
+        setIsDarkMode(true);
+      } else {
+        setIsDarkMode(false);
+      }
+    };
+    
+    // Check initial theme
+    checkTheme();
+    
+    // Set up MutationObserver to watch for class changes on the html element
+    if (typeof MutationObserver !== 'undefined') {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.attributeName === 'class') {
+            checkTheme();
+          }
+        });
+      });
+      
+      observer.observe(document.documentElement, { attributes: true });
+      return () => observer.disconnect();
+    }
+  }, []);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen)
@@ -184,29 +251,29 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-0">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative w-full bg-zinc-900/95 border border-white/10 shadow-lg overflow-hidden transition-all duration-300 ease-in-out ${isFullscreen ? "h-full rounded-none" : "max-w-7xl h-[90vh] rounded-xl"
+        className={`relative w-full bg-white/95 dark:bg-zinc-900/95 border border-black/10 dark:border-white/10 shadow-lg overflow-hidden transition-all duration-300 ease-in-out ${isFullscreen ? "h-full rounded-none" : "max-w-7xl h-[90vh] rounded-xl"
           }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <div className="flex items-center justify-between p-4 border-b border-black/10 dark:border-white/10">
           <h2 className="text-lg md:text-xl font-semibold">Portfolio Dashboard</h2>
           <div className="flex items-center gap-2">
-            <button onClick={toggleFullscreen} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+            <button onClick={toggleFullscreen} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
-            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+            <button onClick={onClose} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="h-[calc(100%-73px)] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        <div className="h-[calc(100%-73px)] overflow-y-auto scrollbar-thin scrollbar-thumb-black/10 dark:scrollbar-thumb-white/10 scrollbar-track-transparent">
           <div className="p-4 md:p-6 space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Total Value */}
-              <div className="bg-white/5 rounded-xl p-4">
+              <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
                     <svg
@@ -219,7 +286,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-6h2v2h-2zm0-8h2v6h-2z" />
                     </svg>
                   </div>
-                  <div className="text-sm text-white/60">Total Value</div>
+                  <div className="text-sm text-black/60 dark:text-white/60">Total Value</div>
                 </div>
                 <div className="text-xl sm:text-2xl font-bold">$15,406,481</div>
                 <div className="flex items-center gap-1 mt-1 text-emerald-400">
@@ -229,12 +296,12 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
               </div>
 
               {/* PNL */}
-              <div className="bg-white/5 rounded-xl p-4">
+              <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
                     <TrendingUp className="w-5 h-5 text-blue-500" />
                   </div>
-                  <div className="text-sm text-white/60">PNL</div>
+                  <div className="text-sm text-black/60 dark:text-white/60">PNL</div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-xl sm:text-2xl font-bold">+$231,806</div>
@@ -248,7 +315,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                     <button
                       key={timeframe}
                       onClick={() => setSelectedTimeframe(timeframe)}
-                      className={`px-2 py-1 text-xs rounded-lg transition-colors ${selectedTimeframe === timeframe ? "bg-white/10" : "hover:bg-white/5"
+                      className={`px-2 py-1 text-xs rounded-lg transition-colors ${selectedTimeframe === timeframe ? "bg-black/10 dark:bg-white/10" : "hover:bg-black/5 dark:hover:bg-white/5"
                         }`}
                     >
                       {timeframe}
@@ -258,7 +325,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
               </div>
 
               {/* DeFi Positions */}
-              <div className="bg-white/5 rounded-xl p-4">
+              <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
                     <svg
@@ -271,14 +338,14 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                       <path d="M21 18v-2c0-1.1-.9-2-2-2h-2v2h2v2h2zm-2 2h-2v2h2v-2zm-4 0v2h-4v-2h4zm-6 0v2H7v-2h2zm-4 0v2H3v-2h2zm0-2H3v-2h2v2zm14-4h-2v-2h2v2zm-6-6h2v2h-2V8zm0 4h2v2h-2v-2zm-6 4H7v-2h2v2zm-4-4h2v2H3v-2zm0 0" />
                     </svg>
                   </div>
-                  <div className="text-sm text-white/60">DeFi Positions</div>
+                  <div className="text-sm text-black/60 dark:text-white/60">DeFi Positions</div>
                 </div>
                 <div className="text-xl sm:text-2xl font-bold">$6,932,916</div>
-                <div className="text-sm text-white/60 mt-1">45% of portfolio</div>
+                <div className="text-sm text-black/60 dark:text-white/60 mt-1">45% of portfolio</div>
               </div>
 
               {/* NFT Value */}
-              <div className="bg-white/5 rounded-xl p-4">
+              <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
                     <svg
@@ -291,17 +358,17 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
                   </div>
-                  <div className="text-sm text-white/60">NFT Value</div>
+                  <div className="text-sm text-black/60 dark:text-white/60">NFT Value</div>
                 </div>
                 <div className="text-xl sm:text-2xl font-bold">$1,540,648</div>
-                <div className="text-sm text-white/60 mt-1">10% of portfolio</div>
+                <div className="text-sm text-black/60 dark:text-white/60 mt-1">10% of portfolio</div>
               </div>
             </div>
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Performance Chart */}
-              <div className="bg-white/5 rounded-xl p-4">
+              <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                   <h3 className="font-medium">Portfolio Performance</h3>
                   <div className="flex flex-wrap items-center gap-2">
@@ -309,7 +376,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                       <button
                         key={timeframe}
                         onClick={() => setSelectedTimeframe(timeframe)}
-                        className={`px-2 py-1 text-xs rounded-lg transition-colors ${selectedTimeframe === timeframe ? "bg-white/10" : "hover:bg-white/5"
+                        className={`px-2 py-1 text-xs rounded-lg transition-colors ${selectedTimeframe === timeframe ? "bg-black/10 dark:bg-white/10" : "hover:bg-black/5 dark:hover:bg-white/5"
                           }`}
                       >
                         {timeframe}
@@ -318,21 +385,21 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                   </div>
                 </div>
                 <div className="h-[250px] sm:h-[300px]">
-                  <Line data={performanceData} options={chartOptions} />
+                  <Line data={performanceData} options={isDarkMode ? darkChartOptions : chartOptions} />
                 </div>
               </div>
 
               {/* Distribution Chart */}
-              <div className="bg-white/5 rounded-xl p-4">
+              <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-medium">Asset Distribution</h3>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-12">
                   <div className="relative w-[200px] h-[200px] sm:w-[250px] sm:h-[250px]">
-                    <Line data={distributionData} options={chartOptions} />
+                    <Line data={distributionData} options={isDarkMode ? darkChartOptions : chartOptions} />
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <div className="text-2xl sm:text-3xl font-bold">$15.4M</div>
-                      <div className="text-sm text-white/60">Total Value</div>
+                      <div className="text-sm text-black/60 dark:text-white/60">Total Value</div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-3">
@@ -344,7 +411,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                         />
                         <div className="flex items-center gap-2">
                           <span>{label}</span>
-                          <span className="text-white/60">{distributionData.datasets[0].data[index]}%</span>
+                          <span className="text-black/60 dark:text-white/60">{distributionData.datasets[0].data[index]}%</span>
                         </div>
                       </div>
                     ))}
@@ -354,13 +421,13 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
             </div>
 
             {/* Tabs Section */}
-            <div className="bg-white/5 rounded-xl">
+            <div className="bg-black/5 dark:bg-white/5 rounded-xl">
               <div className="flex items-center gap-2 p-2">
                 {["tokens", "defi", "nfts"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setSelectedTab(tab)}
-                    className={`px-4 py-2 rounded-lg transition-colors capitalize ${selectedTab === tab ? "bg-white/10" : "hover:bg-white/5"
+                    className={`px-4 py-2 rounded-lg transition-colors capitalize ${selectedTab === tab ? "bg-black/10 dark:bg-white/10" : "hover:bg-black/5 dark:hover:bg-white/5"
                       }`}
                   >
                     {tab}
@@ -370,24 +437,24 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
 
               <div className="p-4">
                 {selectedTab === "tokens" && (
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-black/10 dark:scrollbar-thumb-white/10 scrollbar-track-transparent">
                     {tokens.map((token) => (
                       <div
                         key={token.symbol}
-                        className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                        className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-black/5 dark:bg-white/5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                       >
                         <div className="flex items-center gap-4">
                           <img src={token.logo || "/placeholder.svg"} alt={token.name} className="w-8 h-8" />
                           <div className="flex-1 min-w-[120px]">
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{token.name}</span>
-                              <span className="text-white/60">{token.symbol}</span>
+                              <span className="text-black/60 dark:text-white/60">{token.symbol}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                               <span>
                                 {token.amount} {token.symbol}
                               </span>
-                              <span className="text-white/40">•</span>
+                              <span className="text-black/40 dark:text-white/40">•</span>
                               <span>${token.value.toLocaleString()}</span>
                             </div>
                           </div>
@@ -409,10 +476,10 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                           </div>
                           <div className="w-32">
                             <div className="flex items-center justify-between text-sm mb-1">
-                              <span className="text-white/60">Allocation</span>
+                              <span className="text-black/60 dark:text-white/60">Allocation</span>
                               <span>{token.allocation}%</span>
                             </div>
-                            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-blue-500 rounded-full"
                                 style={{ width: `${token.allocation}%` }}
@@ -432,4 +499,3 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
     </div>
   )
 }
-

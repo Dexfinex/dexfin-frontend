@@ -5,12 +5,21 @@ import { Input } from '@chakra-ui/react';
 import debounce from 'lodash/debounce';
 import { CartListProps, CartItemProps } from '../../../types/cart.type';
 
+interface ExtendedCartItemProps extends CartItemProps {
+  isDarkMode?: boolean;
+}
+
+interface ExtendedCartListProps extends CartListProps {
+  isDarkMode?: boolean;
+}
+
 const CartItem = React.memo(({
     item,
     coinPrice,
     onRemove,
-    onUpdateQuantity
-}: CartItemProps) => {
+    onUpdateQuantity,
+    isDarkMode
+}: ExtendedCartItemProps) => {
     const MIN_QUANTITY = useMemo(() => 1 / coinPrice, [coinPrice]);
     const STEP = 0.1;
     const [inputValue, setInputValue] = useState(item.quantity.toString());
@@ -65,7 +74,7 @@ const CartItem = React.memo(({
     }, [item.id, item.quantity, MIN_QUANTITY, onUpdateQuantity]);
 
     return (
-        <div className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
+        <div className="flex items-center gap-4 p-3 bg-black/5 dark:bg-white/5 rounded-lg">
             <img
                 src={item.logo}
                 alt={item.name}
@@ -80,7 +89,7 @@ const CartItem = React.memo(({
                     <div className="font-medium">{item.name}</div>
                     <button
                         onClick={() => onRemove(item.id)}
-                        className="p-1 hover:bg-white/10 rounded-md transition-colors"
+                        className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-md transition-colors"
                     >
                         <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
@@ -89,7 +98,7 @@ const CartItem = React.memo(({
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => adjustQuantity(false)}
-                            className="p-1 hover:bg-white/10 rounded-md transition-colors"
+                            className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-md transition-colors"
                             disabled={item.quantity <= MIN_QUANTITY}
                         >
                             <Minus className="w-4 h-4" />
@@ -103,18 +112,18 @@ const CartItem = React.memo(({
                             type="number"
                             placeholder="Enter token amount"
                             _placeholder={{ fontSize: 'xs' }}
-                            bg="whiteAlpha.100"
+                            bg={isDarkMode ? "whiteAlpha.100" : "blackAlpha.100"}
                             border="1px solid"
-                            borderColor="whiteAlpha.300"
-                            color="white"
-                            _hover={{ borderColor: 'whiteAlpha.400' }}
+                            borderColor={isDarkMode ? "whiteAlpha.300" : "blackAlpha.300"}
+                            color={isDarkMode ? "white" : "black"}
+                            _hover={{ borderColor: isDarkMode ? "whiteAlpha.400" : "blackAlpha.400" }}
                             _focus={{ borderColor: 'blue.300', boxShadow: 'none' }}
                             width="24"
                             textAlign="center"
                         />
                         <button
                             onClick={() => adjustQuantity(true)}
-                            className="p-1 hover:bg-white/10 rounded-md transition-colors"
+                            className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-md transition-colors"
                         >
                             <Plus className="w-4 h-4" />
                         </button>
@@ -128,13 +137,14 @@ const CartItem = React.memo(({
     );
 });
 
-const CartList: React.FC<CartListProps> = React.memo(({
+const CartList: React.FC<ExtendedCartListProps> = React.memo(({
     cartItems,
     tokenPrices,
     onRemove,
     onUpdateQuantity,
     onCheckout,
     onClose,
+    isDarkMode
 }) => {
     const total = useMemo(() => {
         return cartItems.reduce((total, item) => {
@@ -147,23 +157,23 @@ const CartList: React.FC<CartListProps> = React.memo(({
         return (
             <div className="flex flex-col h-full">
                 <div className="md:hidden flex justify-end p-2 pt-4">
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg">
+                    <button onClick={onClose} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
                 <div className="flex flex-col items-center justify-center flex-1 text-center p-8">
-                    <ShoppingCart className="w-12 h-12 text-white/40 mb-4" />
+                    <ShoppingCart className="w-12 h-12 text-black/40 dark:text-white/40 mb-4" />
                     <p className="text-lg font-medium mb-2">Your cart is empty</p>
-                    <p className="text-white/60">Add some coins to get started</p>
+                    <p className="text-black/60 dark:text-white/60">Add some coins to get started</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="flex flex-col h-full bg-[#0e0e0e]">
+        <div className="flex flex-col h-full bg-white dark:bg-[#0e0e0e]">
             <div className="md:hidden flex justify-end p-2 pt-4">
-                <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg">
+                <button onClick={onClose} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg">
                     <X className="w-5 h-5" />
                 </button>
             </div>
@@ -176,11 +186,12 @@ const CartList: React.FC<CartListProps> = React.memo(({
                             coinPrice={tokenPrices[`1:${item.id.toLowerCase()}`] || item.price}
                             onRemove={onRemove}
                             onUpdateQuantity={onUpdateQuantity}
+                            isDarkMode={isDarkMode}
                         />
                     ))}
                 </div>
             </div>
-            <div className="p-4 border-t border-white/10 bg-[#0e0e0e]">
+            <div className="p-4 border-t border-black/10 dark:border-white/10 bg-white dark:bg-[#0e0e0e]">
                 <div className="text-lg font-semibold mb-4">Total: ${formatNumberByFrac(total)}</div>
                 <button
                     onClick={onCheckout}

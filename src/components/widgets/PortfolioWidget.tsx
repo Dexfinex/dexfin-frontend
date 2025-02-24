@@ -30,7 +30,6 @@ export const PortfolioWidget: React.FC = () => {
     chainId: chainId,
     address: address,
   })
-
   // Calculate total portfolio value from balance data
   const portfolioValue = React.useMemo(() => {
     if (!balanceData) return 0
@@ -133,13 +132,12 @@ export const PortfolioWidget: React.FC = () => {
   }
 
   return (
-    <div>
-      <div className="flex flex-col h-full bg-[#0D1117]">
-        {/* Fixed Header Section */}
+    <div className="h-full">
+      <div className="flex flex-col h-full">
         <div className="flex-none">
           {/* Total Balance */}
           <div className="p-4">
-            <div className="text-sm text-white/60">Total Balance</div>
+            <div className="text-sm text-black/60 dark:text-white/60">Total Balance</div>
             <div className="text-2xl font-bold mt-1">
               {formatCurrency(portfolioValue)}
             </div>
@@ -177,20 +175,20 @@ export const PortfolioWidget: React.FC = () => {
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: item.color }}
                   />
-                  <span className="text-xs text-white/80">{item.type}</span>
-                  <span className="text-xs text-white/60">{item.percentage}%</span>
+                  <span className="text-xs text-black/80 dark:text-white/80">{item.type}</span>
+                  <span className="text-xs text-black/60 dark:text-white/60">{item.percentage}%</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex border-b border-white/10">
+          <div className="flex border-b border-black/10 dark:border-white/10">
             <button
               onClick={() => setActiveTab('assets')}
               className={`flex items-center gap-2 flex-1 p-2 text-sm transition-colors ${activeTab === 'assets'
-                  ? 'bg-white/10 font-medium'
-                  : 'hover:bg-white/5'
+                ? 'bg-black/10 dark:bg-white/10 font-medium'
+                : 'hover:bg-black/5 dark:hover:bg-white/5'
                 }`}
             >
               <Wallet className="w-4 h-4" />
@@ -199,8 +197,8 @@ export const PortfolioWidget: React.FC = () => {
             <button
               onClick={() => setActiveTab('defi')}
               className={`flex items-center gap-2 flex-1 p-2 text-sm transition-colors ${activeTab === 'defi'
-                  ? 'bg-white/10 font-medium'
-                  : 'hover:bg-white/5'
+                ? 'bg-black/10 dark:bg-white/10 font-medium'
+                : 'hover:bg-black/5 dark:hover:bg-white/5'
                 }`}
             >
               <Landmark className="w-4 h-4" />
@@ -210,24 +208,25 @@ export const PortfolioWidget: React.FC = () => {
         </div>
 
         {/* Scrollable Content Section */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4">
             {activeTab === "assets" ? (
               // Assets Tab
-              <div className="space-y-2 ">
+              <div className="space-y-2">
                 {isLoading ? (
                   <Skeleton startColor="#444" endColor="#1d2837" w={"100%"} h={"4rem"} />
                 ) : (
-                  balanceData?.map((token, index) => (
+                  balanceData?.map((token, index) =>
+                  (
                     <button
                       key={token.chain + token.symbol}
-                      className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                      className="flex w-full items-center justify-between p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <TokenChainIcon src={token.logo} alt={token.name} size="lg" chainId={Number(chainId)} />
+                        <TokenChainIcon src={token.logo} alt={token.name} size="lg" chainId={token.network.chainId} />
                         <div className="flex flex-col justify-start items-start">
                           <div className="font-medium">{token.symbol}</div>
-                          <div className="text-sm text-white/60">
+                          <div className="text-sm">
                             {`${formatNumberByFrac(token.balanceDecimal)} ${token.symbol}`}
                           </div>
                         </div>
@@ -236,16 +235,17 @@ export const PortfolioWidget: React.FC = () => {
                         <div>{formatCurrency(token.usdValue)}</div>
                       </div>
                     </button>
-                  ))
+                  )
+                  )
                 )}
               </div>
             ) : (
               // DeFi Tab
-              <div className="space-y-2 ">
+              <div className="space-y-2">
                 {positions.map((position, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                    className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <img
@@ -255,7 +255,7 @@ export const PortfolioWidget: React.FC = () => {
                       />
                       <div className="flex flex-col justify-start items-start">
                         <div className="font-medium">{position.protocol}</div>
-                        <div className="text-sm text-white/60">
+                        <div className="text-sm">
                           {position.amount.toLocaleString()} {position.token}
                         </div>
                       </div>
@@ -275,3 +275,4 @@ export const PortfolioWidget: React.FC = () => {
   )
 }
 
+export default PortfolioWidget
