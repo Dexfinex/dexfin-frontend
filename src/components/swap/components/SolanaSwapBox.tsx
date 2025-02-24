@@ -7,11 +7,14 @@ import {Button, Flex, Skeleton} from '@chakra-ui/react';
 import {ZEROX_AFFILIATE_FEE} from "../../../constants";
 import useTokenStore from "../../../store/useTokenStore.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
-import {mapChainId2NativeAddress} from "../../../config/networks.ts";
+import {mapChainId2ExplorerUrl, mapChainId2NativeAddress} from "../../../config/networks.ts";
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
 import useJupiterQuote from "../../../hooks/useJupiterQuote.ts";
 import {useSolanaBalance} from "../../../hooks/useSolanaBalance.tsx";
 import {VersionedTransaction} from "@solana/web3.js";
+import {connection} from "../../../config/solana.ts";
+import {TransactionModal} from "../modals/TransactionModal.tsx";
+import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -122,13 +125,13 @@ export function SolanaSwapBox({
 
     const {
         isLoading: isFromBalanceLoading,
-        refetch: refetchFromBalance,
+        // refetch: refetchFromBalance,
         data: fromBalance
     } = useSolanaBalance({mintAddress: fromToken?.address})
 
     const {
         isLoading: isToBalanceLoading,
-        refetch: refetchToBalance,
+        // refetch: refetchToBalance,
         data: toBalance
     } = useSolanaBalance({mintAddress: toToken?.address})
 
@@ -153,7 +156,7 @@ export function SolanaSwapBox({
     }, [quoteData, onToAmountChange, toToken]);
 
     const {
-        nativeTokenPrice,
+        // nativeTokenPrice,
         fromUsdAmount,
         toUsdAmount,
         affiliateFeeUsdAmount,
@@ -207,7 +210,7 @@ export function SolanaSwapBox({
             setConfirmationLoading(true);
             // ----- I think we need it----------
 
-            const { swapTransaction } = await (
+            const {swapTransaction} = await (
                 await fetch('https://quote-api.jup.ag/v6/swap', {
                     method: 'POST',
                     headers: {
@@ -229,75 +232,94 @@ export function SolanaSwapBox({
             // Serialize the transaction
             const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
             const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+            const signedTransaction = await signSolanaTransaction(transaction)
 
-            console.log("swapTransaction", swapTransaction)
+            try {
+                const txid = await connection.sendRawTransaction(signedTransaction!.serialize(), {
+                    skipPreflight: false, // Set to true to skip validation checks
+                    preflightCommitment: "confirmed",
+                });
+
+                console.log(`✅ Transaction Sent! TXID: ${txid}`);
+
+                // 5️⃣ Confirm the transaction
+                await connection.confirmTransaction(txid, "confirmed");
+                console.log("✅ Transaction Confirmed!");
+
+                setTransactionHash(txid)
+                setTxModalOpen(true)
+            } catch (error) {
+                console.error("❌ Error Sending Transaction:", error);
+            }
+
+            setConfirmationLoading(false)
 
             // Sign the transaction
             // transaction.sign([wallet.payer]);
-/*
-            const solanaTransaction = new Transaction();
-            const { blockhash } = await connection.getLatestBlockhash();
-            solanaTransaction.recentBlockhash = blockhash;
-            solanaTransaction.feePayer = new PublicKey(solanaWalletInfo!.publicKey);
-            solanaTransaction.add(
-                SystemProgram.transfer({
-                    fromPubkey: new PublicKey(solanaWalletInfo!.publicKey),
-                    toPubkey: new PublicKey('9oTgsYFJVaitPEZh6Qku78DJKX8LQHa52XZB6kDY3noU'),
-                    lamports: LAMPORTS_PER_SOL / 100, // Transfer 0.01 SOL
-                })
-            );
-*/
+            /*
+                        const solanaTransaction = new Transaction();
+                        const { blockhash } = await connection.getLatestBlockhash();
+                        solanaTransaction.recentBlockhash = blockhash;
+                        solanaTransaction.feePayer = new PublicKey(solanaWalletInfo!.publicKey);
+                        solanaTransaction.add(
+                            SystemProgram.transfer({
+                                fromPubkey: new PublicKey(solanaWalletInfo!.publicKey),
+                                toPubkey: new PublicKey('9oTgsYFJVaitPEZh6Qku78DJKX8LQHa52XZB6kDY3noU'),
+                                lamports: LAMPORTS_PER_SOL / 100, // Transfer 0.01 SOL
+                            })
+                        );
+            */
             const sig = await signSolanaTransaction(transaction);
             console.log("sig", sig)
 
-/*
-            const signature = getSignature(transaction);
-            console.log(`https://solscan.io/tx/${signature}`);
+            /*
+                        const signature = getSignature(transaction);
+                        console.log(`https://solscan.io/tx/${signature}`);
 
-            // We first simulate whether the transaction would be successful
-            const { value: simulatedTransactionResponse } =
-                await connection.simulateTransaction(transaction, {
-                    replaceRecentBlockhash: true,
-                    commitment: "processed",
-                });
-            const { err, logs } = simulatedTransactionResponse;
+                        // We first simulate whether the transaction would be successful
+                        const { value: simulatedTransactionResponse } =
+                            await connection.simulateTransaction(transaction, {
+                                replaceRecentBlockhash: true,
+                                commitment: "processed",
+                            });
+                        const { err, logs } = simulatedTransactionResponse;
 
-            if (err) {
-                // Simulation error, we can check the logs for more details
-                // If you are getting an invalid account error, make sure that you have the input mint account to actually swap from.
-                console.error("Simulation Error:", err);
-                console.error({ err, logs });
-                throw new Error("Simulation Error:");
-            }
+                        if (err) {
+                            // Simulation error, we can check the logs for more details
+                            // If you are getting an invalid account error, make sure that you have the input mint account to actually swap from.
+                            console.error("Simulation Error:", err);
+                            console.error({ err, logs });
+                            throw new Error("Simulation Error:");
+                        }
 
-            const serializedTransaction = Buffer.from(transaction.serialize());
-            const blockhash = transaction.message.recentBlockhash;
+                        const serializedTransaction = Buffer.from(transaction.serialize());
+                        const blockhash = transaction.message.recentBlockhash;
 
-            const transactionResponse = await transactionSenderAndConfirmationWaiter({
-                connection,
-                serializedTransaction,
-                blockhashWithExpiryBlockHeight: {
-                    blockhash,
-                    lastValidBlockHeight: swapObj.lastValidBlockHeight,
-                },
-            });
+                        const transactionResponse = await transactionSenderAndConfirmationWaiter({
+                            connection,
+                            serializedTransaction,
+                            blockhashWithExpiryBlockHeight: {
+                                blockhash,
+                                lastValidBlockHeight: swapObj.lastValidBlockHeight,
+                            },
+                        });
 
-            // If we are not getting a response back, the transaction has not confirmed.
-            if (!transactionResponse) {
-                throw new Error('Transaction not confirmed');
-                // console.error("Transaction not confirmed");
-            }
+                        // If we are not getting a response back, the transaction has not confirmed.
+                        if (!transactionResponse) {
+                            throw new Error('Transaction not confirmed');
+                            // console.error("Transaction not confirmed");
+                        }
 
-            if (transactionResponse.meta?.err) {
-                throw transactionResponse.meta?.err;
-                // console.error(transactionResponse.meta?.err);
-            }
+                        if (transactionResponse.meta?.err) {
+                            throw transactionResponse.meta?.err;
+                            // console.error(transactionResponse.meta?.err);
+                        }
 
-            console.log(`https://solscan.io/tx/${signature}`);
-            console.log('Transaction confirmed');
-            showSuccessMessage('Transaction Confirmed');
-            forceRefreshTokenBalance();
-*/
+                        console.log(`https://solscan.io/tx/${signature}`);
+                        console.log('Transaction confirmed');
+                        showSuccessMessage('Transaction Confirmed');
+                        forceRefreshTokenBalance();
+            */
 
         } catch (e: any) {
             console.log('Error', e);
@@ -431,7 +453,7 @@ export function SolanaSwapBox({
                 </div>
             )}
 
-{/*
+            {/*
             {
                 error && (
                     <Alert status="error" variant="subtle" bg={'#511414'} borderRadius="md">
@@ -477,14 +499,10 @@ export function SolanaSwapBox({
                     )
                 )
             }
-{/*
             {
-                isConfirmed && (
-                    <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                                      link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${transactionHash}`}/>
-                )
+                <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
+                                  link={`${mapChainId2ExplorerUrl[SOLANA_CHAIN_ID]}/tx/${transactionHash}`}/>
             }
-*/}
         </div>
     )
         ;
