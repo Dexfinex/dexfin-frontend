@@ -2,18 +2,6 @@
 import { DayEvent } from "../components/market/Calendar/MarketCalendar.tsx";
 import { calendarApi, userAuthApi } from "./api.service.ts";
 
-// const LOGIN_MUTATION = `
-//   mutation User($data: LoginInput!) {
-//     login(data: $data) {
-//       accessToken
-//       refreshToken
-//       user {
-//         id
-//         email
-//       }
-//     }
-//   }
-// `;
 const REGISTER_MUTATION = `
   mutation register($data: AuthInput!) {
     register(data: $data) {
@@ -25,37 +13,6 @@ const REGISTER_MUTATION = `
 
 
 export const calendarService = {
-    // loginUserId: async (email: string, password: string) => {
-    //     try {
-    //         const variables = {
-    //             data: {
-    //                 email,
-    //                 password
-    //             }
-    //         };
-    //         const { data } = await userAuthApi.post('', {
-    //             query: LOGIN_MUTATION,
-    //             variables
-    //         });
-    //         console.log(data)
-    //         // Check for errors in the GraphQL response
-    //         if (data.errors) {
-    //             throw new Error(data.errors[0].message);
-    //         }
-
-    //         // Return the login response data
-    //         return data.data.login;
-    //     } catch (error) {
-    //         console.error('Error during login:', {
-    //             error: error instanceof Error ? {
-    //                 name: error.name,
-    //                 message: error.message,
-    //                 stack: error.stack
-    //             } : error
-    //         });
-    //         throw error;
-    //     }
-    // },
     loginUserId: async (walletAddress: string, username: string) => {
         try {
             const variables = {

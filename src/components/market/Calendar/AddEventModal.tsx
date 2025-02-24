@@ -127,7 +127,7 @@ import { DayEvent } from './MarketCalendar';
               <select
                 value={formData.type}
                 onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as DayEvent['type'] }))}
-                className="w-full px-4 py-2 border rounded-lg outline-none bg-white/5 border-white/10 focus:border-white/20 text-white [&>option]:bg-gray-800 [&>option]:text-white"
+                className="w-full px-4 py-2 text-white border rounded-lg outline-none bg-white/5 border-white/10 focus:border-white/20 glass"
                 required
               >
   
