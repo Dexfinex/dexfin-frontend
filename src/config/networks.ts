@@ -103,6 +103,7 @@ export const mapChainId2ExplorerUrl: Record<number, string> = {
     10: 'https://optimistic.etherscan.io', // Optimism Explorer
     42161: 'https://arbiscan.io', // Arbitrum Explorer
     8453: 'https://basescan.org', // Base Mainnet Explorer
+    [SOLANA_CHAIN_ID]: 'https://solscan.io'
 };
 
 export const mapChainId2ProviderChainName: Record<number, string> = {
