@@ -15,6 +15,7 @@ import ProtocolStatistic from './defi/ProtocolStatistic.tsx';
 
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
 import { mapChainId2NativeAddress } from "../config/networks.ts";
+import { STAKING_TOKENS } from '../constants/mock/defi.ts';
 import { OfferingList } from './defi/OfferlingList.tsx';
 import GlobalMetric from './defi/GlobalMetric.tsx';
 import RedeemModal from './defi/RedeemModal.tsx';
@@ -104,6 +105,57 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         tokenIn: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
         tokenOut: [modalState?.position?.address || ""],
         amountIn: [Number(tokenAmount), Number(token2Amount || 0)],
+        signer: signer,
+        receiver: address,
+        gasPrice: gasData.gasPrice,
+        gasLimit: gasData.gasLimit
+      }, {
+        onSuccess: async (txData) => {
+          if (signer) {
+            setConfirming("Executing...");
+            // execute defi action
+            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+              setConfirming("")
+              return null;
+            });
+            if (transactionResponse) {
+              const receipt = await transactionResponse.wait();
+              setHash(receipt.transactionHash);
+              setTxModalOpen(true);
+              await refetchDefiPositionByWallet();
+              await refetchDefiProtocolByWallet();
+
+              setTokenAmount("");
+              setToken2Amount("");
+              setShowPreview(false);
+              setModalState({ type: null });
+            }
+
+          }
+          setConfirming("");
+        },
+        onError: async (e) => {
+          console.error(e)
+          setConfirming("");
+        }
+      })
+    }
+  }
+
+  const stakeHandler = async () => {
+    if (signer && Number(tokenAmount) > 0) {
+      setConfirming("Approving...");
+      const stakeTokenInfo = STAKING_TOKENS.find((token) => token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[0].symbol);
+
+      enSoActionMutation({
+        chainId: Number(chainId),
+        fromAddress: address,
+        routingStrategy: "router",
+        action: "deposit",
+        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+        tokenIn: [stakeTokenInfo?.tokenIn?.contract_address || ""],
+        tokenOut: [stakeTokenInfo?.tokenOut?.contract_address || ""],
+        amountIn: [Number(tokenAmount)],
         signer: signer,
         receiver: address,
         gasPrice: gasData.gasPrice,
@@ -261,7 +313,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               <GlobalMetric isLoading={isLoading} />
 
               {/* Positions */}
-              <PositionList setSelectedPositionType={setSelectedPositionType} selectedPositionType={selectedPositionType} isLoading={isLoading} handleAction={handleAction} />
+              <PositionList setSelectedPositionType={setSelectedPositionType} selectedPositionType={selectedPositionType} isLoading={isLoading} handleAction={handleAction} setShowPreview={setShowPreview} />
 
               {/* Protocol Statistics */}
               {
@@ -296,11 +348,9 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           modalState={modalState}
           setShowPreview={setShowPreview}
           tokenAmount={tokenAmount}
-          token2Amount={token2Amount}
           confirming={confirming}
-          depositHandler={depositHandler}
+          stakeHandler={stakeHandler}
           setTokenAmount={setTokenAmount}
-          setToken2Amount={setToken2Amount}
         />
       )}
 

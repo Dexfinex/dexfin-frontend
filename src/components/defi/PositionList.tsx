@@ -13,11 +13,12 @@ interface PositionListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
     selectedPositionType: Position['type'] | 'ALL',
     isLoading: boolean,
+    setShowPreview: (showPreview: boolean) => void;
     handleAction: (type: string, position: Position) => void,
 
 }
 
-export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionType, selectedPositionType, isLoading, handleAction }) => {
+export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionType, selectedPositionType, isLoading, handleAction, setShowPreview }) => {
 
     const { chainId } = useContext(Web3AuthContext)
     const { positions, protocolTypes } = useDefiStore();
@@ -182,14 +183,20 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
 
                                         <div className="flex items-center gap-2 mt-2 sm:mt-0">
                                             <button
-                                                onClick={() => handleAction(getAddActionName({ type: position.type }), position)}
+                                                onClick={() => {
+                                                    handleAction(getAddActionName({ type: position.type }), position);
+                                                    setShowPreview(false);
+                                                }}
                                                 className={`px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm ${isEnabled ? "" : "opacity-70"}`}
                                                 disabled={!isEnabled}
                                             >
                                                 {getAddLabelName({ type: position.type })}
                                             </button>
                                             <button
-                                                onClick={() => handleAction(getRemoveActionName({ type: position.type }), position)}
+                                                onClick={() => {
+                                                    handleAction(getRemoveActionName({ type: position.type }), position);
+                                                    setShowPreview(false);
+                                                }}
                                                 className={`px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm ${isEnabled ? "" : "opacity-70"}`}
                                                 disabled={!isEnabled}
                                             >

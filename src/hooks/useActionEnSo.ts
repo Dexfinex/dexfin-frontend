@@ -37,21 +37,21 @@ export const useEnSoActionMutation = () => {
                 );
 
                 let amountValue: number;
+                const nativeTokenAddress = mapChainId2NativeAddress[Number(data.chainId)];
+                const isNativeToken = compareWalletAddresses(nativeTokenAddress, data.tokenIn[i]);
 
                 if (data.action === "redeem") {
                     const balance = await tokenContract.balanceOf(data.fromAddress);
                     amountValue = Math.ceil(Number(balance) * data.amountIn[0] / 100);
                 } else {
-                    const decimals = await tokenContract.decimals();
+                    const decimals = isNativeToken ? 18 : await tokenContract.decimals();
                     amountValue = Number(ethers.utils.parseUnits(
                         Number(data.amountIn[i]).toFixed(8).replace(/\.?0+$/, ""),
                         decimals
                     ));
                 }
 
-                const nativeTokenAddress = mapChainId2NativeAddress[Number(data.chainId)];
-
-                if (!compareWalletAddresses(nativeTokenAddress, data.tokenIn[i])) {
+                if (!isNativeToken) {
                     const allowanceAmount = await tokenContract.allowance(data.fromAddress, ENSO_ROUTER_ADDRESS);
                     if (Number(allowanceAmount) < Number(amountValue)) {
                         const tx = {
