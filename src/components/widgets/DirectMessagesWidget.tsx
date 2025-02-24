@@ -290,6 +290,7 @@ export const DirectMessagesWidget: React.FC = () => {
   }
 
   const handleSelectUser = async () => {
+    if (!selectedUser) return
     setLoadingChatHistory(true)
 
     const history = await chatUser.chat.history(selectedUser?.address, { limit: LIMIT })
@@ -383,7 +384,7 @@ export const DirectMessagesWidget: React.FC = () => {
           }
         }
       } else if (receivedMessage.origin == "self") {
-        
+
       }
     }
   }
