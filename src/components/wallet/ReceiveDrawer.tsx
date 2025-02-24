@@ -25,6 +25,7 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
   const [searchQuery, setSearchQuery] = useState('');
   const [qrCode, setQrCode] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copiedSolana, setCopiedSolana] = useState(false);
 
   const { solanaWalletInfo, address: evmAddress } = useContext(Web3AuthContext);
   const solanaAddress = solanaWalletInfo?.publicKey;
@@ -74,6 +75,12 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
     navigator.clipboard.writeText(walletAddress || "");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopySolana = () => {
+    navigator.clipboard.writeText(solanaAddress || "");
+    setCopiedSolana(true);
+    setTimeout(() => setCopiedSolana(false), 2000);
   };
 
   const filteredAssets = assets.filter(asset =>
@@ -172,7 +179,10 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
             <div className="w-52 h-52 bg-white/5 rounded-xl p-4 mb-4">
               {qrCode ? (
                 <div className='relative flex w-full align-center'>
-                  <img src={getChainIcon(Number(selectedAsset.chain)) || ""} className={`absolute left-20 top-20 rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 w-8 h-8`} />
+                  {
+                    getChainIcon(Number(selectedAsset.chain)) &&
+                    <img src={getChainIcon(Number(selectedAsset.chain)) || ""} className={`absolute left-20 top-20 rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 w-8 h-8`} />
+                  }
                   <img
                     src={qrCode}
                     alt="Wallet QR Code"
@@ -209,6 +219,27 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
                 : <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'3rem'}></Skeleton>
             }
           </div>
+
+          {
+            solanaAddress && <div>
+              <label className="block text-sm text-white/60 mb-2">Solana Wallet Address</label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-mono text-sm">
+                  {solanaAddress}
+                </div>
+                <button
+                  onClick={handleCopySolana}
+                  className="p-3 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  {copiedSolana ? (
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                  ) : (
+                    <Copy className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+          }
 
           {/* Network Info */}
           <div className="text-center text-sm text-white/60">
