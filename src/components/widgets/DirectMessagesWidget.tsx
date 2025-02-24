@@ -344,28 +344,10 @@ export const DirectMessagesWidget: React.FC = () => {
   const handleReceiveMsg = () => {
     console.log('--------handle receive message in DirectMessageWidget------------')
 
-    if (receivedMessage?.meta?.group == false && receivedMessage.origin == "other") {
-      if (receivedMessage.event == "chat.request") {
-        if (selectedUser?.address == extractAddress(receivedMessage.from)) {
-          setChatHistory(prev =>
-            [...prev, {
-              timestamp: Number(receivedMessage.timestamp),
-              type: receivedMessage.message.type,
-              content: receivedMessage.message.content,
-              fromAddress: extractAddress(receivedMessage.from),
-              toAddress: extractAddress(receivedMessage.to[0]),
-              chatId: receivedMessage.reference,
-              link: null,
-              reaction: ""
-            }]
-          )
-        }
-      } else if (receivedMessage.event == "chat.message") {
-        if (extractAddress(receivedMessage.from) == selectedUser?.address) {
-          if (receivedMessage.message.type == "Reaction") {
-            setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
-          } else {
-            setToBottom(true)
+    if (receivedMessage?.meta?.group == false) {
+      if (receivedMessage.origin == "other") {
+        if (receivedMessage.event == "chat.request") {
+          if (selectedUser?.address == extractAddress(receivedMessage.from)) {
             setChatHistory(prev =>
               [...prev, {
                 timestamp: Number(receivedMessage.timestamp),
@@ -379,7 +361,29 @@ export const DirectMessagesWidget: React.FC = () => {
               }]
             )
           }
+        } else if (receivedMessage.event == "chat.message") {
+          if (extractAddress(receivedMessage.from) == selectedUser?.address) {
+            if (receivedMessage.message.type == "Reaction") {
+              setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
+            } else {
+              setToBottom(true)
+              setChatHistory(prev =>
+                [...prev, {
+                  timestamp: Number(receivedMessage.timestamp),
+                  type: receivedMessage.message.type,
+                  content: receivedMessage.message.content,
+                  fromAddress: extractAddress(receivedMessage.from),
+                  toAddress: extractAddress(receivedMessage.to[0]),
+                  chatId: receivedMessage.reference,
+                  link: null,
+                  reaction: ""
+                }]
+              )
+            }
+          }
         }
+      } else if (receivedMessage.origin == "self") {
+        
       }
     }
   }
