@@ -10,7 +10,7 @@ import { offerings } from "../../constants/mock/defi";
 interface OfferingListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
     selectedPositionType: Position['type'] | 'ALL',
-    handleAction: (type: 'deposit' | 'redeem' | 'borrow' | 'repay', position: Position) => void,
+    handleAction: (type: string, position: Position) => void,
 }
 
 export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionType, selectedPositionType, handleAction }) => {
@@ -21,6 +21,20 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
     const { positions, } = useDefiStore();
 
     const filteredOfferings = offerings.filter(o => selectedPositionType === 'ALL' || o.type.toLowerCase() === selectedPositionType.toLowerCase());
+
+    const getAddActionName = ({ type }: { type: string }) => {
+        switch (type.toLowerCase()) {
+            case "staking":
+                return "stake";
+            case "liquidity":
+                return "deposit";
+            case "supplied":
+                return "deposit";
+            default:
+                return "";
+        }
+    }
+
 
     return (
         <div className="space-y-4">
@@ -68,7 +82,9 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                         </span>
                                         <span className="text-white/40 hidden sm:block">•</span>
                                         <span className="text-sm text-white/60">
-                                            {`${offering.tokens[0]?.symbol}/${offering.tokens[1]?.symbol}`}
+                                            {
+                                                offering.tokens.map((token) => `${token.symbol} `)
+                                            }
                                         </span>
                                     </div>
 
@@ -88,7 +104,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                         if (Number(chainId) === Number(offering.chainId)) {
                                             const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
                                             handleAction(
-                                                'deposit',
+                                                getAddActionName({ type: offering.type }),
                                                 position || offering
                                             );
                                         } else {

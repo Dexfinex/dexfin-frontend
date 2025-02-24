@@ -213,7 +213,7 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                                                 setTokenAmount(e.target.value);
                                             }}
                                             type="text"
-                                            className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""}`}
+                                            className={`w-full bg-transparent text-2xl outline-none pr-[90px] ${isErrorTokenAmount ? "text-red-500" : ""}`}
                                             placeholder="0.00"
                                         />
                                         <div className='flex items-center fixed right-12'>
