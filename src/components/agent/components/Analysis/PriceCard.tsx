@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, Flex, Text, Skeleton, HStack, VStack } from '@chakra-ui/react';
+
+import { Box, Flex, Text, Skeleton, VStack } from '@chakra-ui/react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { ComposedChart, Area, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { ComposedChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { BrianCoinData } from '../../../../types/brian.type.ts';
 import { formatVolume } from '../../../../utils/brian.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
@@ -34,7 +35,7 @@ const CustomTooltip: React.FC<ChartTooltipProps> = ({ active, payload }) => {
         minWidth="150px"
       >
         <VStack align="start" spacing={1}>
-          <Text color="white" fontSize="sm">
+          <Text fontSize="sm">
             Price: <Text as="span" fontWeight="bold" color="blue.300">${formatNumberByFrac(priceData?.value)}</Text>
           </Text>
         </VStack>
@@ -45,7 +46,6 @@ const CustomTooltip: React.FC<ChartTooltipProps> = ({ active, payload }) => {
 };
 
 export const PriceCard: React.FC<PriceCardProps> = ({ data, isLoading }) => {
-
 
 
   return (
@@ -119,10 +119,11 @@ export const PriceCard: React.FC<PriceCardProps> = ({ data, isLoading }) => {
                 dataKey="timestamp"
                 tickFormatter={(time) => {
                   const date = new Date(time);
-                  return `${date.getDate()}/${date.getHours()}`;
+                  return `${date.getHours() % 12 || 12}:${date.getMinutes().toString().padStart(2, '0')} ${date.getHours() >= 12 ? 'PM' : 'AM'}`;
                 }}
                 stroke="#4A5568"
                 fontSize={10}
+                angle={-35}
               />
               <YAxis
                 yAxisId="price"
@@ -148,7 +149,7 @@ export const PriceCard: React.FC<PriceCardProps> = ({ data, isLoading }) => {
         <Box flex="1" minW="150px">
           <Text color="gray.400" fontSize="sm" mb={1}>24h Volume</Text>
           <Skeleton isLoaded={!isLoading}>
-            <Text color="white" fontWeight="medium">
+            <Text fontWeight="medium">
               {data ? formatVolume(data.volume24h) : '$0.00'}
             </Text>
           </Skeleton>
@@ -156,7 +157,7 @@ export const PriceCard: React.FC<PriceCardProps> = ({ data, isLoading }) => {
         <Box flex="1" minW="150px">
           <Text color="gray.400" fontSize="sm" mb={1}>Market Cap</Text>
           <Skeleton isLoaded={!isLoading}>
-            <Text color="white" fontWeight="medium">
+            <Text fontWeight="medium">
               {data ? formatVolume(data.marketCap) : '$0.00'}
             </Text>
           </Skeleton>
@@ -164,6 +165,7 @@ export const PriceCard: React.FC<PriceCardProps> = ({ data, isLoading }) => {
         <Box flex="1" minW="150px" />
         <Box flex="1" minW="150px" />
       </Flex>
+      <Text mt={5} className="whitespace-pre-wrap">{data?.analysis}</Text>
     </Box>
   );
 };

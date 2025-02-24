@@ -25,8 +25,46 @@ export interface Message {
   content: string;
   tip?: string;
   priceData?: BrianCoinData;
-  trending?: TrendingCoin[];
+  trending?: AnalysisTrendingCoin[];
+  losers?: AnalysisLoser[]; 
+  gainers?: AnalysisGainer[]; 
   news?: NewsItem[];
+  link?: string;
+}
+
+export interface AnalysisLoser {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  usd24hChange: number;
+  usd24hVol: number;
+  analysis: string;
+}
+
+export interface AnalysisGainer {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  usd24hChange: number;
+  usd24hVol: number;
+  analysis: string;
+}
+
+export interface AnalysisTrendingCoin {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  volume: number;
+  analysis: string;
 }
 
 export interface TrendingCoin {
