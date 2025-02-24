@@ -376,9 +376,9 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
         assets={tokenBalances.map(p => ({
           name: p.name,
           symbol: p.symbol,
-          logo: p.logo
+          logo: p.logo,
+          chain: p.chain,
         }))}
-        walletAddress={address}
       />
 
       <BuyDrawer
