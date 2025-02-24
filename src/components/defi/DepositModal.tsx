@@ -14,7 +14,7 @@ import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
 
 interface ModalState {
-    type: 'deposit' | 'redeem' | 'borrow' | 'repay' | null;
+    type: string | null;
     position?: Position;
 }
 
@@ -36,9 +36,9 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
     const { chainId } = useContext(Web3AuthContext);
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation()
 
-    const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0].contract_address, Number(chainId)) : null;
+    const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0]?.contract_address, Number(chainId)) : null;
     const tokenInfo1 = modalState?.position ? modalState.position.tokens[0] : null;
-    const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1].contract_address, Number(chainId)) : null;
+    const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1]?.contract_address, Number(chainId)) : null;
     const tokenInfo2 = modalState?.position ? modalState.position.tokens[1] : null;
 
     const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
@@ -123,7 +123,9 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                         <div>
                             <div className="font-medium">{modalState.position?.protocol}</div>
                             <div className="text-sm text-white/60">
-                                {`${modalState.position?.tokens[0].symbol}/${modalState.position?.tokens[1].symbol} ${modalState.position?.tokens[2].symbol}`}
+                                {
+                                    modalState.position?.tokens.map((token) => `${token?.symbol} `)
+                                }
                             </div>
                         </div>
                         <div className="ml-auto text-right">
@@ -160,45 +162,45 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
 
                                 <div className='flex justify-between mt-2'>
                                     <div>
-                                        <span className='ml-2'>
+                                        <span className='ml-2 text-sm text-white/60'>
                                             Rate
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <span className='ml-2'>
+                                        <span className='ml-2 text-sm text-white/60'>
                                             1 {tokenInfo2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenInfo1?.symbol}
                                         </span>
                                     </div>
                                 </div>
                                 <div className='flex justify-between'>
                                     <div>
-                                        <span className='ml-2'>
+                                        <span className='ml-2 text-sm text-white/60'>
                                             New {tokenInfo1?.symbol || ""} Position
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
                                         <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <span className='ml-2'>
-                                            {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted) + Number(tokenAmount))}
+                                            {formatNumberByFrac(Number(modalState.position?.tokens[0]?.balance_formatted) + Number(tokenAmount))}
                                         </span>
-                                        <span className='ml-1'>
-                                            {tokenBalance2?.symbol || ""}
+                                        <span className='ml-1 text-sm text-white/60'>
+                                            {tokenBalance1?.symbol || ""}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className='flex justify-between'>
                                     <div>
-                                        <span className='ml-2'>
+                                        <span className='ml-2 text-sm text-white/60'>
                                             New {tokenBalance2?.symbol || ""} Position
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
                                         <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <span className='ml-2'>
-                                            {formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted) + Number(token2Amount))}
+                                            {formatNumberByFrac(Number(modalState.position?.tokens[1]?.balance_formatted) + Number(token2Amount))}
                                         </span>
-                                        <span className='ml-1'>
+                                        <span className='ml-1 text-sm text-white/60'>
                                             {tokenInfo2?.symbol || ""}
                                         </span>
                                     </div>
@@ -206,7 +208,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
 
                                 <div className='flex justify-between'>
                                     <div>
-                                        <span className='ml-2'>
+                                        <span className='ml-2 text-sm text-white/60'>
                                             Network Fee
                                         </span>
                                     </div>
@@ -291,16 +293,16 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                 <div className='mt-2 mb-2 flex flex-col gap-3'>
                                     <div className='flex justify-between'>
                                         <div>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm text-white/60'>
                                                 {tokenInfo1?.symbol || ""} Position
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
                                             <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                             <span className='ml-2'>
-                                                {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted))}
+                                                {formatNumberByFrac(Number(modalState.position?.tokens[0]?.balance_formatted))}
                                             </span>
-                                            <span className='ml-1'>
+                                            <span className='ml-1 text-sm text-white/60'>
                                                 {tokenInfo1?.symbol || ""}
                                             </span>
                                         </div>
@@ -308,16 +310,16 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
 
                                     <div className='flex justify-between'>
                                         <div>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm text-white/60'>
                                                 {tokenInfo2?.symbol || ""} Position
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
                                             <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                             <span className='ml-2'>
-                                                {formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted))}
+                                                {formatNumberByFrac(Number(modalState.position?.tokens[1]?.balance_formatted))}
                                             </span>
-                                            <span className='ml-1'>
+                                            <span className='ml-1 text-sm text-white/60'>
                                                 {tokenInfo2?.symbol || ""}
                                             </span>
                                         </div>
@@ -325,12 +327,12 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
 
                                     <div className='flex justify-between'>
                                         <div>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm text-white/60'>
                                                 Network Fee
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
-                                            <span className='ml-2'>
+                                            <span className='ml-2 text-sm'>
                                                 {
                                                     isGasEstimationLoading ?
                                                         <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>

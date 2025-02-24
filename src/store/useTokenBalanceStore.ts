@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { compareWalletAddresses } from "../utils/common.util";
 
 export interface TokenBalance {
   chain: number;
@@ -29,7 +30,7 @@ const useTokenBalanceStore = create<TokenBalanceStoreState>((set) => ({
   getTokenBalance: (address: string, chainId: number) => {
     const state = useTokenBalanceStore.getState() as TokenBalanceStoreState;
     const value = state.tokenBalances.find(
-      (token) => token.address === address && Number(token.chain) === Number(chainId)
+      (token) => compareWalletAddresses(token.address, address) && Number(token.chain) === Number(chainId)
     );
     return value || null;
   },

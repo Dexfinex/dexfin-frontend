@@ -1,6 +1,10 @@
 import { mapChainId2ChainName } from "../config/networks";
 import { Position } from "../store/useDefiStore";
 
+export const capitalizeFirstLetter = (val: string) => {
+    return String(val).charAt(0).toUpperCase() + String(val.toLowerCase()).slice(1);
+}
+
 export const getTypeIcon = (type: Position['type']) => {
     switch (type.toUpperCase()) {
         case 'LENDING':
