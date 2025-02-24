@@ -5,6 +5,8 @@ import * as QRCode from 'qrcode';
 
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
 import { TokenChainIcon } from '../swap/components/TokenIcon';
+import { getChainIcon } from '../../utils/getChainIcon';
+import { SOLANA_CHAIN_ID } from '../../constants/solana.constants';
 
 interface ReceiveDrawerProps {
   isOpen: boolean;
@@ -13,18 +15,28 @@ interface ReceiveDrawerProps {
     name: string;
     symbol: string;
     logo: string;
+    chain: number;
   }[];
-  walletAddress: string;
 }
 
-export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, assets, walletAddress }) => {
+export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, assets }) => {
   const [selectedAsset, setSelectedAsset] = useState(assets[0] || {});
   const [showAssetSelector, setShowAssetSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [qrCode, setQrCode] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const { chainId } = useContext(Web3AuthContext);
+  const { solanaWalletInfo, address: evmAddress } = useContext(Web3AuthContext);
+  const solanaAddress = solanaWalletInfo?.publicKey;
+
+  const walletAddress = useMemo(() => {
+    switch (Number(selectedAsset?.chain)) {
+      case SOLANA_CHAIN_ID: // solana
+        return solanaAddress;
+      default:
+        return evmAddress;
+    }
+  }, [selectedAsset, evmAddress, solanaWalletInfo])
 
   const [isLargerThan1200] = useMediaQuery('(min-width: 1200px)');
   const [isLargerThan800] = useMediaQuery('(min-width: 800px)');
@@ -59,7 +71,7 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
   }, [assets, selectedAsset])
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(walletAddress);
+    navigator.clipboard.writeText(walletAddress || "");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -104,7 +116,7 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
                   onClick={() => setShowAssetSelector(!showAssetSelector)}
                   className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
                 >
-                  <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(chainId)} />
+                  <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"} chainId={Number(selectedAsset.chain)} />
                   <div className="flex-1 text-left">
                     <div className="font-medium">{selectedAsset.name}</div>
                     <div className="text-sm text-white/60">{selectedAsset.symbol}</div>
@@ -140,7 +152,7 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
                             }}
                             className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors"
                           >
-                            <TokenChainIcon src={asset.logo} alt={asset.name} size={"md"} chainId={Number(chainId)} />
+                            <TokenChainIcon src={asset.logo} alt={asset.name} size={"md"} chainId={Number(asset.chain)} />
                             <div className="flex-1 text-left">
                               <div className="font-medium">{asset.name}</div>
                               <div className="text-sm text-white/60">{asset.symbol}</div>
@@ -157,13 +169,16 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ isOpen, onClose, a
 
           {/* QR Code */}
           <div className="flex flex-col items-center">
-            <div className="w-48 h-48 bg-white/5 rounded-xl p-4 mb-4">
+            <div className="w-52 h-52 bg-white/5 rounded-xl p-4 mb-4">
               {qrCode ? (
-                <img
-                  src={qrCode}
-                  alt="Wallet QR Code"
-                  className="w-full h-full"
-                />
+                <div className='relative flex w-full align-center'>
+                  <img src={getChainIcon(Number(selectedAsset.chain)) || ""} className={`absolute left-20 top-20 rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 w-8 h-8`} />
+                  <img
+                    src={qrCode}
+                    alt="Wallet QR Code"
+                    className="w-full h-full"
+                  />
+                </div>
               ) : <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'100%'}></Skeleton>}
             </div>
             <div className="text-sm text-white/60 mb-2">
