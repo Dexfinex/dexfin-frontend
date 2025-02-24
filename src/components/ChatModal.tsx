@@ -47,7 +47,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSendModalActive, setIsSendModalActive] = useState(false);
   const [isHelpModalActive, setIsHelpModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
-  const { setChatUser, chatUser, receivedMessage, setSelectedUserInChatModal } = useStore();
+  const { setChatUser, chatUser, receivedMessage, setSelectedUserInChatModal, theme } = useStore();
   const toast = useToast()
 
   const [loading, setLoading] = useState(false);
@@ -1468,7 +1468,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           </div>}
 
           {/* Left Sidebar */}
-          <div className={`absolute md:relative flex flex-col rounded-tl-xl rounded-bl-xl bg-stone-950 bottom-0 top-0 left-0 w-80 border-r border-white/10 z-[1]
+          <div className={`absolute md:relative flex flex-col rounded-tl-xl rounded-bl-xl bottom-0 top-0 left-0 w-80 border-r border-white/10 z-[1]
+                          ${theme === "dark" ? 'bg-stone-950' : 'bg-stone-100'}
                           transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+40px)] md:translate-x-0"}`}
             ref={sideBarRef}>
             <div className="p-4 border-b border-white/10">
@@ -1684,7 +1685,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     <EmojiPicker
                       open={isEmojiOpen}
                       onEmojiClick={handleEmojiClick}
-                      theme={Theme.DARK}
+                      theme={theme === "dark" ? Theme.DARK : Theme.LIGHT}
                       width={gifAndEmojiWidth}
                     />
                   </div>
@@ -1707,7 +1708,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     className='!absolute bottom-[62px] right-[16px]'>
                     <GifPicker
                       tenorApiKey={"AIzaSyBxr4hrP59kdbQV4xJ-t2CSQX0Y6q4gcbA"}
-                      theme={GifTheme.DARK}
+                      theme={theme === "dark" ? GifTheme.DARK : GifTheme.LIGHT}
                       onGifClick={handleGifClick}
                       width={gifAndEmojiWidth}
                     />
