@@ -3,7 +3,7 @@ import {ChartDataPoint, TokenType} from "../../../../types/swap.type.ts";
 import {SOLANA_CHAIN_ID} from "../../../../constants/solana.constants.ts";
 import {birdeyeService} from "../../../../services/birdeye.service.ts";
 import {coingeckoService} from "../../../../services/coingecko.service.ts";
-import {mapResolutionToTimeRange} from "../../../../constants/chart.constants.ts";
+import {mapResolutionToSeconds, mapResolutionToTimeRange} from "../../../../constants/chart.constants.ts";
 
 interface ConfigurationData {
     supported_resolutions: string[];
@@ -61,7 +61,7 @@ interface PeriodParams {
 }
 
 const configurationData: ConfigurationData = {
-    supported_resolutions: ["60", "1D", "1W", "1M", "1Y"],
+    supported_resolutions: ["60", "1D", "1W", "1M", "12M"],
     supports_time: true,
     supports_marks: false,
     supports_timescale_marks: false
@@ -133,7 +133,7 @@ export default {
             ] = symbolName.split(':')
 
             onSymbolResolvedCallback({
-                format: "",
+                format: "price",
                 full_name: "",
                 has_no_volume: false,
                 has_seconds: false,
@@ -141,10 +141,10 @@ export default {
                 ticker: name,
                 name: name,
                 description: name,
-                type: 'crypto',
+                type: 'futures',
                 session: '24x7',
                 timezone: 'Etc/UTC',
-                exchange: 'defined',
+                exchange: 'DEX',
                 token: {
                     name,
                     address,
@@ -156,7 +156,7 @@ export default {
                 pricescale: 10 ** 3,
                 has_intraday: true,
                 has_daily: true,
-                has_weekly_and_monthly: false,
+                has_weekly_and_monthly: true,
                 // visible_plots_set: 'ohlcv',
                 supported_resolutions: configurationData.supported_resolutions!,
                 volume_precision: 8,
@@ -175,19 +175,24 @@ export default {
         onErrorCallback: (error: string) => void
     ): Promise<void> => {
         try {
+            const currentTime = Math.round(Date.now() / 1000)
+            const timeTo = periodParams.to ?? currentTime
+            // timeTo = currentTime < timeTo ? currentTime : timeTo
+            const timeFrom = timeTo - mapResolutionToSeconds[resolution] * 30
             const bars = await getKlines(
                 symbolInfo,
-                periodParams.from,
-                periodParams.to ?? Date.now() / 1000,
+                timeFrom,
+                timeTo,
                 resolution
             );
 
-            // onHistoryCallback(bars, {noData: true})
-
+            onHistoryCallback(bars, {noData: true})
+/*
             // eslint-disable-next-line @typescript-eslint/no-unused-expressions
             (periodParams.from < 0 || bars.length < 1)
                 ? onHistoryCallback([], {noData: true})
                 : onHistoryCallback(bars, {noData: false});
+*/
         } catch (a) {
             console.error(a);
             if (typeof a === "string") {
