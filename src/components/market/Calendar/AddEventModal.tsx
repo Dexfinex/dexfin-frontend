@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { addEvent } from '../../../hooks/useCalendar';
 import { DayEvent } from './MarketCalendar';
+import { requiredChakraThemeKeys, ToastProvider } from '@chakra-ui/react';
  
   
   interface AddEventModalProps {
@@ -28,6 +29,11 @@ import { DayEvent } from './MarketCalendar';
 
 
     const addEventSubmit = async (e: React.FormEvent) => {
+      if (!userId) {
+        console.log("No access token available");
+        
+        return;
+      }
       e.preventDefault();
       setIsSubmitting(true);
       setError(null);
