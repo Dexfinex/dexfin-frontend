@@ -8,5 +8,8 @@ export const PRIMARY_ADDRESS_BY_PROTOCOL: Record<string, Record<number, string>>
         42161: '0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24', // Arbitrum (ETH)
         8453: '0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24', // Base Mainnet (ETH placeholder)
         900: '0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24', // Base Mainnet (ETH placeholder)
+    },
+    "lido": {
+        1: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84', // Ethereum Mainnet (ETH)
     }
 }

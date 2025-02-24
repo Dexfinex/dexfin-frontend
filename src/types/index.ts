@@ -1,3 +1,5 @@
+import { BrianCoinData } from "./brian.type";
+
 // Add missing types
 export interface CoinData {
   id: string;
@@ -22,7 +24,7 @@ export interface Message {
   role: string;
   content: string;
   tip?: string;
-  data?: CoinData;
+  priceData?: BrianCoinData;
   trending?: TrendingCoin[];
   news?: NewsItem[];
 }
@@ -241,6 +243,9 @@ export interface DefillamaProtocol {
   change_7d: number;
   tokenBreakdowns: Object;
   mcap?: number;
+  category: string;
+  dailyUsers: number;
+  weeklyRevenue: number;
 }
 
 export interface DefillamaPool {
@@ -249,12 +254,31 @@ export interface DefillamaPool {
   chain: string;
   apy: number;
   tvlUsd: number;
+  logo: string[];
+  underlyingTokens: string[];
 }
 export interface DefillamaCategory {
   name: string;
   tvl: number;
   change24h: number;
 }
+export interface DefillamaChainTVL {
+  gecko_id: string;
+  tvl: string;
+  tokenSymbol: string;
+  cmcId: string;
+  name: string;
+  chainId: number;
+}
+export interface DefillamaDexVolume {
+  total24h: number;
+  totalDataChart?: any[];
+  change_1d: number;
+  allChains?: any[];
+  protocols?: any[];
+}
+
+
 export interface BrianKnowledgeData {
   message: string;
 }

@@ -174,3 +174,10 @@ export const formatNumberByFrac = (
 
     return getFixedNum(num, fixedCount);
 };
+
+export const formatHealthFactor = (num: number) => {
+    if (num > 1e9) {
+        return "∞";
+    }
+    return formatNumberByFrac(num);
+}

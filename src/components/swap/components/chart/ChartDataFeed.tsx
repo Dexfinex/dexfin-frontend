@@ -61,7 +61,7 @@ interface PeriodParams {
 }
 
 const configurationData: ConfigurationData = {
-    supported_resolutions: ["1", "5", "15", "30", "60", "240", "1D"],
+    supported_resolutions: ["60", "1D", "1W", "1M", "1Y"],
     supports_time: true,
     supports_marks: false,
     supports_timescale_marks: false

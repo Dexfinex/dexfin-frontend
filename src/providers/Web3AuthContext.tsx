@@ -2,7 +2,6 @@ import {createContext, useEffect, useState} from "react";
 import {
     getSolanaWrappedKeyMetaDataByPkpEthAddress,
     getWrappedKeyMetaDatas,
-    initProviderByMethod,
     litNodeClient,
     ORIGIN,
     signInWithDiscord,
@@ -24,9 +23,8 @@ import {
     mapRpcUrls,
 } from "../constants";
 import {SavedWalletInfo, type SolanaWalletInfoType} from "../types/auth";
-import {generatePrivateKey, signTransactionWithEncryptedKey} from "@lit-protocol/wrapped-keys/src/lib/api";
-import {Transaction, VersionedTransaction} from "@solana/web3.js";
-import {SerializedTransaction} from "@lit-protocol/wrapped-keys";
+import {exportPrivateKey, generatePrivateKey} from "@lit-protocol/wrapped-keys/src/lib/api";
+import {Keypair, VersionedTransaction} from "@solana/web3.js";
 import {createPublicClient, createWalletClient, custom, publicActions, type WalletClient} from "viem";
 import {http} from "@wagmi/core";
 import {signerToEcdsaValidator} from "@zerodev/ecdsa-validator";
@@ -77,7 +75,7 @@ interface Web3AuthContextType {
     setWalletClient: React.Dispatch<React.SetStateAction<WalletClient | undefined>>,
     isLoadingStoredWallet: boolean,
     solanaWalletInfo: SolanaWalletInfoType | undefined,
-    signSolanaTransaction: (solanaTransaction: Transaction | VersionedTransaction) => Promise<string | null>
+    signSolanaTransaction: (solanaTransaction: VersionedTransaction) => Promise<VersionedTransaction | null>
 }
 
 
@@ -130,7 +128,7 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     address: '',
     solanaWalletInfo: undefined,
     signSolanaTransaction: async () => {
-        return ""
+        return null
     },
 
 };
@@ -401,7 +399,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
     useEffect(() => {
         if (storedWalletInfo && !currentAccount && !sessionSigs) {
             setIsLoadingStoredWallet(true)
-            initProviderByMethod(storedWalletInfo.authMethod)
+            // initProviderByMethod(storedWalletInfo.authMethod)
             setAuthMethod(storedWalletInfo.authMethod)
             setCurrentAccount(storedWalletInfo.currentAccount)
             setChainId(storedWalletInfo.chainId ?? 1)
@@ -436,8 +434,6 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                             pkpSessionSigs: sessionSigs,
                             network: 'solana',
                             memo: "solana address",
-                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                            // @ts-expect-error
                             litNodeClient: litNodeClient as ILitNodeClient,
                         });
                         // console.log("generated", pkpAddress, generatedPublicKey)
@@ -484,31 +480,46 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         await signInWithDiscord(redirectUri);
     }
 
-    const signSolanaTransaction = async (solanaTransaction: Transaction | VersionedTransaction): Promise<string | null> => {
-        if (solanaWalletInfo) {
+    const signSolanaTransaction = async (solanaTransaction: VersionedTransaction): Promise<VersionedTransaction | null> => {
+        if (solanaWalletInfo && sessionSigs) {
+            const privateKey = await exportPrivateKey({
+                pkpSessionSigs: sessionSigs!,
+                litNodeClient,
+                network: "solana",
+                id: solanaWalletInfo.wrappedKeyId,
+            });
+
+/*
             const serializedTransaction = solanaTransaction
                 .serialize({
                     requireAllSignatures: false, // should be false as the transaction is not yet being signed
                     verifySignatures: false, // should be false as the transaction is not yet being signed
                 })
                 .toString('base64');
-
+*/
+            const keypair = Keypair.fromSecretKey(Buffer.from(privateKey.decryptedPrivateKey, "hex"));
+            solanaTransaction.sign([keypair])
+            // const signedBytes = solanaTransaction.serialize();
+            // return Buffer.from(signedBytes).toString("base64")
+            return solanaTransaction
+/*
             const unsignedTransaction: SerializedTransaction = {
                 serializedTransaction,
                 chain: 'mainnet-beta',
             };
+*/
 
             // console.log("solanaWalletInfo.wrappedKeyId", solanaWalletInfo)
+/*
             return await signTransactionWithEncryptedKey({
                 pkpSessionSigs: sessionSigs!,
                 network: 'solana',
                 id: solanaWalletInfo.wrappedKeyId,
                 unsignedTransaction,
                 broadcast: true,
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
                 litNodeClient: litNodeClient as ILitNodeClient,
             })
+*/
         }
 
         return null

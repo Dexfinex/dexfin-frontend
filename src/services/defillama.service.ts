@@ -1,5 +1,5 @@
 import { defillamaApi } from "./api.service.ts";
-import { DefillamaPool, DefillamaProtocol } from "../types/index.ts";
+import { DefillamaPool, DefillamaProtocol, DefillamaChainTVL, DefillamaDexVolume } from "../types/index.ts";
 
 export const defillamaService = {
 	getProtocols: async (): Promise<DefillamaProtocol[]> => {
@@ -18,6 +18,26 @@ export const defillamaService = {
 			return data;
 		} catch (error) {
 			console.error('Failed to fetch defillama pools:', error);
+			throw error;
+		}
+	},
+	getChainTVL: async (): Promise<DefillamaChainTVL[]> => {
+		try {
+			const { data } = await defillamaApi.get<DefillamaChainTVL[]>(`/chains`);
+			// console.log("chainsdata : ", data);
+			return data;
+		} catch (error) {
+			console.error('Failed to fetch defillama pools:', error);
+			throw error;
+		}
+	},
+	getDexVolume: async (): Promise<DefillamaDexVolume> => {
+		try {
+			const { data } = await defillamaApi.get<DefillamaDexVolume>('/volum');
+			console.log("DEX volume dataservice:", data);
+			return data;
+		} catch (error) {
+			console.error('Failed to fetch DEX volume:', error);
 			throw error;
 		}
 	}

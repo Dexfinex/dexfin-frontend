@@ -36,7 +36,13 @@ export const BRIAN_BASE_URL = `https://${BASE_HOST_DOMAIN}/brian`;
 
 export const CRYPTONEWS_BASE_URL = `https://${BASE_HOST_DOMAIN}/crypto-news`;
 
+export const OPENAI_BASE_URL = `https://${BASE_HOST_DOMAIN}/openai`;
+
 export const ENSO_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/enso';
+
+export const CALENDAR_BASE_URL='https://dexfinv3-backend-production.up.railway.app/calendar';
+
+export const USERAUTH_BASE_URL= "https://dexfinv3-backend-production.up.railway.app/graphql";
 
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 

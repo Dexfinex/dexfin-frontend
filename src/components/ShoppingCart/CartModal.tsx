@@ -25,6 +25,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [allTransactionsComplete, setAllTransactionsComplete] = useState(false);
   const [tokenDetails, setTokenDetails] = useState<TokenPurchaseDetails[]>([]);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   const { address: walletAddress, chainId: walletChainId } = useContext(Web3AuthContext);
   const { cartItems, addToCart, removeFromCart, updateQuantity, clearCart } = useStore();
@@ -37,6 +38,34 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     isPending: isBuyPending,
     isConfirmed
   } = useTokenBuyHandler();
+
+  // Check if document exists and set up a listener for theme changes
+  useEffect(() => {
+    const checkTheme = () => {
+      if (document.documentElement.classList.contains('dark')) {
+        setIsDarkMode(true);
+      } else {
+        setIsDarkMode(false);
+      }
+    };
+    
+    // Check initial theme
+    checkTheme();
+    
+    // Set up MutationObserver to watch for class changes on the html element
+    if (typeof MutationObserver !== 'undefined') {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.attributeName === 'class') {
+            checkTheme();
+          }
+        });
+      });
+      
+      observer.observe(document.documentElement, { attributes: true });
+      return () => observer.disconnect();
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -170,9 +199,9 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <div className="relative glass border border-white/10 shadow-lg w-[95%] md:w-[90%] h-[95%] md:h-[90%] rounded-xl overflow-hidden">
+      <div className="relative bg-white dark:glass border border-black/10 dark:border-white/10 shadow-lg w-[95%] md:w-[90%] h-[95%] md:h-[90%] rounded-xl overflow-hidden">
         <span className="flex justify-end p-2">
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
             <X className="w-4 h-4" />
           </button>
         </span>
@@ -231,9 +260,9 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
               className={`
                 fixed md:relative inset-0 md:inset-auto z-50
                 w-full md:w-[400px] h-full md:h-full
-                bg-[#0e0e0e] md:bg-[#0e0e0e]
+                bg-white dark:bg-[#0e0e0e] 
                 transform transition-transform duration-300 ease-in-out
-                border-l border-white/10
+                border-l border-black/10 dark:border-white/10
                 ${showCart ? "translate-y-0" : "translate-y-full md:translate-y-0"}
               `}
             >
@@ -247,6 +276,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
                   setShowCart(false)
                 }}
                 onClose={() => setShowCart(false)}
+                isDarkMode={isDarkMode}
               />
             </div>
           </div>
