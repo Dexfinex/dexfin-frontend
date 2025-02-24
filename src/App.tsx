@@ -18,8 +18,6 @@ import { AuthMethodType } from "@lit-protocol/constants";
 import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
 import { LOCAL_STORAGE_AUTH_REDIRECT_TYPE } from "./constants";
 import { TradingViewModal } from './components/TradingViewModal.tsx';
-import { KEY_NAME } from './utils/chatApi.ts';
-import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 
 export default function App() {
     const { theme } = useStore();

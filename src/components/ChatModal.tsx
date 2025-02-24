@@ -47,7 +47,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSendModalActive, setIsSendModalActive] = useState(false);
   const [isHelpModalActive, setIsHelpModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
-  const { setChatUser, chatUser, receivedMessage, setSelectedUserInChatModal } = useStore();
+  const { setChatUser, chatUser, receivedMessage, setSelectedUserInChatModal, theme } = useStore();
   const toast = useToast()
 
   const [loading, setLoading] = useState(false);
@@ -79,35 +79,35 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const navBtnRef = useRef<HTMLButtonElement>(null);
   const gifBtnRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  //light mode and dark mode
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  // //light mode and dark mode
+  // const [isDarkMode, setIsDarkMode] = useState(true);
 
-  useEffect(() => {
-    const checkTheme = () => {
-      if (document.documentElement.classList.contains('dark')) {
-        setIsDarkMode(true);
-      } else {
-        setIsDarkMode(false);
-      }
-    };
+  // useEffect(() => {
+  //   const checkTheme = () => {
+  //     if (document.documentElement.classList.contains('dark')) {
+  //       setIsDarkMode(true);
+  //     } else {
+  //       setIsDarkMode(false);
+  //     }
+  //   };
 
-    // Check initial theme
-    checkTheme();
+  //   // Check initial theme
+  //   checkTheme();
 
-    // Set up MutationObserver to watch for class changes on the html element
-    if (typeof MutationObserver !== 'undefined') {
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.attributeName === 'class') {
-            checkTheme();
-          }
-        });
-      });
+  //   // Set up MutationObserver to watch for class changes on the html element
+  //   if (typeof MutationObserver !== 'undefined') {
+  //     const observer = new MutationObserver((mutations) => {
+  //       mutations.forEach((mutation) => {
+  //         if (mutation.attributeName === 'class') {
+  //           checkTheme();
+  //         }
+  //       });
+  //     });
 
-      observer.observe(document.documentElement, { attributes: true });
-      return () => observer.disconnect();
-    }
-  }, []);
+  //     observer.observe(document.documentElement, { attributes: true });
+  //     return () => observer.disconnect();
+  //   }
+  // }, []);
 
 
   const setProfile = useCallback(async () => {
@@ -1498,7 +1498,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           </div>}
 
           {/* Left Sidebar */}
-          <div className={`absolute md:relative flex flex-col rounded-tl-xl rounded-bl-xl bg-white dark:bg-stone-950 bottom-0 top-0 left-0 w-80 border-r border-black/10 dark:border-white/10 z-[1]
+          <div className={`absolute md:relative flex flex-col rounded-tl-xl rounded-bl-xl bottom-0 top-0 left-0 w-80 border-r border-white/10 z-[1]
+                          ${theme === "dark" ? 'bg-stone-950' : 'bg-stone-100'}
                           transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+40px)] md:translate-x-0"}`}
             ref={sideBarRef}>
             <div className="p-4 border-b border-black/10 dark:border-white/10">
@@ -1717,7 +1718,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     <EmojiPicker
                       open={isEmojiOpen}
                       onEmojiClick={handleEmojiClick}
-                      theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
+                      theme={theme === "dark" ? Theme.DARK : Theme.LIGHT}
                       width={gifAndEmojiWidth}
                     />
                   </div>
@@ -1742,7 +1743,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     {/* Updated GifPicker with dynamic theme */}
                     <GifPicker
                       tenorApiKey={"AIzaSyBxr4hrP59kdbQV4xJ-t2CSQX0Y6q4gcbA"}
-                      theme={isDarkMode ? GifTheme.DARK : GifTheme.LIGHT}
+                      theme={theme === "dark" ? GifTheme.DARK : GifTheme.LIGHT}
                       onGifClick={handleGifClick}
                       width={gifAndEmojiWidth}
                     />
