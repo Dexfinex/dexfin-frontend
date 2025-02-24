@@ -42,7 +42,15 @@ import {ETHRequestSigningPayload} from "@lit-protocol/pkp-ethers/src/lib/pkp-eth
 import {ethers} from "ethers";
 import {mapChainId2ViemChain} from "../config/networks.ts";
 import {useStore} from "../store/useStore.ts";
+import axios from "axios";
 
+export type WalletType = 'EOA' | 'EMBEDDED' | 'UNKNOWN';
+
+interface UserData {
+    accessToken:string;
+    userId?: string;
+    walletType?:WalletType;
+}
 interface Web3AuthContextType {
     login: () => void;
     logout: () => void;
@@ -77,7 +85,12 @@ interface Web3AuthContextType {
     setWalletClient: React.Dispatch<React.SetStateAction<WalletClient | undefined>>,
     isLoadingStoredWallet: boolean,
     solanaWalletInfo: SolanaWalletInfoType | undefined,
-    signSolanaTransaction: (solanaTransaction: Transaction | VersionedTransaction) => Promise<string | null>
+    signSolanaTransaction: (solanaTransaction: Transaction | VersionedTransaction) => Promise<string | null>,
+
+    userData: UserData | null,
+    fetchUserData: ()=> Promise<void>,
+    getWalletType: () => WalletType,
+    walletType: WalletType
 }
 
 
@@ -132,12 +145,18 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     signSolanaTransaction: async () => {
         return ""
     },
+    userData: null,
+    fetchUserData: async ()=>{},
+    getWalletType: ()=> 'UNKNOWN',
+    walletType: 'UNKNOWN'
 
 };
 
 export const Web3AuthContext = createContext<Web3AuthContextType>(defaultWeb3AuthContextValue);
 const entryPoint = getEntryPoint("0.7");
 const kernelVersion = KERNEL_V3_1;
+
+import { getLoginUserId } from "../hooks/useCalendar.ts";
 
 const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
@@ -152,6 +171,10 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
     const [storedWalletInfo, setStoredWalletInfo] = useLocalStorage<SavedWalletInfo | null>(LOCAL_STORAGE_WALLET_INFO, null)
     const [isLoadingStoredWallet, setIsLoadingStoredWallet] = useState<boolean>(false)
     const [solanaWalletInfo, setSolanaWalletInfo] = useState<SolanaWalletInfoType | undefined>()
+
+    const [userData, setUserData] = useState<UserData | null>(null);
+    const [userDataLoading, setUserDataLoading] = useState<boolean>(false);
+    const [walletType, setWalletType] = useState<WalletType>('UNKNOWN');
 
     // const [chain, setChain] = useState(null);
 
@@ -194,6 +217,57 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
     } = useSession();
 
     // console.log("authMethod", authMethod)
+    const detectWalletType=(): WalletType=>{
+        if(isWagmiWalletConnected){
+            return 'EOA';
+        }
+        if(isConnected&& !isWagmiWalletConnected){
+            return 'EMBEDDED';
+        }
+        return 'UNKNOWN';
+    }
+    const getWalletType = (): WalletType=>{
+        return detectWalletType();
+    }
+
+    const fetchUserData = async () => {
+        try {
+            setUserDataLoading(true);
+            const currentAddress = connectedWalletAddress || (currentAccount?.ethAddress) || address;
+            
+            if (!currentAddress) {
+                console.error("No wallet address available to fetch user data");
+                setUserDataLoading(false);
+                return;
+            }
+            console.log(currentAddress)
+            
+            const currentWalletType= detectWalletType();
+            setWalletType(currentWalletType);
+            
+            // const response = await getLoginUserId(currentAddress, username);
+            const response = await getLoginUserId(currentAddress);
+
+            console.log(response)
+
+
+            console.log(response);
+            setUserData({
+                ...response,
+                wallettype: currentWalletType
+
+            });
+            
+            if (response && response.accessToken) {
+                axios.defaults.headers.common['Authorization'] = `Bearer ${response.accessToken}`;
+            }
+            
+            setUserDataLoading(false);
+        } catch (err) {
+            console.error("Error fetching user data:", err);
+            setUserDataLoading(false);
+        }
+    };
 
     async function setProviderByPKPWallet(chainId: number) {
         try {
@@ -372,6 +446,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             setIsConnected(isWagmiWalletConnected)
             setAddress(connectedWalletAddress as string)
             setChainId(wagmiChainId)
+            setWalletType('EOA')
             connector!.getProvider().then((rawProvider) => {
                 const provider = new Web3Provider(rawProvider as ExternalProvider);
                 setProvider(provider)
@@ -387,6 +462,8 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                     chain: mapChainId2ViemChain[wagmiChainId as number],
                 }).extend(publicActions); // Extend with public actions
                 setWalletClient(walletClient)
+
+                fetchUserData();
             })
         } else {
             setIsConnected(isWagmiWalletConnected)
@@ -455,6 +532,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                     }
 
                     setSolanaWalletInfo(solanaWalletData)
+                    fetchUserData();
                 } catch (err) {
                     console.log("error during initialize solana address", err)
                 }
@@ -473,6 +551,10 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         setChainId(undefined)
         setWalletClient(undefined)
         setIsLoadingStoredWallet(false)
+
+        setUserData(null)
+        setWalletType('UNKNOWN')
+        delete axios.defaults.headers.common['Authorization'];
     }
 
     async function handleGoogleLogin(isSignIn: boolean) {
@@ -592,6 +674,11 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
         walletClient,
         setWalletClient,
+
+        userData,
+        fetchUserData,
+        getWalletType,
+        walletType
     }
 
     return (

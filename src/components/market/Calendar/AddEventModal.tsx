@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { useAddEvent } from '../../../hooks/useCalendar';
+import { addEvent } from '../../../hooks/useCalendar';
 import { DayEvent } from './MarketCalendar';
  
   
@@ -40,8 +40,9 @@ import { DayEvent } from './MarketCalendar';
           project: formData.project,
           location: formData.location
         };
+        console.log(userId)
         
-        const response = await useAddEvent(userId, dataTosend)
+        const response = await addEvent(userId, dataTosend)
 
   
         if (!response.ok) {
@@ -149,6 +150,7 @@ import { DayEvent } from './MarketCalendar';
                   value={formData.project}
                   onChange={(e) => setFormData(prev => ({ ...prev, project: e.target.value }))}
                   className="w-full px-4 py-2 border rounded-lg outline-none bg-white/5 border-white/10 focus:border-white/20"
+                  required
                 />
               </div>
               <div>
@@ -158,6 +160,7 @@ import { DayEvent } from './MarketCalendar';
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                   className="w-full px-4 py-2 border rounded-lg outline-none bg-white/5 border-white/10 focus:border-white/20"
+                  required
                 />
               </div>
             </div>
