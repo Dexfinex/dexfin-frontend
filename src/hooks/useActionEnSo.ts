@@ -77,14 +77,14 @@ export const useEnSoActionMutation = () => {
                 amountIn.push(Number(amountValue).toString());
             }
 
-            const depositBundle = await enSoService.sendBundle({
+            const actionBundle = await enSoService.sendBundle({
                 fromAddress: data.fromAddress,
                 chainId: data.chainId,
                 routingStrategy: data.routingStrategy,
                 actions: generateEnSoExecuteAction({ action: data.action, protocol: data.protocol, tokenIn: data.tokenIn, tokenOut: data.tokenOut, amountIn: amountIn, chainId: Number(data.chainId), receiver: data.receiver })
             })
 
-            return depositBundle;
+            return actionBundle;
         }
     })
 }
