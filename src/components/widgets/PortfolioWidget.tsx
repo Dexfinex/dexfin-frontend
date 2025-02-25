@@ -137,7 +137,7 @@ export const PortfolioWidget: React.FC = () => {
         <div className="flex-none">
           {/* Total Balance */}
           <div className="p-4">
-            <div className="text-sm text-black/60 dark:text-white/60">Total Balance</div>
+            <div className="text-sm">Total Balance</div>
             <div className="text-2xl font-bold mt-1">
               {formatCurrency(portfolioValue)}
             </div>
@@ -175,8 +175,8 @@ export const PortfolioWidget: React.FC = () => {
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: item.color }}
                   />
-                  <span className="text-xs text-black/80 dark:text-white/80">{item.type}</span>
-                  <span className="text-xs text-black/60 dark:text-white/60">{item.percentage}%</span>
+                  <span className="text-xs ">{item.type}</span>
+                  <span className="text-xs">{item.percentage}%</span>
                 </div>
               ))}
             </div>

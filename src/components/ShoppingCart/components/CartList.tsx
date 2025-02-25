@@ -74,7 +74,7 @@ const CartItem = React.memo(({
     }, [item.id, item.quantity, MIN_QUANTITY, onUpdateQuantity]);
 
     return (
-        <div className="flex items-center gap-4 p-3 bg-black/5 dark:bg-white/5 rounded-lg">
+        <div className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
             <img
                 src={item.logo}
                 alt={item.name}
@@ -112,11 +112,7 @@ const CartItem = React.memo(({
                             type="number"
                             placeholder="Enter token amount"
                             _placeholder={{ fontSize: 'xs' }}
-                            bg={isDarkMode ? "whiteAlpha.100" : "blackAlpha.100"}
-                            border="1px solid"
-                            borderColor={isDarkMode ? "whiteAlpha.300" : "blackAlpha.300"}
-                            color={isDarkMode ? "white" : "black"}
-                            _hover={{ borderColor: isDarkMode ? "whiteAlpha.400" : "blackAlpha.400" }}
+                            
                             _focus={{ borderColor: 'blue.300', boxShadow: 'none' }}
                             width="24"
                             textAlign="center"
@@ -155,13 +151,13 @@ const CartList: React.FC<ExtendedCartListProps> = React.memo(({
 
     if (cartItems.length === 0) {
         return (
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full glass">
                 <div className="md:hidden flex justify-end p-2 pt-4">
                     <button onClick={onClose} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-                <div className="flex flex-col items-center justify-center flex-1 text-center p-8">
+                <div className="flex flex-col items-center glass justify-center flex-1 text-center p-8">
                     <ShoppingCart className="w-12 h-12 text-black/40 dark:text-white/40 mb-4" />
                     <p className="text-lg font-medium mb-2">Your cart is empty</p>
                     <p className="text-black/60 dark:text-white/60">Add some coins to get started</p>
@@ -171,7 +167,7 @@ const CartList: React.FC<ExtendedCartListProps> = React.memo(({
     }
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-[#0e0e0e]">
+        <div className="flex flex-col h-full glass">
             <div className="md:hidden flex justify-end p-2 pt-4">
                 <button onClick={onClose} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg">
                     <X className="w-5 h-5" />
@@ -191,7 +187,7 @@ const CartList: React.FC<ExtendedCartListProps> = React.memo(({
                     ))}
                 </div>
             </div>
-            <div className="p-4 border-t border-black/10 dark:border-white/10 bg-white dark:bg-[#0e0e0e]">
+            <div className="p-4 border-t border-black/10 dark:border-white/10 glass">
                 <div className="text-lg font-semibold mb-4">Total: ${formatNumberByFrac(total)}</div>
                 <button
                     onClick={onCheckout}
