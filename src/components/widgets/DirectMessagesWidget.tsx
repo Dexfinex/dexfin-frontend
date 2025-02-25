@@ -10,9 +10,9 @@ import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
 import { Spinner, useToast, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { getWalletProfile } from '../../utils/chatApi';
+import { getWalletProfile, initStream } from '../../utils/chatApi';
 import { IUser, IChat, ChatType } from '../../types/chat.type';
-import { getEnsName, shrinkAddress, extractAddress, getChatHistoryDate, downloadBase64File, getHourAndMinute } from '../../utils/common.util';
+import { getEnsName, shrinkAddress, extractAddress, downloadBase64File, getHourAndMinute } from '../../utils/common.util';
 import { LIMIT, BIG_IMAGE_WIDHT } from '../../utils/chatApi';
 import { ImageWithSkeleton } from '../common/ImageWithSkeleton';
 
@@ -93,7 +93,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Search Address"
-              className="flex-1 bg-black/80 px-3 py-1.5 rounded-lg outline-none text-sm"
+              className="flex-1 px-3 py-1.5 rounded-lg outline-none text-sm caret:black text-black"
             />
 
             {
@@ -121,9 +121,8 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
 };
 
 export const DirectMessagesWidget: React.FC = () => {
-  const { chatUser, setChatUser } = useStore();
+  const { chatUser, setChatUser, receivedMessage, selectedUserInChatModal, isChatOpen, theme } = useStore();
   const { signer, address } = useContext(Web3AuthContext);
-  const [receivedMessage, setReceivedMessage] = useState<any>(null);
   const [isOverlay, setIsOverlay] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
@@ -178,6 +177,20 @@ export const DirectMessagesWidget: React.FC = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isChatOpen) {
+      if (!selectedUser) {
+        setSelectedUser(selectedUserInChatModal)
+        handleSelectUser()
+      } else if (selectedUser.address != selectedUserInChatModal?.address) {
+        setSelectedUser(selectedUserInChatModal)
+        handleSelectUser()
+      } else {
+        handleSelectUser()
+      }
+    }
+  }, [selectedUserInChatModal, isChatOpen])
 
   useEffect(() => {
     console.log('selectedUser = ', selectedUser)
@@ -277,6 +290,7 @@ export const DirectMessagesWidget: React.FC = () => {
   }
 
   const handleSelectUser = async () => {
+    if (!selectedUser) return
     setLoadingChatHistory(true)
 
     const history = await chatUser.chat.history(selectedUser?.address, { limit: LIMIT })
@@ -329,30 +343,12 @@ export const DirectMessagesWidget: React.FC = () => {
   }
 
   const handleReceiveMsg = () => {
-    console.log('handle receive message in DirectMessageWidget')
+    console.log('--------handle receive message in DirectMessageWidget------------')
 
-    if (receivedMessage?.meta?.group == false && receivedMessage.origin == "other") {
-      if (receivedMessage.event == "chat.request") {
-        if (selectedUser?.address == extractAddress(receivedMessage.from)) {
-          setChatHistory(prev =>
-            [...prev, {
-              timestamp: Number(receivedMessage.timestamp),
-              type: receivedMessage.message.type,
-              content: receivedMessage.message.content,
-              fromAddress: extractAddress(receivedMessage.from),
-              toAddress: extractAddress(receivedMessage.to[0]),
-              chatId: receivedMessage.reference,
-              link: null,
-              reaction: ""
-            }]
-          )
-        }
-      } else if (receivedMessage.event == "chat.message") {
-        if (extractAddress(receivedMessage.from) == selectedUser?.address) {
-          if (receivedMessage.message.type == "Reaction") {
-            setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
-          } else {
-            setToBottom(true)
+    if (receivedMessage?.meta?.group == false) {
+      if (receivedMessage.origin == "other") {
+        if (receivedMessage.event == "chat.request") {
+          if (selectedUser?.address == extractAddress(receivedMessage.from)) {
             setChatHistory(prev =>
               [...prev, {
                 timestamp: Number(receivedMessage.timestamp),
@@ -366,7 +362,29 @@ export const DirectMessagesWidget: React.FC = () => {
               }]
             )
           }
+        } else if (receivedMessage.event == "chat.message") {
+          if (extractAddress(receivedMessage.from) == selectedUser?.address) {
+            if (receivedMessage.message.type == "Reaction") {
+              setChatHistory(prev => prev.map(chat => chat.chatId == receivedMessage.message.reference ? { ...chat, reaction: receivedMessage.message.content } : chat))
+            } else {
+              setToBottom(true)
+              setChatHistory(prev =>
+                [...prev, {
+                  timestamp: Number(receivedMessage.timestamp),
+                  type: receivedMessage.message.type,
+                  content: receivedMessage.message.content,
+                  fromAddress: extractAddress(receivedMessage.from),
+                  toAddress: extractAddress(receivedMessage.to[0]),
+                  chatId: receivedMessage.reference,
+                  link: null,
+                  reaction: ""
+                }]
+              )
+            }
+          }
         }
+      } else if (receivedMessage.origin == "self") {
+
       }
     }
   }
@@ -567,7 +585,7 @@ export const DirectMessagesWidget: React.FC = () => {
     const renderReactionBtn = () => <div className={`absolute ${!isOwner ? 'right-[-20px]' : 'left-[-20px]'} bottom-[2px]`}>
       <Popover>
         <PopoverTrigger>
-          <Smile className={`text-white/50 w-4 h-4 cursor-pointer`} />
+          <Smile className={`w-4 h-4 cursor-pointer`} />
         </PopoverTrigger>
         <PopoverContent className='!bg-transparent !border-transparent !w-[200px]'>
           <div className='flex gap-1'>
@@ -608,8 +626,8 @@ export const DirectMessagesWidget: React.FC = () => {
     } else if (type === "File") {
       return <div className={`relative flex flex-col gap-4 items-center w-56 h-20 rounded-lg justify-center  ${!isOwner ? 'bg-white/5' : 'bg-blue-500/20 ml-auto'}`}>
         <div className='flex gap-4 items-center'>
-          <File className='w-10 h-10 text-white/50' />
-          <div className='flex flex-col text-white/50'>
+          <File className='w-10 h-10' />
+          <div className='flex flex-col'>
             <span className='text-md'>{fileName}</span>
             <span className='text-sm text-center'>{fileSize}B</span>
           </div>
@@ -619,75 +637,6 @@ export const DirectMessagesWidget: React.FC = () => {
         {reactionIcon()}
       </div>
     }
-  }
-
-  const initStream = async (user: any) => {
-    const stream = await user.initStream(
-      [
-        CONSTANTS.STREAM.CHAT, // Listen for chat messages
-        CONSTANTS.STREAM.NOTIF, // Listen for notifications
-        CONSTANTS.STREAM.CONNECT, // Listen for connection events
-        CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
-      ],
-      {
-        // Filter options:
-        filter: {
-          // Listen to all channels and chats (default):
-          channels: ['*'],
-          chats: ['*'],
-
-          // Listen to specific channels and chats:
-          // channels: ['channel-id-1', 'channel-id-2'],
-          // chats: ['chat-id-1', 'chat-id-2'],
-
-          // Listen to events with a specific recipient:
-          // recipient: '0x...' (replace with recipient wallet address)
-        },
-        // Connection options:
-        connection: {
-          retries: 3, // Retry connection 3 times if it fails
-        },
-        raw: false, // Receive events in structured format
-      }
-    );
-
-    // Stream connection established:
-    stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
-      console.log('Stream Connected ', a);
-
-      // // Send initial message to PushAI Bot:
-      // console.log('Sending message to PushAI Bot');
-
-      // await userAlice.chat.send(pushAIWalletAddress, {
-      //   content: 'Hello, from Alice',
-      //   type: 'Text',
-      // });
-
-      // console.log('Message sent to PushAI Bot');
-    });
-
-    stream.on(CONSTANTS.STREAM.CHAT, (message: any) => {
-      console.log('Encrypted Message Received');
-      console.log(message); // Log the message payload
-      setReceivedMessage(message)
-    });
-
-    // Setup event handling
-    stream.on(CONSTANTS.STREAM.NOTIF, (data: any) => {
-      console.log('notify data = ', data);
-    });
-
-    // Chat operation received:
-    stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
-      console.log('Chat operation received.');
-      console.log(data); // Log the chat operation data
-    });
-
-    await stream.connect(); // Establish the connection after setting up listeners
-    // Stream disconnection:
-    stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
-      console.log('Stream Disconnected');
-    });
   }
 
   const handleUnlock = async () => {
@@ -813,12 +762,14 @@ export const DirectMessagesWidget: React.FC = () => {
         <Search className='w-4 h-4' />
       </button>} */}
 
-      <div className='border-b border-white/30 mx-4 flex items-center justify-between p-2'>
+      <div className={`border-b ${theme == "dark" ? "border-white/30" : "border-black/30"}  mx-4 flex items-center justify-between p-2`}>
         <div className='flex-1'>
           {
             selectedUser && <div className='flex items-center gap-4'>
               <img src={selectedUser?.profilePicture} className='rounded-full w-6 h-6' />
-              <span className='text-sm text-white/50'>{selectedUser.name ? selectedUser.name + " | " + shrinkAddress(selectedUser.address) : selectedUser.address}</span>
+              <span className={`text-sm ${theme == "dark" ? "text-white/50" : "text-black/50"} `}>
+                {selectedUser.name ? selectedUser.name + " | " + shrinkAddress(selectedUser.address) : selectedUser.address}
+              </span>
             </div>
           }
         </div>
@@ -835,7 +786,7 @@ export const DirectMessagesWidget: React.FC = () => {
               <Spinner />
             </div>
             :
-            chatHistory.length > 0 ? <>
+            (selectedUser && chatHistory.length > 0) ? <>
               <div ref={topRef}></div>
               {
                 loadingPrevChat && <div className='w-full flex justify-center'>
@@ -890,7 +841,7 @@ export const DirectMessagesWidget: React.FC = () => {
             className='!absolute bottom-[62px] left-[16px]'>
             <EmojiPicker open={isEmojiOpen}
               onEmojiClick={handleEmojiClick}
-              theme={Theme.DARK}
+              theme={theme === "dark" ? Theme.DARK : Theme.LIGHT}
             />
           </div>
 
@@ -912,7 +863,7 @@ export const DirectMessagesWidget: React.FC = () => {
             className='!absolute bottom-[62px] right-[16px]'>
             <GifPicker
               tenorApiKey={"AIzaSyBxr4hrP59kdbQV4xJ-t2CSQX0Y6q4gcbA"}
-              theme={GifTheme.DARK}
+              theme={theme === "dark" ? GifTheme.DARK : GifTheme.LIGHT}
               onGifClick={handleGifClick}
             />
           </div>}

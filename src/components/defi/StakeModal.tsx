@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useEffect } from "react";
-import { X, ArrowLeft } from 'lucide-react';
+import { X, ArrowLeft, ArrowDown } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
 import { TokenChainIcon } from "../swap/components/TokenIcon";
@@ -12,35 +12,33 @@ import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
+import { STAKING_TOKENS } from "../../constants/mock/defi.ts";
 
 interface ModalState {
     type: string | null;
     position?: Position;
 }
 
-interface RedeemModalProps {
+interface StakeModalProps {
     setModalState: (state: ModalState) => void,
     showPreview: boolean,
     modalState: ModalState,
     setShowPreview: (preview: boolean) => void,
-    withdrawPercent: string,
-    setWithdrawPercent: (percent: string) => void,
     tokenAmount: string,
-    token2Amount: string,
     confirming: string,
-    redeemHandler: () => void
+    stakeHandler: () => void,
+    setTokenAmount: (amount: string) => void,
 }
 
-
-const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, withdrawPercent, setWithdrawPercent, tokenAmount, token2Amount, confirming, redeemHandler }) => {
+const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, stakeHandler, setTokenAmount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
     const { chainId } = useContext(Web3AuthContext);
-    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation()
-
-    const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0]?.contract_address, Number(chainId)) : null;
-    const tokenInfo1 = modalState?.position ? modalState.position.tokens[0] : null;
-    const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1]?.contract_address, Number(chainId)) : null;
-    const tokenInfo2 = modalState?.position ? modalState.position.tokens[1] : null;
+    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
+    const stakeTokenInfo = STAKING_TOKENS.find((token) => token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[0].symbol);
+    const tokenInBalance = stakeTokenInfo?.tokenIn ? getTokenBalance(stakeTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
+    const tokenInInfo = stakeTokenInfo?.tokenIn ? stakeTokenInfo?.tokenIn : null;
+    const tokenOutBalance = stakeTokenInfo?.tokenOut ? getTokenBalance(stakeTokenInfo?.tokenOut?.contract_address || "", Number(chainId)) : null;
+    const tokenOutInfo = stakeTokenInfo?.tokenOut ? stakeTokenInfo?.tokenOut : null;
 
     const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
 
@@ -58,33 +56,23 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
         return 0;
     }, [getTokenPrice, nativeTokenAddress, chainId, tokenPrices])
 
-    const priceRatio = useMemo(() => {
-        if (tokenBalance1?.usdPrice && tokenBalance2?.usdPrice) {
-            const ratio = tokenBalance1?.usdPrice / tokenBalance2?.usdPrice
-            return ratio > 1 ? 1 : ratio;
-        }
-        return 1;
-    }, [tokenBalance1, tokenBalance2]);
-
     const isErrorTokenAmount = useMemo(() => {
         if (tokenAmount === "") {
             return false;
         }
-        if (0 < Number(tokenAmount) && Number(tokenAmount) <= Number(tokenBalance1?.balance)) {
+        if (0 < Number(tokenAmount) && Number(tokenAmount) <= Number(tokenInBalance?.balance)) {
             return false;
         }
         return true;
-    }, [tokenAmount, tokenBalance1])
+    }, [tokenAmount, tokenInBalance])
 
-    const isErrorToken2Amount = useMemo(() => {
-        if (token2Amount === "") {
-            return false;
+    const priceRatio = useMemo(() => {
+        if (tokenInBalance?.usdPrice && tokenOutBalance?.usdPrice) {
+            const ratio = tokenInBalance?.usdPrice / tokenOutBalance?.usdPrice
+            return ratio > 1 ? 1 : ratio;
         }
-        if (0 < Number(token2Amount) && Number(token2Amount) <= Number(tokenBalance2?.balance)) {
-            return false;
-        }
-        return true;
-    }, [token2Amount, tokenBalance2])
+        return 1;
+    }, [tokenInBalance, tokenOutBalance]);
 
     useEffect(() => {
         if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
@@ -104,7 +92,7 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                         </button>
                     }
                     <h3 className="text-xl font-medium">
-                        Redeem
+                        Stake
                     </h3>
                     <button
                         onClick={() => setModalState({ type: null })}
@@ -117,19 +105,21 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
                         <img
-                            src={modalState?.position?.logo}
-                            alt={modalState?.position?.protocol}
+                            src={modalState.position?.logo}
+                            alt={modalState.position?.protocol}
                             className="w-8 h-8"
                         />
                         <div>
-                            <div className="font-medium">{modalState?.position?.protocol}</div>
+                            <div className="font-medium">{modalState.position?.protocol}</div>
                             <div className="text-sm text-white/60">
-                                {`${modalState?.position?.tokens[0].symbol}/${modalState?.position?.tokens[1].symbol} ${modalState?.position?.tokens[2].symbol}`}
+                                {
+                                    modalState.position?.tokens.map((token) => `${token?.symbol} `)
+                                }
                             </div>
                         </div>
                         <div className="ml-auto text-right">
                             <div className={`text-emerald-400`}>
-                                {modalState?.position?.apy || 0}% APY
+                                {modalState.position?.apy || 0}% APY
                             </div>
                         </div>
                     </div>
@@ -140,22 +130,28 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                 <div className='flex justify-between mt-2'>
                                     <div>
                                         <span className='ml-2 text-2xl'>
-                                            {`${formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenBalance1?.symbol}`}
+                                            {`${formatNumberByFrac(Number(tokenAmount), 6)} ${tokenInInfo?.symbol}`}
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenInInfo?.logo || ""} alt={tokenInInfo?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
+                                    </div>
+                                </div>
+
+                                <div className='flex justify-center'>
+                                    <div className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400">
+                                        <ArrowDown className="w-3 h-3" />
                                     </div>
                                 </div>
 
                                 <div className='flex justify-between mt-2'>
                                     <div>
                                         <span className='ml-2 text-2xl'>
-                                            {`${formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenBalance2?.symbol}`}
+                                            {`${formatNumberByFrac(Number(tokenAmount) * Number(priceRatio), 6)} ${tokenOutInfo?.symbol}`}
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
                                     </div>
                                 </div>
 
@@ -166,41 +162,24 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <span className='ml-2 text-sm'>
-                                            1 {tokenBalance2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenBalance1?.symbol}
+                                        <span className='ml-2 text-sm text-white/60'>
+                                            1 {tokenOutInfo?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenInInfo?.symbol}
                                         </span>
                                     </div>
                                 </div>
                                 <div className='flex justify-between'>
                                     <div>
                                         <span className='ml-2 text-sm text-white/60'>
-                                            New {tokenBalance1?.symbol || ""} Position
+                                            New {tokenOutBalance?.symbol || ""} amount
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenOutBalance?.logo || ""} alt={tokenOutBalance?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <span className='ml-2'>
-                                            {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
+                                            {formatNumberByFrac(Number(tokenOutBalance?.balance) + Number(tokenAmount), 4)}
                                         </span>
                                         <span className='ml-1 text-sm text-white/60'>
-                                            {tokenBalance1?.symbol || ""}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className='flex justify-between'>
-                                    <div>
-                                        <span className='ml-2 text-sm text-white/60'>
-                                            New {tokenBalance2?.symbol || ""} Position
-                                        </span>
-                                    </div>
-                                    <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
-                                        <span className='ml-2'>
-                                            {formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
-                                        </span>
-                                        <span className='ml-1 text-sm text-white/60'>
-                                            {tokenBalance2?.symbol || ""}
+                                            {tokenOutBalance?.symbol || ""}
                                         </span>
                                     </div>
                                 </div>
@@ -212,7 +191,7 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <span className='ml-2 text-sm'>
+                                        <span className='ml-2'>
                                             {
                                                 isGasEstimationLoading ?
                                                     <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
@@ -225,76 +204,61 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                             <>
                                 <div className="bg-white/5 rounded-xl p-4">
                                     <div className="text-sm text-white/60 mb-2">
-                                        Withdrawal amount
+                                        Amount
                                     </div>
-                                    <div className='relative flex flex-row items-center justify-center w-full'>
+                                    <div className='relative flex'>
                                         <input
-                                            minLength={1}
-                                            maxLength={3}
-                                            inputMode="numeric" autoComplete="off" autoCorrect="off" type="text" pattern="^\d*$"
-                                            placeholder="0" spellCheck="false"
-                                            value={withdrawPercent}
+                                            value={tokenAmount}
                                             onChange={(e) => {
-                                                if (0 < Number(e.target.value) && Number(e.target.value) <= 100 && !isNaN(Number(e.target.value))) {
-                                                    setWithdrawPercent(e.target.value)
-                                                }
+                                                setTokenAmount(e.target.value);
                                             }}
-                                            className={`bg-transparent text-5xl outline-none`}
-                                            style={{ width: (withdrawPercent.length || 1) * 30 }}
+                                            type="text"
+                                            className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""}`}
+                                            placeholder="0.00"
                                         />
-                                        <div className='text-4xl text-black ml-2'>%</div>
+                                        <div className='flex items-center fixed right-12'>
+                                            <TokenChainIcon src={tokenInInfo?.logo || ""} alt={tokenInInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                            <span className='ml-2'>
+                                                {tokenInInfo?.symbol || ""}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className='flex w-full items-center justify-center mt-4 gap-4'>
-                                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
-                                            onClick={() => setWithdrawPercent("25")}>
-                                            25%
-                                        </button>
-                                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
-                                            onClick={() => setWithdrawPercent("50")}>
-                                            50%
-                                        </button>
-                                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
-                                            onClick={() => setWithdrawPercent("75")}>
-                                            75%
-                                        </button>
-                                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
-                                            onClick={() => setWithdrawPercent("100")}>
-                                            MAX
-                                        </button>
+                                    <div className="flex items-center justify-between mt-2 text-sm">
+                                        <span className="text-white/60">
+                                            {`Balance: ${formatNumberByFrac(Number(tokenInBalance?.balance) || 0)}`}
+                                        </span>
+                                        <button className="text-blue-400" onClick={() => {
+                                            setTokenAmount((tokenInBalance?.balance || "") + "");
+                                        }}>MAX</button>
                                     </div>
                                 </div>
 
                                 <div className='mt-2 mb-2 flex flex-col gap-3'>
-                                    <div className='flex justify-between'>
+                                    <div className='flex justify-between mt-2'>
                                         <div>
                                             <span className='ml-2 text-sm text-white/60'>
-                                                {tokenBalance1?.symbol || ""} Position
+                                                Rate
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
-                                            <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
-                                            <span className='ml-2'>
-                                                {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted))}
-                                            </span>
-                                            <span className='ml-1 text-sm text-white/60'>
-                                                {tokenBalance2?.symbol || ""}
+                                            <span className='ml-2 text-sm text-white/60'>
+                                                1 {tokenOutInfo?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenInInfo?.symbol}
                                             </span>
                                         </div>
                                     </div>
-
                                     <div className='flex justify-between'>
                                         <div>
                                             <span className='ml-2 text-sm text-white/60'>
-                                                {tokenBalance2?.symbol || ""} Position
+                                                Staked {tokenOutInfo?.symbol || ""}
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
-                                            <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                            <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                             <span className='ml-2'>
-                                                {formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted))}
+                                                {formatNumberByFrac(Number(tokenOutBalance?.balance))}
                                             </span>
                                             <span className='ml-1 text-sm text-white/60'>
-                                                {tokenBalance2?.symbol || ""}
+                                                {tokenOutInfo?.symbol || ""}
                                             </span>
                                         </div>
                                     </div>
@@ -306,7 +270,7 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
-                                            <span className='ml-2 text-sm '>
+                                            <span className='ml-2 text-sm'>
                                                 {
                                                     isGasEstimationLoading ?
                                                         <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
@@ -319,16 +283,16 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                     }
 
                     <button
-                        className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || isErrorToken2Amount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
+                        className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
                         onClick={async () => {
                             if (showPreview) {
-                                redeemHandler()
+                                stakeHandler()
                             } else {
                                 setShowPreview(true);
                             }
                         }}
                     >
-                        {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Redeem" : "Next"}
+                        {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Stake" : "Next"}
                     </button>
                 </div>
             </div>
@@ -336,4 +300,4 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
     )
 }
 
-export default RedeemModal;
+export default StakeModal;

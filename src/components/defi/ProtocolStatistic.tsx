@@ -3,6 +3,7 @@ import React from "react";
 import useDefiStore from '../../store/useDefiStore';
 
 import { getTypeIcon } from "../../utils/defi.util";
+import { formatNumberByFrac } from "../../utils/common.util";
 
 interface ProtocolStatisticProps {
 
@@ -10,15 +11,15 @@ interface ProtocolStatisticProps {
 
 const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
     const { positions, protocolTypes } = useDefiStore();
+    const protocolList = [...new Set(positions.map((position) => (position.protocol)))]
 
     return (
-        <div className="grid grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             {/* Protocol Breakdown */}
             <div className="bg-white/5 rounded-xl p-4">
                 <h3 className="text-lg font-medium mb-4">Protocol Breakdown</h3>
                 <div className="space-y-3">
-                    {positions.map((position) => {
-                        const protocol = position.protocol;
+                    {protocolList.map((protocol) => {
                         const protocolPositions = positions.filter(p => p.protocol === protocol);
                         const totalValue = protocolPositions.reduce((sum, p) => sum + p.amount, 0);
                         const totalTVL = positions.reduce((sum, p) => sum + p.amount, 0);
@@ -33,7 +34,7 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
                                 <div className="flex-1">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="font-medium">{protocol}</span>
-                                        <span>${totalValue.toLocaleString()}</span>
+                                        <span>${formatNumberByFrac(totalValue)}</span>
                                     </div>
                                     <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                                         <div
@@ -45,13 +46,19 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
                             </div>
                         );
                     })}
+                    {
+                        protocolList.length === 0 &&
+                        <div className='w-full h-[100px] flex justify-center items-center align-center'>
+                            <h2 className='text-white/60 italic'>No data</h2>
+                        </div>
+                    }
                 </div>
             </div>
 
             {/* Type Distribution */}
             <div className="bg-white/5 rounded-xl p-4">
                 <h3 className="text-lg font-medium mb-4">Type Distribution</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {protocolTypes.map((type) => {
                         const typePositions = positions.filter(p => p.type === type);
                         const totalValue = typePositions.reduce((sum, p) => sum + p.amount, 0);
@@ -70,7 +77,7 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-white/60">TVL Share</span>
-                                    <span>{((totalValue / totalTVL) * 100).toFixed(1)}%</span>
+                                    <span>{formatNumberByFrac((totalValue / totalTVL) * 100)}%</span>
                                 </div>
                                 <div className="h-2 bg-white/10 rounded-full overflow-hidden mt-2">
                                     <div
@@ -82,6 +89,12 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
                         );
                     })}
                 </div>
+                {
+                    protocolTypes.length === 0 &&
+                    <div className='w-full h-[100px] flex justify-center items-center align-center'>
+                        <h2 className='text-white/60 italic'>No data</h2>
+                    </div>
+                }
             </div>
         </div>
     )

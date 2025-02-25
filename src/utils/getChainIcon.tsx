@@ -14,6 +14,8 @@ export function getChainIcon(chainId?: number) {
             return "https://cryptologos.cc/logos/arbitrum-arb-logo.svg";
         case 8453:
             return "https://assets.coingecko.com/asset_platforms/images/131/small/base-network.png";
+        case 900:
+            return "https://assets.coingecko.com/coins/images/4128/small/solana.png";
         default:
             return null;
     }

@@ -18,7 +18,7 @@ import { AuthMethodType } from "@lit-protocol/constants";
 import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
 import { LOCAL_STORAGE_AUTH_REDIRECT_TYPE } from "./constants";
 import { TradingViewModal } from './components/TradingViewModal.tsx';
-import { KEY_NAME } from './utils/chatApi.ts';
+import { initStream, KEY_NAME } from './utils/chatApi.ts';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 
 export default function App() {
@@ -89,21 +89,23 @@ export default function App() {
     }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen]);
 
     const unlockProfile = async () => {
-        // const chatKey = localStorage.getItem(KEY_NAME)
+        const chatKey = localStorage.getItem(KEY_NAME)
 
-        // if (chatKey) {
-        //     const key: { account: string; decryptedPgpPrivateKey: string } = JSON.parse(chatKey)
+        if (chatKey) {
+            const key: { account: string; decryptedPgpPrivateKey: string } = JSON.parse(chatKey)
 
-        //     if (address === key.account) {
-        //         const pushUser = await PushAPI.initialize({
-        //             decryptedPGPPrivateKey: key.decryptedPgpPrivateKey,
-        //             env: CONSTANTS.ENV.STAGING,
-        //             account: key.account,
-        //         })
-                
-        //         setChatUser(pushUser)
-        //     }
-        // }
+            if (address === key.account) {
+                console.log('auto initialize push user')
+                const pushUser = await PushAPI.initialize({
+                    decryptedPGPPrivateKey: key.decryptedPgpPrivateKey,
+                    env: CONSTANTS.ENV.PROD,
+                    account: key.account,
+                })
+
+                setChatUser(pushUser)
+                initStream(pushUser)
+            }
+        }
     }
 
     // remove authMethod state when need to create new one

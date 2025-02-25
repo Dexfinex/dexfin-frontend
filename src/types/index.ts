@@ -1,3 +1,5 @@
+import { BrianCoinData } from "./brian.type";
+
 // Add missing types
 export interface CoinData {
   id: string;
@@ -22,9 +24,47 @@ export interface Message {
   role: string;
   content: string;
   tip?: string;
-  priceData?: CoinData;
-  trending?: TrendingCoin[];
+  priceData?: BrianCoinData;
+  trending?: AnalysisTrendingCoin[];
+  losers?: AnalysisLoser[]; 
+  gainers?: AnalysisGainer[]; 
   news?: NewsItem[];
+  link?: string;
+}
+
+export interface AnalysisLoser {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  usd24hChange: number;
+  usd24hVol: number;
+  analysis: string;
+}
+
+export interface AnalysisGainer {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  usd24hChange: number;
+  usd24hVol: number;
+  analysis: string;
+}
+
+export interface AnalysisTrendingCoin {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  marketCapRank: number;
+  priceUsd: number;
+  volume: number;
+  analysis: string;
 }
 
 export interface TrendingCoin {
@@ -241,6 +281,9 @@ export interface DefillamaProtocol {
   change_7d: number;
   tokenBreakdowns: Object;
   mcap?: number;
+  category: string;
+  dailyUsers: number;
+  weeklyRevenue: number;
 }
 
 export interface DefillamaPool {
@@ -257,6 +300,23 @@ export interface DefillamaCategory {
   tvl: number;
   change24h: number;
 }
+export interface DefillamaChainTVL {
+  gecko_id: string;
+  tvl: string;
+  tokenSymbol: string;
+  cmcId: string;
+  name: string;
+  chainId: number;
+}
+export interface DefillamaDexVolume {
+  total24h: number;
+  totalDataChart?: any[];
+  change_1d: number;
+  allChains?: any[];
+  protocols?: any[];
+}
+
+
 export interface BrianKnowledgeData {
   message: string;
 }

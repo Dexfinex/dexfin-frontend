@@ -26,6 +26,7 @@ import { ChatGroupModal } from './ChatGroupModal';
 import { IUser, IGroup, ChatType, IChat, ProfileType, ChatModeType, ReactionType } from '../types/chat.type';
 import { ChatMessages } from './ChatMessages';
 import { ChatHelpModal } from './ChatHelpModal';
+import { initStream } from '../utils/chatApi';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -46,7 +47,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSendModalActive, setIsSendModalActive] = useState(false);
   const [isHelpModalActive, setIsHelpModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
-  const { setChatUser, chatUser } = useStore();
+  const { setChatUser, chatUser, receivedMessage, setSelectedUserInChatModal, theme } = useStore();
   const toast = useToast()
 
   const [loading, setLoading] = useState(false);
@@ -67,7 +68,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [isGifOpen, setIsGifOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [receivedMessage, setReceivedMessage] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<any>();
   const [reactions, setReactions] = useState<Array<ReactionType>>([]);
   const [gifAndEmojiWidth, setGifAndEmojiWidth] = useState("350px");
@@ -79,6 +79,36 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const navBtnRef = useRef<HTMLButtonElement>(null);
   const gifBtnRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // //light mode and dark mode
+  // const [isDarkMode, setIsDarkMode] = useState(true);
+
+  // useEffect(() => {
+  //   const checkTheme = () => {
+  //     if (document.documentElement.classList.contains('dark')) {
+  //       setIsDarkMode(true);
+  //     } else {
+  //       setIsDarkMode(false);
+  //     }
+  //   };
+
+  //   // Check initial theme
+  //   checkTheme();
+
+  //   // Set up MutationObserver to watch for class changes on the html element
+  //   if (typeof MutationObserver !== 'undefined') {
+  //     const observer = new MutationObserver((mutations) => {
+  //       mutations.forEach((mutation) => {
+  //         if (mutation.attributeName === 'class') {
+  //           checkTheme();
+  //         }
+  //       });
+  //     });
+
+  //     observer.observe(document.documentElement, { attributes: true });
+  //     return () => observer.disconnect();
+  //   }
+  // }, []);
+
 
   const setProfile = useCallback(async () => {
     const profile = await chatUser.profile.info()
@@ -276,75 +306,6 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   // useEffect(() => {
   //   console.log('request users = ', requestUsers)
   // }, [requestUsers])
-
-  const initStream = async (user: any) => {
-    const stream = await user.initStream(
-      [
-        CONSTANTS.STREAM.CHAT, // Listen for chat messages
-        CONSTANTS.STREAM.NOTIF, // Listen for notifications
-        CONSTANTS.STREAM.CONNECT, // Listen for connection events
-        CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
-      ],
-      {
-        // Filter options:
-        filter: {
-          // Listen to all channels and chats (default):
-          channels: ['*'],
-          chats: ['*'],
-
-          // Listen to specific channels and chats:
-          // channels: ['channel-id-1', 'channel-id-2'],
-          // chats: ['chat-id-1', 'chat-id-2'],
-
-          // Listen to events with a specific recipient:
-          // recipient: '0x...' (replace with recipient wallet address)
-        },
-        // Connection options:
-        connection: {
-          retries: 3, // Retry connection 3 times if it fails
-        },
-        raw: false, // Receive events in structured format
-      }
-    );
-
-    // Stream connection established:
-    stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
-      console.log('Stream Connected ', a);
-
-      // // Send initial message to PushAI Bot:
-      // console.log('Sending message to PushAI Bot');
-
-      // await userAlice.chat.send(pushAIWalletAddress, {
-      //   content: 'Hello, from Alice',
-      //   type: 'Text',
-      // });
-
-      // console.log('Message sent to PushAI Bot');
-    });
-
-    stream.on(CONSTANTS.STREAM.CHAT, (message: any) => {
-      console.log('Encrypted Message Received');
-      console.log(message); // Log the message payload
-      setReceivedMessage(message)
-    });
-
-    // Setup event handling
-    stream.on(CONSTANTS.STREAM.NOTIF, (data: any) => {
-      console.log('notify data = ', data);
-    });
-
-    // Chat operation received:
-    stream.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
-      console.log('Chat operation received.');
-      console.log(data); // Log the chat operation data
-    });
-
-    await stream.connect(); // Establish the connection after setting up listeners
-    // Stream disconnection:
-    stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
-      console.log('Stream Disconnected');
-    });
-  }
 
   const handleReceiveMsg = async () => {
     // handle group messages
@@ -800,6 +761,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setLoadingChatHistory(true)
     setChatHistory([])
     setSelectedUser(user)
+    setSelectedUserInChatModal(user)
     console.log('user = ', user)
 
     try {
@@ -1531,15 +1493,17 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             </button>
           </div>}
 
-          {loading && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10'>
+          {loading && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl'>
             <Spinner />
           </div>}
 
           {/* Left Sidebar */}
-          <div className={`absolute md:relative flex flex-col rounded-tl-xl rounded-bl-xl bg-stone-950 bottom-0 top-0 left-0 w-80 border-r border-white/10 z-[1]
+          <div className={`absolute md:relative flex flex-col rounded-tl-xl rounded-bl-xl bottom-0 top-0 left-0 w-80 border-r border-white/10 z-[1]
+                          ${theme === "dark" ? 'bg-stone-950' : 'bg-stone-100'}
                           transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+40px)] md:translate-x-0"}`}
             ref={sideBarRef}>
             <div className="p-4 border-b border-white/10">
+              {/* Updated button styles with bg-black/10 dark:bg-white/10 */}
               <div className="flex items-center gap-2 mb-4">
                 <button
                   onClick={() => setChatMode('group')}
@@ -1598,6 +1562,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   <img src={ownProfile.picture} className='rounded-full w-10 h-10' />
                   <Clipboard address={address} ensName='' />
                 </div>
+                {/* Updated icon style with text-black/50 dark:text-white/50 */}
                 <Edit className='text-white/50 w-4 h-4 cursor-pointer' onClick={() => setIsEditProfileActive(true)} />
               </div>}
             </div>
@@ -1749,14 +1714,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
                   <div ref={emojiPickRef}
                     className='!absolute bottom-[62px] left-[16px]'>
+                    {/* Updated EmojiPicker with dynamic theme */}
                     <EmojiPicker
                       open={isEmojiOpen}
                       onEmojiClick={handleEmojiClick}
-                      theme={Theme.DARK}
+                      theme={theme === "dark" ? Theme.DARK : Theme.LIGHT}
                       width={gifAndEmojiWidth}
                     />
                   </div>
 
+                  {/* Updated textarea with bg-black/5 dark:bg-white/5 */}
                   <textarea
                     ref={textareaRef}
                     value={message}
@@ -1764,7 +1731,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     onKeyDown={handleKeyDown}
                     placeholder="Type a message..."
                     className="flex-1 bg-white/5 px-4 py-2 rounded-lg outline-none resize-none overflow-hidden"
-                    rows={1} // Adjust rows dynamically
+                    rows={1}
                   />
 
                   <button className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors" ref={gifBtnRef} onClick={() => setIsGifOpen(!isGifOpen)}>
@@ -1773,9 +1740,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
                   {isGifOpen && <div ref={gifPickRef}
                     className='!absolute bottom-[62px] right-[16px]'>
+                    {/* Updated GifPicker with dynamic theme */}
                     <GifPicker
                       tenorApiKey={"AIzaSyBxr4hrP59kdbQV4xJ-t2CSQX0Y6q4gcbA"}
-                      theme={GifTheme.DARK}
+                      theme={theme === "dark" ? GifTheme.DARK : GifTheme.LIGHT}
                       onGifClick={handleGifClick}
                       width={gifAndEmojiWidth}
                     />

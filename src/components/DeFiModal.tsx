@@ -5,8 +5,7 @@ import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useD
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import useDefiStore, { Position } from '../store/useDefiStore';
 import useTokenBalanceStore from '../store/useTokenBalanceStore';
-import { useSendDepositMutation } from '../hooks/useDeposit';
-import { useRedeemEnSoMutation } from '../hooks/useRedeemEnSo.ts';
+import { useEnSoActionMutation } from '../hooks/useActionEnSo.ts';
 import useGasEstimation from "../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../hooks/useGetTokenPrices';
 import useTokenStore from "../store/useTokenStore.ts";
@@ -16,10 +15,13 @@ import ProtocolStatistic from './defi/ProtocolStatistic.tsx';
 
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
 import { mapChainId2NativeAddress } from "../config/networks.ts";
+import { STAKING_TOKENS } from '../constants/mock/defi.ts';
 import { OfferingList } from './defi/OfferlingList.tsx';
 import GlobalMetric from './defi/GlobalMetric.tsx';
 import RedeemModal from './defi/RedeemModal.tsx';
 import DepositModal from './defi/DepositModal.tsx';
+import StakeModal from './defi/StakeModal.tsx';
+import UnStakeModal from './defi/UnStakeModal.tsx';
 
 interface DeFiModalProps {
   isOpen: boolean;
@@ -27,13 +29,13 @@ interface DeFiModalProps {
 }
 
 interface ModalState {
-  type: 'deposit' | 'redeem' | 'borrow' | 'repay' | null;
+  type: string | null;
   position?: Position;
 }
 
 export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'explore'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'explore'>('explore');
   const [selectedPositionType, setSelectedPositionType] = useState<Position['type'] | 'ALL'>('ALL');
   const [modalState, setModalState] = useState<ModalState>({ type: null });
   const [tokenAmount, setTokenAmount] = useState("");
@@ -45,11 +47,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const [withdrawPercent, setWithdrawPercent] = useState("1");
 
-  const { mutate: sendDepositMutate } = useSendDepositMutation();
-  const { mutate: redeemEnSoMutate } = useRedeemEnSoMutation();
+  const { mutate: enSoActionMutation } = useEnSoActionMutation();
 
   const { chainId, address, signer, } = useContext(Web3AuthContext);
-  const { positions, } = useDefiStore();
+  useDefiStore();
 
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation()
@@ -81,14 +82,14 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const isLoading = isLoadingPosition || isLoadingProtocol;
 
-  const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0].contract_address, Number(chainId)) : null;
-  const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1].contract_address, Number(chainId)) : null;
+  const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0]?.contract_address, Number(chainId)) : null;
+  const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1]?.contract_address, Number(chainId)) : null;
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const handleAction = (type: 'deposit' | 'redeem' | 'borrow' | 'repay', position: Position) => {
+  const handleAction = (type: string, position: Position) => {
     setModalState({ type, position });
   };
 
@@ -96,16 +97,117 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     if (signer && Number(tokenAmount) > 0 && Number(token2Amount) > 0) {
       setConfirming("Approving...");
 
-      sendDepositMutate({
+      enSoActionMutation({
         chainId: Number(chainId),
         fromAddress: address,
         routingStrategy: "router",
         action: "deposit",
         protocol: (modalState.position?.protocol_id || "").toLowerCase(),
         tokenIn: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
-        tokenOut: modalState?.position?.address || "",
+        tokenOut: [modalState?.position?.address || ""],
         amountIn: [Number(tokenAmount), Number(token2Amount || 0)],
-        primaryAddress: modalState.position?.factory || "",
+        signer: signer,
+        receiver: address,
+        gasPrice: gasData.gasPrice,
+        gasLimit: gasData.gasLimit
+      }, {
+        onSuccess: async (txData) => {
+          if (signer) {
+            setConfirming("Executing...");
+            // execute defi action
+            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+              setConfirming("")
+              return null;
+            });
+            if (transactionResponse) {
+              const receipt = await transactionResponse.wait();
+              setHash(receipt.transactionHash);
+              setTxModalOpen(true);
+              await refetchDefiPositionByWallet();
+              await refetchDefiProtocolByWallet();
+
+              setTokenAmount("");
+              setToken2Amount("");
+              setShowPreview(false);
+              setModalState({ type: null });
+            }
+
+          }
+          setConfirming("");
+        },
+        onError: async (e) => {
+          console.error(e)
+          setConfirming("");
+        }
+      })
+    }
+  }
+
+  const stakeHandler = async () => {
+    if (signer && Number(tokenAmount) > 0) {
+      setConfirming("Approving...");
+      const stakeTokenInfo = STAKING_TOKENS.find((token) => token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[0].symbol);
+
+      enSoActionMutation({
+        chainId: Number(chainId),
+        fromAddress: address,
+        routingStrategy: "router",
+        action: "deposit",
+        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+        tokenIn: [stakeTokenInfo?.tokenIn?.contract_address || ""],
+        tokenOut: [stakeTokenInfo?.tokenOut?.contract_address || ""],
+        amountIn: [Number(tokenAmount)],
+        signer: signer,
+        receiver: address,
+        gasPrice: gasData.gasPrice,
+        gasLimit: gasData.gasLimit
+      }, {
+        onSuccess: async (txData) => {
+          if (signer) {
+            setConfirming("Executing...");
+            // execute defi action
+            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+              setConfirming("")
+              return null;
+            });
+            if (transactionResponse) {
+              const receipt = await transactionResponse.wait();
+              setHash(receipt.transactionHash);
+              setTxModalOpen(true);
+              await refetchDefiPositionByWallet();
+              await refetchDefiProtocolByWallet();
+
+              setTokenAmount("");
+              setToken2Amount("");
+              setShowPreview(false);
+              setModalState({ type: null });
+            }
+
+          }
+          setConfirming("");
+        },
+        onError: async (e) => {
+          console.error(e)
+          setConfirming("");
+        }
+      })
+    }
+  }
+
+  const unStakeHandler = async () => {
+    if (signer && Number(tokenAmount) > 0) {
+      setConfirming("Approving...");
+      const stakeTokenInfo = STAKING_TOKENS.find((token) => token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[0].symbol);
+
+      enSoActionMutation({
+        chainId: Number(chainId),
+        fromAddress: address,
+        routingStrategy: "router",
+        action: "redeem",
+        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+        tokenIn: [stakeTokenInfo?.tokenOut?.contract_address || ""],
+        tokenOut:  [stakeTokenInfo?.tokenIn?.contract_address || ""],
+        amountIn: [Number(tokenAmount)],
         signer: signer,
         receiver: address,
         gasPrice: gasData.gasPrice,
@@ -148,15 +250,15 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
     setConfirming("Approving...");
 
-    redeemEnSoMutate({
+    enSoActionMutation({
       chainId: Number(chainId),
       fromAddress: address,
       routingStrategy: "router",
       action: "redeem",
       protocol: (modalState.position?.protocol_id || "").toLowerCase(),
-      tokenIn: modalState?.position?.address || "",
+      tokenIn: [modalState?.position?.address || ""],
       tokenOut: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
-      withdrawPercent: Number(withdrawPercent),
+      amountIn: [Number(withdrawPercent)],
       signer: signer,
       receiver: address,
       gasPrice: gasData.gasPrice,
@@ -210,22 +312,28 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setSelectedTab('overview')}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'overview'
-                  ? 'bg-white/10'
-                  : 'hover:bg-white/5'
-                  }`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => setSelectedTab('explore')}
+                onClick={() => {
+                  setSelectedTab('explore');
+                  setSelectedPositionType("ALL");
+                }}
                 className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'explore'
                   ? 'bg-white/10'
                   : 'hover:bg-white/5'
                   }`}
               >
                 Explore
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedTab('overview');
+                  setSelectedPositionType("ALL");
+                }}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${selectedTab === 'overview'
+                  ? 'bg-white/10'
+                  : 'hover:bg-white/5'
+                  }`}
+              >
+                Overview
               </button>
             </div>
           </div>
@@ -257,11 +365,11 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               <GlobalMetric isLoading={isLoading} />
 
               {/* Positions */}
-              <PositionList setSelectedPositionType={setSelectedPositionType} selectedPositionType={selectedPositionType} isLoading={isLoading} handleAction={handleAction} />
+              <PositionList setSelectedPositionType={setSelectedPositionType} selectedPositionType={selectedPositionType} isLoading={isLoading} handleAction={handleAction} setShowPreview={setShowPreview} />
 
               {/* Protocol Statistics */}
               {
-                positions.length > 0 && <ProtocolStatistic />
+                <ProtocolStatistic />
               }
             </>
           ) : (
@@ -282,6 +390,32 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           depositHandler={depositHandler}
           setTokenAmount={setTokenAmount}
           setToken2Amount={setToken2Amount}
+        />
+      )}
+
+      {modalState?.type === 'stake' && modalState.position && (
+        <StakeModal
+          setModalState={setModalState}
+          showPreview={showPreview}
+          modalState={modalState}
+          setShowPreview={setShowPreview}
+          tokenAmount={tokenAmount}
+          confirming={confirming}
+          stakeHandler={stakeHandler}
+          setTokenAmount={setTokenAmount}
+        />
+      )}
+
+      {modalState?.type === 'unstake' && modalState.position && (
+        <UnStakeModal
+          setModalState={setModalState}
+          showPreview={showPreview}
+          modalState={modalState}
+          setShowPreview={setShowPreview}
+          tokenAmount={tokenAmount}
+          confirming={confirming}
+          unStakeHandler={unStakeHandler}
+          setTokenAmount={setTokenAmount}
         />
       )}
 

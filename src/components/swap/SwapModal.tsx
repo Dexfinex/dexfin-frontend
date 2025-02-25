@@ -41,7 +41,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
     const [toAmount, setToAmount] = useState('');
     const [usdAmount, setUsdAmount] = useState('');
     const [slippage, setSlippage] = useState<SlippageOption>(0.5);
-    const [chartType, setChartType] = useState<ChartType>('line');
+    const [chartType, setChartType] = useState<ChartType>('tradingview');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const handleSwitch = () => {

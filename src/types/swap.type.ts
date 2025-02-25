@@ -80,7 +80,7 @@ export type NetworkType = {
 export type OrderType = 'market' | 'limit';
 
 export type ChartType = 'line' | 'tradingview';
-export type TimeRange = '1m' | '5m' | '15m' | '1H' | '4H' | '1D';
+export type TimeRange = '1H' | '1D' | '1W' | '1M' | '1Y';
 
 export type SlippageOption = 0.1 | 0.5 | 1 | number;
 
