@@ -283,7 +283,6 @@ const DeFiMarketDashboard: React.FC = () => {
                 });
 
             setSpacialTvl(formattedSpecialTVL);
-            // console.log("Special TVL data with logos:", formattedSpecialTVL);
         }
     }, [chainTvlData]);
     const [stablecoins, setStablecoins] = useState<CoinGeckoToken[]>([]);
@@ -432,7 +431,7 @@ const DeFiMarketDashboard: React.FC = () => {
         <div className="p-6 h-full overflow-y-auto ai-chat-scrollbar">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-xl font-semibold">DeFi Market Overview</h2>
+                    <h2 className="text-xl f0ont-semibold">DeFi Market Overview</h2>
                     <div className="flex items-center gap-2 text-sm text-white/60">
                         <Clock className="w-4 h-4" />
                         <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
