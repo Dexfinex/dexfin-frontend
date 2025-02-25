@@ -228,7 +228,7 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                                             {`Balance: ${formatNumberByFrac(Number(tokenOutBalance?.balance) || 0)}`}
                                         </span>
                                         <button className="text-blue-400" onClick={() => {
-                                            setTokenAmount((tokenOutBalance?.balance || "") + "");
+                                            setTokenAmount((formatNumberByFrac(Number(tokenOutBalance?.balance)) || ""));
                                         }}>MAX</button>
                                     </div>
                                 </div>
