@@ -41,41 +41,73 @@ export const initStream = async (user: any) => {
     let reconnectAttempts = 0;
     const maxRetries = 5; // Set max retry attempts
     const retryDelay = (attempt: number) => Math.min(2000 * 2 ** attempt, 30000); // Exponential backoff (max 30s)
+    let stream: any = null
 
-    const connectStream = async () => {
+    const connectStream = async (reconnection: boolean = false) => {
         if (existingStream) {
             console.log('Stream already exists. Skipping reinitialization.');
             return;
         }
 
-        const stream = await user.initStream(
-            [
-                CONSTANTS.STREAM.CHAT, // Listen for chat messages
-                CONSTANTS.STREAM.NOTIF, // Listen for notifications
-                CONSTANTS.STREAM.CONNECT, // Listen for connection events
-                CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
-            ],
-            {
-                // Filter options:
-                filter: {
-                    // Listen to all channels and chats (default):
-                    channels: ['*'],
-                    chats: ['*'],
-
-                    // Listen to specific channels and chats:
-                    // channels: ['channel-id-1', 'channel-id-2'],
-                    // chats: ['chat-id-1', 'chat-id-2'],
-
-                    // Listen to events with a specific recipient:
-                    // recipient: '0x...' (replace with recipient wallet address)
-                },
-                // Connection options:
-                connection: {
-                    retries: 3, // Retry connection 3 times if it fails
-                },
-                raw: false, // Receive events in structured format
-            }
-        );
+        if (reconnection === true) {
+            stream = await stream.reinit(
+                [
+                    CONSTANTS.STREAM.CHAT, // Listen for chat messages
+                    CONSTANTS.STREAM.NOTIF, // Listen for notifications
+                    CONSTANTS.STREAM.CONNECT, // Listen for connection events
+                    CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
+                ],
+                {
+                    // Filter options:
+                    filter: {
+                        // Listen to all channels and chats (default):
+                        channels: ['*'],
+                        chats: ['*'],
+    
+                        // Listen to specific channels and chats:
+                        // channels: ['channel-id-1', 'channel-id-2'],
+                        // chats: ['chat-id-1', 'chat-id-2'],
+    
+                        // Listen to events with a specific recipient:
+                        // recipient: '0x...' (replace with recipient wallet address)
+                    },
+                    // Connection options:
+                    connection: {
+                        retries: 3, // Retry connection 3 times if it fails
+                    },
+                    raw: false, // Receive events in structured format
+                }
+            );
+        } else {
+            stream = await user.initStream(
+                [
+                    CONSTANTS.STREAM.CHAT, // Listen for chat messages
+                    CONSTANTS.STREAM.NOTIF, // Listen for notifications
+                    CONSTANTS.STREAM.CONNECT, // Listen for connection events
+                    CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
+                ],
+                {
+                    // Filter options:
+                    filter: {
+                        // Listen to all channels and chats (default):
+                        channels: ['*'],
+                        chats: ['*'],
+    
+                        // Listen to specific channels and chats:
+                        // channels: ['channel-id-1', 'channel-id-2'],
+                        // chats: ['chat-id-1', 'chat-id-2'],
+    
+                        // Listen to events with a specific recipient:
+                        // recipient: '0x...' (replace with recipient wallet address)
+                    },
+                    // Connection options:
+                    connection: {
+                        retries: 3, // Retry connection 3 times if it fails
+                    },
+                    raw: false, // Receive events in structured format
+                }
+            );
+        }
 
         // Stream connection established:
         stream.on(CONSTANTS.STREAM.CONNECT, async (a: any) => {
@@ -128,7 +160,7 @@ export const initStream = async (user: any) => {
 
             setTimeout(() => {
                 reconnectAttempts++;
-                connectStream();
+                connectStream(true);
             }, delay);
         } else {
             console.error('🚫 Max reconnection attempts reached. Stopping retries.');

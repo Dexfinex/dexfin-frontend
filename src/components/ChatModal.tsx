@@ -553,21 +553,30 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const handleUnlock = async () => {
     if (!chatUser?.uid) {
-      const user = await PushAPI.initialize(signer, {
-        env: CONSTANTS.ENV.PROD,
-      });
+      try {
+        const user = await PushAPI.initialize(signer, {
+          env: CONSTANTS.ENV.PROD,
+        });
 
-      const encryption = await user.encryption.info()
+        const encryption = await user.encryption.info()
 
-      if (encryption?.decryptedPgpPrivateKey) {
-        const pk = {
-          account: user.account,
-          decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+        if (encryption?.decryptedPgpPrivateKey) {
+          const pk = {
+            account: user.account,
+            decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+          }
+          localStorage.setItem(KEY_NAME, JSON.stringify(pk))
+
+          setChatUser(user)
+          initStream(user)
         }
-        localStorage.setItem(KEY_NAME, JSON.stringify(pk))
-
-        setChatUser(user)
-        initStream(user)
+      } catch (err) {
+        console.log('initialize err: ', err)
+        toast({
+          status: 'error',
+          description: `Something went wrong. :(`,
+          duration: 3500
+        })
       }
     }
   }
