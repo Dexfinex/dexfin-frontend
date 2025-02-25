@@ -608,7 +608,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                 </div>
 
                 {/* NFT Value */}
-                <div className="bg-white/5 rounded-xl p-4">
+                {/* <div className="bg-white/5 rounded-xl p-4">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
                       <svg
@@ -625,7 +625,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                   </div>
                   <div className="text-xl sm:text-2xl font-bold">${portfolioSummary.nftValue.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                   <div className="text-sm mt-1">{portfolioSummary.nftValue.percentage.toFixed(1)}% of portfolio</div>
-                </div>
+                </div> */}
               </div>
 
               {/* Charts Section */}
@@ -693,7 +693,8 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
               {/* Tabs Section */}
               <div className="bg-white/5 rounded-xl">
                 <div className="flex items-center gap-2 p-2">
-                  {["tokens", "defi", "nfts"].map((tab) => (
+                  {["tokens", "defi", ""].map((tab) => (
+                    // nfts
                     <button
                       key={tab}
                       onClick={() => setSelectedTab(tab)}
