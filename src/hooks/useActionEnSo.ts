@@ -13,7 +13,7 @@ interface mutationDataParams {
     chainId: number;
     fromAddress: string;
     routingStrategy: string;
-    action: "deposit" | "redeem";
+    action: "deposit" | "redeem" | "unstake";
     protocol: string;
     tokenIn: string[];
     tokenOut: string[];
@@ -77,14 +77,27 @@ export const useEnSoActionMutation = () => {
                 amountIn.push(Number(amountValue).toString());
             }
 
-            const actionBundle = await enSoService.sendBundle({
-                fromAddress: data.fromAddress,
-                chainId: data.chainId,
-                routingStrategy: data.routingStrategy,
-                actions: generateEnSoExecuteAction({ action: data.action, protocol: data.protocol, tokenIn: data.tokenIn, tokenOut: data.tokenOut, amountIn: amountIn, chainId: Number(data.chainId), receiver: data.receiver })
-            })
+            if (data.protocol === "lido" && data.action === "unstake") {
+                const actionBundle = await enSoService.getRouter({
+                    fromAddress: data.fromAddress,
+                    chainId: data.chainId,
+                    receiver: data.receiver,
+                    tokenIn: data.tokenIn,
+                    amountIn: amountIn,
+                    tokenOut: data.tokenOut
+                })
 
-            return actionBundle;
+                return actionBundle;
+            } else {
+                const actionBundle = await enSoService.sendBundle({
+                    fromAddress: data.fromAddress,
+                    chainId: data.chainId,
+                    routingStrategy: data.routingStrategy,
+                    actions: generateEnSoExecuteAction({ action: data.action, protocol: data.protocol, tokenIn: data.tokenIn, tokenOut: data.tokenOut, amountIn: amountIn, chainId: Number(data.chainId), receiver: data.receiver })
+                })
+
+                return actionBundle;
+            }
         }
     })
 }
