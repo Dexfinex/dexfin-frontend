@@ -439,14 +439,16 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         }
         setIsChainSwitching(false)
     }
-
+    useEffect(() => {
+        const currentWalletType = detectWalletType();
+        setWalletType(currentWalletType);
+    }, [isWagmiWalletConnected, isConnected]);
     // wagmi walet
     useEffect(() => {
         if (isWagmiWalletConnected) {
             setIsConnected(isWagmiWalletConnected)
             setAddress(connectedWalletAddress as string)
             setChainId(wagmiChainId)
-            setWalletType('EOA')
             connector!.getProvider().then((rawProvider) => {
                 const provider = new Web3Provider(rawProvider as ExternalProvider);
                 setProvider(provider)
