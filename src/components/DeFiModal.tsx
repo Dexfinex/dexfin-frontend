@@ -203,7 +203,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         chainId: Number(chainId),
         fromAddress: address,
         routingStrategy: "router",
-        action: "redeem",
+        action: "unstake",
         protocol: (modalState.position?.protocol_id || "").toLowerCase(),
         tokenIn: [stakeTokenInfo?.tokenOut?.contract_address || ""],
         tokenOut:  [stakeTokenInfo?.tokenIn?.contract_address || ""],
