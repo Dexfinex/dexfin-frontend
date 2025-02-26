@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Swords, Shield, Zap, X, Info, Heart, Timer, Star, Flame, Droplet, Wind } from 'lucide-react';
+import { Swords, Shield, Zap, X, Info, Star, Flame, Droplet, Wind } from 'lucide-react';
 import { GameState, Action, StatusEffect } from '../../types/memeArena';
 import { MemeArenaTutorial } from './MemeArenaTutorial';
 
@@ -109,7 +109,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-        <div className="relative glass border border-white/10 rounded-xl p-6 w-[400px] text-center">
+        <div className="relative glass border border-white/10 rounded-xl p-6 w-full max-w-md mx-4 text-center">
           <div className={`w-16 h-16 mx-auto rounded-full ${color}/20 flex items-center justify-center mb-4`}>
             <div className={`text-3xl ${color}`}>
               {isVictory ? '🏆' : '💀'}
@@ -184,22 +184,25 @@ const BattleArena: React.FC<BattleArenaProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Move Info Button next to the action buttons */}
-      <div className="absolute flex items-center gap-6 top-4 right-4">
-        <button
-          onClick={() => setShowTutorial(true)}
-          className="p-2 transition-colors rounded-lg hover:bg-white/10"
-          title="How to Play"
-        >
-          <Info className="w-5 h-5" />
-        </button>
-        <button
-          onClick={onNewGame}
-          className="p-2 transition-colors rounded-lg hover:bg-white/10"
-        >
-          <X className="w-5 h-5" />
-        </button>
+    <div className="flex flex-col h-full relative">
+      {/* Header with controls - Improved positioning and spacing */}
+      <div className="flex items-center justify-end mb-4 px-2 py-2 bg-black/20 rounded-lg">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTutorial(true)}
+            className="p-2 transition-colors rounded-full bg-gray-800/50 hover:bg-gray-700/70"
+            title="How to Play"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onNewGame}
+            className="p-2 transition-colors rounded-full bg-gray-800/50 hover:bg-gray-700/70"
+            title="Exit Battle"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Tutorial Modal */}
@@ -210,14 +213,14 @@ const BattleArena: React.FC<BattleArenaProps> = ({
 
       {/* Battle Arena */}
       <div className="flex-1 mb-4">
-        <div className="grid grid-cols-2 gap-8 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
           {/* Player Character */}
           <div className="text-center">
             <div className="relative mb-3">
               <img
                 src={playerCharacter.image}
                 alt={playerCharacter.name}
-                className={`w-24 h-24 mx-auto rounded-full ${
+                className={`w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full ${
                   turn === 'player' ? 'ring-2 ring-blue-500 animate-pulse' : ''
                 }`}
               />
@@ -252,7 +255,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({
               <img
                 src={aiCharacter.image}
                 alt={aiCharacter.name}
-                className={`w-24 h-24 mx-auto rounded-full ${
+                className={`w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full ${
                   turn === 'ai' ? 'ring-2 ring-red-500 animate-pulse' : ''
                 }`}
               />
@@ -292,17 +295,17 @@ const BattleArena: React.FC<BattleArenaProps> = ({
         </div>
 
         {/* Battle Stats */}
-        <div className="flex justify-center gap-6 mb-4 text-xs">
-          <div className="flex items-center gap-1.5">
-            <Star className="w-4 h-4 text-yellow-400" />
+        <div className="flex justify-center gap-4 mb-4 text-xs">
+          <div className="flex items-center gap-1">
+            <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
             <span>Combo: {combo}x</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Swords className="w-4 h-4 text-red-400" />
+          <div className="flex items-center gap-1">
+            <Swords className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
             <span>Damage: {battleStats.totalDamageDealt}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Zap className="w-4 h-4 text-yellow-400" />
+          <div className="flex items-center gap-1">
+            <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
             <span>Crits: {battleStats.criticalHits}</span>
           </div>
         </div>
@@ -310,7 +313,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({
         {/* Battle Log */}
         <div 
           id="battle-logs"
-          className="h-24 p-3 mb-4 overflow-y-auto text-xs rounded-lg bg-white/5"
+          className="h-20 sm:h-24 p-3 mb-4 overflow-y-auto text-xs rounded-lg bg-black/30"
         >
           {battleLogs.map((log, index) => (
             <div
@@ -332,42 +335,42 @@ const BattleArena: React.FC<BattleArenaProps> = ({
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-3">
+      {/* Action Buttons - Improved for mobile */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <div className="space-y-2 sm:space-y-3">
           <button
             onClick={() => onAction({ type: 'QUICK_ATTACK' })}
             disabled={turn !== 'player'}
-            className="flex items-center justify-center w-full gap-2 px-3 py-2 text-sm font-medium transition-colors bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+            className="flex items-center justify-center w-full gap-1 sm:gap-2 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium transition-colors bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Swords className="w-4 h-4" />
+            <Swords className="w-3 h-3 sm:w-4 sm:h-4" />
             Quick Attack
           </button>
           <button
             onClick={() => onAction({ type: 'HEAVY_ATTACK' })}
             disabled={turn !== 'player'}
-            className="flex items-center justify-center w-full gap-2 px-3 py-2 text-sm font-medium transition-colors bg-purple-500 rounded-lg hover:bg-purple-600 disabled:opacity-50"
+            className="flex items-center justify-center w-full gap-1 sm:gap-2 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium transition-colors bg-purple-500 rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Swords className="w-4 h-4" />
+            <Swords className="w-3 h-3 sm:w-4 sm:h-4" />
             Heavy Attack
           </button>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <button
             onClick={() => onAction({ type: 'SPECIAL_ATTACK' })}
             disabled={turn !== 'player' || playerMP < 40}
-            className="relative flex items-center justify-center w-full gap-2 px-3 py-2 text-sm font-medium transition-colors bg-yellow-500 rounded-lg hover:bg-yellow-600 disabled:opacity-50 group"
+            className="relative flex items-center justify-center w-full gap-1 sm:gap-2 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium transition-colors bg-yellow-500 rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed group"
           >
-            <Zap className="w-4 h-4" />
+            <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
             <span>Special</span>
-            <span>(40 MP)</span>
+            <span className="text-xs">(40)</span>
             
             {playerCharacter.specialAbility && (
-              <div className="absolute invisible w-48 p-2 mb-2 text-left -translate-x-1/2 rounded-lg bottom-full left-1/2 bg-black/80 group-hover:visible">
+              <div className="absolute z-10 invisible w-40 sm:w-48 p-2 mb-2 text-left -translate-x-1/2 rounded-lg bottom-full left-1/2 bg-black/90 group-hover:visible">
                 <div className="mb-1 text-xs font-medium">{playerCharacter.specialAbility.name}</div>
-                <div className="text-[10px] text-white/60">{playerCharacter.specialAbility.description}</div>
+                <div className="text-[10px] text-white/80">{playerCharacter.specialAbility.description}</div>
                 {playerCharacter.specialAbility.statusEffect && (
-                  <div className="text-[10px] text-white/60 mt-1">
+                  <div className="text-[10px] text-white/80 mt-1">
                     Applies {playerCharacter.specialAbility.statusEffect.name}
                   </div>
                 )}
@@ -377,16 +380,16 @@ const BattleArena: React.FC<BattleArenaProps> = ({
           <button
             onClick={() => onAction({ type: 'DEFEND' })}
             disabled={turn !== 'player'}
-            className="flex items-center justify-center w-full gap-2 px-3 py-2 text-sm font-medium transition-colors bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50"
+            className="flex items-center justify-center w-full gap-1 sm:gap-2 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium transition-colors bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Shield className="w-4 h-4" />
+            <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
             Defend
           </button>
         </div>
       </div>
 
       {/* Token Counter */}
-      <div className="mt-3 text-xs text-center text-white/60">
+      <div className="mt-3 text-xs text-center text-white/70">
         Tokens: {tokens}
       </div>
 
@@ -397,5 +400,3 @@ const BattleArena: React.FC<BattleArenaProps> = ({
 };
 
 export default BattleArena;
-
-export { BattleArena }

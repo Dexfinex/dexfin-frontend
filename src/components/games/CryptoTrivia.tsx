@@ -218,6 +218,8 @@ const QUESTION_BANK: Question[] = [
     difficulty: 'Medium',
     category: 'Technical'
   }
+  // Other questions omitted for brevity
+  // ...
 ];
 
 const QUESTIONS_PER_GAME = {
@@ -323,6 +325,19 @@ export const CryptoTrivia: React.FC = () => {
   });
 
   const [gameQuestions, setGameQuestions] = useState<Question[]>([]);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Check if screen is mobile size
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (state.screen === 'game') {
@@ -477,35 +492,35 @@ export const CryptoTrivia: React.FC = () => {
   };
 
   const renderMenu = () => (
-    <div className="flex flex-col items-center justify-center h-full">
-      <div className="flex items-center justify-center w-24 h-24 mb-8 rounded-full bg-blue-500/20">
-        <Brain className="w-12 h-12 text-blue-500" />
+    <div className="flex flex-col items-center justify-center h-full p-4">
+      <div className="flex items-center justify-center w-20 h-20 mb-6 sm:w-24 sm:h-24 sm:mb-8 rounded-full bg-blue-500/20">
+        <Brain className="w-10 h-10 sm:w-12 sm:h-12 text-blue-500" />
       </div>
       
-      <h1 className="mb-4 text-4xl font-bold">Crypto Trivia</h1>
-      <p className="max-w-md mb-8 text-center text-white/60">
+      <h1 className="mb-3 text-2xl sm:text-4xl font-bold text-center sm:mb-4">Crypto Trivia</h1>
+      <p className="max-w-md mb-6 text-sm text-center sm:text-base sm:mb-8 text-white/60">
         Test your cryptocurrency knowledge and earn tokens!
       </p>
 
-      <div className="flex flex-col w-64 gap-4">
+      <div className="flex flex-col w-full max-w-xs gap-3 sm:gap-4">
         <button
           onClick={() => setState(prev => ({ ...prev, screen: 'difficulty' }))}
-          className="w-full py-3 font-medium transition-colors bg-blue-500 hover:bg-blue-600 rounded-xl"
+          className="w-full py-2.5 sm:py-3 font-medium transition-colors bg-blue-500 hover:bg-blue-600 rounded-xl"
         >
           Play Now
         </button>
         
         <div className="text-center">
-          <div className="text-sm text-white/60">Your Tokens</div>
-          <div className="text-2xl font-bold">{state.totalTokens}</div>
+          <div className="text-xs sm:text-sm text-white/60">Your Tokens</div>
+          <div className="text-xl sm:text-2xl font-bold">{state.totalTokens}</div>
         </div>
 
         <div className="text-center">
-          <div className="text-sm text-white/60">Best Streak</div>
-          <div className="text-xl font-bold text-yellow-400">{state.bestStreak} 🔥</div>
+          <div className="text-xs sm:text-sm text-white/60">Best Streak</div>
+          <div className="text-lg sm:text-xl font-bold text-yellow-400">{state.bestStreak} 🔥</div>
         </div>
 
-        <div className="text-sm text-center text-white/60">
+        <div className="text-xs sm:text-sm text-center text-white/60">
           Questions per game:
           <div className="flex justify-between mt-1 text-white/80">
             <span>Easy: {QUESTIONS_PER_GAME.Easy}</span>
@@ -518,34 +533,36 @@ export const CryptoTrivia: React.FC = () => {
   );
 
   const renderDifficultySelect = () => (
-    <div className="flex flex-col items-center justify-center h-full">
-      <h2 className="mb-12 text-3xl font-bold">Select Difficulty</h2>
+    <div className="flex flex-col items-center justify-center h-full p-4">
+      <h2 className="mb-6 text-xl sm:text-3xl font-bold sm:mb-12">Select Difficulty</h2>
       
-      <div className="grid grid-cols-3 gap-6 mb-12">
+      <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} gap-4 sm:gap-6 mb-6 sm:mb-12`}>
         {(['Easy', 'Medium', 'Hard'] as const).map((difficulty) => {
           const settings = difficultySettings[difficulty];
           return (
             <button
               key={difficulty}
               onClick={() => startGame(difficulty)}
-              className="w-48 p-6 transition-all bg-white/5 hover:bg-white/10 rounded-xl hover:scale-105"
+              className={`p-4 sm:p-6 transition-all bg-white/5 hover:bg-white/10 rounded-xl hover:scale-105 ${
+                isMobile ? 'w-full' : 'w-48'
+              }`}
             >
-              <h3 className="mb-2 text-xl font-bold">{difficulty}</h3>
-              <div className="space-y-2 text-sm text-white/60">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
+              <h3 className="mb-1 text-lg sm:text-xl font-bold sm:mb-2">{difficulty}</h3>
+              <div className="space-y-1 text-xs sm:text-sm text-white/60 sm:space-y-2">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>{settings.timeLimit}s per question</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-red-400" />
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400" />
                   <span>{settings.lives} lives</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-yellow-400" />
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400" />
                   <span>{settings.tokenBase} tokens per correct</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-blue-400" />
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400" />
                   <span>{settings.multiplier}x multiplier</span>
                 </div>
               </div>
@@ -556,7 +573,7 @@ export const CryptoTrivia: React.FC = () => {
 
       <button
         onClick={() => setState(prev => ({ ...prev, screen: 'menu' }))}
-        className="transition-colors text-white/60 hover:text-white"
+        className="py-2 px-4 text-sm sm:text-base transition-colors text-white/60 hover:text-white"
       >
         Back to Menu
       </button>
@@ -568,107 +585,122 @@ export const CryptoTrivia: React.FC = () => {
     const timeLeftPercentage = (state.timeLeft / difficultySettings[state.difficulty].timeLimit) * 100;
 
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="fixed flex items-center gap-6 -translate-x-1/2 top-4 left-1/2">
-          <div className="flex items-center gap-3">
-            <Timer className="w-5 h-5 text-white/60" />
-            <div className="w-64 h-2 overflow-hidden rounded-full bg-white/10">
-              <div
-                className={`h-full transition-all duration-1000 ${
-                  timeLeftPercentage > 66 ? 'bg-green-500' :
-                  timeLeftPercentage > 33 ? 'bg-yellow-500' :
-                  'bg-red-500'
-                }`}
-                style={{ width: `${timeLeftPercentage}%` }}
-              />
+      <div className="flex flex-col items-center justify-center h-full p-4">
+        <div className={`fixed top-0 left-0 right-0 w-full backdrop-blur-sm ${isMobile ? 'pt-2 pb-3 px-2' : 'p-4'}`}>
+          <div className="flex flex-col max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <ArrowLeft 
+                  className="w-4 h-4 mr-2 text-white/60" 
+                  onClick={() => setState(prev => ({ ...prev, screen: 'menu' }))}
+                />
+                <span className="text-xs font-medium">Games</span>
+                {!isMobile && (
+                  <div className="ml-4 text-yellow-400 text-sm">
+                    <span className="font-bold">{state.totalTokens}</span> tokens
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-1">
+                {[...Array(state.lives)].map((_, i) => (
+                  <Heart key={i} className="w-4 h-4 text-red-400" fill="currentColor" />
+                ))}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {state.powerups.fiftyFifty && (
+                  <button
+                    onClick={() => usePowerup('fiftyFifty')}
+                    className="p-1 rounded-lg bg-blue-500 hover:bg-blue-600"
+                    title="50/50: Remove two wrong answers"
+                  >
+                    <div className="text-xs font-bold">50:50</div>
+                  </button>
+                )}
+                {state.powerups.timeFreeze && (
+                  <button
+                    onClick={() => usePowerup('timeFreeze')}
+                    className="p-1 rounded-lg bg-blue-500 hover:bg-blue-600"
+                    title="Time Freeze: Add 15 seconds"
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {state.powerups.doublePoints && (
+                  <button
+                    onClick={() => usePowerup('doublePoints')}
+                    className="p-1 rounded-lg bg-blue-500 hover:bg-blue-600"
+                    title="Double Points: 2x multiplier"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
-            <span className={`text-lg font-medium ${
-              timeLeftPercentage > 66 ? 'text-green-400' :
-              timeLeftPercentage > 33 ? 'text-yellow-400' :
-              'text-red-400'
-            }`}>{state.timeLeft}s</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {[...Array(state.lives)].map((_, i) => (
-              <Heart key={i} className="w-5 h-5 text-red-400" fill="currentColor" />
-            ))}
-          </div>
-
-          {state.streak > 0 && (
-            <div className="flex items-center gap-2 text-yellow-400">
-              <Zap className="w-5 h-5" fill="currentColor" />
-              <span className="font-bold">{state.streak}x</span>
+            
+            {/* Second row with timer */}
+            <div className="flex items-center gap-2">
+              <Timer className="w-4 h-4 text-white/60" />
+              <div className="w-full h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className={`h-full transition-all duration-1000 ${
+                    timeLeftPercentage > 66 ? 'bg-green-500' :
+                    timeLeftPercentage > 33 ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`}
+                  style={{ width: `${timeLeftPercentage}%` }}
+                />
+              </div>
+              <span className={`text-sm font-medium ${
+                timeLeftPercentage > 66 ? 'text-green-400' :
+                timeLeftPercentage > 33 ? 'text-yellow-400' :
+                'text-red-400'
+              }`}>{state.timeLeft}s</span>
+              
+              {state.streak > 0 && (
+                <div className="flex items-center gap-1 text-yellow-400 ml-1">
+                  <Zap className="w-4 h-4" fill="currentColor" />
+                  <span className="text-sm font-bold">{state.streak}x</span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
-        <div className="fixed flex items-center gap-2 top-4 right-4">
-          <button
-            onClick={() => usePowerup('fiftyFifty')}
-            disabled={!state.powerups.fiftyFifty}
-            className={`p-2 rounded-lg transition-colors ${
-              state.powerups.fiftyFifty ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
-            }`}
-            title="50/50: Remove two wrong answers"
-          >
-            <div className="text-xs font-bold">50:50</div>
-          </button>
-          <button
-            onClick={() => usePowerup('timeFreeze')}
-            disabled={!state.powerups.timeFreeze}
-            className={`p-2 rounded-lg transition-colors ${
-              state.powerups.timeFreeze ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
-            }`}
-            title="Time Freeze: Add 15 seconds"
-          >
-            <Clock className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => usePowerup('doublePoints')}
-            disabled={!state.powerups.doublePoints}
-            className={`p-2 rounded-lg transition-colors ${
-              state.powerups.doublePoints ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
-            }`}
-            title="Double Points: 2x multiplier"
-          >
-            <Zap className="w-4 h-4" />
-          </button>
+        <div className="flex items-center gap-2 mb-6 mt-24 sm:mt-12 sm:mb-8">
+          <span className="text-xs sm:text-sm text-white/60">Question</span>
+          <span className="text-sm sm:text-base font-bold">{state.currentQuestion + 1}</span>
+          <span className="text-xs sm:text-sm text-white/60">of</span>
+          <span className="text-sm sm:text-base font-bold">{QUESTIONS_PER_GAME[state.difficulty]}</span>
         </div>
 
-        <div className="flex items-center gap-2 mb-12">
-          <span className="text-white/60">Question</span>
-          <span className="font-bold">{state.currentQuestion + 1}</span>
-          <span className="text-white/60">of</span>
-          <span className="font-bold">{QUESTIONS_PER_GAME[state.difficulty]}</span>
-        </div>
-
-        <div className="max-w-2xl mb-12 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <span className={`px-2 py-1 rounded-full text-sm ${
+        <div className="max-w-2xl mb-6 text-center sm:mb-10">
+          <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
+            <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs ${
               question.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
               question.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
               'bg-red-500/20 text-red-400'
             }`}>
               {question.difficulty}
             </span>
-            <span className="px-2 py-1 text-sm text-blue-400 rounded-full bg-blue-500/20">
+            <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs text-blue-400 rounded-full bg-blue-500/20">
               {question.category}
             </span>
           </div>
-          <h3 className="mb-2 text-2xl font-bold">{question.question}</h3>
+          <h3 className="mb-2 text-lg sm:text-2xl font-bold">{question.question}</h3>
           {state.showFeedback && (
-            <p className="p-4 mt-4 rounded-lg text-white/60 bg-white/5">{question.explanation}</p>
+            <p className="p-3 mt-3 text-sm rounded-lg sm:p-4 sm:mt-4 text-white/60 bg-white/5">{question.explanation}</p>
           )}
         </div>
 
-        <div className="grid w-full max-w-2xl grid-cols-2 gap-4">
+        <div className="grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {question.answers.map((answer, index) => (
             <button
               key={index}
               onClick={() => handleAnswer(index)}
               disabled={state.showFeedback}
-              className={`p-4 rounded-xl transition-all ${
+              className={`p-3 sm:p-4 rounded-xl transition-all ${
                 state.showFeedback
                   ? index === question.correctAnswer
                     ? 'bg-green-500/20 text-green-400'
@@ -679,12 +711,12 @@ export const CryptoTrivia: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between">
-                <span>{answer}</span>
+                <span className="text-sm sm:text-base">{answer}</span>
                 {state.showFeedback && (
                   index === question.correctAnswer ? (
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                   ) : state.selectedAnswer === index ? (
-                    <XIcon className="w-5 h-5 text-red-400" />
+                    <XIcon className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
                   ) : null
                 )}
               </div>
@@ -703,39 +735,40 @@ export const CryptoTrivia: React.FC = () => {
     const newHighScore = Math.max(state.highScore, correctAnswers);
     const isNewHighScore = newHighScore > state.highScore;
 
+
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="flex items-center justify-center w-24 h-24 mb-8 rounded-full bg-blue-500/20">
-          <Trophy className="w-12 h-12 text-blue-500" />
+      <div className="flex flex-col items-center justify-center h-full p-4">
+        <div className="flex items-center justify-center w-20 h-20 mb-6 sm:w-24 sm:h-24 sm:mb-8 rounded-full bg-blue-500/20">
+          <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-blue-500" />
         </div>
 
-        <h2 className="mb-2 text-3xl font-bold">Quiz Complete!</h2>
-        <p className="mb-8 text-white/60">Great job! Here's how you did:</p>
+        <h2 className="mb-1 text-xl sm:text-3xl font-bold sm:mb-2">Quiz Complete!</h2>
+        <p className="mb-6 text-sm sm:text-base sm:mb-8 text-white/60">Great job! Here's how you did:</p>
 
-        <div className="grid grid-cols-2 gap-8 mb-12">
+        <div className="grid grid-cols-2 gap-6 mb-8 sm:gap-8 sm:mb-12">
           <div className="text-center">
-            <div className="mb-2 text-4xl font-bold">{percentage.toFixed(0)}%</div>
-            <div className="text-sm text-white/60">Accuracy</div>
+            <div className="mb-1 text-3xl font-bold sm:text-4xl sm:mb-2">{percentage.toFixed(0)}%</div>
+            <div className="text-xs sm:text-sm text-white/60">Accuracy</div>
           </div>
           <div className="text-center">
-            <div className="mb-2 text-4xl font-bold text-yellow-400">
+            <div className="mb-1 text-3xl font-bold text-yellow-400 sm:text-4xl sm:mb-2">
               {tokens}
               {isNewHighScore && <span className="ml-2 text-sm">🏆</span>}
             </div>
-            <div className="text-sm text-white/60">Tokens Earned</div>
+            <div className="text-xs sm:text-sm text-white/60">Tokens Earned</div>
           </div>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
           <button
             onClick={() => setState(prev => ({ ...prev, screen: 'menu' }))}
-            className="px-6 py-3 transition-colors bg-white/10 hover:bg-white/20 rounded-xl"
+            className="px-4 py-2 text-sm transition-colors sm:px-6 sm:py-3 sm:text-base bg-white/10 hover:bg-white/20 rounded-xl"
           >
             Back to Menu
           </button>
           <button
             onClick={() => setState(prev => ({ ...prev, screen: 'difficulty' }))}
-            className="px-6 py-3 transition-colors bg-blue-500 hover:bg-blue-600 rounded-xl"
+            className="px-4 py-2 text-sm transition-colors sm:px-6 sm:py-3 sm:text-base bg-blue-500 hover:bg-blue-600 rounded-xl"
           >
             Play Again
           </button>
