@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useEffect } from "react";
-import { X, ArrowLeft, ArrowDown } from 'lucide-react';
+import { X, ArrowLeft, ArrowDown, ArrowRight } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
 import { TokenChainIcon } from "../swap/components/TokenIcon";
@@ -12,33 +12,37 @@ import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
-import { STAKING_TOKENS } from "../../constants/mock/defi.ts";
+import { BORROWING_LIST } from "../../constants/mock/defi.ts";
 
 interface ModalState {
     type: string | null;
     position?: Position;
 }
 
-interface UnStakeModalProps {
+interface BorrowModalProps {
     setModalState: (state: ModalState) => void,
     showPreview: boolean,
     modalState: ModalState,
     setShowPreview: (preview: boolean) => void,
     tokenAmount: string,
     confirming: string,
-    unStakeHandler: () => void,
+    borrowHandler: () => void,
     setTokenAmount: (amount: string) => void,
+    borrowingTokenAmount: string,
+    setBorrowingTokenAmount: (amount: string) => void,
 }
 
-const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, unStakeHandler, setTokenAmount }) => {
+const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, borrowHandler, setTokenAmount, setBorrowingTokenAmount, borrowingTokenAmount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
     const { chainId } = useContext(Web3AuthContext);
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
-    const stakeTokenInfo = STAKING_TOKENS.find((token) => token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[0].symbol);
-    const tokenInBalance = stakeTokenInfo?.tokenIn ? getTokenBalance(stakeTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
-    const tokenInInfo = stakeTokenInfo?.tokenIn ? stakeTokenInfo?.tokenIn : null;
-    const tokenOutBalance = stakeTokenInfo?.tokenOut ? getTokenBalance(stakeTokenInfo?.tokenOut?.contract_address || "", Number(chainId)) : null;
-    const tokenOutInfo = stakeTokenInfo?.tokenOut ? stakeTokenInfo?.tokenOut : null;
+    const borrowTokenInfo = BORROWING_LIST.find((token) => {
+        return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[1].symbol
+    });
+    const tokenInBalance = borrowTokenInfo?.tokenIn ? getTokenBalance(borrowTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
+    const tokenInInfo = borrowTokenInfo?.tokenIn ? borrowTokenInfo?.tokenIn : null;
+    const tokenOutBalance = borrowTokenInfo?.tokenOut ? getTokenBalance(borrowTokenInfo?.tokenOut?.contract_address || "", Number(chainId)) : null;
+    const tokenOutInfo = borrowTokenInfo?.tokenOut ? borrowTokenInfo?.tokenOut : null;
 
     const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
 
@@ -74,6 +78,20 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
         return 1;
     }, [tokenInBalance, tokenOutBalance]);
 
+    const availableBorrowAmount = useMemo(() => {
+        return Number(formatNumberByFrac(Number(tokenAmount) *0.75 * Number(priceRatio), 2));
+    }, [tokenAmount, priceRatio])
+
+    const isErrorBorrowingTokenAmount = useMemo(() => {
+        if (borrowingTokenAmount === "") {
+            return false;
+        }
+        if (0 < Number(borrowingTokenAmount) && Number(borrowingTokenAmount) <= availableBorrowAmount) {
+            return false;
+        }
+        return true;
+    }, [borrowingTokenAmount, tokenAmount])
+
     useEffect(() => {
         if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
             refetchNativeTokenPrice()
@@ -92,7 +110,7 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                         </button>
                     }
                     <h3 className="text-xl font-medium">
-                        Withdraw
+                        Borrow {tokenOutInfo?.symbol}
                     </h3>
                     <button
                         onClick={() => setModalState({ type: null })}
@@ -103,24 +121,23 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                 </div>
 
                 <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
-                        <img
-                            src={modalState.position?.logo}
-                            alt={modalState.position?.protocol}
-                            className="w-8 h-8"
-                        />
-                        <div>
-                            <div className="font-medium">{modalState.position?.protocol}</div>
-                            <div className="text-sm text-white/60">
-                                {
-                                    modalState.position?.tokens.map((token) => `${token?.symbol} `)
-                                }
+                    <div className="gap-3 p-3 bg-white/5 rounded-lg">
+                        <div className="flex items-center gap-3 p-3">
+                            <img
+                                src={modalState.position?.logo}
+                                alt={modalState.position?.protocol}
+                                className="w-8 h-8"
+                            />
+                            <div>
+                                <div className="font-medium">{modalState.position?.protocol}</div>
+                                <div className="text-sm text-white/60 flex items-center">
+                                    {tokenInInfo?.symbol} <ArrowRight className="mr-1 ml-1 w-3 h-3" /> {tokenOutInfo?.symbol}
+                                </div>
                             </div>
                         </div>
-                        <div className="ml-auto text-right">
-                            <div className={`text-emerald-400`}>
-                                {modalState.position?.apy || 0}% APY
-                            </div>
+
+                        <div className="text-sm text-white flex items-center">
+                            You can deposit {tokenInInfo?.symbol} as collateral and borrow {tokenOutInfo?.symbol} token.
                         </div>
                     </div>
 
@@ -130,11 +147,11 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                                 <div className='flex justify-between mt-2'>
                                     <div>
                                         <span className='ml-2 text-2xl'>
-                                            {`${formatNumberByFrac(Number(tokenAmount), 6)} ${tokenOutInfo?.symbol}`}
+                                            {`${formatNumberByFrac(Number(tokenAmount), 6)} ${tokenInInfo?.symbol}`}
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenInInfo?.logo || ""} alt={tokenInInfo?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
                                     </div>
                                 </div>
 
@@ -147,11 +164,11 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                                 <div className='flex justify-between mt-2'>
                                     <div>
                                         <span className='ml-2 text-2xl'>
-                                            {`${formatNumberByFrac(Number(tokenAmount) / Number(priceRatio), 6)} ${tokenInInfo?.symbol}`}
+                                            {`${borrowingTokenAmount} ${tokenOutInfo?.symbol}`}
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenInInfo?.logo || ""} alt={tokenInInfo?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
                                     </div>
                                 </div>
 
@@ -170,16 +187,16 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                                 <div className='flex justify-between'>
                                     <div>
                                         <span className='ml-2 text-sm text-white/60'>
-                                            New {tokenInInfo?.symbol || ""} amount
+                                            New {tokenOutBalance?.symbol || ""} amount
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenInInfo?.logo || ""} alt={tokenInInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenOutBalance?.logo || ""} alt={tokenOutBalance?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <span className='ml-2'>
-                                            {formatNumberByFrac(Number(tokenInBalance?.balance) + Number(tokenAmount), 4)}
+                                            {formatNumberByFrac(Number(tokenOutBalance?.balance) + Number(borrowingTokenAmount), 4)}
                                         </span>
                                         <span className='ml-1 text-sm text-white/60'>
-                                            {tokenInInfo?.symbol || ""}
+                                            {tokenOutBalance?.symbol || ""}
                                         </span>
                                     </div>
                                 </div>
@@ -204,7 +221,7 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                             <>
                                 <div className="bg-white/5 rounded-xl p-4">
                                     <div className="text-sm text-white/60 mb-2">
-                                        Amount
+                                        Deposit token amount
                                     </div>
                                     <div className='relative flex'>
                                         <input
@@ -213,7 +230,44 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                                                 setTokenAmount(e.target.value);
                                             }}
                                             type="text"
-                                            className={`w-full bg-transparent text-2xl outline-none pr-[90px] ${isErrorTokenAmount ? "text-red-500" : ""}`}
+                                            className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""}`}
+                                            placeholder="0.00"
+                                        />
+                                        <div className='flex items-center fixed right-12'>
+                                            <TokenChainIcon src={tokenInInfo?.logo || ""} alt={tokenInInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                            <span className='ml-2'>
+                                                {tokenInInfo?.symbol || ""}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2 text-sm">
+                                        <span className="text-white/60">
+                                            {`Balance: ${formatNumberByFrac(Number(tokenInBalance?.balance) || 0)}${tokenInInfo?.symbol}`}
+                                        </span>
+                                        <button className="text-blue-400" onClick={() => {
+                                            setTokenAmount((tokenInBalance?.balance || "") + "");
+                                        }}>MAX</button>
+                                    </div>
+                                </div>
+
+                                <div className='flex justify-center'>
+                                    <div className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400">
+                                        <ArrowDown className="w-3 h-3" />
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/5 rounded-xl p-4">
+                                    <div className="text-sm text-white/60 mb-2">
+                                        Loan token amount
+                                    </div>
+                                    <div className='relative flex'>
+                                        <input
+                                            value={borrowingTokenAmount}
+                                            onChange={(e) => {
+                                                setBorrowingTokenAmount(e.target.value);
+                                            }}
+                                            type="text"
+                                            className={`w-full bg-transparent text-2xl outline-none ${isErrorBorrowingTokenAmount ? "text-red-500" : ""}`}
                                             placeholder="0.00"
                                         />
                                         <div className='flex items-center fixed right-12'>
@@ -225,10 +279,10 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                                     </div>
                                     <div className="flex items-center justify-between mt-2 text-sm">
                                         <span className="text-white/60">
-                                            {`Balance: ${formatNumberByFrac(Number(tokenOutBalance?.balance) || 0)}`}
+                                            {`Available: ${availableBorrowAmount}${tokenOutInfo?.symbol}`}
                                         </span>
                                         <button className="text-blue-400" onClick={() => {
-                                            setTokenAmount((formatNumberByFrac(Number(tokenOutBalance?.balance)) || ""));
+                                            setBorrowingTokenAmount(availableBorrowAmount + "");
                                         }}>MAX</button>
                                     </div>
                                 </div>
@@ -243,6 +297,22 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                                         <div className='items-center flex'>
                                             <span className='ml-2 text-sm text-white/60'>
                                                 1 {tokenOutInfo?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenInInfo?.symbol}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className='flex justify-between'>
+                                        <div>
+                                            <span className='ml-2 text-sm text-white/60'>
+                                                Loan token balance
+                                            </span>
+                                        </div>
+                                        <div className='items-center flex'>
+                                            <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                            <span className='ml-2'>
+                                                {formatNumberByFrac(Number(tokenOutBalance?.balance))}
+                                            </span>
+                                            <span className='ml-1 text-sm text-white/60'>
+                                                {tokenOutInfo?.symbol || ""}
                                             </span>
                                         </div>
                                     </div>
@@ -270,13 +340,13 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                         className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
                         onClick={async () => {
                             if (showPreview) {
-                                unStakeHandler()
+                                borrowHandler()
                             } else {
                                 setShowPreview(true);
                             }
                         }}
                     >
-                        {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Withdraw" : "Next"}
+                        {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Borrow" : "Next"}
                     </button>
                 </div>
             </div>
@@ -284,4 +354,4 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
     )
 }
 
-export default UnStakeModal;
+export default BorrowModal;
