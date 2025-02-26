@@ -40,7 +40,6 @@ let existingStream: any = null; // Global variable to track the stream instance
 export const initStream = async (user: any) => {
     let reconnectAttempts = 0;
     const maxRetries = 5; // Set max retry attempts
-    const retryDelay = (attempt: number) => Math.min(2000 * 2 ** attempt, 30000); // Exponential backoff (max 30s)
     let stream: any = null
 
     const connectStream = async (reconnection: boolean = false) => {
@@ -155,7 +154,7 @@ export const initStream = async (user: any) => {
 
     const handleReconnection = () => {
         if (reconnectAttempts < maxRetries) {
-            const delay = retryDelay(reconnectAttempts);
+            const delay = 1000;
             console.log(`🔄 Reconnecting in ${delay / 1000}s... (Attempt ${reconnectAttempts + 1}/${maxRetries})`);
 
             setTimeout(() => {
