@@ -49,6 +49,33 @@ export const STAKING_TOKENS = [
     }
 ]
 
+export const BORROWING_LIST = [
+    {
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "logo": "https://cdn.moralis.io/defi/aave.png",
+        "chainId": 1,
+        "tokenIn": {
+            "token_type": "native",
+            "name": "ETH",
+            "symbol": "ETH",
+            "contract_address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+            "decimals": "18",
+            "logo": "https://cdn.moralis.io/eth/0x.png",
+            "thumbnail": "https://cdn.moralis.io/eth/0x.png",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "USDC",
+            "symbol": "USDC",
+            "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "decimals": "6",
+            "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+            "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+        }
+    }
+];
+
 export const offerings: Offering[] = [
     {
         "chainId": 56,
@@ -130,5 +157,45 @@ export const offerings: Offering[] = [
         "rewards": 0,
         "healthFactor": 0,
         "logo": "https://cdn.moralis.io/defi/lido.png"
+    },
+    {
+        "chainId": 1,
+        "apy": 0,
+        "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Borrowing",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "native",
+                "name": "ETH",
+                "symbol": "ETH",
+                "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": "18",
+                "logo": "https://cdn.moralis.io/eth/0x.png",
+                "thumbnail": "https://cdn.moralis.io/eth/0x.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            },
+            {
+                "token_type": "erc20",
+                "name": "USDC",
+                "symbol": "USDC",
+                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": "6",
+                "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 0,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
     }
 ];

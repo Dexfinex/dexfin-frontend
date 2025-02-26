@@ -61,7 +61,7 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
     const priceRatio = useMemo(() => {
         if (tokenBalance1?.usdPrice && tokenBalance2?.usdPrice) {
             const ratio = tokenBalance1?.usdPrice / tokenBalance2?.usdPrice
-            return ratio > 1 ? 1 : ratio;
+            return ratio;
         }
         return 1;
     }, [tokenBalance1, tokenBalance2]);
