@@ -35,9 +35,26 @@ export const dexfinv3Service = {
       const { data } = await dexfinv3Api.get<EvmWalletBalanceResponseType[]>(
         `/evm/wallet/${address}/balances`
       );
+
+      console.log('evm wallet balance = ', data)
       return data;
     } catch (error) {
       console.log("Failed to fetch evm wallet balance:", error);
+    }
+
+    return [];
+  },
+
+  getSolanaWalletBalance: async ({ address }: { address: string }): Promise<EvmWalletBalanceResponseType[]> => {
+    try {
+      const { data } = await dexfinv3Api.get<EvmWalletBalanceResponseType[]>(
+        `/solana/wallet/mainnet/${address}/balances`
+      );
+
+      console.log('sol wallet balance = ', data)
+      return data;
+    } catch (error) {
+      console.log("Failed to fetch solana wallet balance:", error);
     }
 
     return [];

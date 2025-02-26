@@ -39,7 +39,6 @@ export const getAllChatData = async (chatUser: any) => {
 let existingStream: any = null; // Global variable to track the stream instance
 export const initStream = async (user: any) => {
     let reconnectAttempts = 0;
-    const maxRetries = 5; // Set max retry attempts
     let stream: any = null
 
     const connectStream = async (reconnection: boolean = false) => {
@@ -62,11 +61,11 @@ export const initStream = async (user: any) => {
                         // Listen to all channels and chats (default):
                         channels: ['*'],
                         chats: ['*'],
-    
+
                         // Listen to specific channels and chats:
                         // channels: ['channel-id-1', 'channel-id-2'],
                         // chats: ['chat-id-1', 'chat-id-2'],
-    
+
                         // Listen to events with a specific recipient:
                         // recipient: '0x...' (replace with recipient wallet address)
                     },
@@ -91,11 +90,11 @@ export const initStream = async (user: any) => {
                         // Listen to all channels and chats (default):
                         channels: ['*'],
                         chats: ['*'],
-    
+
                         // Listen to specific channels and chats:
                         // channels: ['channel-id-1', 'channel-id-2'],
                         // chats: ['chat-id-1', 'chat-id-2'],
-    
+
                         // Listen to events with a specific recipient:
                         // recipient: '0x...' (replace with recipient wallet address)
                     },
@@ -153,17 +152,13 @@ export const initStream = async (user: any) => {
     }
 
     const handleReconnection = () => {
-        if (reconnectAttempts < maxRetries) {
-            const delay = 1000;
-            console.log(`🔄 Reconnecting in ${delay / 1000}s... (Attempt ${reconnectAttempts + 1}/${maxRetries})`);
+        const delay = 1000;
+        console.log(`🔄 Reconnecting in ${delay / 1000}s... (Attempt ${reconnectAttempts + 1})`);
 
-            setTimeout(() => {
-                reconnectAttempts++;
-                connectStream(true);
-            }, delay);
-        } else {
-            console.error('🚫 Max reconnection attempts reached. Stopping retries.');
-        }
+        setTimeout(() => {
+            reconnectAttempts++;
+            connectStream(true);
+        }, delay);
     };
 
     connectStream()
