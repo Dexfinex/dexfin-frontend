@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as ChartToo
 import { BollingerBandsProgress } from '../../../../utils/agent';
 import { TechnicalAnalysisData } from '../../../../types';
 
+
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -124,6 +125,7 @@ const LivePriceChart: React.FC<{ data: any[]; isLoading: boolean }> = ({ data, i
 };
 
 interface TechnicalAnalysisProps {
+
   data?: TechnicalAnalysisData;
   isLoading: boolean;
   isWalletPanelOpen: boolean;
