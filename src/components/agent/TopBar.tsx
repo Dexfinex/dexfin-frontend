@@ -93,6 +93,19 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
                 <Text fontSize="xs" color="gray.500">Latest news with sentiment</Text>
               </Box>
             </MenuItem>
+
+
+            <MenuItem
+              bgColor={'blackAlpha.50'}
+              _hover={{ bg: 'whiteAlpha.100' }}
+              onClick={() => { setInput('ETH Technical Analysis') }}
+            >
+              <Box>
+                <Text>ETH Technical Analysis</Text>
+                <Text fontSize="xs" color="gray.500">Get detailed ETH analysis</Text>
+              </Box>
+            </MenuItem>
+
             <MenuItem
               bgColor={'blackAlpha.50'}
               _hover={{ bg: 'whiteAlpha.100' }}
@@ -460,7 +473,16 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
                       <Text fontSize="xs" color="gray.500">Latest news with sentiment</Text>
                     </Box>
                   </MenuItem>
-                  
+                  <MenuItem
+                    bgColor={'blackAlpha.50'}
+                    _hover={{ bg: 'whiteAlpha.100' }}
+                    onClick={() => { setInput('ETH Technical Analysis'); onDrawerClose(); }}
+                  >
+                    <Box>
+                      <Text>ETH Technical Analysis</Text>
+                      <Text fontSize="xs" color="gray.500">Get detailed ETH analysis</Text>
+                    </Box>
+                  </MenuItem>
                   <MenuItem
                     bgColor={'blackAlpha.50'}
                     _hover={{ bg: 'whiteAlpha.100' }}

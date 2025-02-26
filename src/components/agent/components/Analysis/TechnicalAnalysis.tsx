@@ -68,10 +68,7 @@ const TechnicalIndicator: React.FC<IndicatorProps> = ({
 );
 
 const LivePriceChart: React.FC<{ data: any[]; isLoading: boolean }> = ({ data, isLoading }) => {
-  const chartData = data.map(d => ({
-    ...d,
-    timestamp: new Date(d.time)
-  }));
+  const chartData = data;
 
   if (isLoading) {
     return <Skeleton height="200px" />;
@@ -90,9 +87,11 @@ const LivePriceChart: React.FC<{ data: any[]; isLoading: boolean }> = ({ data, i
           </linearGradient>
         </defs>
         <XAxis
-          dataKey="timestamp"
-          tickFormatter={(time) => time instanceof Date ?
-            time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+          dataKey="time"
+          tickFormatter={(time) => {
+            const date = new Date(time);
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+          }}
           stroke="#4A5568"
           fontSize={9}
           angle={-35}
