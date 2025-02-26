@@ -25,4 +25,17 @@ export const enSoService = {
             throw error;
         }
     },
+    getRouter: async ({ fromAddress, chainId, receiver, tokenIn, amountIn, tokenOut }: { fromAddress: string, chainId: number, receiver: string, tokenIn: string[], amountIn: string[], tokenOut: string[] }) => {
+        try {
+            const _tokenIn = tokenIn.length === 1 ? tokenIn[0] : tokenIn.toString();
+            const _amountIn = amountIn.length === 1 ? amountIn[0] : amountIn.toString();
+            const _tokenOut = tokenOut.length === 1 ? tokenOut[0] : tokenOut.toString();
+
+            const { data } = await enSoApi.get<EnSoResponse>(`/route?chainId=${chainId}&fromAddress=${fromAddress}&receiver=${receiver}&tokenIn=${_tokenIn}&amountIn=${_amountIn}&tokenOut=${_tokenOut}`);
+            return data;
+        } catch (error) {
+            console.error('Failed to fetch news:', error);
+            throw error;
+        }
+    },
 }

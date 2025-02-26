@@ -69,7 +69,7 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
     const priceRatio = useMemo(() => {
         if (tokenInBalance?.usdPrice && tokenOutBalance?.usdPrice) {
             const ratio = tokenInBalance?.usdPrice / tokenOutBalance?.usdPrice
-            return ratio > 1 ? 1 : ratio;
+            return ratio;
         }
         return 1;
     }, [tokenInBalance, tokenOutBalance]);

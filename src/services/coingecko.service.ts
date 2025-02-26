@@ -1,9 +1,10 @@
-import { coinGeckoApi } from "./api.service.ts";
-import { CoinData, CoinGeckoToken, Ganiner, Loser, SearchResult, TrendingCoin } from "../types";
-import { ChartDataPoint, TokenType } from "../types/swap.type.ts";
-import { TokenTypeB } from "../types/cart.type.ts";
+import {coinGeckoApi} from "./api.service.ts";
+import {CoinData, CoinGeckoToken, Ganiner, Loser, SearchResult, TrendingCoin} from "../types";
+import {ChartDataPoint} from "../types/swap.type.ts";
+import {TokenTypeB} from "../types/cart.type.ts";
 import axios from "axios";
-import { MarketCapToken } from "../components/market/MarketCap.tsx";
+import {MarketCapToken} from "../components/market/MarketCap.tsx";
+
 interface CoinGeckoStableToken {
     id: string;
     name: string;
@@ -114,16 +115,19 @@ export const coingeckoService = {
             throw error;
         }
     },
-    getOHLCV: async (tokenId: string, days = 30) => {
+    getOHLCV: async (
+        tokenId: string,
+        timeInterval = '1H',
+        unixTimeFrom: number | undefined = undefined,
+        unixTimeTo: number | undefined = undefined) => {
         try {
-            // Ensure days is a valid number
-            const validDays = Math.max(1, Math.min(365, days));
-
             const response = await coinGeckoApi.get(`/ohlcv/${tokenId}`, {
                 params: {
-                    vs_currency: 'usd',
-                    days: validDays.toString(),
-                    precision: 'full',
+                    ...{
+                        type: timeInterval,
+                        time_from: unixTimeFrom,
+                        time_to: unixTimeTo,
+                    }
                 },
             });
 
@@ -132,8 +136,11 @@ export const coingeckoService = {
             }
 
             // CoinGecko OHLC format: [timestamp, open, high, low, close]
-            const chartData: ChartDataPoint[] = response.data
-            return chartData.sort((a, b) => a.time - b.time);
+            const chartData: ChartDataPoint[] = response.data.map((item) => ({
+                ...item,
+                time: item.time / 1000,
+            }))
+            return chartData
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 429) {
                 throw new Error('Rate limit exceeded. Please try again later.');
@@ -147,9 +154,9 @@ export const coingeckoService = {
             throw error;
         }
     },
-    getCoinGeckoIdFrom: async (token: TokenType, chainId: number): Promise<string> => {
+    getCoinGeckoIdFrom: async (tokenAddress: string, chainId: number): Promise<string> => {
         try {
-            const { data } = await coinGeckoApi.get<string>(`/token-id/${chainId}?addresses=${token.address}`);
+            const {data} = await coinGeckoApi.get<string>(`/token-id/${chainId}?addresses=${tokenAddress}`);
             return data;
         } catch (e) {
             console.log(e);
