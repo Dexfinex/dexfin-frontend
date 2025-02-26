@@ -182,26 +182,32 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                         </div>
 
                                         <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                                            <button
-                                                onClick={() => {
-                                                    handleAction(getAddActionName({ type: position.type }), position);
-                                                    setShowPreview(false);
-                                                }}
-                                                className={`px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm ${isEnabled ? "" : "opacity-70"}`}
-                                                disabled={!isEnabled}
-                                            >
-                                                {getAddLabelName({ type: position.type })}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    handleAction(getRemoveActionName({ type: position.type }), position);
-                                                    setShowPreview(false);
-                                                }}
-                                                className={`px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm ${isEnabled ? "" : "opacity-70"}`}
-                                                disabled={!isEnabled}
-                                            >
-                                                {getRemoveLabelName({ type: position.type })}
-                                            </button>
+                                            {
+                                                getAddLabelName({ type: position.type }) &&
+                                                <button
+                                                    onClick={() => {
+                                                        handleAction(getAddActionName({ type: position.type }), position);
+                                                        setShowPreview(false);
+                                                    }}
+                                                    className={`px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm ${isEnabled ? "" : "opacity-70"}`}
+                                                    disabled={!isEnabled}
+                                                >
+                                                    {getAddLabelName({ type: position.type })}
+                                                </button>
+                                            }
+                                            {
+                                                getRemoveLabelName({ type: position.type }) &&
+                                                <button
+                                                    onClick={() => {
+                                                        handleAction(getRemoveActionName({ type: position.type }), position);
+                                                        setShowPreview(false);
+                                                    }}
+                                                    className={`px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm ${isEnabled ? "" : "opacity-70"}`}
+                                                    disabled={!isEnabled}
+                                                >
+                                                    {getRemoveLabelName({ type: position.type })}
+                                                </button>
+                                            }
                                         </div>
                                     </div>
 
