@@ -22,3 +22,10 @@ export function formatVolume(num: number): string {
     maximumFractionDigits: 1,
   }).format(num);
 };
+
+
+export function BollingerBandsProgress({ value,  upperBand, lowerBand }: any): number {
+  if(upperBand-lowerBand == 0) return 0;
+  if(lowerBand && upperBand) return (value-lowerBand)*100/(upperBand-lowerBand);
+  return 0;
+}
