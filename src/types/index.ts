@@ -25,6 +25,7 @@ export interface Message {
   content: string;
   tip?: string;
   priceData?: BrianCoinData;
+  technicalAnalysis?: any;
   trending?: AnalysisTrendingCoin[];
   losers?: AnalysisLoser[]; 
   gainers?: AnalysisGainer[]; 

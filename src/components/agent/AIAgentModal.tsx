@@ -3,7 +3,7 @@ import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 import { coingeckoService } from '../../services/coingecko.service';
 import { cryptoNewsService } from '../../services/cryptonews.service.ts';
 import { brianService } from '../../services/brian.service';
-import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/brian.tsx';
+import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/agent.tsx';
 import {
   Mic,
   Send,
@@ -26,7 +26,7 @@ import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { convertCryptoAmount } from '../../utils/brian.tsx';
+import { convertCryptoAmount } from '../../utils/agent.tsx';
 import { DepositProcess } from './components/DepositProcess.tsx';
 import { WithdrawProcess } from './components/WithdrawProcess.tsx';
 import { BorrowProcess } from './components/BorrowProcess.tsx';
@@ -35,6 +35,7 @@ import { ENSRegisterProcess } from './components/ENSRegisterProcess.tsx';
 import { ENSRenewProcess } from './components/ENSRenewProcess.tsx';
 import { openaiService } from '../../services/openai.services.ts';
 import { PriceCard } from './components/Analysis/PriceCard.tsx';
+import { TechnicalAnalysis } from './components/Analysis/TechnicalAnalysis.tsx';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -241,7 +242,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const findFallbackResponse = async (message: string) => {
     const normalizedMessage = message.toLowerCase();
     const data = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
-    console.log(data);
     if (data && data.response) {
       if (data.response.priceData) {
         const { priceData } = data.response;
@@ -300,6 +300,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           analysis: item.analysis,
         }))
       }
+    } else if (data && data.moving_averages) {
+      return {
+        text: 'Here is the analysis for the current market:',
+        technicalAnalysis: data,
+      }
     }
 
     for (const [key, response] of Object.entries(fallbackResponses)) {
@@ -333,7 +338,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         const normalizedCommand = command.trim();
 
         response = await generateResponse(normalizedCommand, address, chainId);
-        console.log(response);
         if (response.type == "action" && response.brianData.type == "write") {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
@@ -493,6 +497,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             tip: response.insufficient,
             link: response.link,
             priceData: response.priceData,
+            technicalAnalysis: response.technicalAnalysis,
             trending: response.trending,
             losers: response.losers,
             gainers: response.gainers,
@@ -721,6 +726,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                             {message.priceData && (
                               <div className="mt-4 w-full">
                                 <PriceCard data={message.priceData} isLoading={false}></PriceCard>
+                              </div>
+                            )}
+                            {message.technicalAnalysis && (
+                              <div className="mt-4 w-full">
+                                <TechnicalAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.technicalAnalysis}></TechnicalAnalysis>
                               </div>
                             )}
                             {message.trending && <TrendingCoins coins={message.trending} />}
