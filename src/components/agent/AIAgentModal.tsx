@@ -302,7 +302,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
       }
     } else if (data && data.moving_averages) {
       return {
-        text: 'Here is the analysis for the current market:',
+        text: `Here's the ${data.coinId} technical analysis:`,
         technicalAnalysis: data,
       }
     }

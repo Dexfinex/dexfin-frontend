@@ -23,6 +23,7 @@ export function formatVolume(num: number): string {
   }).format(num);
 };
 
-export function BollingerBandsProgress({ value,  upperBand, lowerBand }: { value: number; signal: string; upperBand: number; lowerBand: number }): number {
-  return (value-lowerBand)*100/(upperBand-lowerBand);
+export function BollingerBandsProgress({ value,  upperBand, lowerBand }: any): number {
+  if(lowerBand && upperBand) return (value-lowerBand)*100/(upperBand-lowerBand);
+  return 0;
 }

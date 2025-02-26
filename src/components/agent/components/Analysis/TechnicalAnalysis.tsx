@@ -3,6 +3,7 @@ import { Box, SimpleGrid, Text, VStack, HStack, Progress, Badge, Skeleton, Toolt
 import { TrendingUp, TrendingDown, Activity, BarChart3, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as ChartTooltip } from 'recharts';
 import { BollingerBandsProgress } from '../../../../utils/agent';
+import { TechnicalAnalysisData } from '../../../../types';
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
@@ -23,7 +24,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 interface IndicatorProps {
   label: string;
   value: number;
-  signal: 'BUY' | 'SELL' | 'NEUTRAL';
+  signal: string;
   strength: number;
   isLoading: boolean;
   tooltip?: string;
@@ -123,7 +124,7 @@ const LivePriceChart: React.FC<{ data: any[]; isLoading: boolean }> = ({ data, i
 };
 
 interface TechnicalAnalysisProps {
-  data?: any;
+  data?: TechnicalAnalysisData;
   isLoading: boolean;
   isWalletPanelOpen: boolean;
 }

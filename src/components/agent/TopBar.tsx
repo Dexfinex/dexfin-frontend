@@ -6,6 +6,8 @@ import {
   X,
   ChevronDown,
   LineChart,
+  Globe,
+  ArrowLeftRight,
   Menu as LucideMenu,
 } from 'lucide-react';
 
@@ -132,7 +134,7 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
             as={Button}
             variant="ghost"
             rightIcon={<ChevronDown size={16} />}
-            leftIcon={<LineChart size={16} />}
+            leftIcon={<ArrowLeftRight size={16} />}
             fontWeight="normal"
           >
             Trading
@@ -194,7 +196,7 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
             as={Button}
             variant="ghost"
             rightIcon={<ChevronDown size={16} />}
-            leftIcon={<LineChart size={16} />}
+            leftIcon={<Bot size={16} />}
             fontWeight="normal"
           >
             DeFi
@@ -353,7 +355,7 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
             as={Button}
             variant="ghost"
             rightIcon={<ChevronDown size={16} />}
-            leftIcon={<LineChart size={16} />}
+            leftIcon={<Globe size={16} />}
             fontWeight="normal"
           >
             ENS
@@ -500,7 +502,7 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
                   as={Button}
                   variant="ghost"
                   rightIcon={<ChevronDown size={16} />}
-                  leftIcon={<LineChart size={16} />}
+                  leftIcon={<ArrowLeftRight size={16} />}
                   fontWeight="normal"
                 >
                   Trading
@@ -562,7 +564,7 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
                   as={Button}
                   variant="ghost"
                   rightIcon={<ChevronDown size={16} />}
-                  leftIcon={<LineChart size={16} />}
+                  leftIcon={<Bot size={16} />}
                   fontWeight="normal"
                 >
                   DeFi
@@ -721,7 +723,7 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
                   as={Button}
                   variant="ghost"
                   rightIcon={<ChevronDown size={16} />}
-                  leftIcon={<LineChart size={16} />}
+                  leftIcon={<Globe size={16} />}
                   fontWeight="normal"
                 >
                   ENS
