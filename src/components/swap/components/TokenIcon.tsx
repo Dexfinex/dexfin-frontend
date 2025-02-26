@@ -1,4 +1,6 @@
 import { useState } from "react";
+
+import ErrorImg from "../../../../public/images/token/error.svg"
 import { getChainIcon } from "../../../utils/getChainIcon";
 
 interface TokenChainIconProps {
@@ -33,7 +35,7 @@ export function TokenIcon({ src, alt, size = 'md', className = '' }: TokenIconPr
 
   return (
     <img
-      src={loadError ? "/images/error.svg" : src}
+      src={loadError ? ErrorImg : src}
       alt={alt}
       className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 ${sizeClasses[size]} ${className}`}
       onError={() => {
@@ -48,7 +50,7 @@ export function TokenChainIcon({ src, alt, size = 'md', chainId, className = '' 
   return (
     <div className="relative">
       <img
-        src={loadError ? "/images/error.svg" : src}
+        src={loadError ? ErrorImg : src}
         alt={alt}
         className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 ${sizeClasses[size]} ${className}`}
         onError={() => {
