@@ -26,6 +26,7 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
 
     const {theme} = useStore();
     const chartContainerRef = useRef<HTMLDivElement | null>(null);
+    const [isLoading, setIsLoading] = useState(true); // Default to 5M
     const [timeRange, setTimeRange] = useState<TimeRange>('1D');
     const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
     const [chart, setChart] = useState<IChartApi | null>(null)
@@ -60,7 +61,9 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
     useEffect(() => {
         // console.log("useEffect");
         if (token && timeRange) {
+            setIsLoading(true)
             refetchChartData()
+            setIsLoading(false)
         } else {
             setChartData([]);
         }
@@ -69,6 +72,9 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
 
     useEffect(() => {
         if (!chartContainerRef.current) return;
+        if (chartContainerRef.current) {
+            chartContainerRef.current.innerHTML = "";
+        }
 
         const chartWidget = createChart(chartContainerRef.current, {
             width: 680,
@@ -142,7 +148,7 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
         }
 
         // Fit the chart content
-        chartWidget.timeScale().fitContent();
+        // chartWidget.timeScale().fitContent();
         setChart(chartWidget)
     }, [chartData, theme, type]); // Empty dependency array to create chart only once
 
@@ -210,6 +216,9 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
             <div className="h-[calc(100%-100px)] overflow-hidden p-3 relative z-0">
                 <ChartErrorBoundary>
                     <Suspense fallback={<ChartLoader/>}>
+                        {
+                            isLoading ? <ChartLoader/> : null
+                        }
                         <div ref={chartContainerRef}
                         ></div>
                     </Suspense>
