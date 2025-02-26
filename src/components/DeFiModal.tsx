@@ -286,7 +286,9 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
               setTokenAmount("");
               setToken2Amount("");
+
               setBorrowingTokenAmount("");
+
               setShowPreview(false);
               setModalState({ type: null });
             }

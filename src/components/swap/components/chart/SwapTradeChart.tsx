@@ -32,6 +32,9 @@ interface WidgetConfig {
     overrides: {
         [key: string]: string | number | boolean;
     };
+    time_scale: {
+        [key: string]: string | number | boolean;
+    };
     loading_screen: {
         backgroundColor: string;
         foregroundColor: string;
@@ -47,47 +50,16 @@ const SwapTradeChart: React.FC<TradeChartProps> = ({tokenSymbol, timeRange, type
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const { theme } = useStore();
     const [tvWidget, setTvWidget] = useState<IChartingLibraryWidget | null>(null);
-    const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+
+    console.log("timeRange", timeRange)
 
     useEffect(() => {
-        const loadScript = async () => {
-            if (!window.TradingView) {
-                const script = document.createElement('script');
-                script.id = 'tradingview-widget-script';
-                script.src = '/charting_library/charting_library.js';
-                script.type = 'text/javascript';
-                script.async = true;
-
-                script.onload = () => {
-                    setIsScriptLoaded(true);
-                };
-
-                script.onerror = (error) => {
-                    console.error('Error loading TradingView script:', error);
-                };
-
-                document.head.appendChild(script);
-                return () => {
-                    const existingScript = document.getElementById('tradingview-widget-script');
-                    if (existingScript) {
-                        document.head.removeChild(existingScript);
-                    }
-                };
-            } else {
-                setIsScriptLoaded(true);
-                return () => {};
-            }
-        };
-
-        loadScript();
-    }, []);
-
-    useEffect(() => {
-        if (!isScriptLoaded || !window.TradingView) {
+        if (!window.TradingView) {
             return;
         }
 
         try {
+            console.log("created new widget", mapTimeRangeToResolution[timeRange])
             const widgetOptions: WidgetConfig = {
                 autosize: true,
                 toolbar_bg: theme === 'dark' ? '#101112' : '#ffffff',
@@ -164,7 +136,10 @@ const SwapTradeChart: React.FC<TradeChartProps> = ({tokenSymbol, timeRange, type
                 loading_screen: {
                     backgroundColor: theme === 'dark' ? '#101112' : '#ffffff',
                     foregroundColor: theme === 'dark' ? '#363c4e' : '#e1e3eb'
-                }
+                },
+                time_scale: {
+                    min_bar_spacing: 20,
+                },
             };
 
             const tvWidget_ = new window.TradingView.widget(widgetOptions);
@@ -178,7 +153,7 @@ const SwapTradeChart: React.FC<TradeChartProps> = ({tokenSymbol, timeRange, type
         } catch (error) {
             console.error('Error initializing TradingView widget:', error);
         }
-    }, [tokenSymbol, theme, isScriptLoaded, timeRange]);
+    }, [tokenSymbol, theme, timeRange]);
 
     useEffect(() => {
         if (tokenSymbol && tvWidget) {

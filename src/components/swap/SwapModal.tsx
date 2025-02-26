@@ -20,7 +20,7 @@ interface SwapModalProps {
 const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
     // State
     const [isMaximized, setIsMaximized] = useState(false);
-    const [activeTab, setActiveTab] = useState<TransactionType>('swap');
+    const [activeTab] = useState<TransactionType>('swap');
     const [fromToken, setFromToken] = useState<TokenType | null>({
         symbol: 'ETH',
         name: 'Ethereum',
@@ -140,6 +140,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                             {/* Swap Interface and Wallet */}
                             <div
                                 className="p-2.5 border border-white/5 relative z-50 w-full rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
+{/*
                             <div className="flex items-center justify-between mb-4 rounded-lg p-1">
                                     <div className="flex items-center gap-2 w-full me-2">
                                         <button
@@ -174,6 +175,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                         </button>
                                     </div>
                                 </div>
+*/}
 
                                 {activeTab === 'buy' ? (
                                     <BuyBox
