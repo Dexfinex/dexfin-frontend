@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function ChartLoader() {
   return (
     <div className="h-full flex items-center justify-center">

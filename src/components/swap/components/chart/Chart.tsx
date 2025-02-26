@@ -1,4 +1,4 @@
-import {Suspense, useMemo, useState} from 'react';
+import {Suspense, useEffect, useMemo, useRef, useState} from 'react';
 import {ChartControls} from './ChartControls';
 import {ChartLoader} from './ChartLoader';
 import {ChartErrorBoundary} from './ChartErrorBoundary';
@@ -6,16 +6,20 @@ import type {ChartType, TimeRange, TokenType} from '../../../../types/swap.type'
 import {TokenIcon} from "../TokenIcon.tsx";
 import {TokenPrice} from "../TokenPrice.tsx";
 import useTokenStore from "../../../../store/useTokenStore.ts";
-import SwapTradeChart from "./SwapTradeChart.tsx";
 
 interface ChartProps {
   type: ChartType;
   onTypeChange: (type: ChartType) => void;
   token: TokenType;
 }
+const redColor = '#f03349', greenColor = '#179981'
+
 
 export function Chart({ type, onTypeChange, token }: ChartProps) {
+
+  const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>('1D');
+  const [chartData, setChartData] = useState([]);
   const {getTokenPrice} = useTokenStore()
 
   const price = token ? getTokenPrice(token?.address, token?.chainId) : 0
@@ -25,9 +29,15 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
     setTimeRange(range);
   };
 
-  const currentTokenSymbol = useMemo(() => {
-    return `${token?.name}:${token?.address}:${token?.chainId}:${token?.decimals}`
-  }, [token])
+  useEffect((params) => {
+    // console.log("useEffect");
+    if (fromToken && toToken) {
+      retreiveNewData(selectedTimeType);
+    } else {
+      setChartData([]);
+    }
+  }, [type, token, timeRange]);
+
 
   return (
       <div className="backdrop-blur-sm rounded-xl overflow-hidden h-full relative w-full">
@@ -58,11 +68,15 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
           <ChartErrorBoundary>
             <Suspense fallback={<ChartLoader/>}>
               <div className="h-full relative">
+                <div ref={chartContainerRef}
+                ></div>
+{/*
                 <SwapTradeChart
                     tokenSymbol={currentTokenSymbol}
                     timeRange={timeRange}
                     type={type}
                 />
+*/}
               </div>
             </Suspense>
           </ChartErrorBoundary>
