@@ -136,7 +136,10 @@ export const coingeckoService = {
             }
 
             // CoinGecko OHLC format: [timestamp, open, high, low, close]
-            const chartData: ChartDataPoint[] = response.data
+            const chartData: ChartDataPoint[] = response.data.map((item) => ({
+                ...item,
+                time: item.time / 1000,
+            }))
             return chartData
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 429) {

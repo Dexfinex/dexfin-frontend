@@ -9,8 +9,9 @@ import useTokenStore from "../../../../store/useTokenStore.ts";
 import {SOLANA_CHAIN_ID} from "../../../../constants/solana.constants.ts";
 import {birdeyeService} from "../../../../services/birdeye.service.ts";
 import {coingeckoService} from "../../../../services/coingecko.service.ts";
-import {mapTimeRangeToSeconds} from "../../../../constants/chart.constants.ts";
+import {mapTimeRangeToSeconds, mapTimeRangeToSecondsForBirdEye} from "../../../../constants/chart.constants.ts";
 import {ColorType, createChart, CrosshairMode} from "lightweight-charts";
+import {useStore} from "../../../../store/useStore.ts";
 
 interface ChartProps {
   type: ChartType;
@@ -21,6 +22,7 @@ const redColor = '#f03349', greenColor = '#179981'
 
 
 export function Chart({ type, onTypeChange, token }: ChartProps) {
+  const { theme } = useStore();
 
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>('1D');
@@ -36,13 +38,14 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
 
   const refetchChartData = async () => {
     let _chartData: ChartDataPoint[] = []
-    const currentTime = Math.round(Date.now() / 1000)
-    const timeFrom = currentTime - mapTimeRangeToSeconds[timeRange] * 30
+    const currentTime = Math.round(Date.now() / 1000) - 60
 
     if (token) {
       if (token.chainId === SOLANA_CHAIN_ID) {
+        const timeFrom = currentTime - mapTimeRangeToSecondsForBirdEye[timeRange]
         _chartData = await birdeyeService.getOHLCV(token.address, timeRange, timeFrom, currentTime)
       } else if (token.address.startsWith('0x')) {
+        const timeFrom = currentTime - mapTimeRangeToSeconds[timeRange]
         const symbol = await coingeckoService.getCoinGeckoIdFrom(token.address, token.chainId)
         _chartData = await coingeckoService.getOHLCV(symbol.toLowerCase(), timeRange, timeFrom, currentTime);
       }
@@ -60,7 +63,7 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
         layout: {
           background: {
             type: ColorType.Solid,
-            color: '#000000',
+            color: theme === 'dark' ? '#101011' : '#fff',
           },
           textColor: '#555963',
         },
@@ -103,6 +106,10 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
             wickUpColor: greenColor,
           })
 
+      console.log("chartData", chartData)
+
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
       candleSeries.setData(chartData);
 
       return () => {
@@ -119,7 +126,7 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
     } else {
       setChartData([]);
     }
-  }, [type, token, timeRange, refetchChartData]);
+  }, [type, token, timeRange]);
 
 
   useEffect(() => {
@@ -128,7 +135,7 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
       chartContainerRef.current.innerHTML = "";
     }
     redrawChart();
-  }, [chartData, redrawChart]);
+  }, [chartData, redrawChart, theme]);
 
 
 

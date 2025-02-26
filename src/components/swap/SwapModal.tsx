@@ -20,7 +20,7 @@ interface SwapModalProps {
 const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
     // State
     const [isMaximized, setIsMaximized] = useState(false);
-    const [activeTab, setActiveTab] = useState<TransactionType>('swap');
+    const [activeTab] = useState<TransactionType>('swap');
     const [fromToken, setFromToken] = useState<TokenType | null>({
         symbol: 'ETH',
         name: 'Ethereum',
