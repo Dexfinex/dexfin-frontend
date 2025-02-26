@@ -364,9 +364,12 @@ export const MemeArena: React.FC = () => {
       } else {
         newState.turn = 'ai';
         // Apply status effects before AI turn
-        applyStatusEffects();
+        setState(newState);
+        // Important: Use setTimeout to let React re-render first
+        setTimeout(() => applyStatusEffects(), 200);
         // Schedule AI turn
         setTimeout(() => handleAITurn(), 1500);
+        return; // Return early to avoid the setState at the end
       }
     }
 
@@ -525,9 +528,10 @@ export const MemeArena: React.FC = () => {
     }
 
     newState.turn = 'player';
-    // Apply status effects before player turn
-    applyStatusEffects();
+    // Set state first before applying status effects
     setState(newState);
+    // Important: Use setTimeout to let React re-render first
+    setTimeout(() => applyStatusEffects(), 200);
   };
 
   const startNewGame = (tournamentMode: boolean = false) => {
@@ -564,7 +568,7 @@ export const MemeArena: React.FC = () => {
 
   return (
     <div className="h-full">
-      <div className="h-full p-6">
+      <div className="h-full p-4 sm:p-6">
         {state.screen === 'character-select' ? (
           <CharacterSelect 
             onSelect={selectCharacter}
