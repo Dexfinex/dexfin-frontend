@@ -38,4 +38,5 @@ export interface BrianCoinData {
     timestamp: number;
     price: number;
   }[];
+  analysis: string;
 }

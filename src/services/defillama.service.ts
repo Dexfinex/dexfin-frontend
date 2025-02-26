@@ -4,7 +4,7 @@ import { DefillamaPool, DefillamaProtocol, DefillamaChainTVL, DefillamaDexVolume
 export const defillamaService = {
 	getProtocols: async (): Promise<DefillamaProtocol[]> => {
 		try {
-			const { data } = await defillamaApi.get<DefillamaProtocol[]>(`/protocols`);
+			const { data } = await defillamaApi.get<DefillamaProtocol[]>(`pro/protocols`);
 			return data;
 		} catch (error) {
 			console.error('Failed to fetch defillama protocols:', error);

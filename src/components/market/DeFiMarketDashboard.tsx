@@ -5,36 +5,11 @@ import {
     Shield, Activity, Globe, Users, Clock, Bell,
     ArrowUpDown, FileText, ExternalLink
 } from 'lucide-react';
-import { Line } from 'react-chartjs-2';
-
-// import useFearGreedStore from '../../store/useFearGreedStore';
 import useDefillamaStore from '../../store/useDefillamaStore';
 import { useGetDefillamaProtocols, useGetChainTVL, useGetDexVolume } from '../../hooks/useDefillama';
 import { formatNumberByFrac } from '../../utils/common.util';
-import { DefillamaChainTVL } from '../../types/index';
-import { set } from 'lodash';
 import { coingeckoService } from '../../services/coingecko.service';
 
-
-
-interface MarketOverview {
-    totalTVL: number;
-    tvlChange24h: number;
-    networks: {
-        name: string;
-        tvl: number;
-        change24h: number;
-        logo: string;
-    }[];
-    dexVolume24h: number;
-    cexVolume24h: number;
-    stablecoins: {
-        name: string;
-        symbol: string;
-        supply: number;
-        logo: string;
-    }[];
-}
 interface SpecialTVL {
     gecko_id: string;
     tvl: string;
@@ -45,18 +20,6 @@ interface SpecialTVL {
     logo: string;
 
 }
-
-interface Stablecoin {
-    id: string;
-    name: string;
-    symbol: string;
-    current_price: number;
-    market_cap: number;
-    total_supply: number;
-    image: string;
-    // Add other fields as needed
-}
-
 interface CoinGeckoToken {
     id: string;
     name: string;
@@ -77,74 +40,6 @@ const spacialTvlLogo: { [key: string]: string } = {
     SOL: "https://cryptologos.cc/logos/solana-sol-logo.png",
 }
 
-// Mock data
-const mockMarketOverview: MarketOverview = {
-    totalTVL: 48.5,
-    tvlChange24h: 2.5,
-    networks: [
-        {
-            name: 'Ethereum',
-            tvl: 25.8,
-            change24h: 1.8,
-            logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
-        },
-        {
-            name: 'BSC',
-            tvl: 8.2,
-            change24h: 3.2,
-            logo: 'https://cryptologos.cc/logos/bnb-bnb-logo.png'
-        },
-        {
-            name: 'Solana',
-            tvl: 4.5,
-            change24h: 5.4,
-            logo: 'https://cryptologos.cc/logos/solana-sol-logo.png'
-        }
-    ],
-    dexVolume24h: 12.4,
-    cexVolume24h: 45.2,
-    stablecoins: [
-        {
-            name: 'USDT',
-            symbol: 'USDT',
-            supply: 82.5,
-            logo: 'https://cryptologos.cc/logos/tether-usdt-logo.png'
-        },
-        {
-            name: 'USDC',
-            symbol: 'USDC',
-            supply: 45.2,
-            logo: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png'
-        },
-        {
-            name: 'DAI',
-            symbol: 'DAI',
-            supply: 12.8,
-            logo: 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png'
-        }
-    ]
-};
-
-interface Protocol {
-    name: string;
-    logo: string;
-    category: string;
-    tvl: number;
-    change24h: number;
-    change7d: number;
-    dailyUsers: number;
-    weeklyRevenue: number;
-}
-
-interface YieldOpportunity {
-    protocol: string;
-    logo: string;
-    type: string;
-    apy: number;
-    asset: string;
-    tvl: number;
-}
-
 interface WhaleTransaction {
     hash: string;
     type: string;
@@ -161,48 +56,6 @@ interface WhaleTransaction {
     to: string;
     toType: string;
 }
-
-const mockProtocols: Protocol[] = [
-    {
-        name: 'Aave',
-        logo: 'https://cryptologos.cc/logos/aave-aave-logo.png',
-        category: 'Lending',
-        tvl: 5.2,
-        change24h: 1.5,
-        change7d: -2.8,
-        dailyUsers: 12500,
-        weeklyRevenue: 450000
-    },
-    {
-        name: 'Uniswap',
-        logo: 'https://cryptologos.cc/logos/uniswap-uni-logo.png',
-        category: 'DEX',
-        tvl: 4.8,
-        change24h: -0.8,
-        change7d: 3.2,
-        dailyUsers: 85000,
-        weeklyRevenue: 820000
-    }
-];
-
-const mockYieldOpportunities: YieldOpportunity[] = [
-    {
-        protocol: 'Compound',
-        logo: 'https://cryptologos.cc/logos/compound-comp-logo.png',
-        type: 'Lending',
-        apy: 4.5,
-        asset: 'USDC',
-        tvl: 850000000
-    },
-    {
-        protocol: 'Curve',
-        logo: 'https://cryptologos.cc/logos/curve-dao-token-crv-logo.png',
-        type: 'Liquidity Pool',
-        apy: 8.2,
-        asset: '3pool',
-        tvl: 1250000000
-    }
-];
 
 const mockWhaleTransactions: WhaleTransaction[] = [
     {
@@ -283,7 +136,6 @@ const DeFiMarketDashboard: React.FC = () => {
                 });
 
             setSpacialTvl(formattedSpecialTVL);
-            // console.log("Special TVL data with logos:", formattedSpecialTVL);
         }
     }, [chainTvlData]);
     const [stablecoins, setStablecoins] = useState<CoinGeckoToken[]>([]);
@@ -415,12 +267,12 @@ const DeFiMarketDashboard: React.FC = () => {
 
     if (error) {
         return (
-            <div className="p-6 h-full flex flex-col items-center justify-center text-center">
-                <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-                <p className="text-white/60 mb-4">{error}</p>
+            <div className="p-4 h-full flex flex-col items-center justify-center text-center">
+                <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
+                <p className="text-white/60 mb-3">{error}</p>
                 <button
                     onClick={handleRefresh}
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                    className="px-3 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
                 >
                     Try Again
                 </button>
@@ -429,12 +281,12 @@ const DeFiMarketDashboard: React.FC = () => {
     }
 
     return (
-        <div className="p-6 h-full overflow-y-auto ai-chat-scrollbar">
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-xl font-semibold">DeFi Market Overview</h2>
-                    <div className="flex items-center gap-2 text-sm text-white/60">
-                        <Clock className="w-4 h-4" />
+        <div className="p-3 sm:p-6 h-full overflow-y-auto ai-chat-scrollbar">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <h2 className="text-lg sm:text-xl font-semibold">DeFi Market Overview</h2>
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-white/60">
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
                     </div>
                 </div>
@@ -447,23 +299,24 @@ const DeFiMarketDashboard: React.FC = () => {
                     <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                 </button>
             </div>
-            <div className="space-y-6">
-                {/* chain TVL */}
-                <div className="grid grid-cols-4 gap-4">
-                    <div className="bg-white/5 rounded-xl p-4">
+
+            <div className="space-y-4 sm:space-y-6">
+                {/* Chain TVL - Mobile-responsive grid */}
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <div className="bg-white/5 rounded-xl p-3 sm:p-4">
                         <div className="flex items-center gap-2 mb-2">
                             <Wallet className="w-4 h-4 text-blue-400" />
-                            <span className="text-sm text-white/60">Total Value Locked</span>
+                            <span className="text-xs sm:text-sm text-white/60">Total Value Locked</span>
                         </div>
-                        <div className="text-2xl font-bold mb-1">
+                        <div className="text-xl sm:text-2xl font-bold mb-1">
                             {formattedTotalTvl}
                         </div>
-                        <div className={`flex items-center gap-1 text-sm ${DefistatusData?.totalChange24h >= 0 ? 'text-green-400' : 'text-red-400'
+                        <div className={`flex items-center gap-1 text-xs sm:text-sm ${DefistatusData?.totalChange24h >= 0 ? 'text-green-400' : 'text-red-400'
                             }`}>
                             {DefistatusData?.totalChange24h >= 0 ? (
-                                <TrendingUp className="w-4 h-4" />
+                                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
                             ) : (
-                                <TrendingDown className="w-4 h-4" />
+                                <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4" />
                             )}
                             <span>{Math.abs(DefistatusData?.totalChange24h).toFixed(2)}%</span>
                             <span className="text-white/60">24h</span>
@@ -471,46 +324,48 @@ const DeFiMarketDashboard: React.FC = () => {
                     </div>
 
                     {spacialTvl.map((network) => (
-                        <div key={network.name} className="bg-white/5 rounded-xl p-4">
+                        <div key={network.name} className="bg-white/5 rounded-xl p-3 sm:p-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <img src={network.logo} alt={network.name} className="w-4 h-4" />
-                                <span className="text-sm text-white/60">{network.name} TVL</span>
+                                <span className="text-xs sm:text-sm text-white/60">{network.name} TVL</span>
                             </div>
-                            <div className="text-2xl font-bold mb-1">
+                            <div className="text-xl sm:text-2xl font-bold mb-1">
                                 {formatLargeNumber(Number(network.tvl))}
                             </div>
                         </div>
                     ))}
                 </div>
-                {/* Exchange Volume (24h) */}
-                <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-white/5 rounded-xl p-6">
-                        <h3 className="text-lg font-medium mb-4">Exchange Volume (24h)</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-white/5 rounded-lg">
+
+                {/* Exchange Volume (24h) - Responsive layout */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="bg-white/5 rounded-xl p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4">Exchange Volume (24h)</h3>
+                        <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4">
+                            <div className="p-3 sm:p-4 bg-white/5 rounded-lg">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Globe className="w-4 h-4 text-blue-400" />
-                                    <span className="text-sm">CEX Volume</span>
+                                    <span className="text-xs sm:text-sm">CEX Volume</span>
                                 </div>
-                                <div className="text-2xl font-bold">
+                                <div className="text-lg sm:text-2xl font-bold">
                                     {tradeVolume ? formatLargeNumber(tradeVolume.trade_volume_24h_usd_sum) : '0'}
                                 </div>
                             </div>
-                            <div className="p-4 bg-white/5 rounded-lg">
+                            <div className="p-3 sm:p-4 bg-white/5 rounded-lg">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Activity className="w-4 h-4 text-purple-400" />
-                                    <span className="text-sm">DEX Volume</span>
+                                    <span className="text-xs sm:text-sm">DEX Volume</span>
                                 </div>
-                                <div className="text-2xl font-bold">
+                                <div className="text-lg sm:text-2xl font-bold">
                                     {dexVolume && dexVolume[0].total24h ? formatLargeNumber(dexVolume[0].total24h) : '$0'}
                                 </div>
                             </div>
                         </div>
                     </div>
-                    {/* stablecoin martket */}
-                    <div className="bg-white/5 rounded-xl p-6">
-                        <h3 className="text-lg font-medium mb-4">Stablecoin Market Supply</h3>
-                        <div className="space-y-4">
+
+                    {/* Stablecoin market - Responsive */}
+                    <div className="bg-white/5 rounded-xl p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4">Stablecoin Market Supply</h3>
+                        <div className="space-y-3 sm:space-y-4">
                             {stablecoins.map((stablecoin) => {
                                 const supplyInBillions = stablecoin.total_supply / 1000000000;
                                 const totalSupply = stablecoins.reduce((acc, curr) =>
@@ -518,14 +373,14 @@ const DeFiMarketDashboard: React.FC = () => {
                                 );
 
                                 return (
-                                    <div key={stablecoin.id} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
-                                        <img src={stablecoin.image} alt={stablecoin.name} className="w-8 h-8" />
-                                        <div className="flex-1">
+                                    <div key={stablecoin.id} className="flex items-center gap-3 p-2 sm:p-3 bg-white/5 rounded-lg">
+                                        <img src={stablecoin.image} alt={stablecoin.name} className="w-6 h-6 sm:w-8 sm:h-8" />
+                                        <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between">
-                                                <span className="font-medium">{stablecoin.name}</span>
-                                                <span>${supplyInBillions.toFixed(1)}B</span>
+                                                <span className="text-sm font-medium">{stablecoin.name}</span>
+                                                <span className="text-xs sm:text-sm">${supplyInBillions.toFixed(1)}B</span>
                                             </div>
-                                            <div className="h-1.5 bg-white/10 rounded-full mt-2 overflow-hidden">
+                                            <div className="h-1 sm:h-1.5 bg-white/10 rounded-full mt-1 sm:mt-2 overflow-hidden">
                                                 <div
                                                     className="h-full bg-blue-500"
                                                     style={{
@@ -539,95 +394,140 @@ const DeFiMarketDashboard: React.FC = () => {
                             })}
                         </div>
                     </div>
-
                 </div>
-                {/* Top Protocols */}
-                <div className="bg-white/5 rounded-xl p-6">
-                    <h3 className="text-lg font-medium mb-4">Top Protocols</h3>
+
+                {/* Top Protocols - Responsive table */}
+                <div className="bg-white/5 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4">Top Protocols</h3>
                     <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
+                        <table className="w-full min-w-full">
+                            <thead className="hidden sm:table-header-group">
                                 <tr className="text-left text-white/60">
                                     <th className="pb-4 font-medium">Protocol</th>
                                     <th className="pb-4 font-medium">Category</th>
                                     <th className="pb-4 font-medium text-right">TVL</th>
                                     <th className="pb-4 font-medium text-right">24h Change</th>
                                     <th className="pb-4 font-medium text-right">7d Change</th>
-                                    <th className="pb-4 font-medium text-right">Daily Users</th>
-                                    <th className="pb-4 font-medium text-right">Weekly Revenue</th>
+                                    <th className="pb-4 font-medium text-right hidden md:table-cell">Daily Users</th>
+                                    <th className="pb-4 font-medium text-right hidden md:table-cell">Weekly Revenue</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/10">
+                                {/* Mobile cards / Desktop rows */}
                                 {topProtocols.map((protocol) => (
-                                    <tr key={protocol.name} className="hover:bg-white/5">
-                                        <td className="py-4">
-                                            <div className="flex items-center gap-3">
-                                                <img
-                                                    src={protocol.logo}
-                                                    alt={protocol.name}
-                                                    className="w-8 h-8"
-                                                    onError={(e) => {
-                                                        // Fallback if image fails to load
-                                                        (e.target as HTMLImageElement).src = 'https://placeholder.com/assets/images/placeholder.png';
-                                                    }}
-                                                />
-                                                <span className="font-medium">{protocol.name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-4">
-                                            <span className="px-2 py-1 rounded-full text-sm bg-white/10">
-                                                {protocol.category}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 text-right font-medium">
-                                            {formatLargeNumber(protocol.tvl)}
-                                        </td>
-                                        <td className={`py-4 text-right ${protocol.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                            {protocol.change24h >= 0 ? '+' : ''}{protocol.change24h.toFixed(2)}%
-                                        </td>
-                                        <td className={`py-4 text-right ${protocol.change7d >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                            {protocol.change7d >= 0 ? '+' : ''}{protocol.change7d.toFixed(2)}%
-                                        </td>
-                                        <td className="py-4 text-right">
-                                            {typeof protocol.dailyUsers === 'number'
-                                                ? protocol.dailyUsers.toLocaleString()
-                                                : '-'}
-                                        </td>
-                                        <td className="py-4 text-right">
-                                            {typeof protocol.weeklyRevenue === 'number'
-                                                ? `$${(protocol.weeklyRevenue / 1000).toFixed(1)}K`
-                                                : '-'}
-                                        </td>
-                                    </tr>
+                                    <React.Fragment key={protocol.name}>
+                                        {/* Mobile card view */}
+                                        <tr className="block sm:hidden hover:bg-white/5 rounded-lg mb-3">
+                                            <td className="block p-3">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-3">
+                                                        <img
+                                                            src={protocol.logo}
+                                                            alt={protocol.name}
+                                                            className="w-6 h-6"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).src = 'https://placeholder.com/assets/images/placeholder.png';
+                                                            }}
+                                                        />
+                                                        <span className="font-medium">{protocol.name}</span>
+                                                    </div>
+                                                    <span className="px-2 py-1 rounded-full text-xs bg-white/10">
+                                                        {protocol.category}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                                                    <div>
+                                                        <div className="text-white/60">TVL</div>
+                                                        <div className="font-medium">{formatLargeNumber(protocol.tvl)}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-white/60">24h</div>
+                                                        <div className={`${protocol.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                            {protocol.change24h >= 0 ? '+' : ''}{protocol.change24h.toFixed(2)}%
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-white/60">7d</div>
+                                                        <div className={`${protocol.change7d >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                            {protocol.change7d >= 0 ? '+' : ''}{protocol.change7d.toFixed(2)}%
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                        {/* Desktop table row */}
+                                        <tr className="hidden sm:table-row hover:bg-white/5">
+                                            <td className="py-4 pl-4">
+                                                <div className="flex items-center gap-3">
+                                                    <img
+                                                        src={protocol.logo}
+                                                        alt={protocol.name}
+                                                        className="w-8 h-8"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = 'https://placeholder.com/assets/images/placeholder.png';
+                                                        }}
+                                                    />
+                                                    <span className="font-medium">{protocol.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-4">
+                                                <span className="px-2 py-1 rounded-full text-sm bg-white/10">
+                                                    {protocol.category}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 text-right font-medium">
+                                                {formatLargeNumber(protocol.tvl)}
+                                            </td>
+                                            <td className={`py-4 text-right ${protocol.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                {protocol.change24h >= 0 ? '+' : ''}{protocol.change24h.toFixed(2)}%
+                                            </td>
+                                            <td className={`py-4 text-right ${protocol.change7d >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                {protocol.change7d >= 0 ? '+' : ''}{protocol.change7d.toFixed(2)}%
+                                            </td>
+                                            <td className="py-4 text-right hidden md:table-cell">
+                                                {typeof protocol.dailyUsers === 'number'
+                                                    ? protocol.dailyUsers.toLocaleString()
+                                                    : '-'}
+                                            </td>
+                                            <td className="py-4 text-right hidden md:table-cell">
+                                                {typeof protocol.weeklyRevenue === 'number'
+                                                    ? `$${(protocol.weeklyRevenue / 1000).toFixed(1)}K`
+                                                    : '-'}
+                                            </td>
+                                        </tr>
+                                    </React.Fragment>
                                 ))}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <div className="bg-white/5 rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-medium">Significant Transactions</h3>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-sm text-white/60">
-                                <Clock className="w-4 h-4" />
+                {/* Significant Transactions - Responsive */}
+                <div className="bg-white/5 rounded-xl p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-6">
+                        <h3 className="text-base sm:text-lg font-medium">Significant Transactions</h3>
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-white/60">
+                                <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                                 <span>Auto-updates every minute</span>
                             </div>
                             <button
                                 onClick={handleRefresh}
                                 disabled={refreshing}
-                                className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${refreshing ? 'opacity-50 cursor-not-allowed' : ''
+                                className={`p-1 sm:p-2 rounded-lg hover:bg-white/10 transition-colors ${refreshing ? 'opacity-50 cursor-not-allowed' : ''
                                     }`}
                             >
-                                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                                <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 ${refreshing ? 'animate-spin' : ''}`} />
                             </button>
                         </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                         {mockWhaleTransactions.map((tx) => (
-                            <div key={tx.hash} className="p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-                                <div className="flex items-center justify-between mb-3">
+                            <div key={tx.hash} className="p-3 sm:p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                                {/* Desktop version */}
+                                <div className="hidden sm:flex sm:items-center sm:justify-between mb-3">
                                     <div className="flex items-center gap-3">
                                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTransactionTypeColor(tx.type)}`}>
                                             {tx.type.toUpperCase()}
@@ -656,15 +556,43 @@ const DeFiMarketDashboard: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 text-sm">
+                                {/* Mobile version */}
+                                <div className="flex flex-col sm:hidden gap-2 mb-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTransactionTypeColor(tx.type)}`}>
+                                                {tx.type.toUpperCase()}
+                                            </span>
+                                            <span className="text-xs text-white/60">{tx.timestamp}</span>
+                                        </div>
+                                        <span className={`text-xs ${getImpactColor(tx.impact)}`}>
+                                            {tx.impact.toUpperCase()} IMPACT
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <img src={tx.networkLogo} alt={tx.network} className="w-4 h-4" />
+                                            <span className="text-xs text-white/60">{tx.network}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <img src={tx.tokenLogo} alt={tx.token} className="w-4 h-4" />
+                                            <span className="text-xs font-medium">
+                                                ${(tx.amount / 1000000).toFixed(1)}M {tx.token}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 text-xs sm:text-sm">
                                     <div className="flex items-center gap-1">
                                         {getAddressTypeIcon(tx.fromType)}
-                                        <span className="text-white/60">{tx.from}</span>
+                                        <span className="text-white/60 text-xs sm:text-sm overflow-hidden overflow-ellipsis">{tx.from}</span>
                                     </div>
-                                    <ArrowRight className="w-4 h-4 text-white/40" />
+                                    <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-white/40 flex-shrink-0" />
                                     <div className="flex items-center gap-1">
                                         {getAddressTypeIcon(tx.toType)}
-                                        <span className="text-white/60">{tx.to}</span>
+                                        <span className="text-white/60 text-xs sm:text-sm overflow-hidden overflow-ellipsis">{tx.to}</span>
                                     </div>
                                     <a
                                         href={`https://etherscan.io/tx/${tx.hash}`}
@@ -672,7 +600,7 @@ const DeFiMarketDashboard: React.FC = () => {
                                         rel="noopener noreferrer"
                                         className="ml-auto p-1 hover:bg-white/10 rounded-lg transition-colors"
                                     >
-                                        <ExternalLink className="w-4 h-4 text-white/40" />
+                                        <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 text-white/40" />
                                     </a>
                                 </div>
                             </div>

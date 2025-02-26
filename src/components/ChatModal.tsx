@@ -47,7 +47,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSendModalActive, setIsSendModalActive] = useState(false);
   const [isHelpModalActive, setIsHelpModalActive] = useState(false);
   const { signer, address } = useContext(Web3AuthContext);
-  const { setChatUser, chatUser, receivedMessage, setSelectedUserInChatModal } = useStore();
+  const { setChatUser, chatUser, receivedMessage, setSelectedUserInChatModal, theme } = useStore();
   const toast = useToast()
 
   const [loading, setLoading] = useState(false);
@@ -79,35 +79,35 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const navBtnRef = useRef<HTMLButtonElement>(null);
   const gifBtnRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  //light mode and dark mode
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  // //light mode and dark mode
+  // const [isDarkMode, setIsDarkMode] = useState(true);
 
-  useEffect(() => {
-    const checkTheme = () => {
-      if (document.documentElement.classList.contains('dark')) {
-        setIsDarkMode(true);
-      } else {
-        setIsDarkMode(false);
-      }
-    };
+  // useEffect(() => {
+  //   const checkTheme = () => {
+  //     if (document.documentElement.classList.contains('dark')) {
+  //       setIsDarkMode(true);
+  //     } else {
+  //       setIsDarkMode(false);
+  //     }
+  //   };
 
-    // Check initial theme
-    checkTheme();
+  //   // Check initial theme
+  //   checkTheme();
 
-    // Set up MutationObserver to watch for class changes on the html element
-    if (typeof MutationObserver !== 'undefined') {
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.attributeName === 'class') {
-            checkTheme();
-          }
-        });
-      });
+  //   // Set up MutationObserver to watch for class changes on the html element
+  //   if (typeof MutationObserver !== 'undefined') {
+  //     const observer = new MutationObserver((mutations) => {
+  //       mutations.forEach((mutation) => {
+  //         if (mutation.attributeName === 'class') {
+  //           checkTheme();
+  //         }
+  //       });
+  //     });
 
-      observer.observe(document.documentElement, { attributes: true });
-      return () => observer.disconnect();
-    }
-  }, []);
+  //     observer.observe(document.documentElement, { attributes: true });
+  //     return () => observer.disconnect();
+  //   }
+  // }, []);
 
 
   const setProfile = useCallback(async () => {
@@ -553,21 +553,30 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
   const handleUnlock = async () => {
     if (!chatUser?.uid) {
-      const user = await PushAPI.initialize(signer, {
-        env: CONSTANTS.ENV.PROD,
-      });
+      try {
+        const user = await PushAPI.initialize(signer, {
+          env: CONSTANTS.ENV.PROD,
+        });
 
-      const encryption = await user.encryption.info()
+        const encryption = await user.encryption.info()
 
-      if (encryption?.decryptedPgpPrivateKey) {
-        const pk = {
-          account: user.account,
-          decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+        if (encryption?.decryptedPgpPrivateKey) {
+          const pk = {
+            account: user.account,
+            decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+          }
+          localStorage.setItem(KEY_NAME, JSON.stringify(pk))
+
+          setChatUser(user)
+          initStream(user)
         }
-        localStorage.setItem(KEY_NAME, JSON.stringify(pk))
-
-        setChatUser(user)
-        initStream(user)
+      } catch (err) {
+        console.log('initialize err: ', err)
+        toast({
+          status: 'error',
+          description: `Something went wrong. :(`,
+          duration: 3500
+        })
       }
     }
   }
@@ -1480,7 +1489,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
         <div
-          className={`relative bg-white dark:glass border border-black/10 dark:border-white/10 shadow-lg transition-all duration-300 ease-in-out flex ${isFullscreen
+          className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out flex ${isFullscreen
             ? 'w-full h-full rounded-none'
             : 'w-[90%] h-[90%] rounded-xl'
             }`}
@@ -1493,20 +1502,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             </button>
           </div>}
 
-          {loading && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10'>
+          {loading && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl'>
             <Spinner />
           </div>}
 
           {/* Left Sidebar */}
-          <div className={`absolute md:relative flex flex-col rounded-tl-xl rounded-bl-xl bg-white dark:bg-stone-950 bottom-0 top-0 left-0 w-80 border-r border-black/10 dark:border-white/10 z-[1]
+          <div className={`absolute md:relative flex flex-col rounded-tl-xl rounded-bl-xl bottom-0 top-0 left-0 w-80 border-r border-white/10 z-[1]
+                          ${theme === "dark" ? 'bg-stone-950' : 'bg-stone-100'}
                           transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+40px)] md:translate-x-0"}`}
             ref={sideBarRef}>
-            <div className="p-4 border-b border-black/10 dark:border-white/10">
+            <div className="p-4 border-b border-white/10">
               {/* Updated button styles with bg-black/10 dark:bg-white/10 */}
               <div className="flex items-center gap-2 mb-4">
                 <button
                   onClick={() => setChatMode('group')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${chatMode === 'group' ? 'bg-black/10 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${chatMode === 'group' ? 'bg-white/10' : 'hover:bg-white/5'
                     }`}
                 >
                   <Users className="w-4 h-4" />
@@ -1514,7 +1524,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 </button>
                 <button
                   onClick={() => setChatMode('p2p')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${chatMode === 'p2p' ? 'bg-black/10 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${chatMode === 'p2p' ? 'bg-white/10' : 'hover:bg-white/5'
                     }`}
                 >
                   <MessageSquare className="w-4 h-4" />
@@ -1555,14 +1565,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
               {renderGroupsAndUsers()}
             </div>
 
-            <div className='border-t border-black/10 dark:border-white/10 bottom-[12px] pt-2 px-4'>
+            <div className='border-t border-white/10 bottom-[12px] pt-2 px-4'>
               {ownProfile && <div className='flex justify-between items-center'>
                 <div className='flex justify-center items-center gap-4'>
                   <img src={ownProfile.picture} className='rounded-full w-10 h-10' />
                   <Clipboard address={address} ensName='' />
                 </div>
                 {/* Updated icon style with text-black/50 dark:text-white/50 */}
-                <Edit className='text-black/50 dark:text-white/50 w-4 h-4 cursor-pointer' onClick={() => setIsEditProfileActive(true)} />
+                <Edit className='text-white/50 w-4 h-4 cursor-pointer' onClick={() => setIsEditProfileActive(true)} />
               </div>}
             </div>
           </div>
@@ -1570,9 +1580,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col">
             {/* Chat Header */}
-            <div className="flex items-center justify-between p-2 sm:p-4 border-b border-black/10 dark:border-white/10">
+            <div className="flex items-center justify-between p-2 sm:p-4 border-b border-white/10">
               <div className="flex items-center sm:gap-3">
-                <button className="md:hidden p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors" onClick={() => setIsSidebarOpen(true)} ref={navBtnRef}>
+                <button className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setIsSidebarOpen(true)} ref={navBtnRef}>
                   <SidebarIcon className="w-4 h-4" />
                 </button>
                 {selectedUser ? (
@@ -1635,7 +1645,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     </div> */}
                   </div>
                 ) : (
-                  <div className="text-sm sm:text-md text-black/40 dark:text-white/40">Select a chat to start messaging</div>
+                  <div className="text-sm sm:text-md text-white/40">Select a chat to start messaging</div>
                 )}
               </div>
 
@@ -1652,8 +1662,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   </>
                 )} */}
                 {
-                  selectedGroup?.public == true ? <Tooltip label="Public"><Eye className='w-4 h-4 text-black/50 dark:text-white/50' /></Tooltip> :
-                    selectedGroup?.public == false ? <Tooltip label="Private"><Lock className='w-4 h-4 text-black/50 dark:text-white/50' /></Tooltip> : null
+                  selectedGroup?.public == true ? <Tooltip label="Public"><Eye className='w-4 h-4 text-white/50' /></Tooltip> :
+                    selectedGroup?.public == false ? <Tooltip label="Private"><Lock className='w-4 h-4 text-white/50' /></Tooltip> : null
                 }
                 {selectedGroup && (
                   <button className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setIsChatGroupModalActive(true)}>
@@ -1705,9 +1715,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
             {/* Chat Input */}
             {canAccessChat(selectedUser, selectedGroup) && (
-              <div className="p-2 sm:p-4 border-t border-black/10 dark:border-white/10 relative">
+              <div className="p-2 sm:p-4 border-t border-white/10 relative">
                 <div className="flex items-center gap-1 sm:gap-3">
-                  <button className="p-1 sm:p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors" ref={emojiBtnRef} onClick={() => setIsEmojiOpen(!isEmojiOpen)}>
+                  <button className="p-1 sm:p-2 hover:bg-white/10 rounded-full transition-colors" ref={emojiBtnRef} onClick={() => setIsEmojiOpen(!isEmojiOpen)}>
                     <Smile className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
 
@@ -1717,7 +1727,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     <EmojiPicker
                       open={isEmojiOpen}
                       onEmojiClick={handleEmojiClick}
-                      theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
+                      theme={theme === "dark" ? Theme.DARK : Theme.LIGHT}
                       width={gifAndEmojiWidth}
                     />
                   </div>
@@ -1729,11 +1739,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
                     placeholder="Type a message..."
-                    className="flex-1 bg-black/5 dark:bg-white/5 px-4 py-2 rounded-lg outline-none resize-none overflow-hidden"
+                    className="flex-1 bg-white/5 px-4 py-2 rounded-lg outline-none resize-none overflow-hidden"
                     rows={1}
                   />
 
-                  <button className="p-1 sm:p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors" ref={gifBtnRef} onClick={() => setIsGifOpen(!isGifOpen)}>
+                  <button className="p-1 sm:p-2 hover:bg-white/10 rounded-lg transition-colors" ref={gifBtnRef} onClick={() => setIsGifOpen(!isGifOpen)}>
                     Gif
                   </button>
 
@@ -1742,7 +1752,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     {/* Updated GifPicker with dynamic theme */}
                     <GifPicker
                       tenorApiKey={"AIzaSyBxr4hrP59kdbQV4xJ-t2CSQX0Y6q4gcbA"}
-                      theme={isDarkMode ? GifTheme.DARK : GifTheme.LIGHT}
+                      theme={theme === "dark" ? GifTheme.DARK : GifTheme.LIGHT}
                       onGifClick={handleGifClick}
                       width={gifAndEmojiWidth}
                     />
