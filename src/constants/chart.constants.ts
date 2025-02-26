@@ -16,6 +16,14 @@ export const mapResolutionToSeconds: Record<string, number> = {
     "12M": 31536000,
 };
 
+export const mapTimeRangeToSeconds: Record<string, number> = {
+    "1H": 3600,
+    "1D": 86400,
+    "1W": 604800,
+    "1M": 2592000,
+    "1Y": 31536000,
+};
+
 export const mapTimeRangeToResolution: ResolutionMapping = {
     "1H": "60",
     "1D": "1D",

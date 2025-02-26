@@ -1,11 +1,16 @@
-import {Suspense, useEffect, useMemo, useRef, useState} from 'react';
+import {Suspense, useEffect, useRef, useState} from 'react';
 import {ChartControls} from './ChartControls';
 import {ChartLoader} from './ChartLoader';
 import {ChartErrorBoundary} from './ChartErrorBoundary';
-import type {ChartType, TimeRange, TokenType} from '../../../../types/swap.type';
+import {ChartDataPoint, ChartType, TimeRange, TokenType} from '../../../../types/swap.type';
 import {TokenIcon} from "../TokenIcon.tsx";
 import {TokenPrice} from "../TokenPrice.tsx";
 import useTokenStore from "../../../../store/useTokenStore.ts";
+import {SOLANA_CHAIN_ID} from "../../../../constants/solana.constants.ts";
+import {birdeyeService} from "../../../../services/birdeye.service.ts";
+import {coingeckoService} from "../../../../services/coingecko.service.ts";
+import {mapTimeRangeToSeconds} from "../../../../constants/chart.constants.ts";
+import {ColorType, createChart, CrosshairMode} from "lightweight-charts";
 
 interface ChartProps {
   type: ChartType;
@@ -19,7 +24,7 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
 
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>('1D');
-  const [chartData, setChartData] = useState([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const {getTokenPrice} = useTokenStore()
 
   const price = token ? getTokenPrice(token?.address, token?.chainId) : 0
@@ -29,14 +34,105 @@ export function Chart({ type, onTypeChange, token }: ChartProps) {
     setTimeRange(range);
   };
 
-  useEffect((params) => {
+  const refetchChartData = async () => {
+    let _chartData: ChartDataPoint[] = []
+    const currentTime = Math.round(Date.now() / 1000)
+    const timeFrom = currentTime - mapTimeRangeToSeconds[timeRange] * 30
+
+    if (token) {
+      if (token.chainId === SOLANA_CHAIN_ID) {
+        _chartData = await birdeyeService.getOHLCV(token.address, timeRange, timeFrom, currentTime)
+      } else if (token.address.startsWith('0x')) {
+        const symbol = await coingeckoService.getCoinGeckoIdFrom(token.address, token.chainId)
+        _chartData = await coingeckoService.getOHLCV(symbol.toLowerCase(), timeRange, timeFrom, currentTime);
+      }
+    }
+    
+    setChartData(_chartData)
+  }
+
+  const redrawChart = () => {
+    if (chartContainerRef.current && chartData) {
+
+      const chart = createChart(chartContainerRef.current, {
+        width: 680,
+        height: 420,
+        layout: {
+          background: {
+            type: ColorType.Solid,
+            color: '#000000',
+          },
+          textColor: '#555963',
+        },
+        watermark: {
+          visible: true,
+          fontSize: 48,
+          horzAlign: 'center',
+          vertAlign: 'center',
+          color: 'rgba(86,86,86,0.3)',
+          text: 'Dexfin',
+        },
+        grid: {
+          vertLines: {
+            color: 'rgba(45,45,49,.55)',
+          },
+          horzLines: {
+            color: 'rgba(45,45,49,.55)',
+          },
+        },
+        crosshair: {
+          mode: CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+          borderColor: 'rgba(45,45,49,.55)',
+        },
+        timeScale: {
+          visible: true,
+          timeVisible: true,
+          secondsVisible: true,
+          borderColor: 'rgba(45,45,49,.55)',
+          barSpacing: 18
+        },
+      });
+      const candleSeries = chart.addCandlestickSeries({
+            upColor: greenColor,
+            downColor: redColor,
+            borderDownColor: redColor,
+            borderUpColor: greenColor,
+            wickDownColor: redColor,
+            wickUpColor: greenColor,
+          })
+
+      candleSeries.setData(chartData);
+
+      return () => {
+        chart.remove();
+      }
+    }
+  }
+
+
+  useEffect(() => {
     // console.log("useEffect");
-    if (fromToken && toToken) {
-      retreiveNewData(selectedTimeType);
+    if (token && timeRange) {
+      refetchChartData()
     } else {
       setChartData([]);
     }
-  }, [type, token, timeRange]);
+  }, [type, token, timeRange, refetchChartData]);
+
+
+  useEffect(() => {
+    // console.log("params", params);
+    if (chartContainerRef.current) {
+      chartContainerRef.current.innerHTML = "";
+    }
+    redrawChart();
+  }, [chartData, redrawChart]);
+
+
+
+
 
 
   return (
