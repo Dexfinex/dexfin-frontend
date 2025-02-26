@@ -12,7 +12,7 @@ import { TokenChainIcon } from './swap/components/TokenIcon.tsx';
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
 import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
 import useTokenTransferStore from '../store/useTokenTransferStore.ts';
-import { useEvmWalletBalance } from '../hooks/useBalance.tsx';
+import { useEvmWalletBalance, useWalletBalance } from '../hooks/useBalance.tsx';
 import { useEvmWalletTransfer } from '../hooks/useTransfer.tsx';
 import { formatDate } from '../utils/common.util.ts';
 
@@ -29,7 +29,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const [showBuyDrawer, setShowBuyDrawer] = useState(false);
   const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
 
-  const { isLoading: isLoadingBalance } = useEvmWalletBalance();
+  const { isLoading: isLoadingBalance } = useWalletBalance();
   const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
   useEvmWalletTransfer();
   const { transfers } = useTokenTransferStore();
