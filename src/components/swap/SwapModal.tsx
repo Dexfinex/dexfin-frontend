@@ -47,7 +47,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
 
     // Responsive layout
     const isMobile = useBreakpointValue({base: true, md: false})
-    const [showChart, setShowChart] = useState(true)
+    const [showChart, setShowChart] = useState(false)
 
     // Set default view based on screen size
     useEffect(() => {

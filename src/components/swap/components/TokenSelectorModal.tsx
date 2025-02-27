@@ -7,6 +7,8 @@ import {mapPopularTokens, NETWORK, NETWORKS} from "../../../config/networks.ts";
 import {shrinkAddress} from "../../../utils/common.util.ts";
 import {savedTokens} from "../../../config/tokens.ts";
 import {Button, HStack, Image, Text} from "@chakra-ui/react";
+import useLocalStorage from "../../../hooks/useLocalStorage.ts";
+import {LOCAL_STORAGE_STARRED_TOKENS} from "../../../constants";
 
 /*
 const CATEGORIES = [
@@ -25,18 +27,18 @@ interface TokenSelectorModalProps {
 
 export function TokenSelectorModal({
                                        isOpen,
-                                       selectedToken,
+                                       // selectedToken,
                                        selectedChainId,
                                        onSelect,
                                        onClose,
                                    }: TokenSelectorModalProps) {
 
-    const [loading, setLoading] = useState(false);
+    const [loading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(null);
-    const [starredTokens, setStarredTokens] = useState<Set<string>>(new Set());
+    const [starredTokenMap, setStarredTokenMap] = useLocalStorage<Record<string, boolean> | null>(LOCAL_STORAGE_STARRED_TOKENS, {})
     const [showStarredOnly, setShowStarredOnly] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState<'all' | 'meme'>('all');
+    const [selectedCategory] = useState<'all' | 'meme'>('all');
 
     const tokens = useMemo(() => {
         return savedTokens[selectedNetwork?.id ?? 'all']
@@ -45,15 +47,15 @@ export function TokenSelectorModal({
     const filteredTokens = useMemo(() => {
         const filteredList = tokens.filter(token => {
             const matchesSearch =
-                token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                token.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 token.name.toLowerCase().includes(searchQuery.toLowerCase());
             // const matchesNetwork = !selectedNetwork || token.chainId.toString() === selectedNetwork;
-            const matchesStarred = !showStarredOnly || starredTokens.has(token.address);
+            const matchesStarred = !showStarredOnly || starredTokenMap?.[`${token.chainId}:${token.address}`]
             const matchesCategory = selectedCategory === 'all' || token.category === selectedCategory;
             return matchesSearch && matchesStarred && matchesCategory;
         })
         return filteredList.length > 100 ? filteredList.slice(0, 100) : filteredList
-    }, [tokens, searchQuery])
+    }, [tokens, searchQuery, showStarredOnly, starredTokenMap, selectedCategory])
 
     useEffect(() => {
         if (selectedChainId) {
@@ -77,17 +79,23 @@ export function TokenSelectorModal({
       }, []);
     */
 
-    const toggleStar = (e: React.MouseEvent, address: string) => {
+    const toggleStar = (e: React.MouseEvent, chainId: number, address: string) => {
         e.stopPropagation();
-        setStarredTokens(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(address)) {
-                newSet.delete(address);
-            } else {
-                newSet.add(address);
+        console.log("setStarredTokenMap")
+        setStarredTokenMap(prev => {
+            if (!prev) return {}
+
+            const tokenKey = `${chainId}:${address}`
+            if (prev[tokenKey]) {
+                const { [tokenKey]: _, ...rest} = prev
+                return rest
             }
-            return newSet;
-        });
+
+            return {
+                ...prev,
+                [tokenKey]: true
+            }
+        })
     };
 
     const popularTokens = useMemo(() => {
@@ -228,15 +236,15 @@ export function TokenSelectorModal({
                                 >
                                     <div className="flex items-center gap-3">
                                         <div
-                                            onClick={(e) => toggleStar(e, token.address)}
+                                            onClick={(e) => toggleStar(e, token.chainId, token.address)}
                                             className={`p-1.5 rounded-lg transition-colors ${
-                                                starredTokens.has(token.address)
+                                                starredTokenMap?.[`${token.chainId}:${token.address}`]
                                                     ? 'text-yellow-400 bg-yellow-400/10'
                                                     : 'text-gray-400 hover:text-yellow-400'
                                             } cursor-pointer`}
                                         >
                                             <Star className="w-4 h-4"
-                                                  fill={starredTokens.has(token.address) ? "currentColor" : "none"}/>
+                                                  fill={starredTokenMap?.[`${token.chainId}:${token.address}`] ? "currentColor" : "none"}/>
                                         </div>
                                         <img src={token.logoURI} alt={token.symbol} className="w-8 h-8 rounded-full"/>
                                         <div>
