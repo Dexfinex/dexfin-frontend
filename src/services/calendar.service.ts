@@ -5,7 +5,6 @@ const REGISTER_MUTATION = `
   mutation register($data: AuthInput!) {
     register(data: $data) {
       accessToken
-      refreshToken
     }
   }
 `;
@@ -16,7 +15,8 @@ export const calendarService = {
         try {
             const variables = {
                 data: {
-                    walletAddress
+                    walletAddress,
+                    username: "ddddq"
                 }
             };
             const { data } = await userAuthApi.post('', {
@@ -39,6 +39,7 @@ export const calendarService = {
             throw error;
         }
     },
+
     deleteEvent: async (userId: string, eventId: any) => {
         try {
             const { data } = await calendarApi.delete(`/${eventId}`, {

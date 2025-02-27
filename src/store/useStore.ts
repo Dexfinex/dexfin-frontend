@@ -142,6 +142,11 @@ interface StoreState {
   istrade: boolean;
   setTradeOpen: (isOpen: boolean) => void;
 
+  isUsernameModalOpen: boolean;
+  setIsUsernameModalOpen: (isOpen: boolean) => void;
+
+  
+
   // Market Data View
   marketDataView: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed';
   setMarketDataView: (view: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed') => void;
@@ -211,6 +216,7 @@ interface StoreState {
   setSelectedUserInChatModal: (user: IUser) => void;
 }
 
+
 const useStore = create<StoreState>((set) => ({
   // Menu Items
   menuItems: [
@@ -259,6 +265,8 @@ const useStore = create<StoreState>((set) => ({
   setIsGamesOpen: (isOpen) => set({ isGamesOpen: isOpen }),
   istrade: false,
   setTradeOpen: (isOpen) => set({ istrade: isOpen }),
+  isUsernameModalOpen: false,
+  setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
 
   // Market Data View
   marketDataView: 'overview',

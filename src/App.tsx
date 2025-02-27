@@ -20,6 +20,7 @@ import { LOCAL_STORAGE_AUTH_REDIRECT_TYPE } from "./constants";
 import { TradingViewModal } from './components/TradingViewModal.tsx';
 import { initStream, KEY_NAME } from './utils/chatApi.ts';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
+import UsernameModal from "./components/UsernameModal.tsx";
 
 export default function App() {
     const { theme } = useStore();
@@ -52,7 +53,9 @@ export default function App() {
         setTradeOpen,
         menuItems,
         chatUser,
-        setChatUser
+        setChatUser,
+
+        isUsernameModalOpen
     } = useStore();
 
     const {
@@ -61,6 +64,7 @@ export default function App() {
         // setAuthMethod,
         address,
         isConnected,
+        checkWalletAndUsername
     } = useContext(Web3AuthContext);
 
     // show modal if redirect from social login
@@ -81,12 +85,14 @@ export default function App() {
             setIsSigninModalOpen(false)
             setIsSignupModalOpen(false)
 
+            checkWalletAndUsername();
+
             if (!chatUser) {
                 // unlock chat profile
                 unlockProfile()
             }
         }
-    }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen]);
+    }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen, checkWalletAndUsername]);
 
     const unlockProfile = async () => {
         const chatKey = localStorage.getItem(KEY_NAME)
@@ -208,6 +214,10 @@ export default function App() {
             <TradingViewModal
                 isOpen={istrade}
                 onClose={() => setTradeOpen(false)}
+            />
+            <UsernameModal
+                isOpen={isUsernameModalOpen}
+                onClose={() => useStore.getState().setIsUsernameModalOpen(false)}
             />
         </div>
     );
