@@ -51,7 +51,7 @@ const TechnicalIndicator: React.FC<IndicatorProps> = ({
       </Badge>
     </HStack>
     <Skeleton isLoaded={!isLoading}>
-      <Text color="white" fontSize="xl" fontWeight="bold" mb={2}>
+      <Text  fontSize="xl" fontWeight="bold" mb={2}>
         {value.toFixed(2)}
       </Text>
       {label != "MACD" &&
@@ -136,7 +136,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
         <Box className="glass-effect border border-white/10" p={6} rounded="xl" position="relative">
           <HStack mb={6} spacing={3}>
             <Activity size={24} color="var(--chakra-colors-blue-400)" />
-            <Text color="white" fontSize="xl" fontWeight="bold">
+            <Text  fontSize="xl" fontWeight="bold">
               Technical Indicators
             </Text>
           </HStack>
@@ -155,7 +155,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
               justifyContent="center"
               rounded="xl"
             >
-              <Text color="white">Loading indicators...</Text>
+              <Text >Loading indicators...</Text>
             </Box>
           )}
 
@@ -198,7 +198,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
         <Box className="glass-effect border border-white/10" p={6} rounded="xl" position="relative">
           <HStack mb={6} spacing={3}>
             <BarChart3 size={24} color="var(--chakra-colors-blue-400)" />
-            <Text color="white" fontSize="xl" fontWeight="bold">
+            <Text  fontSize="xl" fontWeight="bold">
               Moving Averages
             </Text>
           </HStack>
@@ -217,7 +217,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
               justifyContent="center"
               rounded="xl"
             >
-              <Text color="white">Loading price data...</Text>
+              <Text >Loading price data...</Text>
             </Box>
           )}
 
@@ -252,7 +252,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
               <Box>
                 <Text color="gray.400" fontSize="sm" mb={1}>MA (20)</Text>
                 <Skeleton isLoaded={!isLoading}>
-                  <Text color="white" fontWeight="medium">
+                  <Text  fontWeight="medium">
                     ${data?.moving_averages?.movingAverages?.ma20.toLocaleString() ?? '0.00'}
                   </Text>
                 </Skeleton>
@@ -260,7 +260,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
               <Box>
                 <Text color="gray.400" fontSize="sm" mb={1}>MA (50)</Text>
                 <Skeleton isLoaded={!isLoading}>
-                  <Text color="white" fontWeight="medium">
+                  <Text  fontWeight="medium">
                     ${data?.moving_averages?.movingAverages?.ma50.toLocaleString() ?? '0.00'}
                   </Text>
                 </Skeleton>
@@ -268,7 +268,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
               <Box>
                 <Text color="gray.400" fontSize="sm" mb={1}>MA (100)</Text>
                 <Skeleton isLoaded={!isLoading}>
-                  <Text color="white" fontWeight="medium">
+                  <Text  fontWeight="medium">
                     ${data?.moving_averages?.movingAverages?.ma100.toLocaleString() ?? '0.00'}
                   </Text>
                 </Skeleton>
@@ -276,7 +276,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
               <Box>
                 <Text color="gray.400" fontSize="sm" mb={1}>MA (200)</Text>
                 <Skeleton isLoaded={!isLoading}>
-                  <Text color="white" fontWeight="medium">
+                  <Text  fontWeight="medium">
                     ${data?.moving_averages?.movingAverages?.ma200.toLocaleString() ?? '0.00'}
                   </Text>
                 </Skeleton>
@@ -301,7 +301,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
       <Box className="glass-effect" p={6} rounded="xl" mt={4}>
         <HStack mb={4} spacing={3}>
           <BarChart3 size={24} color="var(--chakra-colors-blue-400)" />
-          <Text color="white" fontSize="xl" fontWeight="bold">
+          <Text  fontSize="xl" fontWeight="bold">
             Signal Summary
           </Text>
         </HStack>
