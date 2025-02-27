@@ -1,7 +1,5 @@
-import {Suspense, useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {ChartControls} from './ChartControls';
-import {ChartLoader} from './ChartLoader';
-import {ChartErrorBoundary} from './ChartErrorBoundary';
 import {ChartDataPoint, ChartType, TimeRange, TokenType} from '../../../../types/swap.type';
 import {TokenIcon} from "../TokenIcon.tsx";
 import {TokenPrice} from "../TokenPrice.tsx";
@@ -34,13 +32,19 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
     const {getTokenPrice} = useTokenStore()
 
     const price = token ? getTokenPrice(token?.address, token?.chainId) : 0
-    // const change = ((data[data.length - 1]?.close ?? 0) - (data[0]?.close ?? 0)) / (data[0]?.close ?? 1) * 100
+    const change = ((chartData[chartData.length - 1]?.close ?? 0) - (chartData[0]?.close ?? 0)) / (chartData[0]?.close ?? 1) * 100
 
     const handleTimeRangeChange = (range: TimeRange) => {
         setTimeRange(range);
     };
 
     const refetchChartData = async () => {
+        setIsLoading(true)
+        if (chartContainerRef.current) {
+            chartContainerRef.current.innerHTML = "";
+        }
+
+
         let _chartData: ChartDataPoint[] = []
         const currentTime = Math.round(Date.now() / 1000) - 60
 
@@ -56,14 +60,13 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
         }
 
         setChartData(_chartData)
+        setIsLoading(false)
     }
 
     useEffect(() => {
         // console.log("useEffect");
         if (token && timeRange) {
-            setIsLoading(true)
             refetchChartData()
-            setIsLoading(false)
         } else {
             setChartData([]);
         }
@@ -72,10 +75,6 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
 
     useEffect(() => {
         if (!chartContainerRef.current) return;
-        if (chartContainerRef.current) {
-            chartContainerRef.current.innerHTML = "";
-        }
-
         const chartWidget = createChart(chartContainerRef.current, {
             width: 680,
             height: 420,
@@ -169,7 +168,7 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
 
         return () => observer.disconnect();
     }, [chart]);
-    
+
 
     useEffect(() => {
         const handleResize = () => {
@@ -203,7 +202,7 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
                   className="text-base font-bold text-white group-hover:text-blue-400 transition-colors tracking-wide font-['Exo']">{token.symbol}</span>
                         <span className="text-xs text-gray-400 ml-1.5 font-['Exo']">{token.name}</span>
                     </div>
-                    <TokenPrice timeRange={timeRange} price={price} change={0}/>
+                    <TokenPrice timeRange={timeRange} price={price} change={change}/>
                 </div>
             </div>
 
@@ -214,15 +213,16 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
                 onTimeRangeChange={handleTimeRangeChange}
             />
             <div className="h-[calc(100%-100px)] overflow-hidden p-3 relative z-0">
-                <ChartErrorBoundary>
-                    <Suspense fallback={<ChartLoader/>}>
-                        {
-                            isLoading ? <ChartLoader/> : null
-                        }
+                {
+                    isLoading ? (
+                        <div className="flex items-center justify-center p-8 h-full">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"/>
+                        </div>
+                    ) : (
                         <div ref={chartContainerRef}
                         ></div>
-                    </Suspense>
-                </ChartErrorBoundary>
+                    )
+                }
             </div>
         </div>
     );

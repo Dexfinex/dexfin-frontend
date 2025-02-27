@@ -20,21 +20,21 @@ export function ChartToggle({ type, onTypeChange }: ChartToggleProps) {
       <div className="relative flex">
         <button
           onClick={() => onTypeChange("line")}
-          className={`relative z-10 flex items-center gap-1.5 justify-center px-2 sm:px-3 py-1.5 rounded-md transition-all duration-300 min-w-[40px] sm:min-w-[80px] ${
+          className={`relative z-10 flex items-center gap-1.5 justify-center px-2 sm:px-3 py-1.5 rounded-md transition-all duration-300 min-w-[40px] ${
             type === "line" ? "text-white" : "text-white hover:text-white"
           }`}
         >
           <LineChart className="w-3.5 h-3.5 shrink-0" />
-          <span className="hidden sm:inline text-xs font-medium whitespace-nowrap">Line</span>
+          {/*<span className="hidden sm:inline text-xs font-medium whitespace-nowrap">Line</span>*/}
         </button>
         <button
           onClick={() => onTypeChange("tradingview")}
-          className={`relative z-10 flex items-center gap-1.5 justify-center px-2 sm:px-3 py-1.5 rounded-md transition-all duration-300 min-w-[40px] sm:min-w-[80px] ${
+          className={`relative z-10 flex items-center gap-1.5 justify-center px-2 sm:px-3 py-1.5 rounded-md transition-all duration-300 min-w-[40px] ${
             type === "tradingview" ? "text-white" : "text-white hover:text-white"
           }`}
         >
           <CandlestickChart className="w-3.5 h-3.5 shrink-0" />
-          <span className="hidden sm:inline text-xs font-medium whitespace-nowrap">Trading View</span>
+          {/*<span className="hidden sm:inline text-xs font-medium whitespace-nowrap">Trading View</span>*/}
         </button>
       </div>
     </div>
