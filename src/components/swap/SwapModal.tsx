@@ -102,6 +102,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                                 <Chart
                                     type={chartType}
                                     onTypeChange={setChartType}
+                                    isMaximized={isMaximized}
                                     token={(fromToken ? fromToken : toToken) as TokenType}
                                 />
                             </div>

@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {ChartControls} from './ChartControls';
 import {ChartDataPoint, ChartType, TimeRange, TokenType} from '../../../../types/swap.type';
 import {TokenIcon} from "../TokenIcon.tsx";
@@ -15,14 +15,16 @@ interface ChartProps {
     type: ChartType;
     onTypeChange: (type: ChartType) => void;
     token: TokenType;
+    isMaximized: boolean;
 }
 
 const redColor = '#f03349', greenColor = '#179981'
 
 
-export function Chart({type, onTypeChange, token}: ChartProps) {
+export function Chart({type, onTypeChange, token, isMaximized}: ChartProps) {
 
     const {theme} = useStore();
+    const chartParentContainerRef = useRef<HTMLDivElement | null>(null);
     const chartContainerRef = useRef<HTMLDivElement | null>(null);
     const [isLoading, setIsLoading] = useState(true); // Default to 5M
     const [timeRange, setTimeRange] = useState<TimeRange>('1D');
@@ -152,16 +154,21 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
     }, [chartData, theme, type]); // Empty dependency array to create chart only once
 
 
+    const resizeChartWidth = useCallback(() => {
+        if (chartContainerRef.current) {
+            const width = (chartParentContainerRef.current?.parentElement?.parentElement?.parentElement?.parentElement?.clientWidth ?? chartContainerRef.current?.clientWidth) - 440
+            chart?.applyOptions({
+                width,
+            });
+        }
+    }, [chart])
+
     useEffect(() => {
-        const container = chartContainerRef.current;
+        const container = chartParentContainerRef.current;
         if (!container) return;
 
         const observer = new ResizeObserver(() => {
-            if (chartContainerRef.current) {
-                chart?.applyOptions({
-                    width: chartContainerRef.current.clientWidth,
-                });
-            }
+            resizeChartWidth()
         });
 
         observer.observe(container);
@@ -169,20 +176,15 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
         return () => observer.disconnect();
     }, [chart]);
 
+    useEffect(() => {
+        resizeChartWidth()
+    }, [isMaximized]);
 
     useEffect(() => {
-        const handleResize = () => {
-            if (chartContainerRef.current) {
-                chart?.applyOptions({
-                    width: chartContainerRef.current.clientWidth,
-                });
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
+        window.addEventListener('resize', resizeChartWidth);
 
         return () => {
-            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('resize', resizeChartWidth);
             chart?.remove();
         };
     }, [chart]);
@@ -212,7 +214,7 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
                 onTypeChange={onTypeChange}
                 onTimeRangeChange={handleTimeRangeChange}
             />
-            <div className="h-[calc(100%-100px)] overflow-hidden p-3 relative z-0">
+            <div className="h-[calc(100%-100px)] overflow-hidden p-3 relative z-0" ref={chartParentContainerRef}>
                 {
                     isLoading ? (
                         <div className="flex items-center justify-center p-8 h-full">
