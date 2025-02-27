@@ -25,9 +25,10 @@ export interface Message {
   content: string;
   tip?: string;
   priceData?: BrianCoinData;
+  technicalAnalysis?: TechnicalAnalysisData;
   trending?: AnalysisTrendingCoin[];
-  losers?: AnalysisLoser[]; 
-  gainers?: AnalysisGainer[]; 
+  losers?: AnalysisLoser[];
+  gainers?: AnalysisGainer[];
   news?: NewsItem[];
   link?: string;
 }
@@ -65,6 +66,70 @@ export interface AnalysisTrendingCoin {
   priceUsd: number;
   volume: number;
   analysis: string;
+}
+
+export interface TechnicalAnalysisData {
+  analysis: {
+    technicalIndicators: {
+      rsi: {
+        value: number;
+        signal: string;
+      };
+      macd: {
+        value: number;
+        signal: string;
+        histogram?: number;
+        signalLine?: number;
+      };
+      stochasticRsi: {
+        value: number;
+        signal: string;
+      };
+      bollingerBands: {
+        value: number;
+        signal: string;
+        upperBand?: number;
+        lowerBand?: number;
+      };
+    };
+  }
+  moving_averages: {
+    price: number;
+    priceChange: number;
+    priceChangePercent: number;
+    movingAverages: {
+      ma20: number;
+      ma50: number;
+      ma100: number;
+      ma200: number;
+    };
+    chartData: {
+      time: number;
+      price: number;
+      ma20?: number;
+      ma50?: number;
+      ma100?: number;
+      ma200?: number;
+    }[]; 
+  }
+  signals: {
+    signals: {
+      buySignals: number;
+      sellSignals: number;
+      neutralSignals: number;
+      recommendation: string;
+    };
+    indicators: {
+      name: string;
+      value: number;
+      signal: string;
+    }[];
+  }
+  summary: {
+    shortTerm: string;
+    mediumTerm: string;
+    overallTrend: string;
+  }
 }
 
 export interface TrendingCoin {

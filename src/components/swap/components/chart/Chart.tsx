@@ -1,7 +1,5 @@
-import {Suspense, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {ChartControls} from './ChartControls';
-import {ChartLoader} from './ChartLoader';
-import {ChartErrorBoundary} from './ChartErrorBoundary';
 import {ChartDataPoint, ChartType, TimeRange, TokenType} from '../../../../types/swap.type';
 import {TokenIcon} from "../TokenIcon.tsx";
 import {TokenPrice} from "../TokenPrice.tsx";
@@ -12,19 +10,23 @@ import {coingeckoService} from "../../../../services/coingecko.service.ts";
 import {mapTimeRangeToSeconds, mapTimeRangeToSecondsForBirdEye} from "../../../../constants/chart.constants.ts";
 import {ColorType, createChart, CrosshairMode, IChartApi, ISeriesApi, SeriesType} from "lightweight-charts";
 import {useStore} from "../../../../store/useStore.ts";
+import {useBreakpointValue} from "@chakra-ui/react";
 
-interface ChartProps {
+export interface ChartProps {
     type: ChartType;
     onTypeChange: (type: ChartType) => void;
     token: TokenType;
+    isMaximized: boolean;
 }
 
 const redColor = '#f03349', greenColor = '#179981'
 
 
-export function Chart({type, onTypeChange, token}: ChartProps) {
+export function Chart({type, onTypeChange, token, isMaximized}: ChartProps) {
 
+    const isMobile = useBreakpointValue({base: true, md: false})
     const {theme} = useStore();
+    const chartParentContainerRef = useRef<HTMLDivElement | null>(null);
     const chartContainerRef = useRef<HTMLDivElement | null>(null);
     const [isLoading, setIsLoading] = useState(true); // Default to 5M
     const [timeRange, setTimeRange] = useState<TimeRange>('1D');
@@ -34,13 +36,19 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
     const {getTokenPrice} = useTokenStore()
 
     const price = token ? getTokenPrice(token?.address, token?.chainId) : 0
-    // const change = ((data[data.length - 1]?.close ?? 0) - (data[0]?.close ?? 0)) / (data[0]?.close ?? 1) * 100
+    const change = Math.abs(((chartData[chartData.length - 1]?.close ?? 0) - (chartData[0]?.close ?? 0)) / (chartData[0]?.close ?? 1) * 100)
 
     const handleTimeRangeChange = (range: TimeRange) => {
         setTimeRange(range);
     };
 
     const refetchChartData = async () => {
+        setIsLoading(true)
+        if (chartContainerRef.current) {
+            chartContainerRef.current.innerHTML = "";
+        }
+
+
         let _chartData: ChartDataPoint[] = []
         const currentTime = Math.round(Date.now() / 1000) - 60
 
@@ -56,14 +64,13 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
         }
 
         setChartData(_chartData)
+        setIsLoading(false)
     }
 
     useEffect(() => {
         // console.log("useEffect");
         if (token && timeRange) {
-            setIsLoading(true)
             refetchChartData()
-            setIsLoading(false)
         } else {
             setChartData([]);
         }
@@ -72,13 +79,9 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
 
     useEffect(() => {
         if (!chartContainerRef.current) return;
-        if (chartContainerRef.current) {
-            chartContainerRef.current.innerHTML = "";
-        }
-
         const chartWidget = createChart(chartContainerRef.current, {
-            width: 680,
-            height: 420,
+            width: isMobile ? window.innerWidth : 680,
+            height: isMobile ? window.innerHeight * .45 : 420,
             layout: {
                 background: {
                     type: ColorType.Solid,
@@ -153,37 +156,37 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
     }, [chartData, theme, type]); // Empty dependency array to create chart only once
 
 
+    const resizeChartWidth = useCallback(() => {
+        if (chartContainerRef.current && !isMobile) {
+            const width = (chartParentContainerRef.current?.parentElement?.parentElement?.parentElement?.parentElement?.clientWidth ?? chartContainerRef.current?.clientWidth) - 440
+            chart?.applyOptions({
+                width,
+            });
+        }
+    }, [chart, isMobile])
+
     useEffect(() => {
-        const container = chartContainerRef.current;
+        const container = chartParentContainerRef.current;
         if (!container) return;
 
         const observer = new ResizeObserver(() => {
-            if (chartContainerRef.current) {
-                chart?.applyOptions({
-                    width: chartContainerRef.current.clientWidth,
-                });
-            }
+            resizeChartWidth()
         });
 
         observer.observe(container);
 
         return () => observer.disconnect();
     }, [chart]);
-    
 
     useEffect(() => {
-        const handleResize = () => {
-            if (chartContainerRef.current) {
-                chart?.applyOptions({
-                    width: chartContainerRef.current.clientWidth,
-                });
-            }
-        };
+        resizeChartWidth()
+    }, [isMaximized]);
 
-        window.addEventListener('resize', handleResize);
+    useEffect(() => {
+        window.addEventListener('resize', resizeChartWidth);
 
         return () => {
-            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('resize', resizeChartWidth);
             chart?.remove();
         };
     }, [chart]);
@@ -203,7 +206,7 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
                   className="text-base font-bold text-white group-hover:text-blue-400 transition-colors tracking-wide font-['Exo']">{token.symbol}</span>
                         <span className="text-xs text-gray-400 ml-1.5 font-['Exo']">{token.name}</span>
                     </div>
-                    <TokenPrice timeRange={timeRange} price={price} change={0}/>
+                    <TokenPrice timeRange={timeRange} price={price} change={change}/>
                 </div>
             </div>
 
@@ -213,16 +216,17 @@ export function Chart({type, onTypeChange, token}: ChartProps) {
                 onTypeChange={onTypeChange}
                 onTimeRangeChange={handleTimeRangeChange}
             />
-            <div className="h-[calc(100%-100px)] overflow-hidden p-3 relative z-0">
-                <ChartErrorBoundary>
-                    <Suspense fallback={<ChartLoader/>}>
-                        {
-                            isLoading ? <ChartLoader/> : null
-                        }
+            <div className="h-[calc(100%-100px)] overflow-hidden p-3 relative z-0" ref={chartParentContainerRef}>
+                {
+                    isLoading ? (
+                        <div className="flex items-center justify-center p-8 h-full">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"/>
+                        </div>
+                    ) : (
                         <div ref={chartContainerRef}
                         ></div>
-                    </Suspense>
-                </ChartErrorBoundary>
+                    )
+                }
             </div>
         </div>
     );

@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {Box, Flex, HStack, Modal, ModalContent, ModalOverlay, Text,} from '@chakra-ui/react';
+import React, {useEffect, useState} from 'react';
+import {Box, Flex, HStack, Modal, ModalContent, ModalOverlay, Text, useBreakpointValue,} from '@chakra-ui/react';
 import {Maximize2, X} from 'lucide-react';
 import {SellBox} from "./components/SellBox";
 import {BuyBox} from "./components/BuyBox";
@@ -10,6 +10,7 @@ import {Chart} from "./components/chart/Chart.tsx";
 import {ConfirmSwapModal} from "./modals/ConfirmSwapModal.tsx";
 import {NULL_ADDRESS} from "../../constants";
 import {SolanaSwapBox} from "./components/SolanaSwapBox.tsx";
+import {ChartDrawer} from "./components/chart/ChartDrawer.tsx";
 
 interface SwapModalProps {
     isOpen: boolean;
@@ -44,19 +45,22 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
     const [chartType, setChartType] = useState<ChartType>('tradingview');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+    // Responsive layout
+    const isMobile = useBreakpointValue({base: true, md: false})
+    const [showChart, setShowChart] = useState(false)
+
+    // Set default view based on screen size
+    useEffect(() => {
+        setShowChart(!isMobile)
+    }, [isMobile])
+
+
     const handleSwitch = () => {
         setFromToken(toToken);
         setToToken(fromToken);
         setFromAmount(toAmount);
         setToAmount(fromAmount);
     };
-
-    /*
-        const handleSwap = () => {
-            if (!fromAmount || !toAmount) return;
-            setShowConfirmModal(true);
-        };
-    */
 
     const handleConfirmSwap = () => {
         // TODO: Implement actual swap logic
@@ -102,23 +106,38 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                     maxH="90vh"
                     overflow="hidden"
                 >
-                    <Flex h="full">
+                    <Flex h="full" direction={{ base: "column", md: "row" }} maxH={{ base: "95vh", md: "90vh" }}>
                         {/* Left Side - Token Info */}
-                        <Box flex={2} p={2} borderRight="1px" borderColor="whiteAlpha.200">
-                            <div className="w-full h-full">
-                                <Chart
-                                    type={chartType}
-                                    onTypeChange={setChartType}
-                                    token={(fromToken ? fromToken : toToken) as TokenType}
-                                />
-                            </div>
-                        </Box>
+                        {!isMobile && (
+                            <Box flex={2} p={2} borderRight="1px" borderColor="whiteAlpha.200">
+                                <div className="w-full h-full">
+                                    <Chart
+                                        type={chartType}
+                                        onTypeChange={setChartType}
+                                        isMaximized={isMaximized}
+                                        token={(fromToken ? fromToken : toToken) as TokenType}
+                                    />
+                                </div>
+                            </Box>
+                        )}
 
                         {/* Right Side - Swap Interface */}
-                        <Box w="400px" p={6}>
+                        <Box minW={["100%", "400px"]} p={6}>
                             {/* Header */}
                             <Flex justify="space-between" align="center" mb={6}>
-                                <Text fontSize="xl" fontWeight="bold">Swap</Text>
+                                <Flex align="center" gap={2}>
+                                    <Text fontSize="xl" fontWeight="bold">Swap</Text>
+                                    {/* Toggle chart button on mobile */}
+                                    {isMobile && (
+                                        <button
+                                            onClick={() => setShowChart(!showChart)}
+                                            className="p-2 rounded-lg bg-white/5 text-xs text-blue-400"
+                                        >
+                                            {showChart ? "Hide Chart" : "Show Chart"}
+                                        </button>
+                                    )}
+                                </Flex>
+
                                 <HStack spacing={2}>
                                     <SlippageSettings value={slippage} onChange={setSlippage}/>
                                     <button
@@ -140,7 +159,7 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                             {/* Swap Interface and Wallet */}
                             <div
                                 className="p-2.5 border border-white/5 relative z-50 w-full rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
-{/*
+                                {/*
                             <div className="flex items-center justify-between mb-4 rounded-lg p-1">
                                     <div className="flex items-center gap-2 w-full me-2">
                                         <button
@@ -227,15 +246,6 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
 
                         </Box>
                     </Flex>
-                    {/*
-          <TokenSelectorModal
-              isOpen={true}
-              selectedToken={fromToken}
-              onSelect={() => {}}
-              onClose={() => {}}
-          />
-*/}
-
                     {showConfirmModal && (
                         <ConfirmSwapModal
                             fromToken={fromToken as TokenType}
@@ -248,38 +258,17 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                             onClose={() => setShowConfirmModal(false)}
                         />
                     )}
-
-                    {/*
-      <BuySuccessModal
-        isOpen={true}
-        onClose={() => {}}
-        selectedTokens={[]}
-        buyAmount={toAmount}
-        cryptoAmount={fromAmount}
-      />
-*/}
-                    {/*
-      <BuySuccessModal
-        isOpen={true}
-        onClose={() => setShowSuccessModal(false)}
-        selectedTokens={selectedHoldings}
-        buyAmount={buyAmount}
-        cryptoAmount={cryptoAmount}
-      />
-*/}
-
-
                 </ModalContent>
             </Modal>
-
-
-            {/*
-      <TokenSelector
-        isOpen={isTokenSelectorOpen}
-        onClose={() => setIsTokenSelectorOpen(false)}
-        onSelect={handleTokenSelect}
-      />
-*/}
+            {isMobile && (
+                <ChartDrawer
+                    type={chartType}
+                    onTypeChange={setChartType}
+                    isMaximized={isMaximized}
+                    token={(fromToken ? fromToken : toToken) as TokenType}
+                    isOpen={showChart}
+                    setOpen={setShowChart}/>
+            )}
         </>
     );
 };

@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "react"
 import { X, Maximize2, Minimize2, TrendingUp, TrendingDown } from "lucide-react"
 import { Line } from "react-chartjs-2"
 import { Web3AuthContext } from "../providers/Web3AuthContext"
-import { useEvmWalletBalance } from "../hooks/useBalance"
+import { useWalletBalance } from "../hooks/useBalance"
 import useTokenBalanceStore from "../store/useTokenBalanceStore"
 import { TokenIcon, TokenChainIcon } from "./swap/components/TokenIcon"
 import {
@@ -78,7 +78,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
   } = useContext(Web3AuthContext)
 
   // Get wallet balances from your hook
-  const { isLoading: isBalanceLoading, data: walletBalances, refetch: refetchBalances } = useEvmWalletBalance()
+  const { isLoading: isBalanceLoading, data: walletBalances, refetch: refetchBalances } = useWalletBalance()
 
   // Get token balances from store
   const tokenBalances = walletBalances;

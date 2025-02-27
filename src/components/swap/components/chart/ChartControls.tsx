@@ -17,7 +17,7 @@ export function ChartControls({
   onTimeRangeChange,
 }: ChartControlsProps) {
   return (
-    <div className={"flex items-center justify-between ps-6 py-3 border-b border-white/5 relative z-40 " + className}>
+    <div className={"flex items-center justify-between ps-4 py-3 border-b border-white/5 relative z-40 " + className}>
       <TimeRangeSelector value={timeRange} onChange={onTimeRangeChange} />
       <ChartToggle type={type} onTypeChange={onTypeChange} />
     </div>

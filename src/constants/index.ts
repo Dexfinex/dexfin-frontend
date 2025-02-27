@@ -5,6 +5,7 @@ import { ethers } from "ethers";
 export * from "./zerodev"
 
 export const LOCAL_STORAGE_WALLET_INFO = 'LIT-WALLET-INFO'
+export const LOCAL_STORAGE_STARRED_TOKENS = 'LOCAL_STORAGE_STARRED_TOKENS'
 export const LOCAL_STORAGE_AUTH_REDIRECT_TYPE = 'REDIRECT-TYPE'
 
 export const mapRpcUrls: Record<number, string> = {

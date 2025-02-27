@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { Skeleton, useMediaQuery } from '@chakra-ui/react';
 import { X, Maximize2, Minimize2, ArrowDown, CreditCard, Send, Wallet, TrendingUp, LayoutGrid, History, Landmark, ExternalLink, Clock } from 'lucide-react';
 import { SendDrawer } from './wallet/SendDrawer';
@@ -12,7 +12,7 @@ import { TokenChainIcon } from './swap/components/TokenIcon.tsx';
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
 import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
 import useTokenTransferStore from '../store/useTokenTransferStore.ts';
-import { useEvmWalletBalance, useWalletBalance } from '../hooks/useBalance.tsx';
+import { useWalletBalance } from '../hooks/useBalance.tsx';
 import { useEvmWalletTransfer } from '../hooks/useTransfer.tsx';
 import { formatDate } from '../utils/common.util.ts';
 

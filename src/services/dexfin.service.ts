@@ -4,6 +4,9 @@ import {
   EvmWalletBalanceResponseType,
   EvmDefiPosition,
   EvmDefiProtocol,
+  SolanaNativeCoinType,
+  SolanaTokensType,
+  SolanaWalletReponseType
 } from "../types/dexfinv3.type.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.ts";
 
@@ -36,7 +39,6 @@ export const dexfinv3Service = {
         `/evm/wallet/${address}/balances`
       );
 
-      console.log('evm wallet balance = ', data)
       return data;
     } catch (error) {
       console.log("Failed to fetch evm wallet balance:", error);
@@ -46,18 +48,53 @@ export const dexfinv3Service = {
   },
 
   getSolanaWalletBalance: async ({ address }: { address: string }): Promise<EvmWalletBalanceResponseType[]> => {
+    let result: EvmWalletBalanceResponseType[] = [];
+
     try {
-      const { data } = await dexfinv3Api.get<EvmWalletBalanceResponseType[]>(
+      const { data } = await dexfinv3Api.get<SolanaWalletReponseType>(
         `/solana/wallet/mainnet/${address}/balances`
       );
 
-      console.log('sol wallet balance = ', data)
-      return data;
+      if (data.native?.amount) {
+        result.push({
+          tokenAddress: data.native.mint,
+          symbol: data.native.symbol,
+          name: data.native.name,
+          logo: data.native.logo,
+          thumbnail: data.native.thumbnail,
+          decimals: data.native.decimals,
+          balance: data.native.lamports,
+          balanceDecimal: Number(data.native.amount),
+          usdPrice: data.native.usdPrice,
+          usdValue: data.native.usdValue,
+          chain: "0x384",
+        } as EvmWalletBalanceResponseType)
+      }
+
+      if (data.token.length > 0) {
+        const solTokenData: EvmWalletBalanceResponseType[] = data.token.map((token: SolanaTokensType) => {
+          return {
+            tokenAddress: token.mint,
+            symbol: token.symbol,
+            name: token.name,
+            logo: token.logo,
+            thumbnail: "",
+            decimals: token.decimals,
+            balance: token.amountRaw,
+            balanceDecimal: Number(token.amount),
+            usdPrice: token.usdPrice,
+            usdValue: token.usdValue,
+            chain: "0x384"
+          } as EvmWalletBalanceResponseType
+        })
+
+        result = [...result, ...solTokenData]
+      }
     } catch (error) {
       console.log("Failed to fetch solana wallet balance:", error);
     }
 
-    return [];
+    return result;
   },
 
   getEvmWalletTransfer: async ({

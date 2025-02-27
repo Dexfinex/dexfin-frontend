@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowRight, Wallet, X } from 'lucide-react';
 
 import { TokenType, Step } from '../../../types/brian.type';
-import { convertCryptoAmount } from '../../../utils/brian';
+import { convertCryptoAmount } from '../../../utils/agent.tsx';
 import { shrinkAddress } from '../../../utils/common.util';
 import { mapChainId2ViemChain } from '../../../config/networks';
 import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
