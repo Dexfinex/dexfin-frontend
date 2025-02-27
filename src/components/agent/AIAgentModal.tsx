@@ -36,6 +36,7 @@ import { ENSRenewProcess } from './components/ENSRenewProcess.tsx';
 import { openaiService } from '../../services/openai.services.ts';
 import { PriceCard } from './components/Analysis/PriceCard.tsx';
 import { TechnicalAnalysis } from './components/Analysis/TechnicalAnalysis.tsx';
+import { SentimentAnalysis } from './components/Analysis/SentimentAnalysis.tsx';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -305,6 +306,25 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         text: `Here's the ${data.coinId} technical analysis:`,
         technicalAnalysis: data,
       }
+    } else {
+      const data = {
+        coinId: 'ETH',
+        social_sentiment: 50,
+        trading_sentiment: 30,
+        technical_sentiment: 45,
+        current_price: 1234,
+        price_change_percentage_24h: 1.5,
+        price_history: [{ price: 86406.3109054296, timestamp: 1740593550256 },
+        { price: 86254.27067141568, timestamp: 1740593804623 },
+        { price: 84951.0781756633, timestamp: 1740594919936 }
+        ],
+        volume_24h: 12345,
+        market_cap: 123123123123123,
+      };
+      return {
+        text: `Here's the ${data.coinId} market sentiment analysis:`,
+        sentimentAnalysis: data,
+      }
     }
 
     for (const [key, response] of Object.entries(fallbackResponses)) {
@@ -338,6 +358,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         const normalizedCommand = command.trim();
 
         response = await generateResponse(normalizedCommand, address, chainId);
+        console.log(response);
         if (response.type == "action" && response.brianData.type == "write") {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
@@ -498,6 +519,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             link: response.link,
             priceData: response.priceData,
             technicalAnalysis: response.technicalAnalysis,
+            sentimentAnalysis: response.sentimentAnalysis,
             trending: response.trending,
             losers: response.losers,
             gainers: response.gainers,
@@ -731,6 +753,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                             {message.technicalAnalysis && (
                               <div className="mt-4 w-full">
                                 <TechnicalAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.technicalAnalysis}></TechnicalAnalysis>
+                              </div>
+                            )}
+                            {message.sentimentAnalysis && (
+                              <div className="mt-4 w-full">
+                                <SentimentAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.sentimentAnalysis}></SentimentAnalysis>
                               </div>
                             )}
                             {message.trending && <TrendingCoins coins={message.trending} />}

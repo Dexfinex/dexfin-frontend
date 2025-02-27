@@ -26,6 +26,7 @@ export interface Message {
   tip?: string;
   priceData?: BrianCoinData;
   technicalAnalysis?: TechnicalAnalysisData;
+  sentimentAnalysis?: SentimentAnalysisData;
   trending?: AnalysisTrendingCoin[];
   losers?: AnalysisLoser[];
   gainers?: AnalysisGainer[];
@@ -66,6 +67,17 @@ export interface AnalysisTrendingCoin {
   priceUsd: number;
   volume: number;
   analysis: string;
+}
+
+export interface SentimentAnalysisData {
+  social_sentiment: number;
+  trading_sentiment: number;
+  technical_sentiment: number;
+  current_price: number;
+  price_change_percentage_24h: number;
+  price_history: number[];
+  volume_24h: number;
+  market_cap: number;
 }
 
 export interface TechnicalAnalysisData {
