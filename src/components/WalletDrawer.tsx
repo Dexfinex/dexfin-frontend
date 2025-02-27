@@ -121,13 +121,13 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                 </div>
 
                 {/* Assets List */}
-                <div className="space-y-2 mt-5">
+                <div className="space-y-2 mt-5 overflow-y-auto ai-chat-scrollbar max-h-[calc(100%-180px)]">
                     {
                         isLoadingBalance ?
                             <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
                             : tokenBalances.map((position, index) => (
                                 <button
-                                    key={position.chain + position.symbol}
+                                    key={position.chain + position.symbol + index}
                                     className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
                                     onClick={async () => {
                                         if (Number(chainId) !== Number(position.chain)) {
