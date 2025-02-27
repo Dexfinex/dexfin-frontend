@@ -10,6 +10,7 @@ import {Chart} from "./components/chart/Chart.tsx";
 import {ConfirmSwapModal} from "./modals/ConfirmSwapModal.tsx";
 import {NULL_ADDRESS} from "../../constants";
 import {SolanaSwapBox} from "./components/SolanaSwapBox.tsx";
+import {ChartDrawer} from "./components/chart/ChartDrawer.tsx";
 
 interface SwapModalProps {
     isOpen: boolean;
@@ -105,9 +106,9 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                     maxH="90vh"
                     overflow="hidden"
                 >
-                    <Flex h="full">
+                    <Flex h="full" direction={{ base: "column", md: "row" }} maxH={{ base: "95vh", md: "90vh" }}>
                         {/* Left Side - Token Info */}
-                        {showChart && (
+                        {!isMobile && (
                             <Box flex={2} p={2} borderRight="1px" borderColor="whiteAlpha.200">
                                 <div className="w-full h-full">
                                     <Chart
@@ -259,6 +260,15 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                     )}
                 </ModalContent>
             </Modal>
+            {isMobile && (
+                <ChartDrawer
+                    type={chartType}
+                    onTypeChange={setChartType}
+                    isMaximized={isMaximized}
+                    token={(fromToken ? fromToken : toToken) as TokenType}
+                    isOpen={showChart}
+                    setOpen={setShowChart}/>
+            )}
         </>
     );
 };

@@ -192,14 +192,13 @@ export function TokenSelectorModal({
                                                 onClose();
                                             }}
                                             _hover={{bg: 'whiteAlpha.200'}}
-                                            color="white"
                                             style={{
                                                 padding: '0px 0.75rem'
                                             }}
                                         >
                                             <HStack>
                                                 <Image src={popularToken.logoURI} boxSize='24px'/>
-                                                <Text className="text-sm">{popularToken.symbol}</Text>
+                                                <Text className="text-sm text-white">{popularToken.symbol}</Text>
                                             </HStack>
                                         </Button>
                                     ))}

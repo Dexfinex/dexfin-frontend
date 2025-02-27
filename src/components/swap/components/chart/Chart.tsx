@@ -10,8 +10,9 @@ import {coingeckoService} from "../../../../services/coingecko.service.ts";
 import {mapTimeRangeToSeconds, mapTimeRangeToSecondsForBirdEye} from "../../../../constants/chart.constants.ts";
 import {ColorType, createChart, CrosshairMode, IChartApi, ISeriesApi, SeriesType} from "lightweight-charts";
 import {useStore} from "../../../../store/useStore.ts";
+import {useBreakpointValue} from "@chakra-ui/react";
 
-interface ChartProps {
+export interface ChartProps {
     type: ChartType;
     onTypeChange: (type: ChartType) => void;
     token: TokenType;
@@ -23,6 +24,7 @@ const redColor = '#f03349', greenColor = '#179981'
 
 export function Chart({type, onTypeChange, token, isMaximized}: ChartProps) {
 
+    const isMobile = useBreakpointValue({base: true, md: false})
     const {theme} = useStore();
     const chartParentContainerRef = useRef<HTMLDivElement | null>(null);
     const chartContainerRef = useRef<HTMLDivElement | null>(null);
@@ -34,7 +36,7 @@ export function Chart({type, onTypeChange, token, isMaximized}: ChartProps) {
     const {getTokenPrice} = useTokenStore()
 
     const price = token ? getTokenPrice(token?.address, token?.chainId) : 0
-    const change = ((chartData[chartData.length - 1]?.close ?? 0) - (chartData[0]?.close ?? 0)) / (chartData[0]?.close ?? 1) * 100
+    const change = Math.abs(((chartData[chartData.length - 1]?.close ?? 0) - (chartData[0]?.close ?? 0)) / (chartData[0]?.close ?? 1) * 100)
 
     const handleTimeRangeChange = (range: TimeRange) => {
         setTimeRange(range);
@@ -78,8 +80,8 @@ export function Chart({type, onTypeChange, token, isMaximized}: ChartProps) {
     useEffect(() => {
         if (!chartContainerRef.current) return;
         const chartWidget = createChart(chartContainerRef.current, {
-            width: 680,
-            height: 420,
+            width: isMobile ? window.innerWidth : 680,
+            height: isMobile ? window.innerHeight * .45 : 420,
             layout: {
                 background: {
                     type: ColorType.Solid,
@@ -155,13 +157,13 @@ export function Chart({type, onTypeChange, token, isMaximized}: ChartProps) {
 
 
     const resizeChartWidth = useCallback(() => {
-        if (chartContainerRef.current) {
+        if (chartContainerRef.current && !isMobile) {
             const width = (chartParentContainerRef.current?.parentElement?.parentElement?.parentElement?.parentElement?.clientWidth ?? chartContainerRef.current?.clientWidth) - 440
             chart?.applyOptions({
                 width,
             });
         }
-    }, [chart])
+    }, [chart, isMobile])
 
     useEffect(() => {
         const container = chartParentContainerRef.current;
