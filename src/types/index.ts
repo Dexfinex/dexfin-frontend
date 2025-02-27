@@ -69,13 +69,33 @@ export interface AnalysisTrendingCoin {
   analysis: string;
 }
 
+export interface PredictionAnalysisData {
+  predictions: {
+    price_24h: number;
+    confidence_24h: number;
+    price_7d: number;
+    confidence_7d: number;
+  };
+  signals: {
+    moving_averages: number;
+    moving_averages_direction: 'up' | 'down';
+    rsi: number;
+    rsi_direction: 'up' | 'down';
+    macd: number;
+    macd_direction: 'up' | 'down';
+  };
+  current_price: number;
+  price_change_percentage_24h: number;
+  price_history: number[];
+}
+
 export interface SentimentAnalysisData {
   social_sentiment: number;
   trading_sentiment: number;
   technical_sentiment: number;
   current_price: number;
   price_change_percentage_24h: number;
-  price_history: number[];
+  price_history: any[];
   volume_24h: number;
   market_cap: number;
 }

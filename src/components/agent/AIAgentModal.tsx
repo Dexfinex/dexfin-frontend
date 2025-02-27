@@ -37,6 +37,7 @@ import { openaiService } from '../../services/openai.services.ts';
 import { PriceCard } from './components/Analysis/PriceCard.tsx';
 import { TechnicalAnalysis } from './components/Analysis/TechnicalAnalysis.tsx';
 import { SentimentAnalysis } from './components/Analysis/SentimentAnalysis.tsx';
+import { PredictionAnalysis } from './components/Analysis/PredictionAnalysis.tsx';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -306,24 +307,15 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         text: `Here's the ${data.coinId} technical analysis:`,
         technicalAnalysis: data,
       }
-    } else {
-      const data = {
-        coinId: 'ETH',
-        social_sentiment: 50,
-        trading_sentiment: 30,
-        technical_sentiment: 45,
-        current_price: 1234,
-        price_change_percentage_24h: 1.5,
-        price_history: [{ price: 86406.3109054296, timestamp: 1740593550256 },
-        { price: 86254.27067141568, timestamp: 1740593804623 },
-        { price: 84951.0781756633, timestamp: 1740594919936 }
-        ],
-        volume_24h: 12345,
-        market_cap: 123123123123123,
-      };
+    } else if(data && data.social_sentiment) {
       return {
         text: `Here's the ${data.coinId} market sentiment analysis:`,
         sentimentAnalysis: data,
+      }
+    } else {
+      return {
+        text: `Here's the ${data.coinId}  price prediction analysis:`,
+        predictionAnalysis: data,
       }
     }
 
@@ -520,6 +512,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             priceData: response.priceData,
             technicalAnalysis: response.technicalAnalysis,
             sentimentAnalysis: response.sentimentAnalysis,
+            predictionAnalysis: response.predictionAnalysis,
             trending: response.trending,
             losers: response.losers,
             gainers: response.gainers,
@@ -758,6 +751,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                             {message.sentimentAnalysis && (
                               <div className="mt-4 w-full">
                                 <SentimentAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.sentimentAnalysis}></SentimentAnalysis>
+                              </div>
+                            )}
+                            {message.predictionAnalysis && (
+                              <div className="mt-4 w-full">
+                                <PredictionAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></PredictionAnalysis>
                               </div>
                             )}
                             {message.trending && <TrendingCoins coins={message.trending} />}
