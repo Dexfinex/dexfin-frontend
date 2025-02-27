@@ -198,13 +198,15 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 	const activeChainId = params?.chainId || connectedChainId + "";
 	const activeWalletAddress = params?.address || connectedAddress;
 
-	const enabled = !!activeChainId && !!activeWalletAddress && !!solanaWalletInfo;
+	const enabled = !!activeChainId && !!activeWalletAddress;
 
 	const fetchBalances = useCallback(async () => {
-		if (!activeChainId || !activeWalletAddress || !solanaWalletInfo) {
-			return []
+		let evmData: EvmWalletBalanceResponseType[] = [];
+		if (!activeChainId || !activeWalletAddress) {
+			evmData = [];
+		} else {
+			evmData = await dexfinv3Service.getEvmWalletBalanceAll({ address: activeWalletAddress });
 		}
-		const evmData = await dexfinv3Service.getEvmWalletBalanceAll({ address: activeWalletAddress });
 
 		if (solanaWalletInfo) {
 			const solData = await dexfinv3Service.getSolanaWalletBalance({ address: solanaWalletInfo.publicKey });
