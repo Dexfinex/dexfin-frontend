@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {Box, Flex, HStack, Modal, ModalContent, ModalOverlay, Text,} from '@chakra-ui/react';
+import React, {useEffect, useState} from 'react';
+import {Box, Flex, HStack, Modal, ModalContent, ModalOverlay, Text, useBreakpointValue,} from '@chakra-ui/react';
 import {Maximize2, X} from 'lucide-react';
 import {SellBox} from "./components/SellBox";
 import {BuyBox} from "./components/BuyBox";
@@ -43,6 +43,16 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
     const [slippage, setSlippage] = useState<SlippageOption>(0.5);
     const [chartType, setChartType] = useState<ChartType>('tradingview');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+    // Responsive layout
+    const isMobile = useBreakpointValue({base: true, md: false})
+    const [showChart, setShowChart] = useState(true)
+
+    // Set default view based on screen size
+    useEffect(() => {
+        setShowChart(!isMobile)
+    }, [isMobile])
+
 
     const handleSwitch = () => {
         setFromToken(toToken);
@@ -97,22 +107,36 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
                 >
                     <Flex h="full">
                         {/* Left Side - Token Info */}
-                        <Box flex={2} p={2} borderRight="1px" borderColor="whiteAlpha.200">
-                            <div className="w-full h-full">
-                                <Chart
-                                    type={chartType}
-                                    onTypeChange={setChartType}
-                                    isMaximized={isMaximized}
-                                    token={(fromToken ? fromToken : toToken) as TokenType}
-                                />
-                            </div>
-                        </Box>
+                        {showChart && (
+                            <Box flex={2} p={2} borderRight="1px" borderColor="whiteAlpha.200">
+                                <div className="w-full h-full">
+                                    <Chart
+                                        type={chartType}
+                                        onTypeChange={setChartType}
+                                        isMaximized={isMaximized}
+                                        token={(fromToken ? fromToken : toToken) as TokenType}
+                                    />
+                                </div>
+                            </Box>
+                        )}
 
                         {/* Right Side - Swap Interface */}
-                        <Box minW="400px" p={6}>
+                        <Box minW={["100%", "400px"]} p={6}>
                             {/* Header */}
                             <Flex justify="space-between" align="center" mb={6}>
-                                <Text fontSize="xl" fontWeight="bold">Swap</Text>
+                                <Flex align="center" gap={2}>
+                                    <Text fontSize="xl" fontWeight="bold">Swap</Text>
+                                    {/* Toggle chart button on mobile */}
+                                    {isMobile && (
+                                        <button
+                                            onClick={() => setShowChart(!showChart)}
+                                            className="p-2 rounded-lg bg-white/5 text-xs text-blue-400"
+                                        >
+                                            {showChart ? "Hide Chart" : "Show Chart"}
+                                        </button>
+                                    )}
+                                </Flex>
+
                                 <HStack spacing={2}>
                                     <SlippageSettings value={slippage} onChange={setSlippage}/>
                                     <button
