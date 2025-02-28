@@ -45,7 +45,7 @@ const GlobalMetric: React.FC<GlobalMetricProps> = ({ isLoading, }) => {
                         :
                         <>
                             <div className="text-2xl font-bold mb-1">
-                                {`+ ${formatNumberByFrac(netAPY)}%`}
+                                {`${formatNumberByFrac(netAPY)}%`}
                             </div>
                             <div className="text-sm text-white/60">
                                 Across all positions

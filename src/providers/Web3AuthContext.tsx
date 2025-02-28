@@ -90,6 +90,8 @@ interface Web3AuthContextType {
     fetchUserData: ()=> Promise<void>,
     getWalletType: () => WalletType,
     walletType: WalletType
+
+    checkWalletAndUsername: () => Promise<{exists: boolean, message?:string}>;
 }
 
 
@@ -149,7 +151,11 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     userData: null,
     fetchUserData: async ()=>{},
     getWalletType: ()=> 'UNKNOWN',
-    walletType: 'UNKNOWN'
+    walletType: 'UNKNOWN',
+
+    checkWalletAndUsername: async () => {
+        return { exists: false };
+    }
 
 };
 
@@ -157,7 +163,8 @@ export const Web3AuthContext = createContext<Web3AuthContextType>(defaultWeb3Aut
 const entryPoint = getEntryPoint("0.7");
 const kernelVersion = KERNEL_V3_1;
 
-import { getLoginUserId } from "../hooks/useCalendar.ts";
+import { getLoginUserId } from "../components/market/Calendar/api/Calendar-api.ts";
+import { checkUsername } from "../hooks/useUsername-api.ts";
 
 const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
@@ -249,18 +256,14 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             const currentWalletType= detectWalletType();
             setWalletType(currentWalletType);
             
-            // const response = await getLoginUserId(currentAddress, username);
             const response = await getLoginUserId(currentAddress);
 
-            console.log(response)
-
-
+            
             console.log(response);
             setUserData({
                 ...response,
-                wallettype: currentWalletType
-
-            });
+                walletType: currentWalletType 
+              });
             
             if (response && response.accessToken) {
                 axios.defaults.headers.common['Authorization'] = `Bearer ${response.accessToken}`;
@@ -270,6 +273,56 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         } catch (err) {
             console.error("Error fetching user data:", err);
             setUserDataLoading(false);
+        }
+    };
+    const checkWalletAndUsername = async (): Promise<{exists: boolean, message?: string}> => {
+        try {
+            const currentAddress = connectedWalletAddress || (currentAccount?.ethAddress) || address;
+            
+            if (!currentAddress) {
+                return { 
+                    exists: false, 
+                    message: "No wallet is connected. Please connect a wallet first." 
+                };
+            }
+            console.log(currentAddress)
+
+            if (!userData?.accessToken) {
+                console.log("No access token available, fetching user data first");
+                if (!userData?.accessToken) {
+                    return {
+                        exists: false,
+                        message: "Could not retrieve authentication token. Please try again."
+                    };
+                }
+            }
+            // Get username data from backend
+            const response = await checkUsername(userData.accessToken);
+            console.log(response.username)
+
+            if (!response || !response.username || response.username.trim() === "") {
+                // Open the username registration modal
+                useStore.getState().setIsUsernameModalOpen(true);
+                
+                return { 
+                    exists: false, 
+                    message: "No username found for this wallet. Please register a username." 
+                };
+            }
+            
+            return {
+                exists: true,
+                message: `Username exists for this wallet: ${response.username}`
+            };
+
+
+        } catch (error) {
+            console.error("Error checking wallet and username:", error);
+            useStore.getState().setIsUsernameModalOpen(true);
+            return { 
+                exists: false, 
+                message: "An error occurred while checking wallet and username" 
+            };
         }
     };
 
@@ -453,6 +506,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             setIsConnected(isWagmiWalletConnected)
             setAddress(connectedWalletAddress as string)
             setChainId(wagmiChainId)
+
             connector!.getProvider().then((rawProvider) => {
                 const provider = new Web3Provider(rawProvider as ExternalProvider);
                 setProvider(provider)
@@ -469,7 +523,9 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 }).extend(publicActions); // Extend with public actions
                 setWalletClient(walletClient)
 
-                fetchUserData();
+                fetchUserData().then(()=>{
+                    checkWalletAndUsername();
+                });
             })
         } else {
             setIsConnected(isWagmiWalletConnected)
@@ -704,7 +760,9 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         userData,
         fetchUserData,
         getWalletType,
-        walletType
+        walletType,
+
+        checkWalletAndUsername
     }
 
     return (
