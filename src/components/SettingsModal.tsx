@@ -97,7 +97,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  {widgetConfigs.map(({ type, icon: Icon, description }) => (
+                  {widgetConfigs.map(({ type, icon: Icon, description }) => 
+                  (
                     <div
                       key={type}
                       className="flex items-center justify-between p-4 rounded-lg glass"
@@ -124,7 +125,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         />
                       </button>
                     </div>
-                  ))}
+                  ))
+                  }
                 </div>
               </>
             ) : (

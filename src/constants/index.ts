@@ -45,7 +45,7 @@ export const CALENDAR_BASE_URL='https://dexfinv3-backend-production.up.railway.a
 
 export const USERAUTH_BASE_URL= "https://dexfinv3-backend-production.up.railway.app/graphql";
 
-export const TechnicalAnalysis_BASE_URL= "https://dexfinv3-backend-production.up.railway.app/technical";
+export const TECHNICALANALYSIS_BASE_URL= "https://dexfinv3-backend-production.up.railway.app/technical";
 
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 

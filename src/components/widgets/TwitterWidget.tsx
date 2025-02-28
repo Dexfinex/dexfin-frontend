@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { AlertCircle, ChevronLeft, ChevronRight, Heart, MessageSquare, RefreshCw, Repeat2, Share2 } from 'lucide-react';
 import { useGetTwitterInfo } from '../../hooks/useGetTwitterInfo';
 
@@ -31,11 +30,10 @@ export const TwitterWidget: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const tweetsPerPage = 3;
 
-  useEffect(() => {
-
+  // Use useMemo to convert API tweets to the Tweet format
+  const convertedTweets = useMemo(() => {
     if (apiTweets && Array.isArray(apiTweets) && apiTweets.length > 0) {
-      // Convert API data to Tweet format
-      const convertedTweets = apiTweets.map((item: any, index) => {
+      return apiTweets.map((item: any, index) => {
         // Extract data from the API response
         const userData = item.data || {};
         const legacyData = userData.legacy || {};
@@ -57,11 +55,14 @@ export const TwitterWidget: React.FC = () => {
           }
         };
       });
-
-      // Update tweets state with the converted data
-      setTweets(convertedTweets);
     }
+    return [];
   }, [apiTweets]);
+
+  // Update tweets state when convertedTweets changes
+  useEffect(() => {
+    setTweets(convertedTweets);
+  }, [convertedTweets]);
 
   useEffect(() => {
     if (apiError) {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { technicalanalysisService } from "../services/technicalanalysis.service";
+import { TechnicalAnalysisService } from "../services/technicalanalysis.service";
 import { SignificantTransactions } from '../types/signitransactions';
 
 export const useGetSignificantTransactions = () => {
@@ -64,7 +64,7 @@ export const useGetSignificantTransactions = () => {
 
                 // Fetch Ethereum transactions
                 console.log("Getting ETH significant transactions...");
-                const ethResult = await technicalanalysisService.getSignificantTransactions('ethereum');
+                const ethResult = await TechnicalAnalysisService.getSignificantTransactions('ethereum');
                 console.log("ETH transactions data:", ethResult);
 
                 const [ethTransactions, highestEthTx] = processTransactions(ethResult);
@@ -73,7 +73,7 @@ export const useGetSignificantTransactions = () => {
 
                 // Fetch Bitcoin transactions
                 console.log("Getting BTC significant transactions...");
-                const btcResult = await technicalanalysisService.getSignificantTransactions('bitcoin');
+                const btcResult = await TechnicalAnalysisService.getSignificantTransactions('bitcoin');
                 console.log("BTC transactions data:", btcResult);
 
                 const [btcTransactions, highestBtcTx] = processTransactions(btcResult);

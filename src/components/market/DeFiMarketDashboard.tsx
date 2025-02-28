@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import useDefillamaStore from '../../store/useDefillamaStore';
 import { useGetDefillamaProtocols, useGetChainTVL, useGetDexVolume } from '../../hooks/useDefillama';
-import { useGetSignificantTransactions } from '../../hooks/useGetSigniTransactions';
+import { useGetSignificantTransactions } from '../../hooks/useGetSignificantTransactions';
 import { formatNumberByFrac } from '../../utils/common.util';
 import { coingeckoService } from '../../services/coingecko.service';
 
@@ -89,7 +89,7 @@ const formatApiTransaction = (tx: any, blockchain: 'ethereum' | 'bitcoin'): Whal
         network: isEth ? 'Ethereum' : 'Bitcoin',
         networkLogo,
         timestamp: timeDisplay,
-        impact: 'high', 
+        impact: 'high',
         token: isEth ? 'ETH' : 'BTC',
         tokenLogo,
         amount: parseFloat(tx.amount_usd || tx.amount || '0'),

@@ -2,7 +2,7 @@ import { technicalanalysisApi } from "./api.service";
 import { TwitterInfo } from "../types/twitterinfo";
 import { SignificantTransactions } from "../types/signitransactions";
 
-export const technicalanalysisService = {
+export const TechnicalAnalysisService = {
     getTwitterInfo: async (): Promise<TwitterInfo[]> => {
         try {
             console.log("getting twitter data service...");
