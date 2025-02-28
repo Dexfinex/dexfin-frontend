@@ -59,6 +59,6 @@ export const userAuthApi = axios.create({
     'Content-Type': 'application/json',
   }
 });
-export const technicalanalysisApi = axios.create({
+export const TechnicalAnalysisApi = axios.create({
   baseURL: TECHNICALANALYSIS_BASE_URL
 })
