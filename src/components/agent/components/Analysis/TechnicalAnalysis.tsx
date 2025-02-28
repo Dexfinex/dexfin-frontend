@@ -261,7 +261,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
                 <Text color="gray.400" fontSize="sm" mb={1}>MA (50)</Text>
                 <Skeleton isLoaded={!isLoading}>
                   <Text  fontWeight="medium">
-                    ${data?.moving_averages?.movingAverages?.ma50.toLocaleString() ?? '0.00'}
+                    ${data?.moving_averages?.movingAverages?.ma40.toLocaleString() ?? '0.00'}
                   </Text>
                 </Skeleton>
               </Box>
@@ -269,7 +269,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
                 <Text color="gray.400" fontSize="sm" mb={1}>MA (100)</Text>
                 <Skeleton isLoaded={!isLoading}>
                   <Text  fontWeight="medium">
-                    ${data?.moving_averages?.movingAverages?.ma100.toLocaleString() ?? '0.00'}
+                    ${data?.moving_averages?.movingAverages?.ma60.toLocaleString() ?? '0.00'}
                   </Text>
                 </Skeleton>
               </Box>
@@ -277,7 +277,7 @@ export const TechnicalAnalysis: React.FC<TechnicalAnalysisProps> = ({ isWalletPa
                 <Text color="gray.400" fontSize="sm" mb={1}>MA (200)</Text>
                 <Skeleton isLoaded={!isLoading}>
                   <Text  fontWeight="medium">
-                    ${data?.moving_averages?.movingAverages?.ma200.toLocaleString() ?? '0.00'}
+                    ${data?.moving_averages?.movingAverages?.ma80.toLocaleString() ?? '0.00'}
                   </Text>
                 </Skeleton>
               </Box>

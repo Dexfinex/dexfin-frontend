@@ -148,9 +148,9 @@ export interface TechnicalAnalysisData {
     priceChangePercent: number;
     movingAverages: {
       ma20: number;
-      ma50: number;
-      ma100: number;
-      ma200: number;
+      ma40: number;
+      ma60: number;
+      ma80: number;
     };
     chartData: {
       time: number;
