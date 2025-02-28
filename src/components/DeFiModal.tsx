@@ -1,5 +1,7 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { Maximize2, Minimize2, X, } from 'lucide-react';
+import { ethers } from 'ethers';
+import { erc20Abi } from "viem";
 
 import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useDefi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
@@ -311,12 +313,11 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         chainId: Number(chainId),
         fromAddress: address,
         routingStrategy: "router",
-        action: "borrow",
+        action: "deposit",
         protocol: (modalState.position?.protocol_id || "").toLowerCase(),
         tokenIn: [borrowTokenInfo?.tokenIn?.contract_address || ""],
-        tokenOut: [borrowTokenInfo?.tokenOut?.contract_address || ""],
+        tokenOut: [borrowTokenInfo?.liquidityToken?.contract_address || ""],
         amountIn: [Number(tokenAmount)],
-        amountOut: [Number(borrowingTokenAmount)],
         signer: signer,
         receiver: address,
         gasPrice: gasData.gasPrice,
@@ -324,31 +325,71 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       }, {
         onSuccess: async (txData) => {
           if (signer) {
-            setConfirming("Executing...");
+            setConfirming("Deposit...");
             // execute defi action
             const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
               setConfirming("")
               return null;
             });
+
             if (transactionResponse) {
               const receipt = await transactionResponse.wait();
-              setHash(receipt.transactionHash);
-              setTxModalOpen(true);
-              await refetchDefiPositionByWallet();
-              await refetchDefiProtocolByWallet();
 
-              setTokenAmount("");
-              setToken2Amount("");
+              setConfirming("Borrowing...");
+              if (borrowTokenInfo?.borrowContract?.abi && receipt.transactionHash) {
+                const borrowContract = new ethers.Contract(borrowTokenInfo?.borrowContract?.contract_address || "", borrowTokenInfo?.borrowContract?.abi, signer);
+                const tokenContract = new ethers.Contract(
+                  borrowTokenInfo?.tokenOut.contract_address,
+                  erc20Abi,
+                  signer
+                );
+                const decimals = await tokenContract.decimals();
+                const amountValue = Number(ethers.utils.parseUnits(
+                  Number(borrowingTokenAmount).toFixed(8).replace(/\.?0+$/, ""),
+                  decimals
+                ));
+                const tx = {
+                  to: borrowTokenInfo?.borrowContract?.contract_address,
+                  data: borrowContract.interface.encodeFunctionData("borrow", [
+                    borrowTokenInfo?.tokenOut.contract_address, amountValue, 2, 0, address
+                  ]),
+                  // gasPrice: ethers.parseUnits('10', 'gwei'),
+                  gasPrice: gasData.gasPrice,
+                  gasLimit: Number(gasData.gasLimit) * 2, // Example static gas limit
+                  value: 0n,
+                };
 
-              setBorrowingTokenAmount("");
+                const transactionResponse = await signer?.sendTransaction(tx);
+                const receipt = await transactionResponse.wait().catch(() => {
+                  setConfirming("");
+                  throw Error("transaction error");
+                });
 
-              setShowPreview(false);
-              setModalState({ type: null });
-              setSelectedTab('overview');
+                setHash(receipt.transactionHash);
+                setTxModalOpen(true);
+                await refetchDefiPositionByWallet();
+                await refetchDefiProtocolByWallet();
+
+                setTokenAmount("");
+                setToken2Amount("");
+
+                setBorrowingTokenAmount("");
+
+                setShowPreview(false);
+                setModalState({ type: null });
+                setSelectedTab('overview');
+                setConfirming("");
+
+              } else {
+                setConfirming("");
+                throw Error("borrow token contract error")
+              }
+            } else {
+              setConfirming("");
+              throw Error("transaction sign issue")
             }
 
           }
-          setConfirming("");
         },
         onError: async (e) => {
           console.error(e)
