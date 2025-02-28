@@ -1,6 +1,6 @@
 import React, { useContext, useState } from "react"
 import { TrendingUp, Wallet, Landmark } from "lucide-react"
-import { useEvmWalletBalance } from "../../hooks/useBalance"
+import { useWalletBalance } from "../../hooks/useBalance"
 import { Web3AuthContext } from "../../providers/Web3AuthContext"
 import { Skeleton } from "@chakra-ui/react"
 import { TokenChainIcon } from "../swap/components/TokenIcon"
@@ -26,7 +26,7 @@ type WalletTab = "assets" | "defi"
 export const PortfolioWidget: React.FC = () => {
   const [activeTab, setActiveTab] = useState<WalletTab>("assets")
   const { chainId, address } = useContext(Web3AuthContext)
-  const { isLoading, data: balanceData } = useEvmWalletBalance({
+  const { isLoading, data: balanceData } = useWalletBalance({
     chainId: chainId,
     address: address,
   })
@@ -223,7 +223,7 @@ export const PortfolioWidget: React.FC = () => {
                       className="flex w-full items-center justify-between p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <TokenChainIcon src={token.logo} alt={token.name} size="lg" chainId={token.network.chainId} />
+                        {/* <TokenChainIcon src={token.logo} alt={token.name} size="lg" chainId={token?.network?.chainId} /> */}
                         <div className="flex flex-col justify-start items-start">
                           <div className="font-medium">{token.symbol}</div>
                           <div className="text-sm">

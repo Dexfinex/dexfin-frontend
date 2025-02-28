@@ -67,5 +67,6 @@ export default function useSession() {
         sessionSigs,
         loading,
         error,
+        setError,
     };
 }

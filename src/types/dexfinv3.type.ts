@@ -17,6 +17,38 @@ export interface EvmWalletBalanceResponseType {
   chain: string;
 }
 
+export type SolanaNativeCoinType = {
+  amount: string,
+  decimals: number,
+  lamports: string,
+  logo: string,
+  mint: string,
+  name: string,
+  solana: string,
+  symbol: string,
+  thumbnail: string,
+  usdPrice: number
+  usdValue: number
+}
+
+export type SolanaTokensType = {
+  amount: string,
+  amountRaw: string,
+  associatedTokenAddress: string,
+  decimals: number,
+  logo: string,
+  mint: string,
+  name: string,
+  symbol: string,
+  usdPrice: number,
+  usdValue: number,
+}
+
+export interface SolanaWalletReponseType {
+  native: SolanaNativeCoinType,
+  token: Array<SolanaTokensType>
+}
+
 export interface EvmToken {
   token_type: string;
   name: string;

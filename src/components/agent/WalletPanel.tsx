@@ -11,7 +11,7 @@ import {
 import { WalletTab } from '../../types/agent.type.ts';
 import { mockDeFiPositions, formatUsdValue } from '../../lib/wallet.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { useEvmWalletBalance } from '../../hooks/useBalance.tsx';
+import { useWalletBalance } from '../../hooks/useBalance.tsx';
 import { TokenChainIcon } from './../swap/components/TokenIcon.tsx';
 
 import { formatNumberByFrac } from '../../utils/common.util.ts';
@@ -22,7 +22,7 @@ interface WalletPanelProps {
 }
 
 export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletPanelProps) {
-  const { isLoading: isLoadingBalance } = useEvmWalletBalance();
+  const { isLoading: isLoadingBalance } = useWalletBalance();
   const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
   const [activeWalletTab, setActiveWalletTab] = useState<WalletTab>('assets');
   const [isLargerThan962] = useMediaQuery('(min-width: 962px)');

@@ -192,24 +192,24 @@ export const useEvmWalletBalance = (params?: IEvmWallet) => {
 };
 
 // get balance of all wallets include solana and bitcoin
-export const useWalletBalance = () => {
+export const useWalletBalance = (params?: IEvmWallet) => {
 	const { chainId: connectedChainId, address: connectedAddress, solanaWalletInfo } = useContext(Web3AuthContext);
 
-	const activeChainId = connectedChainId + "";
-	const activeWalletAddress = connectedAddress;
+	const activeChainId = params?.chainId || connectedChainId + "";
+	const activeWalletAddress = params?.address || connectedAddress;
 
 	const enabled = !!activeChainId && !!activeWalletAddress;
 
 	const fetchBalances = useCallback(async () => {
-		console.log('solana wallet info = ', solanaWalletInfo)
-		if (!activeChainId || !activeWalletAddress || !solanaWalletInfo) {
-			return []
+		let evmData: EvmWalletBalanceResponseType[] = [];
+		if (!activeChainId || !activeWalletAddress) {
+			evmData = [];
+		} else {
+			evmData = await dexfinv3Service.getEvmWalletBalanceAll({ address: activeWalletAddress });
 		}
 
-		const evmData = await dexfinv3Service.getEvmWalletBalanceAll({ address: activeWalletAddress });
 		if (solanaWalletInfo) {
 			const solData = await dexfinv3Service.getSolanaWalletBalance({ address: solanaWalletInfo.publicKey });
-			
 			return [...evmData, ...solData];
 		}
 
@@ -218,7 +218,7 @@ export const useWalletBalance = () => {
 
 	const { isLoading, refetch, data } = useQuery<EvmWalletBalanceResponseType[]>(
 		{
-			queryKey: ['balance', activeWalletAddress, activeChainId,],
+			queryKey: ['balance', activeWalletAddress, activeChainId, solanaWalletInfo],
 			queryFn: fetchBalances,
 			refetchInterval: 30_000,
 			enabled
@@ -226,18 +226,24 @@ export const useWalletBalance = () => {
 	);
 
 	useEffect(() => {
-		if (data) {
-			useTokenBalanceStore.getState().setTokenBalances(data.map((item) => ({
-				chain: item.chain,
-				address: item.tokenAddress as string,
-				symbol: item.symbol,
-				name: item.name,
-				logo: item.logo,
-				balance: item.balanceDecimal,
-				decimals: item.decimals,
-				usdPrice: item.usdPrice,
-				usdValue: item.usdValue,
-			} as unknown as TokenBalance)));
+		if (!data) return;
+
+		const newBalance = data.map((item) => ({
+			chain: item.chain,
+			address: item.tokenAddress as string,
+			symbol: item.symbol,
+			name: item.name,
+			logo: item.logo,
+			balance: item.balanceDecimal,
+			decimals: item.decimals,
+			usdPrice: item.usdPrice,
+			usdValue: item.usdValue,
+		} as unknown as TokenBalance));
+
+		const existingBalances = useTokenBalanceStore.getState().tokenBalances;
+
+		if (JSON.stringify(newBalance) !== JSON.stringify(existingBalances)) {
+			useTokenBalanceStore.getState().setTokenBalances(newBalance);
 		}
 	}, [data]);
 
