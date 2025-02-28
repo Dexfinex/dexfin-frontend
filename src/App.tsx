@@ -57,8 +57,7 @@ export default function App() {
 
     const {
         authMethod,
-        // accounts,
-        // setAuthMethod,
+        initializeErrors,
         address,
         isConnected,
     } = useContext(Web3AuthContext);
@@ -120,11 +119,12 @@ export default function App() {
 
     useEffect(() => {
         // Check if the previous trigger was set and authMethod has become undefined
-        if (isSignupTriggered && authMethod === undefined) {
+        if (isSignupTriggered) {
+            initializeErrors()
             setIsSignupModalOpen(true);
             setIsSignupTriggered(false); // Reset the trigger
         }
-    }, [authMethod, isSignupTriggered, setIsSignupModalOpen]);
+    }, [authMethod, initializeErrors, isSignupTriggered, setIsSignupModalOpen]);
 
 
     // Update theme
