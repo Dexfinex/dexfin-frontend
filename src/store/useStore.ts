@@ -219,7 +219,7 @@ const useStore = create<StoreState>((set) => ({
     { id: 'defi', label: 'DeFi', icon: 'Wallet', isStarred: false },
     { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', isStarred: false },
     { id: 'market-data', label: 'Market Data', icon: 'LineChart', isStarred: false },
-    { id: 'trade', label: 'Trade', icon: 'LineChart', isStarred: false },
+    // { id: 'trade', label: 'Trade', icon: 'LineChart', isStarred: false },
     { id: 'chat', label: 'Chat', icon: 'MessageSquare', isStarred: false },
     { id: 'cart', label: 'Cart', icon: 'ShoppingCart', isStarred: false },
     { id: 'social', label: 'Social Feed', icon: 'Users', isStarred: false },
