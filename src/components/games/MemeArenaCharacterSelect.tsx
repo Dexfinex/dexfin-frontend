@@ -4,6 +4,8 @@ import { Character } from '../../types/memeArena';
 
 interface CharacterSelectProps {
   onSelect: (character: Character) => void;
+  tournamentMode?: boolean;
+  onToggleMode?: () => void;
 }
 
 export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onSelect }) => {

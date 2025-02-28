@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Tag, Clock, Globe, Plus, X } from 'lucide-react';
 import AddEventModal from './AddEventModal.tsx'
-import { getLoadEvents, deleteEvent, editEvent } from '../../../hooks/useCalendar';
+import { getLoadEvents, deleteEvent, editEvent } from './api/Calendar-api.ts';
 import EventDetailsModal from './EventDetailsModal.tsx';
 import { Web3AuthContext } from '../../../providers/Web3AuthContext.tsx';
 
@@ -60,6 +60,7 @@ export const MarketCalendar: React.FC = () => {
     if (isConnected && !userData) {
       fetchUserData();
     }
+    
 
     if (userData?.accessToken) {
       loadEvents();
@@ -83,7 +84,7 @@ export const MarketCalendar: React.FC = () => {
       }
       console.log(userData.accessToken);
       const response = await getLoadEvents(userData.accessToken);
-      console.log(response);
+      console.log(response.userId);
       setEvents(response)
       if (!response.ok) {
         throw new Error('Failed to create event');
