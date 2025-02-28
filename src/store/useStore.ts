@@ -331,7 +331,7 @@ const useStore = create<StoreState>((set) => ({
     'Market News': true,
     'Market Pulse': true,
     'Fear & Greed Index': true,
-    'Quick Swap': true,
+    'Quick Swap': false,
     'Price Converter': true,
     'Trending': true,
     'Ask Anything': true,
