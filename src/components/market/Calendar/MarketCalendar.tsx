@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Tag, Clock, Globe, Plus, X } from 'lucide-react';
 import AddEventModal from './AddEventModal.tsx'
-import { getLoadEvents, deleteEvent, editEvent } from '../../../hooks/useCalendar';
+import { getLoadEvents, deleteEvent, editEvent } from './api/Calendar-api.ts';
 import EventDetailsModal from './EventDetailsModal.tsx';
 import { Web3AuthContext } from '../../../providers/Web3AuthContext.tsx';
 

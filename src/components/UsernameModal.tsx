@@ -35,13 +35,8 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ isOpen, onClose }) => {
         console.log(response);
       }
       
-
-      
-    //   if (fetchUserData) {
-    //     await fetchUserData();
-    //   }
-      
       onClose();
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(`Failed to register username: ${errorMessage}`);

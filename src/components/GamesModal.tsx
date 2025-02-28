@@ -80,6 +80,16 @@ export interface GameSession {
   streak: number;      // INT - best streak achieved
   played_at?: Date;    // TIMESTAMP - when the game was played (will be set on server)
 }
+// export interface GameSession {
+//   user_id: string;
+//   game_id: string;
+//   tokens_earned: number;
+//   score: number;
+//   accuracy: number;
+//   streak: number;
+//   win_status: boolean | null;
+//   played_at: Date;
+// }
 export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeGame, setActiveGame] = useState<Game | null>(null);

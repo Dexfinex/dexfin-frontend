@@ -183,6 +183,9 @@ interface StoreState {
     };
     totalTokens: number;
   };
+  user:{
+    id: string;
+  } | null;
   updateGameStats: (stats: Partial<StoreState['gameStats']>) => void;
 
   // Appearance
@@ -218,6 +221,8 @@ interface StoreState {
 
 
 const useStore = create<StoreState>((set) => ({
+  user:null,
+  setUser:(user: any)=> set({user}),
   // Menu Items
   menuItems: [
     { id: 'ai', label: 'AI Agent', icon: 'Bot', isStarred: false },

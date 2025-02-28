@@ -160,7 +160,7 @@ export const Web3AuthContext = createContext<Web3AuthContextType>(defaultWeb3Aut
 const entryPoint = getEntryPoint("0.7");
 const kernelVersion = KERNEL_V3_1;
 
-import { getLoginUserId } from "../hooks/useCalendar.ts";
+import { getLoginUserId } from "../components/market/Calendar/api/Calendar-api.ts";
 import { checkUsername } from "../hooks/useUsername-api.ts";
 
 const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
@@ -250,19 +250,14 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             const currentWalletType= detectWalletType();
             setWalletType(currentWalletType);
             
-            // const response = await getLoginUserId(currentAddress, username);
             const response = await getLoginUserId(currentAddress);
 
-            // if(!response.username ||response.username.trim()==="" ){
-            //     //open modal and register username
-            // }
             
             console.log(response);
             setUserData({
                 ...response,
-                wallettype: currentWalletType
-
-            });
+                walletType: currentWalletType 
+              });
             
             if (response && response.accessToken) {
                 axios.defaults.headers.common['Authorization'] = `Bearer ${response.accessToken}`;
@@ -284,13 +279,10 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                     message: "No wallet is connected. Please connect a wallet first." 
                 };
             }
-    
-            // Check if access token is available
+            console.log(currentAddress)
+
             if (!userData?.accessToken) {
                 console.log("No access token available, fetching user data first");
-                await fetchUserData(); // Make sure user data is fetched before proceeding
-                
-                // If we still don't have an access token after fetching, return early
                 if (!userData?.accessToken) {
                     return {
                         exists: false,
@@ -298,13 +290,12 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                     };
                 }
             }
-            
-            // Now we should have a valid access token
+            // Get username data from backend
             const response = await checkUsername(userData.accessToken);
-            console.log("Username check response:", response);
-    
+            console.log(response.username)
+
             if (!response || !response.username || response.username.trim() === "") {
-                console.log("No username found, opening username modal");
+                // Open the username registration modal
                 useStore.getState().setIsUsernameModalOpen(true);
                 
                 return { 
@@ -317,6 +308,8 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 exists: true,
                 message: `Username exists for this wallet: ${response.username}`
             };
+
+
         } catch (error) {
             console.error("Error checking wallet and username:", error);
             useStore.getState().setIsUsernameModalOpen(true);
@@ -527,7 +520,6 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 fetchUserData().then(()=>{
                     checkWalletAndUsername();
                 });
-
             })
         } else {
             setIsConnected(isWagmiWalletConnected)
