@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { SearchHeaderProps } from '../../../types/cart.type';
 
-const categories = ['All', 'token', 'meme', 'ethereum', 'base', 'avalanche', 'bsc', 'celo', 'optimism'] as const;
+const categories = ['All', 'token', 'meme', 'ethereum', 'base', 'avalanche', 'bsc', 'optimism'] as const;
 
 const SearchHeader: React.FC<SearchHeaderProps> = React.memo(({
     selectedCategory,
