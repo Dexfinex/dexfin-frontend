@@ -329,7 +329,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             name: 'USDC',
             address: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
             chainId: 42161,
-            decimals: 6,
+            decimals: 18,
             logoURI: '/images/token/usdc.png',
         },
         {
@@ -371,7 +371,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             name: 'USDC',
             address: '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359',
             chainId: 137,
-            decimals: 6,
+            decimals: 18,
             logoURI: '/images/token/usdc.png',
         },
         {
@@ -413,7 +413,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             name: 'USDC',
             address: '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d',
             chainId: 56,
-            decimals: 6,
+            decimals: 18,
             logoURI: '/images/token/usdc.png',
         },
         {

@@ -69,7 +69,10 @@ export function TokenSelector({
                                     <button
                                         className="text-blue-400 hover:text-blue-300 font-semibold bg-blue-500/10 px-2 py-0.5 rounded-md hover:bg-blue-500/20 transition-all hover:scale-105 active:scale-95"
                                         onClick={() => {
-                                            onAmountChange(balance!)
+                                            const multiplier = (10 ** Math.min(6, (selectedToken?.decimals ?? 0)))
+                                            const roundedBalance = (Number(balance ?? '0')) * multiplier;
+                                            const formattedBalance = (Math.floor(roundedBalance) / multiplier).toString();
+                                            onAmountChange(formattedBalance)
                                         }}
                                     >
                                         MAX
