@@ -197,5 +197,32 @@ export const offerings: Offering[] = [
         "rewards": 0,
         "healthFactor": 0,
         "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": 1,
+        "apy": 0,
+        "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Lending",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "native",
+                "name": "ETH",
+                "symbol": "ETH",
+                "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": "18",
+                "logo": "https://cdn.moralis.io/eth/0x.png",
+                "thumbnail": "https://cdn.moralis.io/eth/0x.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 0,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
     }
 ];

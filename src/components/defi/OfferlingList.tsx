@@ -32,6 +32,8 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                 return "deposit";
             case "borrowing":
                 return "borrow";
+            case "lending":
+                return "lend";
             default:
                 return "";
         }
