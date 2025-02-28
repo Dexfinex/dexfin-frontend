@@ -12,7 +12,7 @@ import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStor
 import { SendDrawer } from "./wallet/SendDrawer";
 import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
-import { Skeleton } from '@chakra-ui/react';
+import { Skeleton, Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverHeader, PopoverBody, Button } from '@chakra-ui/react';
 
 interface WalletDrawerProps {
     isOpen: boolean,
@@ -93,7 +93,51 @@ const ShowMoreLess: React.FC<{ text: string, maxLength: number }> = ({ text, max
             )}
         </div>
     );
-};
+}
+
+const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAddress, solAddress }) => {
+    const [evmCopied, setEvmCopied] = useState(false);
+    const [solCopied, setSolCopied] = useState(false);
+
+    const handleEvmCopy = () => {
+        navigator.clipboard.writeText(evmAddress);
+        setEvmCopied(true);
+        setTimeout(() => setEvmCopied(false), 1000);
+    }
+
+    const handleSolCopy = () => {
+        navigator.clipboard.writeText(solAddress);
+        setSolCopied(true);
+        setTimeout(() => setSolCopied(false), 1000);
+    }
+
+    return (
+        <Popover>
+            <PopoverTrigger>
+                <button className="flex items-center text-white/70 hover:text-white/90 gap-1">
+                    <span>Account</span>
+                    <Copy className="w-3 h-3" />
+                </button>
+            </PopoverTrigger>
+            <PopoverContent className="!w-[236px] !border-1 !border-transparent !bg-black !p-2">
+                <button className="flex items-center justify-between p-1 hover:text-white/70" onClick={handleEvmCopy}>
+                    <span className="flex items-center gap-1">
+                        <img src="https://cdn.moralis.io/eth/0x.png" className="w-4 h-4" />
+                        <span>Ethereum</span>
+                    </span>
+                    {evmCopied ? <CheckCircle className="w-3 h-3 text-green-500" /> : <span>{shrinkAddress(evmAddress)}</span>}
+                </button>
+                <button className="flex items-center justify-between p-1 hover:text-white/70" onClick={handleSolCopy}>
+                    <span className="flex items-center gap-1">
+                        <img src="https://assets.coingecko.com/coins/images/4128/small/solana.png" className="w-4 h-4" />
+                        <span>Solana</span>
+                    </span>
+                    {solCopied ? <CheckCircle className="w-3 h-3 text-green-500" /> : <span>{shrinkAddress(solAddress)}</span>}
+                </button>
+            </PopoverContent>
+        </Popover>
+    )
+}
 
 export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance }) => {
     const [selectedRange, setSelectedRange] = useState<keyof typeof mockData>("1D");
@@ -222,8 +266,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
 
 export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen }) => {
     const { theme } = useStore();
-    const { address, chainId, switchChain, logout } = useContext(Web3AuthContext);
-    const [copied, setCopied] = useState(false);
+    const { address, chainId, switchChain, logout, solanaWalletInfo } = useContext(Web3AuthContext);
     const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
     const { isLoading: isLoadingBalance } = useWalletBalance();
     const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
@@ -233,12 +276,6 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     const [selectedAsset, setSelectedAsset] = useState<TokenBalance | null>(null);
 
     const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(address);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1000);
-    }
 
     const handleDisconnect = () => {
         logout()
@@ -277,12 +314,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                 <div className="flex items-center justify-between">
                     <button className="flex items-end gap-3">
                         <Wallet className="text-blue-500 w-6 h-6" />
-                        <div className="flex items-center gap-1 cursor-pointer text-white/90 hover:!text-white/70" onClick={handleCopy}>
-                            <span className="">{shrinkAddress(address)}</span>
-                            {
-                                !copied ? <Copy className="w-3 h-3" /> : <CheckCircle className="w-3 h-3 text-green-700" />
-                            }
-                        </div>
+                        <Accounts evmAddress={address} solAddress={solanaWalletInfo?.publicKey || ""} />
                     </button>
 
                     <button className={`p-2 flex items-center gap-1 text-sm rounded-xl hover:bg-white/10 ${theme === "dark" ? "text-white/70" : "text-black/70"}`} onClick={handleDisconnect}>
