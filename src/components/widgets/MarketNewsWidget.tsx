@@ -46,7 +46,8 @@ export const MarketNewsWidget: React.FC = () => {
   }
 
   const totalPages = Math.ceil((latestCryptoNews || []).length / itemsPerPage);
-  const displayedNews = (latestCryptoNews || []).slice(page * itemsPerPage, (page + 1) * itemsPerPage);
+  // const displayedNews = (latestCryptoNews || []).slice(page * itemsPerPage, (page + 1) * itemsPerPage);
+  const displayedNews: any[] = []
 
   return (
     <div className="p-4 h-full flex flex-col">
