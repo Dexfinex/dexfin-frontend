@@ -11,5 +11,8 @@ export const PRIMARY_ADDRESS_BY_PROTOCOL: Record<string, Record<number, string>>
     },
     "lido": {
         1: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84', // Ethereum Mainnet (ETH)
+    },
+    "aave-v3": {
+        1: '0xD322A49006FC828F9B5B37Ab215F99B4E5caB19C', // Ethereum Mainnet (ETH)
     }
 }
