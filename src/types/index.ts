@@ -115,6 +115,7 @@ export interface SentimentAnalysisData {
   price_history: any[];
   volume_24h: number;
   market_cap: number;
+  name: string;
 }
 
 export interface TechnicalAnalysisData {
