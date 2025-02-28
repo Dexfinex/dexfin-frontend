@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown, Activity, BarChart3 } from 'lucide-react';
 import { SentimentAnalysisData } from '../../../../types';
 import { AreaChart, Area, YAxis, ResponsiveContainer } from 'recharts';
 
+
 const SentimentIndicator: React.FC<{ value: number; label: string; isLoading: boolean }> = ({
   value,
   label,
@@ -74,17 +75,17 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ isWalletPa
 
           <VStack spacing={4} align="stretch">
             <SentimentIndicator
-              value={data?.social_sentiment ?? 65}
+              value={data ? parseFloat(data.social_sentiment?.toFixed(0)) : 0}
               label="Social Media Sentiment"
               isLoading={isLoading}
             />
             <SentimentIndicator
-              value={data?.trading_sentiment ?? 45}
+              value={data?.trading_sentiment ?? 0}
               label="Trading Activity Sentiment"
               isLoading={isLoading}
             />
             <SentimentIndicator
-              value={data?.technical_sentiment ?? 72}
+              value={data ? parseFloat(data.technical_sentiment?.toFixed(0)) : 0}
               label="Technical Indicators"
               isLoading={isLoading}
             />

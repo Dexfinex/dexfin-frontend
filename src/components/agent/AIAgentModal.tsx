@@ -245,6 +245,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const findFallbackResponse = async (message: string) => {
     const normalizedMessage = message.toLowerCase();
     const data = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
+    console.log(data);
     if (data && data.response) {
       if (data.response.priceData) {
         const { priceData } = data.response;
@@ -308,17 +309,29 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         text: `Here's the ${data.coinId} technical analysis:`,
         technicalAnalysis: data,
       }
-    } else if(data && data.social_sentiment) {
+    } else if (data && data.socialSentiment) {
+      const sentimentDate = Object.keys(data.socialSentiment)[0];
+      const negative_score = data.socialSentiment?.[sentimentDate]?.[Object.keys(data.socialSentiment[sentimentDate])[0]]?.Negative;
+      const positive_score = data.socialSentiment?.[sentimentDate]?.[Object.keys(data.socialSentiment[sentimentDate])[0]]?.Positive;
       return {
-        text: `Here's the ${data.coinId} market sentiment analysis:`,
-        sentimentAnalysis: data,
+        text: `Here's the ${data.priceData.response.name} market sentiment analysis:`,
+        sentimentAnalysis: {
+          social_sentiment: positive_score * 100/(negative_score + positive_score),
+          trading_sentiment: data.tradingSentiment.value,
+          technical_sentiment: data.technical.rsi,
+          current_price: data.priceData.response.priceData.price,
+          price_change_percentage_24h: data.priceData.response.priceData.change24h,
+          price_history: data.priceData.response.history,
+          volume_24h: data.priceData.response.priceData.volume24h,
+          market_cap: data.priceData.response.priceData.marketCap
+        },
       }
-    } else if(data && data.predictions) {
+    } else if (data && data.predictions) {
       return {
         text: `Here's the ${data.coinId}  price prediction analysis:`,
         predictionAnalysis: data,
       }
-    } else if(data && data.fear){
+    } else if (data && data.fear) {
       return {
         text: `Here's the current market overview:`,
         marketOverview: data,
