@@ -38,6 +38,7 @@ import { PriceCard } from './components/Analysis/PriceCard.tsx';
 import { TechnicalAnalysis } from './components/Analysis/TechnicalAnalysis.tsx';
 import { SentimentAnalysis } from './components/Analysis/SentimentAnalysis.tsx';
 import { PredictionAnalysis } from './components/Analysis/PredictionAnalysis.tsx';
+import { MarketOverview } from './components/Analysis/MarketOverview.tsx';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -312,10 +313,15 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         text: `Here's the ${data.coinId} market sentiment analysis:`,
         sentimentAnalysis: data,
       }
-    } else {
+    } else if(data && data.predictions) {
       return {
         text: `Here's the ${data.coinId}  price prediction analysis:`,
         predictionAnalysis: data,
+      }
+    } else if(data && data.fear){
+      return {
+        text: `Here's the current market overview:`,
+        marketOverview: data,
       }
     }
 
@@ -513,6 +519,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             technicalAnalysis: response.technicalAnalysis,
             sentimentAnalysis: response.sentimentAnalysis,
             predictionAnalysis: response.predictionAnalysis,
+            marketOverview: response.marketOverview,
             trending: response.trending,
             losers: response.losers,
             gainers: response.gainers,
@@ -756,6 +763,11 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                             {message.predictionAnalysis && (
                               <div className="mt-4 w-full">
                                 <PredictionAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></PredictionAnalysis>
+                              </div>
+                            )}
+                            {message.marketOverview && (
+                              <div className="mt-4 w-full">
+                                <MarketOverview isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></MarketOverview>
                               </div>
                             )}
                             {message.trending && <TrendingCoins coins={message.trending} />}

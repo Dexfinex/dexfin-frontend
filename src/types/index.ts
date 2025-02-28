@@ -27,6 +27,8 @@ export interface Message {
   priceData?: BrianCoinData;
   technicalAnalysis?: TechnicalAnalysisData;
   sentimentAnalysis?: SentimentAnalysisData;
+  predictionAnalysis?: PredictionAnalysisData;
+  marketOverview?: MarketOverviewData;
   trending?: AnalysisTrendingCoin[];
   losers?: AnalysisLoser[];
   gainers?: AnalysisGainer[];
@@ -67,6 +69,21 @@ export interface AnalysisTrendingCoin {
   priceUsd: number;
   volume: number;
   analysis: string;
+}
+
+export interface MarketOverviewData {
+  market: {
+    total_market_cap: number;
+    total_volume: number;
+    btc_dominance: number;
+    total_value_locked: number;
+    market_cap_change_percentage_24h: number;
+  }
+  fear: {
+    value: number;
+    previous_value: number;
+    previous_week_value: number;
+  }
 }
 
 export interface PredictionAnalysisData {
@@ -142,7 +159,7 @@ export interface TechnicalAnalysisData {
       ma50?: number;
       ma100?: number;
       ma200?: number;
-    }[]; 
+    }[];
   }
   signals: {
     signals: {
