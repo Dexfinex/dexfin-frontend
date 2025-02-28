@@ -141,10 +141,10 @@ export const PortfolioWidget: React.FC = () => {
             <div className="text-2xl font-bold mt-1">
               {formatCurrency(portfolioValue)}
             </div>
-            <div className="flex items-center gap-1 mt-1 text-green-400 text-sm">
+            {/* <div className="flex items-center gap-1 mt-1 text-green-400 text-sm">
               <TrendingUp className="w-4 h-4" />
               <span>+1.57% TODAY</span>
-            </div>
+            </div> */}
           </div>
 
           {/* Chart Section */}
@@ -223,7 +223,7 @@ export const PortfolioWidget: React.FC = () => {
                       className="flex w-full items-center justify-between p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        {/* <TokenChainIcon src={token.logo} alt={token.name} size="lg" chainId={token?.network?.chainId} /> */}
+                        <TokenChainIcon src={token.logo} alt={token.name} size="lg" chainId={token?.network?.chainId} />
                         <div className="flex flex-col justify-start items-start">
                           <div className="font-medium">{token.symbol}</div>
                           <div className="text-sm">

@@ -75,6 +75,7 @@ interface Web3AuthContextType {
     handleGoogleLogin: (isSignIn: boolean) => Promise<void>;
     handleDiscordLogin: () => Promise<void>;
     createAccount: (authMethod: AuthMethod) => Promise<void>;
+    initializeErrors: () => void;
     isConnected: boolean,
     provider: Web3Provider | undefined,
     signer: JsonRpcSigner | undefined,
@@ -83,7 +84,7 @@ interface Web3AuthContextType {
     setWalletClient: React.Dispatch<React.SetStateAction<WalletClient | undefined>>,
     isLoadingStoredWallet: boolean,
     solanaWalletInfo: SolanaWalletInfoType | undefined,
-    signSolanaTransaction: (solanaTransaction: Transaction | VersionedTransaction) => Promise<string | null>,
+    signSolanaTransaction: (solanaTransaction: VersionedTransaction) => Promise<VersionedTransaction | null>,
 
     userData: UserData | null,
     fetchUserData: ()=> Promise<void>,
@@ -99,6 +100,8 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     login: () => {
     },
     logout: () => {
+    },
+    initializeErrors: () => {
     },
     switchChain: async () => {
     },
@@ -201,6 +204,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         authWithStytch,
         loading: authLoading,
         error: authError,
+        setError: setAuthError,
         setAuthMethod,
     } = useAuthenticate(redirectUri);
     const {
@@ -211,6 +215,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         accounts,
         loading: accountsLoading,
         error: accountsError,
+        setError: setAccountsError,
     } = useAccounts();
     // console.log("currentAccount", accounts, currentAccount)
     const {
@@ -219,6 +224,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         sessionSigs,
         loading: sessionLoading,
         error: sessionError,
+        setError: setSessionError,
     } = useSession();
 
     // console.log("authMethod", authMethod)
@@ -611,6 +617,12 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         delete axios.defaults.headers.common['Authorization'];
     }
 
+    const initializeErrors = () => {
+        setAuthError(undefined)
+        setAccountsError(undefined)
+        setSessionError(undefined)
+    }
+
     async function handleGoogleLogin(isSignIn: boolean) {
         localStorage.setItem(LOCAL_STORAGE_AUTH_REDIRECT_TYPE, isSignIn ? 'sign-in' : 'sign-up')
         await signInWithGoogle(redirectUri);
@@ -731,6 +743,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
         handleGoogleLogin,
         handleDiscordLogin,
+        initializeErrors,
 
         isConnected,
         provider,

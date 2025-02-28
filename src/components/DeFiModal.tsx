@@ -23,6 +23,7 @@ import DepositModal from './defi/DepositModal.tsx';
 import StakeModal from './defi/StakeModal.tsx';
 import BorrowModal from './defi/BorrowModal.tsx';
 import UnStakeModal from './defi/UnStakeModal.tsx';
+import LendModal from './defi/LendModal.tsx';
 
 interface DeFiModalProps {
   isOpen: boolean;
@@ -132,8 +133,58 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               setToken2Amount("");
               setShowPreview(false);
               setModalState({ type: null });
+              setSelectedTab('overview');
             }
 
+          }
+          setConfirming("");
+        },
+        onError: async (e) => {
+          console.error(e)
+          setConfirming("");
+        }
+      })
+    }
+  }
+
+  const lendHandler = async () => {
+    if (signer && Number(tokenAmount) > 0) {
+      setConfirming("Approving...");
+      enSoActionMutation({
+        chainId: Number(chainId),
+        fromAddress: address,
+        routingStrategy: "router",
+        action: "deposit",
+        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+        tokenIn: [tokenBalance1?.address || ""],
+        tokenOut: [modalState?.position?.address || ""],
+        amountIn: [Number(tokenAmount)],
+        signer: signer,
+        receiver: address,
+        gasPrice: gasData.gasPrice,
+        gasLimit: gasData.gasLimit
+      }, {
+        onSuccess: async (txData) => {
+          if (signer) {
+            setConfirming("Executing...");
+            // execute defi action
+            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+              setConfirming("")
+              return null;
+            });
+            if (transactionResponse) {
+              const receipt = await transactionResponse.wait();
+              setHash(receipt.transactionHash);
+              setTxModalOpen(true);
+              await refetchDefiPositionByWallet();
+              await refetchDefiProtocolByWallet();
+
+              setTokenAmount("");
+              setToken2Amount("");
+              setShowPreview(false);
+              setModalState({ type: null });
+              setSelectedTab('overview');
+            }
           }
           setConfirming("");
         },
@@ -183,6 +234,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               setToken2Amount("");
               setShowPreview(false);
               setModalState({ type: null });
+              setSelectedTab('overview');
             }
 
           }
@@ -234,6 +286,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               setToken2Amount("");
               setShowPreview(false);
               setModalState({ type: null });
+              setSelectedTab('overview');
             }
 
           }
@@ -291,6 +344,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
               setShowPreview(false);
               setModalState({ type: null });
+              setSelectedTab('overview');
             }
 
           }
@@ -341,6 +395,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
             setWithdrawPercent("1");
             setShowPreview(false);
             setModalState({ type: null })
+            setSelectedTab('overview');
           }
 
         }
@@ -449,6 +504,19 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           depositHandler={depositHandler}
           setTokenAmount={setTokenAmount}
           setToken2Amount={setToken2Amount}
+        />
+      )}
+
+      {modalState?.type === 'lend' && modalState.position && (
+        <LendModal
+          setModalState={setModalState}
+          showPreview={showPreview}
+          modalState={modalState}
+          setShowPreview={setShowPreview}
+          tokenAmount={tokenAmount}
+          confirming={confirming}
+          lendHandler={lendHandler}
+          setTokenAmount={setTokenAmount}
         />
       )}
 

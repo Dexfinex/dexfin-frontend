@@ -8,7 +8,7 @@ import useDefillamaStore from "../store/useDefillamaStore";
 export const useGetDefillamaProtocols = () => {
     const fetchDefillamaProtocols = useCallback(async () => {
         const data = await defillamaService.getProtocols();
-        console.log("defillamaService data------------- : ", data);
+        // console.log("defillamaService data------------- : ", data);
         return data;
     }, []);
 
@@ -86,7 +86,7 @@ export const useGetChainTVL = () => {
 export const useGetDexVolume = () => {
     const fetchDexVolume = useCallback(async () => {
         const data = await defillamaService.getDexVolume();
-        console.log("getdex hook : ", data)
+        // console.log("getdex hook : ", data)
         return data;
     }, []);
 
