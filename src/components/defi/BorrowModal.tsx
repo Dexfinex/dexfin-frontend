@@ -79,7 +79,7 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
     }, [tokenInBalance, tokenOutBalance]);
 
     const availableBorrowAmount = useMemo(() => {
-        return Number(formatNumberByFrac(Number(tokenAmount) * 0.75 * Number(priceRatio), 2));
+        return Number(formatNumberByFrac(Number(tokenAmount) * 0.7 * Number(priceRatio), 2));
     }, [tokenAmount, priceRatio])
 
     const isErrorBorrowingTokenAmount = useMemo(() => {
@@ -138,9 +138,6 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
 
                         <div className="text-sm text-white flex items-center">
                             You can deposit {tokenInInfo?.symbol} as collateral and borrow {tokenOutInfo?.symbol} token.
-                        </div>
-                        <div className="text-sm text-red-500 flex items-center italic">
-                            It is still in the development stage.
                         </div>
                     </div>
 
