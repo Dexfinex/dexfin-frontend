@@ -1,50 +1,13 @@
-import React, {useEffect, useState} from 'react';
-import {AlertCircle, ExternalLink, RefreshCw} from 'lucide-react';
-import {getLatestNews} from '../../lib/cryptonews';
-import {NewsItem} from '../../types';
+import React from 'react';
+import { AlertCircle, ExternalLink, RefreshCw } from 'lucide-react';
+import { useGetLatestCryptoNews } from '../../hooks/useCryptoNews';
 
-interface NewsWidgetProps {
-  news: NewsItem[];
-}
 
-export const NewsWidget: React.FC<NewsWidgetProps> = ({news: defaultNews}) => {
-  const [news, setNews] = useState<NewsItem[]>(defaultNews);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const fetchNews = async (showRefreshState = false) => {
-    try {
-      if (showRefreshState) {
-        setRefreshing(true);
-      }
-      const newsData = await getLatestNews();
-      if (newsData && newsData.length > 0) {
-        setNews(newsData);
-        setError(null);
-      } else {
-        setError('No news available');
-      }
-    } catch (err) {
-      console.error('Error fetching news:', err);
-      setError('Failed to load news');
-    } finally {
-      setLoading(false);
-      if (showRefreshState) {
-        setRefreshing(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    fetchNews();
-    // Refresh news every 5 minutes
-    const interval = setInterval(fetchNews, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+export const NewsWidget: React.FC = () => {
+  const { data: latestCryptoNews, refetch: refetchCryptoNews, isLoading: isLoadingLatestCryptoNews, error: errorLatestCryptoNews } = useGetLatestCryptoNews();
 
   const handleRefresh = () => {
-    fetchNews(true);
+    refetchCryptoNews()
   };
 
   const getImpactColor = (impact: string) => {
@@ -58,7 +21,7 @@ export const NewsWidget: React.FC<NewsWidgetProps> = ({news: defaultNews}) => {
     }
   };
 
-  if (loading) {
+  if (isLoadingLatestCryptoNews) {
     return (
       <div className="p-4 h-full">
         <div className="animate-pulse space-y-4">
@@ -73,11 +36,11 @@ export const NewsWidget: React.FC<NewsWidgetProps> = ({news: defaultNews}) => {
     );
   }
 
-  if (error) {
+  if (errorLatestCryptoNews) {
     return (
       <div className="p-4 h-full flex flex-col items-center justify-center text-center">
         <AlertCircle className="w-8 h-8 text-red-400 mb-2" />
-        <p className="text-white/60 mb-4">{error}</p>
+        <p className="text-white/60 mb-4">{errorLatestCryptoNews.message}</p>
         <button
           onClick={handleRefresh}
           className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
@@ -93,18 +56,17 @@ export const NewsWidget: React.FC<NewsWidgetProps> = ({news: defaultNews}) => {
       <div className="flex justify-end mb-4">
         <button
           onClick={handleRefresh}
-          disabled={refreshing}
-          className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${
-            refreshing ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+          disabled={isLoadingLatestCryptoNews}
+          className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${isLoadingLatestCryptoNews ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           title="Refresh news"
         >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${isLoadingLatestCryptoNews ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
       <div className="space-y-3">
-        {news.map((item, index) => (
+        {(latestCryptoNews || []).map((item, index) => (
           <a
             key={index}
             href={item.link}

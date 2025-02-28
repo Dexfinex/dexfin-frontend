@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { IUser } from '../types/chat.type';
 
 interface MenuItem {
   id: string;
@@ -138,6 +139,8 @@ interface StoreState {
   setIsSocialFeedOpen: (isOpen: boolean) => void;
   isGamesOpen: boolean;
   setIsGamesOpen: (isOpen: boolean) => void;
+  istrade: boolean;
+  setTradeOpen: (isOpen: boolean) => void;
 
   // Market Data View
   marketDataView: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed';
@@ -196,6 +199,16 @@ interface StoreState {
   // Theme
   theme: 'dark' | 'light';
   toggleTheme: () => void;
+
+  // Chat
+  chatUser: any;
+  setChatUser: (user: any) => void;
+
+  // Chat Message
+  receivedMessage: any;
+  setReceivedMessage: (message: any) => void;
+  selectedUserInChatModal: IUser | null;
+  setSelectedUserInChatModal: (user: IUser) => void;
 }
 
 const useStore = create<StoreState>((set) => ({
@@ -206,11 +219,12 @@ const useStore = create<StoreState>((set) => ({
     { id: 'defi', label: 'DeFi', icon: 'Wallet', isStarred: false },
     { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', isStarred: false },
     { id: 'market-data', label: 'Market Data', icon: 'LineChart', isStarred: false },
+    { id: 'trade', label: 'Trade', icon: 'LineChart', isStarred: false },
     { id: 'chat', label: 'Chat', icon: 'MessageSquare', isStarred: false },
     { id: 'cart', label: 'Cart', icon: 'ShoppingCart', isStarred: false },
     { id: 'social', label: 'Social Feed', icon: 'Users', isStarred: false },
     { id: 'games', label: 'Games', icon: 'Gamepad2', isStarred: false },
-    { id: 'rewards', label: 'Rewards', icon: 'Trophy', isStarred: false }
+    { id: 'rewards', label: 'Rewards', icon: 'Trophy', isStarred: false },
   ],
   toggleStarMenuItem: (id) => set((state) => ({
     menuItems: state.menuItems.map((item) =>
@@ -243,6 +257,8 @@ const useStore = create<StoreState>((set) => ({
   setIsSocialFeedOpen: (isOpen) => set({ isSocialFeedOpen: isOpen }),
   isGamesOpen: false,
   setIsGamesOpen: (isOpen) => set({ isGamesOpen: isOpen }),
+  istrade: false,
+  setTradeOpen: (isOpen) => set({ istrade: isOpen }),
 
   // Market Data View
   marketDataView: 'overview',
@@ -302,7 +318,7 @@ const useStore = create<StoreState>((set) => ({
       id: 'direct-messages',
       type: 'Direct Messages',
       position: { x: 780, y: 735 },
-      size: { width: 324, height: 360 }
+      size: { width: 480, height: 560 }
     }
   ],
   updateWidget: (id, updates) => set((state) => ({
@@ -541,7 +557,16 @@ const useStore = create<StoreState>((set) => ({
   // Theme
   theme: 'dark',
   toggleTheme: () => set(state => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
+
+  // Chat
+  chatUser: "",
+  setChatUser: (user) => set({ chatUser: user }),
+  receivedMessage: null,
+  setReceivedMessage: message => set({ receivedMessage: message }),
+  selectedUserInChatModal: null,
+  setSelectedUserInChatModal: user => set({ selectedUserInChatModal: user })
 }));
 
 export { useStore };
+export const getStore = useStore.getState;
 export const wallpapers = wallpapersList;

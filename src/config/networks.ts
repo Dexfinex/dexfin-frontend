@@ -7,8 +7,9 @@ import {
     moonbeam, astar, canto, zksync, kava,
     base, linea, Chain
 } from "viem/chains";
-import {TokenType} from "../types/swap.type.ts";
-import {NULL_ADDRESS} from "../constants";
+import { TokenType } from "../types/swap.type.ts";
+import { NULL_ADDRESS } from "../constants";
+import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
 
 export interface NETWORK {
     id: string;
@@ -69,7 +70,7 @@ export const NETWORKS: NETWORK[] = [
         id: 'solana',
         name: 'Solana',
         icon: 'https://cryptologos.cc/logos/solana-sol-logo.svg',
-        chainId: 0,
+        chainId: SOLANA_CHAIN_ID,
     },
 ] as const;
 
@@ -81,13 +82,14 @@ export const mapChainId2NativeAddress: Record<number, string> = {
     10: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Optimism (ETH)
     42161: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Arbitrum (ETH)
     8453: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Base Mainnet (ETH placeholder)
+    900: 'So11111111111111111111111111111111111111112', // Base Mainnet (ETH placeholder)
 };
 
 export const mapChainId2ChainName: Record<number, string> = {
     1: 'Ethereum', // Ethereum Mainnet (ETH)
     56: 'BNB Chain', // Binance Smart Chain (BNB)
     137: 'Polygon', // Polygon Mainnet (MATIC)
-    43114: 'Avalance', // Avalanche C-Chain (AVAX)
+    43114: 'Avalanche', // Avalanche C-Chain (AVAX)
     10: 'Optimism', // Optimism (ETH)
     42161: 'Arbitrum', // Arbitrum (ETH)
     8453: 'Base', // Base Mainnet (ETH placeholder)
@@ -101,6 +103,7 @@ export const mapChainId2ExplorerUrl: Record<number, string> = {
     10: 'https://optimistic.etherscan.io', // Optimism Explorer
     42161: 'https://arbiscan.io', // Arbitrum Explorer
     8453: 'https://basescan.org', // Base Mainnet Explorer
+    [SOLANA_CHAIN_ID]: 'https://solscan.io'
 };
 
 export const mapChainId2ProviderChainName: Record<number, string> = {
@@ -211,7 +214,7 @@ export const mapChainId2ViemChain: Record<number, Chain> = {
     59144: linea
 };
 
-export const mapPopularTokens:Record<number, TokenType[]> = {
+export const mapPopularTokens: Record<number, TokenType[]> = {
     1: [
         {
             symbol: 'ETH',

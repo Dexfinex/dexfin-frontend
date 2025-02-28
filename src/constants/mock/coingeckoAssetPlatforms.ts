@@ -1,4 +1,4 @@
-import {AssetPlatformType} from "../../types/swap.type.ts";
+import { AssetPlatformType } from "../../types/swap.type.ts";
 
 export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
     1: {
@@ -22,7 +22,7 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "flare-networks"
     },
-    19: {"id": "songbird", "chain_identifier": 19, "name": "Songbird", "shortname": "", "native_coin_id": "songbird"},
+    19: { "id": "songbird", "chain_identifier": 19, "name": "Songbird", "shortname": "", "native_coin_id": "songbird" },
     25: {
         "id": "cronos",
         "chain_identifier": 25,
@@ -79,7 +79,7 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "hoo-token"
     },
-    82: {"id": "meter", "chain_identifier": 82, "name": "Meter", "shortname": "", "native_coin_id": "meter"},
+    82: { "id": "meter", "chain_identifier": 82, "name": "Meter", "shortname": "", "native_coin_id": "meter" },
     88: {
         "id": "tomochain",
         "chain_identifier": 88,
@@ -94,8 +94,8 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "bitkub-coin"
     },
-    100: {"id": "xdai", "chain_identifier": 100, "name": "Gnosis Chain", "shortname": "", "native_coin_id": "xdai"},
-    106: {"id": "velas", "chain_identifier": 106, "name": "Velas", "shortname": "velas", "native_coin_id": "velas"},
+    100: { "id": "xdai", "chain_identifier": 100, "name": "Gnosis Chain", "shortname": "", "native_coin_id": "xdai" },
+    106: { "id": "velas", "chain_identifier": 106, "name": "Velas", "shortname": "velas", "native_coin_id": "velas" },
     108: {
         "id": "thundercore",
         "chain_identifier": 108,
@@ -138,7 +138,7 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "weth"
     },
-    196: {"id": "x1", "chain_identifier": 196, "name": "X1", "shortname": "", "native_coin_id": "okb"},
+    196: { "id": "x1", "chain_identifier": 196, "name": "X1", "shortname": "", "native_coin_id": "okb" },
     199: {
         "id": "bittorrent",
         "chain_identifier": 199,
@@ -146,8 +146,8 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "bittorrent"
     },
-    204: {"id": "opbnb", "chain_identifier": 204, "name": "opBNB", "shortname": "", "native_coin_id": "binancecoin"},
-    250: {"id": "fantom", "chain_identifier": 250, "name": "Fantom", "shortname": "", "native_coin_id": "fantom"},
+    204: { "id": "opbnb", "chain_identifier": 204, "name": "opBNB", "shortname": "", "native_coin_id": "binancecoin" },
+    250: { "id": "fantom", "chain_identifier": 250, "name": "Fantom", "shortname": "", "native_coin_id": "fantom" },
     288: {
         "id": "boba",
         "chain_identifier": 288,
@@ -162,7 +162,7 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "hashgraph",
         "native_coin_id": "hedera-hashgraph"
     },
-    311: {"id": "omax", "chain_identifier": 311, "name": "OMAX", "shortname": "", "native_coin_id": "omax-token"},
+    311: { "id": "omax", "chain_identifier": 311, "name": "OMAX", "shortname": "", "native_coin_id": "omax-token" },
     314: {
         "id": "filecoin",
         "chain_identifier": 314,
@@ -184,7 +184,7 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "zkSync",
         "native_coin_id": "ethereum"
     },
-    361: {"id": "theta", "chain_identifier": 361, "name": "Theta", "shortname": "", "native_coin_id": "theta-token"},
+    361: { "id": "theta", "chain_identifier": 361, "name": "Theta", "shortname": "", "native_coin_id": "theta-token" },
     530: {
         "id": "function-x",
         "chain_identifier": 530,
@@ -213,7 +213,7 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "wemix-token"
     },
-    1231: {"id": "ultron", "chain_identifier": 1231, "name": "Ultron", "shortname": "", "native_coin_id": "ultron"},
+    1231: { "id": "ultron", "chain_identifier": 1231, "name": "Ultron", "shortname": "", "native_coin_id": "ultron" },
     1284: {
         "id": "moonbeam",
         "chain_identifier": 1284,
@@ -256,8 +256,8 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "cardano"
     },
-    2222: {"id": "kava", "chain_identifier": 2222, "name": "Kava", "shortname": "", "native_coin_id": "kava"},
-    2415: {"id": "xodex", "chain_identifier": 2415, "name": "XODEX", "shortname": "", "native_coin_id": "xodex"},
+    2222: { "id": "kava", "chain_identifier": 2222, "name": "Kava", "shortname": "", "native_coin_id": "kava" },
+    2415: { "id": "xodex", "chain_identifier": 2415, "name": "XODEX", "shortname": "", "native_coin_id": "xodex" },
     2611: {
         "id": "redlight-chain",
         "chain_identifier": 2611,
@@ -286,8 +286,8 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "wrapped-bitcoin"
     },
-    4337: {"id": "beam", "chain_identifier": 4337, "name": "Beam", "shortname": "", "native_coin_id": "beam"},
-    5000: {"id": "mantle", "chain_identifier": 5000, "name": "Mantle", "shortname": "", "native_coin_id": "mantle"},
+    4337: { "id": "beam", "chain_identifier": 4337, "name": "Beam", "shortname": "", "native_coin_id": "beam" },
+    5000: { "id": "mantle", "chain_identifier": 5000, "name": "Mantle", "shortname": "", "native_coin_id": "mantle" },
     6661: {
         "id": "cybria",
         "chain_identifier": 6661,
@@ -302,8 +302,8 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "zetachain"
     },
-    7700: {"id": "canto", "chain_identifier": 7700, "name": "Canto", "shortname": "", "native_coin_id": "canto"},
-    8453: {"id": "base", "chain_identifier": 8453, "name": "Base", "shortname": "", "native_coin_id": "ethereum"},
+    7700: { "id": "canto", "chain_identifier": 7700, "name": "Canto", "shortname": "", "native_coin_id": "canto" },
+    8453: { "id": "base", "chain_identifier": 8453, "name": "Base", "shortname": "", "native_coin_id": "ethereum" },
     8545: {
         "id": "shiden network",
         "chain_identifier": 8545,
@@ -311,7 +311,7 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "shiden"
     },
-    9001: {"id": "evmos", "chain_identifier": 9001, "name": "Evmos", "shortname": "evmos", "native_coin_id": "evmos"},
+    9001: { "id": "evmos", "chain_identifier": 9001, "name": "Evmos", "shortname": "evmos", "native_coin_id": "evmos" },
     10000: {
         "id": "smartbch",
         "chain_identifier": 10000,
@@ -326,7 +326,7 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "immutable-x"
     },
-    17777: {"id": "eos-evm", "chain_identifier": 17777, "name": "EOS EVM", "shortname": "", "native_coin_id": "eos"},
+    17777: { "id": "eos-evm", "chain_identifier": 17777, "name": "EOS EVM", "shortname": "", "native_coin_id": "eos" },
     23294: {
         "id": "oasis-sapphire",
         "chain_identifier": 23294,
@@ -334,7 +334,7 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "oasis-network"
     },
-    34443: {"id": "mode", "chain_identifier": 34443, "name": "Mode", "shortname": "", "native_coin_id": "mode"},
+    34443: { "id": "mode", "chain_identifier": 34443, "name": "Mode", "shortname": "", "native_coin_id": "mode" },
     42161: {
         "id": "arbitrum-one",
         "chain_identifier": 42161,
@@ -349,7 +349,7 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "ethereum"
     },
-    42220: {"id": "celo", "chain_identifier": 42220, "name": "Celo", "shortname": "celo", "native_coin_id": "celo"},
+    42220: { "id": "celo", "chain_identifier": 42220, "name": "Celo", "shortname": "celo", "native_coin_id": "celo" },
     42262: {
         "id": "oasis",
         "chain_identifier": 42262,
@@ -364,8 +364,8 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "AVAX",
         "native_coin_id": "avalanche-2"
     },
-    59144: {"id": "linea", "chain_identifier": 59144, "name": "Linea", "shortname": "", "native_coin_id": "ethereum"},
-    81457: {"id": "blast", "chain_identifier": 81457, "name": "Blast", "shortname": "", "native_coin_id": "blast"},
+    59144: { "id": "linea", "chain_identifier": 59144, "name": "Linea", "shortname": "", "native_coin_id": "ethereum" },
+    81457: { "id": "blast", "chain_identifier": 81457, "name": "Blast", "shortname": "", "native_coin_id": "blast" },
     333999: {
         "id": "polis-chain",
         "chain_identifier": 333999,
@@ -373,7 +373,7 @@ export const mapCoingeckoAssetPlatforms: Record<number, AssetPlatformType> = {
         "shortname": "",
         "native_coin_id": "polis"
     },
-    534352: {"id": "scroll", "chain_identifier": 534352, "name": "Scroll", "shortname": "", "native_coin_id": "weth"},
+    534352: { "id": "scroll", "chain_identifier": 534352, "name": "Scroll", "shortname": "", "native_coin_id": "weth" },
     622277: {
         "id": "hypra-network",
         "chain_identifier": 622277,

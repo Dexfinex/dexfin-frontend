@@ -1,25 +1,28 @@
-import {useContext, useEffect, useState} from 'react';
-import {useStore} from './store/useStore';
-import {Header} from './components/Header';
-import {Workspace} from './components/Workspace';
-import AIAgentModal from './components/AIAgentModal';
-import {SwapModal} from './components/SwapModal';
-import {DeFiModal} from './components/DeFiModal';
-import {DashboardModal} from './components/DashboardModal';
-import {MarketDataModal} from './components/MarketDataModal';
-import {ChatModal} from './components/ChatModal';
-import {CartModal} from './components/CartModal';
-import {SocialFeedModal} from './components/SocialFeedModal';
-import {GamesModal} from './components/GamesModal';
-import {RewardsModal} from './components/RewardsModal';
+import { useContext, useEffect, useState } from 'react';
+import { useStore } from './store/useStore';
+import { Header } from './components/Header';
+import { Workspace } from './components/Workspace';
+import AIAgentModal from './components/agent/AIAgentModal.tsx';
+import SwapModal from './components/swap/SwapModal'
+import { DeFiModal } from './components/DeFiModal';
+import { DashboardModal } from './components/DashboardModal';
+import { MarketDataModal } from './components/MarketDataModal';
+import { ChatModal } from './components/ChatModal';
+import CartModal from './components/ShoppingCart/CartModal.tsx';
+import { SocialFeedModal } from './components/SocialFeedModal';
+import { GamesModal } from './components/GamesModal';
+import { RewardsModal } from './components/RewardsModal';
 import SignupModal from "./components/SignupModal.tsx";
 import SigninModal from "./components/SigninModal.tsx";
-import {AuthMethodType} from "@lit-protocol/constants";
-import {Web3AuthContext} from "./providers/Web3AuthContext.tsx";
-import {LOCAL_STORAGE_AUTH_REDIRECT_TYPE} from "./constants";
+import { AuthMethodType } from "@lit-protocol/constants";
+import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
+import { LOCAL_STORAGE_AUTH_REDIRECT_TYPE } from "./constants";
+import { TradingViewModal } from './components/TradingViewModal.tsx';
+import { initStream, KEY_NAME } from './utils/chatApi.ts';
+import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 
 export default function App() {
-    const {theme} = useStore();
+    const { theme } = useStore();
     const [isSignupTriggered, setIsSignupTriggered] = useState(false);
 
     const {
@@ -45,13 +48,17 @@ export default function App() {
         setIsSignupModalOpen,
         isSigninModalOpen,
         setIsSigninModalOpen,
-        menuItems
+        istrade,
+        setTradeOpen,
+        menuItems,
+        chatUser,
+        setChatUser
     } = useStore();
 
     const {
         authMethod,
-        accounts,
-        setAuthMethod,
+        initializeErrors,
+        address,
         isConnected,
     } = useContext(Web3AuthContext);
 
@@ -72,23 +79,52 @@ export default function App() {
         if (isConnected) {
             setIsSigninModalOpen(false)
             setIsSignupModalOpen(false)
+
+            if (!chatUser) {
+                // unlock chat profile
+                unlockProfile()
+            }
         }
-    }, [isConnected]);
+    }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen]);
+
+    const unlockProfile = async () => {
+        const chatKey = localStorage.getItem(KEY_NAME)
+
+        if (chatKey) {
+            const key: { account: string; decryptedPgpPrivateKey: string } = JSON.parse(chatKey)
+
+            if (address === key.account) {
+                console.log('auto initialize push user')
+                const pushUser = await PushAPI.initialize({
+                    decryptedPGPPrivateKey: key.decryptedPgpPrivateKey,
+                    env: CONSTANTS.ENV.PROD,
+                    account: key.account,
+                })
+
+                setChatUser(pushUser)
+                initStream(pushUser)
+            }
+        }
+    }
 
     // remove authMethod state when need to create new one
-    useEffect(() => {
-        if (!isSigninModalOpen && authMethod && accounts.length === 0)
-            setAuthMethod(undefined)
-
-    }, [accounts.length, authMethod, isSigninModalOpen, setAuthMethod])
+    // TODO: why need this?
+    /*
+        useEffect(() => {
+            if (!isSigninModalOpen && authMethod && accounts.length === 0)
+                setAuthMethod(undefined)
+    
+        }, [accounts.length, authMethod, isSigninModalOpen, setAuthMethod])
+    */
 
     useEffect(() => {
         // Check if the previous trigger was set and authMethod has become undefined
-        if (isSignupTriggered && authMethod === undefined) {
+        if (isSignupTriggered) {
+            initializeErrors()
             setIsSignupModalOpen(true);
             setIsSignupTriggered(false); // Reset the trigger
         }
-    }, [authMethod, isSignupTriggered, setIsSignupModalOpen]);
+    }, [authMethod, initializeErrors, isSignupTriggered, setIsSignupModalOpen]);
 
 
     // Update theme
@@ -108,8 +144,8 @@ export default function App() {
 
     return (
         <div className="min-h-screen flex flex-col">
-            <Header/>
-            <Workspace/>
+            <Header />
+            <Workspace />
 
             {isSignupModalOpen && (
                 <SignupModal
@@ -168,6 +204,10 @@ export default function App() {
             <RewardsModal
                 isOpen={isRewardsOpen}
                 onClose={() => setIsRewardsOpen(false)}
+            />
+            <TradingViewModal
+                isOpen={istrade}
+                onClose={() => setTradeOpen(false)}
             />
         </div>
     );

@@ -79,5 +79,6 @@ export default function useAccounts() {
         currentAccount,
         loading,
         error,
+        setError
     };
 }

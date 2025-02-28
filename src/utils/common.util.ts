@@ -1,10 +1,86 @@
 import moment from 'moment/moment';
+import { ethers } from 'ethers';
+import { mapChainId2NativeAddress } from "../config/networks.ts";
 
 const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
 
 export const isValidWalletAddress = (address: string): boolean => {
     return ethAddressRegex.test(address);
 };
+
+export const isNativeTokenAddress = (chainId: number, address: string): boolean => {
+    return mapChainId2NativeAddress[chainId]?.toLowerCase() === address?.toLowerCase()
+}
+
+export const extractAddress = (fullAddress: string): string => {
+    if (!fullAddress) return ""
+    const match = fullAddress.match(/0x[a-fA-F0-9]{40}/);
+    const address = match ? match[0] : "";
+    return address;
+}
+
+
+export const downloadBase64File = (base64Data: string, fileName: string, fileType: string) => {
+    // Convert Base64 to a Blob
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) => byteCharacters.charCodeAt(i));
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: fileType });
+
+    // Create a temporary link element and trigger the download
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+};
+
+export const getEnsName = async (address: string): Promise<string> => {
+    const provider = new ethers.providers.JsonRpcProvider("https://eth-mainnet.g.alchemy.com/v2/YhklBkpnW3RdeoL0fw-I6CRkGG1cu2-z");
+
+    try {
+        const ensName = await provider.lookupAddress(address);
+        // console.log("ENS Name:", ensName || "No ENS name found");
+        const result = (ensName ? ensName : "");
+
+        return result
+    } catch (error) {
+        console.error("Error fetching ENS name:", error);
+    }
+
+    return "";
+}
+
+export const getChatHistoryDate = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+    const now = new Date();
+
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (diffDays <= 0) {
+        return timeString; // Show only hour and minutes if today
+    } else {
+        return `${diffDays} days ago, ${timeString}`; // Show x days ago + time
+    }
+}
+
+export const getHourAndMinute = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+    const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return timeString;
+}
 
 /**
  * Compares two wallet addresses in uppercase.
@@ -16,6 +92,9 @@ export const compareWalletAddresses = (
     address1: string,
     address2: string,
 ): boolean => {
+    if (!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
+        return false;
+    }
     // Convert both addresses to uppercase.
     const normalizedAddress1 = address1.toUpperCase();
     const normalizedAddress2 = address2.toUpperCase();
@@ -95,3 +174,10 @@ export const formatNumberByFrac = (
 
     return getFixedNum(num, fixedCount);
 };
+
+export const formatHealthFactor = (num: number) => {
+    if (num > 1e9) {
+        return "∞";
+    }
+    return formatNumberByFrac(num);
+}

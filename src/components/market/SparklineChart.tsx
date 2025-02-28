@@ -32,6 +32,7 @@ export const SparklineChart: React.FC<SparklineChartProps> = ({
       height,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
+        attributionLogo: false
       },
       grid: {
         vertLines: { visible: false },
@@ -44,7 +45,10 @@ export const SparklineChart: React.FC<SparklineChartProps> = ({
         horzLine: { visible: false }
       },
       handleScroll: false,
-      handleScale: false
+      handleScale: false,
+      watermark: {
+        visible: false
+      }
     });
 
     // Add area series

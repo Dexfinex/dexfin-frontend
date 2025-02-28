@@ -143,5 +143,6 @@ export default function useAuthenticate(redirectUri?: string) {
         setAuthMethod,
         loading,
         error,
+        setError,
     };
 }

@@ -6,7 +6,7 @@
 
 :root {
   --glass-bg-dark: rgba(16, 16, 18, 0.85);
-  --glass-bg-light: rgba(255, 255, 255, 0.85);
+  --glass-bg-light: #ffffff;
   --glass-border-dark: rgba(255, 255, 255, 0.12);
   --glass-border-light: rgba(0, 0, 0, 0.12);
 }
@@ -372,4 +372,36 @@ body[data-theme='light'] .notification-scrollbar::-webkit-scrollbar-thumb:hover 
 
 .widget-badge {
   @apply px-2 py-0.5 text-xs rounded-full;
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(66, 153, 225, 0.5);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(66, 153, 225, 0.8);
+}
+
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
