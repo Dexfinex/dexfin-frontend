@@ -34,7 +34,7 @@ export const defillamaService = {
 	getDexVolume: async (): Promise<DefillamaDexVolume> => {
 		try {
 			const { data } = await defillamaApi.get<DefillamaDexVolume>('/volum');
-			console.log("DEX volume dataservice:", data);
+			// console.log("DEX volume dataservice:", data);
 			return data;
 		} catch (error) {
 			console.error('Failed to fetch DEX volume:', error);

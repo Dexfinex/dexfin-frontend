@@ -141,10 +141,10 @@ export const PortfolioWidget: React.FC = () => {
             <div className="text-2xl font-bold mt-1">
               {formatCurrency(portfolioValue)}
             </div>
-            <div className="flex items-center gap-1 mt-1 text-green-400 text-sm">
+            {/* <div className="flex items-center gap-1 mt-1 text-green-400 text-sm">
               <TrendingUp className="w-4 h-4" />
               <span>+1.57% TODAY</span>
-            </div>
+            </div> */}
           </div>
 
           {/* Chart Section */}
