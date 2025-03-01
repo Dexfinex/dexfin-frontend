@@ -1,5 +1,5 @@
-import { calendarService } from "../services/calendar.service";
-import { DayEvent } from "../components/market/Calendar/MarketCalendar";
+import { calendarService } from "../../../../services/calendar.service";
+import { DayEvent } from "../MarketCalendar";
 
 export const getLoginUserId = async (walletAddress: string) => {
     const data = await calendarService.loginUserId(walletAddress);
@@ -23,4 +23,5 @@ export const editEvent= async(userId: string, event:DayEvent)=>{
     const data=await calendarService.editEvent(userId, event);
     return data;
 }
+
 

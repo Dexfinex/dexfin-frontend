@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import { COINGECKO_BASE_URL, ZEROX_BASE_URL, CRYPTONEWS_BASE_URL, DEFILLAMA_BASE_URL, FEARGREED_BASE_URL, GECKOTERMINAL_BASE_URL, DEXFIN_BACKEND_BASE_URL, BRIAN_BASE_URL, ENSO_BASE_URL, BIRDEYE_BASE_URL, OPENAI_BASE_URL, CALENDAR_BASE_URL, USERAUTH_BASE_URL } from "../constants";
+import { COINGECKO_BASE_URL, ZEROX_BASE_URL, CRYPTONEWS_BASE_URL, DEFILLAMA_BASE_URL, FEARGREED_BASE_URL, GECKOTERMINAL_BASE_URL, DEXFIN_BACKEND_BASE_URL, BRIAN_BASE_URL, ENSO_BASE_URL, BIRDEYE_BASE_URL, OPENAI_BASE_URL, CALENDAR_BASE_URL, USERAUTH_BASE_URL, USERNAMEAUTH_BASE_URL,TECHNICALANALYSIS_BASE_URL } from "../constants";
 
 export const zeroxApi = axios.create({
   baseURL: ZEROX_BASE_URL,
@@ -55,7 +55,12 @@ export const calendarApi = axios.create({
 
 export const userAuthApi = axios.create({
   baseURL: USERAUTH_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  }
+
 });
+export const usernameAuthApi = axios.create({
+  baseURL: USERNAMEAUTH_BASE_URL
+})
+
+export const TechnicalAnalysisApi = axios.create({
+  baseURL: TECHNICALANALYSIS_BASE_URL
+})

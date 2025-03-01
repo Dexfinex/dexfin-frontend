@@ -69,7 +69,27 @@ const games: Game[] = [
     comingSoon: true
   }
 ];
-
+export interface GameSession {
+  id?: string;         // UUID (PK) - will be generated on server
+  user_id: string;     // UUID (FK) - user who played the game
+  game_id: string;     // UUID (FK) - which game was played
+  tokens_earned: number; // INT - tokens earned in this session
+  score: number;       // INT - score achieved
+  accuracy?: number;   // FLOAT - percentage accuracy (if applicable)
+  win_status?: boolean; // BOOLEAN - whether user won (for arena games)
+  streak: number;      // INT - best streak achieved
+  played_at?: Date;    // TIMESTAMP - when the game was played (will be set on server)
+}
+// export interface GameSession {
+//   user_id: string;
+//   game_id: string;
+//   tokens_earned: number;
+//   score: number;
+//   accuracy: number;
+//   streak: number;
+//   win_status: boolean | null;
+//   played_at: Date;
+// }
 export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeGame, setActiveGame] = useState<Game | null>(null);

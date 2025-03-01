@@ -28,7 +28,7 @@ const widgetConfigs = [
   { type: 'Market News', icon: Newspaper, description: 'Latest crypto news and updates' },
   { type: 'Market Pulse', icon: LineChart, description: 'Live cryptocurrency price charts' },
   { type: 'Fear & Greed Index', icon: Gauge, description: 'Market sentiment indicator' },
-  { type: 'Quick Swap', icon: RefreshCw, description: 'Instant token swaps' },
+  { type: 'Quick Swap', icon: RefreshCw, description: 'Instant token swaps', comingSoon: true },
   { type: 'Price Converter', icon: DollarSign, description: 'Convert between tokens and fiat' },
   { type: 'Ask Anything', icon: MessageSquare, description: 'AI-powered crypto assistant' },
   { type: 'Trending', icon: TrendingUp, description: 'Top trending cryptocurrencies' },
@@ -76,7 +76,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               </button>
             ))}
           </div>
-
           {/* Content */}
           <div className="flex-1 p-6 max-h-[calc(100vh-200px)] overflow-y-auto settings-scrollbar">
             {activeTab === 'widgets' ? (
@@ -95,9 +94,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     Reset All
                   </button>
                 </div>
-                
                 <div className="grid grid-cols-2 gap-4">
-                  {widgetConfigs.map(({ type, icon: Icon, description }) => (
+                  {widgetConfigs.map(({ type, icon: Icon, description, comingSoon }) => (
                     <div
                       key={type}
                       className="flex items-center justify-between p-4 rounded-lg glass"
@@ -108,18 +106,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         </div>
                         <div>
                           <h4 className="font-medium">{type}</h4>
-                          <p className="text-sm text-white/60">{description}</p>
+                          {comingSoon && (
+                            <span className="text-xs text-blue-400 font-medium">Coming soon</span>
+                          )}
+                          {/* <p className="text-sm text-white/60">{description}</p> */}
                         </div>
                       </div>
                       <button
-                        onClick={() => toggleWidgetVisibility(type)}
+                        onClick={() => !comingSoon && toggleWidgetVisibility(type)}
                         className={`w-12 h-6 rounded-full transition-colors ${
-                          widgetVisibility[type] ? 'bg-blue-500' : 'bg-white/10'
-                        } relative`}
+                          widgetVisibility[type] && !comingSoon ? 'bg-blue-500' : 'bg-white/10'
+                        } relative ${comingSoon ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={comingSoon}
                       >
                         <div
                           className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                            widgetVisibility[type] ? 'left-7' : 'left-1'
+                            widgetVisibility[type] && !comingSoon ? 'left-7' : 'left-1'
                           }`}
                         />
                       </button>

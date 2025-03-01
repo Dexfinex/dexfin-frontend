@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { Swords, Shield, Zap, X, Info, Star, Flame, Droplet, Wind } from 'lucide-react';
 import { GameState, Action, StatusEffect } from '../../types/memeArena';
 import { MemeArenaTutorial } from './MemeArenaTutorial';
+import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
+import { GameSession } from '../GamesModal';
+import axios from 'axios';
 
 interface BattleArenaProps {
   state: GameState;
@@ -15,6 +18,9 @@ const BattleArena: React.FC<BattleArenaProps> = ({
   onNewGame
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
+  const [usernameResponse, setUsernameResponse] = useState<{exists: boolean, message?: string, username?: string}>();
+  const { userData, checkWalletAndUsername } = useContext(Web3AuthContext);
+  const gameSessionSaved = useRef(false);
 
   // Auto-scroll battle logs
   useEffect(() => {
@@ -23,6 +29,76 @@ const BattleArena: React.FC<BattleArenaProps> = ({
       element.scrollTop = element.scrollHeight;
     }
   }, [state.battleLogs]);
+
+  useEffect(() => {
+    checkUsername();
+  }, [userData, checkWalletAndUsername]);
+
+  // Reset game session saved flag when game is not over
+  useEffect(() => {
+    if (!state.isGameOver) {
+      gameSessionSaved.current = false;
+    }
+  }, [state.isGameOver]);
+
+  // Save game session when game is over
+  useEffect(() => {
+    if (state.isGameOver && !gameSessionSaved.current && 
+        userData && userData.accessToken && 
+        usernameResponse && usernameResponse.exists && usernameResponse.username) {
+      
+      const isVictory = state.aiHP <= 0;
+      const baseReward = 100;
+      const comboBonus = state.battleStats.maxCombo * 20;
+      const criticalBonus = state.battleStats.criticalHits * 15;
+      const perfectBonus = state.battleStats.perfectBlocks * 10;
+      const totalReward = baseReward + comboBonus + criticalBonus + perfectBonus;
+      
+      const gameSession: GameSession = {
+        user_id: usernameResponse.username,
+        game_id: 'meme-arena',
+        tokens_earned: isVictory ? totalReward : 0,
+        score: state.battleStats.totalDamageDealt,
+        accuracy: 0, // Not applicable for arena game
+        streak: state.battleStats.maxCombo,
+        win_status: isVictory,
+        played_at: new Date()
+      };
+      
+      // Save to database and mark as saved
+      saveGameSession(gameSession);
+      gameSessionSaved.current = true;
+    }
+  }, [state.isGameOver, state.aiHP, userData, usernameResponse]);
+
+  const checkUsername = async () => {
+    try {
+      const response = await checkWalletAndUsername();
+      if (response.exists && response.message) {
+        // Extract username from the message
+        // The message format is "Username exists for this wallet: {username}"
+        const usernameMatch = response.message.match(/Username exists for this wallet: (.+)$/);
+        if (usernameMatch && usernameMatch[1]) {
+          setUsernameResponse({...response, username: usernameMatch[1]});
+        }
+      } else {
+        setUsernameResponse(response);
+      }
+    } catch (error) {
+      console.error("Error checking username:", error);
+    }
+  };
+
+  const saveGameSession = async (gameSession: GameSession) => {
+    try {
+      
+      console.log('Saving game session:', gameSession);
+      
+      console.log('Game session saved successfully');
+    } catch (error) {
+      console.error('Error saving game session:', error);
+    }
+  };
 
   const {
     playerCharacter,

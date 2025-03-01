@@ -142,6 +142,11 @@ interface StoreState {
   istrade: boolean;
   setTradeOpen: (isOpen: boolean) => void;
 
+  isUsernameModalOpen: boolean;
+  setIsUsernameModalOpen: (isOpen: boolean) => void;
+
+  
+
   // Market Data View
   marketDataView: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed';
   setMarketDataView: (view: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed') => void;
@@ -178,6 +183,9 @@ interface StoreState {
     };
     totalTokens: number;
   };
+  user:{
+    id: string;
+  } | null;
   updateGameStats: (stats: Partial<StoreState['gameStats']>) => void;
 
   // Appearance
@@ -211,7 +219,10 @@ interface StoreState {
   setSelectedUserInChatModal: (user: IUser) => void;
 }
 
+
 const useStore = create<StoreState>((set) => ({
+  user:null,
+  setUser:(user: any)=> set({user}),
   // Menu Items
   menuItems: [
     { id: 'ai', label: 'AI Agent', icon: 'Bot', isStarred: false },
@@ -219,7 +230,7 @@ const useStore = create<StoreState>((set) => ({
     { id: 'defi', label: 'DeFi', icon: 'Wallet', isStarred: false },
     { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', isStarred: false },
     { id: 'market-data', label: 'Market Data', icon: 'LineChart', isStarred: false },
-    { id: 'trade', label: 'Trade', icon: 'LineChart', isStarred: false },
+    // { id: 'trade', label: 'Trade', icon: 'LineChart', isStarred: false },
     { id: 'chat', label: 'Chat', icon: 'MessageSquare', isStarred: false },
     { id: 'cart', label: 'Cart', icon: 'ShoppingCart', isStarred: false },
     { id: 'social', label: 'Social Feed', icon: 'Users', isStarred: false },
@@ -259,6 +270,8 @@ const useStore = create<StoreState>((set) => ({
   setIsGamesOpen: (isOpen) => set({ isGamesOpen: isOpen }),
   istrade: false,
   setTradeOpen: (isOpen) => set({ istrade: isOpen }),
+  isUsernameModalOpen: false,
+  setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
 
   // Market Data View
   marketDataView: 'overview',
@@ -331,7 +344,7 @@ const useStore = create<StoreState>((set) => ({
     'Market News': true,
     'Market Pulse': true,
     'Fear & Greed Index': true,
-    'Quick Swap': true,
+    'Quick Swap': false,
     'Price Converter': true,
     'Trending': true,
     'Ask Anything': true,

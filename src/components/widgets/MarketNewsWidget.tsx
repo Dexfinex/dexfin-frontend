@@ -45,9 +45,10 @@ export const MarketNewsWidget: React.FC = () => {
     );
   }
 
-  const totalPages = Math.ceil((latestCryptoNews || []).length / itemsPerPage);
-  // const displayedNews = (latestCryptoNews || []).slice(page * itemsPerPage, (page + 1) * itemsPerPage);
-  const displayedNews: any[] = []
+  // Ensure latestCryptoNews is an array before using array methods
+  const newsArray = Array.isArray(latestCryptoNews) ? latestCryptoNews : [];
+  const totalPages = Math.ceil(newsArray.length / itemsPerPage);
+  const displayedNews = newsArray.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
 
   return (
     <div className="p-4 h-full flex flex-col">
@@ -67,11 +68,11 @@ export const MarketNewsWidget: React.FC = () => {
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="text-sm text-white/60">
-            {page + 1} / {totalPages}
+            {page + 1} / {totalPages || 1}
           </span>
           <button
             onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-            disabled={page === totalPages - 1}
+            disabled={page === totalPages - 1 || totalPages === 0}
             className="p-1 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
           >
             <ChevronRight className="w-4 h-4" />

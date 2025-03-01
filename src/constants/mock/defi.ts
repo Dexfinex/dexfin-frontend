@@ -1,18 +1,31 @@
 import { Position } from "../../store/useDefiStore";
 
-export const ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN: Record<number, Record<string, string>> = {
+export const ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN: Record<number, Record<string, Record<string, string>>> = {
     56: {
-        "uniswap-v2": "USDT,USDC,UNI-V2",
-        "type": "Liquidity"
+        "uniswap-v2": {
+            "token": "USDT,USDC,UNI-V2",
+            "type": "Liquidity"
+        },
     },
     1: {
-        "lido": "stETH",
-        "type": "Staking"
-    }
+        "lido": {
+            "token": "stETH",
+            "type": "Staking"
+        },
+        // "aave-v3": {
+        //     "token": "aEthWETH,WETH",
+        //     "type": "Supplied"
+        // },
+    },
 }
 
 export const isEnabledPosition = ({ chainId, protocol, tokenPair, type }: { chainId: number, protocol: string, tokenPair: string, type: string }) => {
-    if (ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId] && ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol] && ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol] === tokenPair && ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId]["type"] === type) {
+    if (
+        ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId] &&
+        ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol] &&
+        ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol]?.token === tokenPair &&
+        ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol]?.type === type
+    ) {
         return true;
     }
 
@@ -64,6 +77,51 @@ export const BORROWING_LIST = [
             "logo": "https://cdn.moralis.io/eth/0x.png",
             "thumbnail": "https://cdn.moralis.io/eth/0x.png",
         },
+        "liquidityToken": {
+            "token_type": "erc20",
+            "name": "Aave Ethereum WETH",
+            "symbol": "aEthWETH",
+            "contract_address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+            "decimals": "18",
+            "logo": "https://etherscan.io/token/images/aave_weth.png",
+            "thumbnail": "https://etherscan.io/token/images/aave_weth.png",
+        },
+        "borrowContract": {
+            "contract_address": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+            "abi": `[{
+                "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "asset",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "interestRateMode",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint16",
+                    "name": "referralCode",
+                    "type": "uint16"
+                },
+                {
+                    "internalType": "address",
+                    "name": "onBehalfOf",
+                    "type": "address"
+                }
+                ],
+                "name": "borrow",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }]`
+        },
         "tokenOut": {
             "token_type": "erc20",
             "name": "USDC",
@@ -82,7 +140,7 @@ export const offerings: Offering[] = [
         "address": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2",
         "protocol": "Uniswap v2",
         "protocol_id": "uniswap-v2",
-        "type": "liquidity",
+        "type": "Liquidity",
         "amount": 0,
         "apy": 0,
         "tokens": [
@@ -133,7 +191,7 @@ export const offerings: Offering[] = [
     },
     {
         "chainId": 1,
-        "apy": 0,
+        "apy": 3.1,
         "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
         "protocol": "Lido",
         "protocol_id": "lido",
@@ -160,7 +218,7 @@ export const offerings: Offering[] = [
     },
     {
         "chainId": 1,
-        "apy": 0,
+        "apy": 1.63,
         "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
         "protocol": "Aave V3",
         "protocol_id": "aave-v3",
@@ -195,7 +253,34 @@ export const offerings: Offering[] = [
             }
         ],
         "rewards": 0,
-        "healthFactor": 0,
+        "healthFactor": 17.41,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": 1,
+        "apy": 1.63,
+        "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Lending",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "native",
+                "name": "ETH",
+                "symbol": "ETH",
+                "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": "18",
+                "logo": "https://cdn.moralis.io/eth/0x.png",
+                "thumbnail": "https://cdn.moralis.io/eth/0x.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 17.41,
         "logo": "https://cdn.moralis.io/defi/aave.png"
     }
 ];

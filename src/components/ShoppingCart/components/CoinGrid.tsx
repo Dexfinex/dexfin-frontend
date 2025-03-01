@@ -30,7 +30,7 @@ const networkToplatform: Readonly<Record<string, string>> = {
     'avalanche': 'avalanche',
     'base': 'base',
     'optimism': 'optimistic-ethereum',
-    'celo': 'celo'
+    // 'celo': 'celo'
 } as const;
 
 // chainIDPlatform to platform mapping
@@ -40,10 +40,17 @@ const chainIDPlatform: Readonly<Record<string, string>> = {
     '43114': 'avalanche',
     '8453': 'base',
     '10': 'optimistic-ethereum',
-    '42220': 'celo',
+    // '42220': 'celo',
     '42161': 'arbitrum-one',
     '137': 'polygon-pos',
 } as const;
+
+// List of non-EVM tokens to exclude (case-insensitive symbols)
+const nonEvmTokenSymbols = [
+    'btc', 'sol', 'xrp', 'ada', 'dot', 'xlm', 'algo', 'hbar', 'xmr', 'bch', 'ltc', 'near',
+    'ton', 'miota', 'klay', 'xtz', 'cosmos', 'atom', 'trx', 'eos', 'xec', 'zec', 'xem', 'dcr'
+];
+
 const CoinGrid: React.FC<CoinGridProps> = React.memo(({
     searchQuery,
     selectedCategory,
@@ -59,14 +66,34 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
         if (!platforms) return 'null';
         if (selectedcategory !== 'All' && selectedcategory !== 'token' && selectedcategory !== 'meme') {
             const platformKey = networkToplatform[selectedcategory.toLowerCase()];
-            // console.log("selectedcategory : ", platforms[platformKey]);
             return platforms[platformKey];
         }
         else {
-            // console.log("chainIDPlatform : ", chainIDPlatform[chainId.toString()]);
             const platformKey = chainIDPlatform[chainId.toString()];
             return platforms[platformKey];
         }
+    }, []);
+
+    // Check if a token is an EVM-compatible token
+    const isEvmToken = useCallback((coin: TokenTypeB): boolean => {
+        if (!coin) return false;
+
+        // Check if symbol is in our non-EVM list
+        if (nonEvmTokenSymbols.includes(coin.symbol.toLowerCase())) {
+            return false;
+        }
+
+        // Check if the token has any EVM platform addresses
+        if (coin.platforms) {
+            const hasEvmPlatform = Object.keys(chainIDPlatform).some(chainId => {
+                const platformKey = chainIDPlatform[chainId];
+                return !!coin.platforms[platformKey];
+            });
+
+            return hasEvmPlatform;
+        }
+
+        return true;
     }, []);
 
     // Fetch coins with abort controller
@@ -74,19 +101,19 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
         const fetchCoins = async () => {
             if (coinsRef.current.length > 0) return;
 
-            // Cancel previous request if exists
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
 
-            // Create new abort controller
             abortControllerRef.current = new AbortController();
 
             setLoading(true);
             try {
                 const coinList = await coingeckoService.getTokenList();
-                setCoins(coinList);
-                coinsRef.current = coinList;
+                // Filter out non-EVM tokens before setting state
+                const evmTokens = coinList.filter(isEvmToken);
+                setCoins(evmTokens);
+                coinsRef.current = evmTokens;
             } catch (error) {
                 if (error === 'AbortError') return;
                 console.error('Error fetching coins:', error);
@@ -102,13 +129,12 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
                 abortControllerRef.current.abort();
             }
         };
-    }, []);
+    }, [isEvmToken]);
 
     // Memoized and optimized filtering
     const filteredCoins = useMemo(() => {
         const searchLower = searchQuery.toLowerCase().trim();
         return coins.filter(coin => {
-            // Quick exit if coin is invalid
             if (!coin) return false;
 
             // Search matching
@@ -125,7 +151,6 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
             }
             // Network-based filtering
             const platformKey = networkToplatform[selectedCategory.toLowerCase()];
-            // console.log("platformKey : ", platformKey);
             return platformKey ? coin.platforms?.[platformKey] : false;
         });
     }, [coins, selectedCategory, searchQuery]);
@@ -174,6 +199,12 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
                 {filteredCoins.map((coin, index) => {
                     const contractAddress = getContractAddress(coin.platforms, walletChainId, selectedCategory)
+                    // Skip coins without contract addresses
+                    if (contractAddress === 'null' && selectedCategory !== 'All' &&
+                        selectedCategory !== 'token' && selectedCategory !== 'meme') {
+                        return null;
+                    }
+
                     return (
                         <div
                             key={index}
@@ -232,12 +263,13 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
                                     })
                                 }
                                 className="w-full py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                                disabled={contractAddress === 'null'}
                             >
                                 Add to Cart
                             </button>
                         </div>
                     )
-                })}
+                }).filter(Boolean)}
             </div>
         </div>
     )

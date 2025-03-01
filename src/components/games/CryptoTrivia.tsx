@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useRef  } from 'react';
 import { X, Trophy, Timer, ArrowLeft, Brain, Check, X as XIcon, Heart, Zap, Shield, Clock } from 'lucide-react';
+import { GameSession } from '../GamesModal';
+import { useStore } from '../../store/useStore';
+import { boolean } from 'zod';
+
+import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
+
 
 interface GameState {
   screen: 'menu' | 'difficulty' | 'game' | 'results';
@@ -302,6 +308,19 @@ function getRandomQuestions(difficulty: 'Easy' | 'Medium' | 'Hard'): Question[] 
 }
 
 export const CryptoTrivia: React.FC = () => {
+
+  // const { userInfo } = useContext(Web3AuthContext);
+  // useContext(Web3AuthContext);
+
+  const { userData, checkWalletAndUsername } = useContext(Web3AuthContext);
+  const [usernameResponse, setUsernameResponse] = useState<{exists: boolean, message?: string, username?: string}>();
+  const gameSessionSaved = useRef(false);
+  const usernameChecked = useRef(false);
+
+
+
+  const { user, gameStats, updateGameStats } = useStore();
+  const [sessionStartTime, setSessionStartTime] = useState<Date>(new Date());
   const [state, setState] = useState<GameState>({
     screen: 'menu',
     difficulty: 'Medium',
@@ -323,19 +342,48 @@ export const CryptoTrivia: React.FC = () => {
     streak: 0,
     multiplier: 1
   });
-
   const [gameQuestions, setGameQuestions] = useState<Question[]>([]);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  useEffect(() => {
+   
+    checkUsername()
+    // if (userData && userData.accessToken) {
+    //   checkUsername();
+    // }
+  }, [userData, checkWalletAndUsername]);
+  useEffect(() => {
+    if (state.screen === 'menu' || state.screen === 'difficulty') {
+      gameSessionSaved.current = false;
+    }
+  }, [state.screen]);
 
+  const checkUsername = async () => {
+    try {
+      const response = await checkWalletAndUsername();
+      console.log(response)
+      if (response.exists && response.message) {
+        // Extract username from the message
+        // The message format is "Username exists for this wallet: {username}"
+        const usernameMatch = response.message.match(/Username exists for this wallet: (.+)$/);
+        if (usernameMatch && usernameMatch[1]) {
+          setUsernameResponse({...response, username: usernameMatch[1]});
+        }
+      } else {
+        setUsernameResponse(response);
+      }
+    } catch (error) {
+      console.error("Error checking username:", error);
+    }
+  };
   useEffect(() => {
     // Check if screen is mobile size
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -361,7 +409,7 @@ export const CryptoTrivia: React.FC = () => {
   const startGame = (difficulty: 'Easy' | 'Medium' | 'Hard') => {
     const randomizedQuestions = getRandomQuestions(difficulty);
     setGameQuestions(randomizedQuestions);
-
+    setSessionStartTime(new Date());
     setState(prev => ({
       ...prev,
       screen: 'game',
@@ -382,6 +430,7 @@ export const CryptoTrivia: React.FC = () => {
   };
 
   const handleTimeUp = () => {
+    console.log("handelTImeUp")
     if (state.lives > 1) {
       setState(prev => ({
         ...prev,
@@ -395,18 +444,25 @@ export const CryptoTrivia: React.FC = () => {
     }
   };
 
-  const endGame = () => {
+const endGame = () => {
+  console.log("sdfasdfasdfasdfasfdas")
     const baseScore = state.answers.filter(a => a).length;
     const difficultyMultiplier = difficultySettings[state.difficulty].multiplier;
     const finalScore = Math.round(baseScore * difficultyMultiplier * state.multiplier);
-    
+    const tokensEarned = finalScore * difficultySettings[state.difficulty].tokenBase;
+    const accuracy = state.answers.length > 0
+      ? (state.answers.filter(a => a).length / state.answers.length) * 100
+      : 0;
+
     setState(prev => ({
       ...prev,
       screen: 'results',
       score: finalScore,
       highScore: Math.max(prev.highScore, finalScore),
-      totalTokens: prev.totalTokens + (finalScore * difficultySettings[prev.difficulty].tokenBase)
+      totalTokens: prev.totalTokens + tokensEarned
     }));
+
+
   };
 
   const handleAnswer = (answerIndex: number) => {
@@ -430,7 +486,7 @@ export const CryptoTrivia: React.FC = () => {
         const baseScore = newAnswers.filter(a => a).length;
         const difficultyMultiplier = difficultySettings[state.difficulty].multiplier;
         const finalScore = Math.round(baseScore * difficultyMultiplier * newMultiplier);
-        
+
         setState(prev => ({
           ...prev,
           answers: newAnswers,
@@ -490,13 +546,16 @@ export const CryptoTrivia: React.FC = () => {
         break;
     }
   };
+  const saveGameSession = async (gameSession: GameSession) => {
+    console.log(gameSession)
 
+  }
   const renderMenu = () => (
     <div className="flex flex-col items-center justify-center h-full p-4">
       <div className="flex items-center justify-center w-20 h-20 mb-6 sm:w-24 sm:h-24 sm:mb-8 rounded-full bg-blue-500/20">
         <Brain className="w-10 h-10 sm:w-12 sm:h-12 text-blue-500" />
       </div>
-      
+
       <h1 className="mb-3 text-2xl sm:text-4xl font-bold text-center sm:mb-4">Crypto Trivia</h1>
       <p className="max-w-md mb-6 text-sm text-center sm:text-base sm:mb-8 text-white/60">
         Test your cryptocurrency knowledge and earn tokens!
@@ -509,7 +568,7 @@ export const CryptoTrivia: React.FC = () => {
         >
           Play Now
         </button>
-        
+
         <div className="text-center">
           <div className="text-xs sm:text-sm text-white/60">Your Tokens</div>
           <div className="text-xl sm:text-2xl font-bold">{state.totalTokens}</div>
@@ -535,7 +594,7 @@ export const CryptoTrivia: React.FC = () => {
   const renderDifficultySelect = () => (
     <div className="flex flex-col items-center justify-center h-full p-4">
       <h2 className="mb-6 text-xl sm:text-3xl font-bold sm:mb-12">Select Difficulty</h2>
-      
+
       <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} gap-4 sm:gap-6 mb-6 sm:mb-12`}>
         {(['Easy', 'Medium', 'Hard'] as const).map((difficulty) => {
           const settings = difficultySettings[difficulty];
@@ -543,9 +602,8 @@ export const CryptoTrivia: React.FC = () => {
             <button
               key={difficulty}
               onClick={() => startGame(difficulty)}
-              className={`p-4 sm:p-6 transition-all bg-white/5 hover:bg-white/10 rounded-xl hover:scale-105 ${
-                isMobile ? 'w-full' : 'w-48'
-              }`}
+              className={`p-4 sm:p-6 transition-all bg-white/5 hover:bg-white/10 rounded-xl hover:scale-105 ${isMobile ? 'w-full' : 'w-48'
+                }`}
             >
               <h3 className="mb-1 text-lg sm:text-xl font-bold sm:mb-2">{difficulty}</h3>
               <div className="space-y-1 text-xs sm:text-sm text-white/60 sm:space-y-2">
@@ -590,8 +648,8 @@ export const CryptoTrivia: React.FC = () => {
           <div className="flex flex-col max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center">
-                <ArrowLeft 
-                  className="w-4 h-4 mr-2 text-white/60" 
+                <ArrowLeft
+                  className="w-4 h-4 mr-2 text-white/60"
                   onClick={() => setState(prev => ({ ...prev, screen: 'menu' }))}
                 />
                 <span className="text-xs font-medium">Games</span>
@@ -601,13 +659,13 @@ export const CryptoTrivia: React.FC = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="flex items-center gap-1">
                 {[...Array(state.lives)].map((_, i) => (
                   <Heart key={i} className="w-4 h-4 text-red-400" fill="currentColor" />
                 ))}
               </div>
-              
+
               <div className="flex items-center gap-2">
                 {state.powerups.fiftyFifty && (
                   <button
@@ -638,26 +696,24 @@ export const CryptoTrivia: React.FC = () => {
                 )}
               </div>
             </div>
-            
+
             {/* Second row with timer */}
             <div className="flex items-center gap-2">
               <Timer className="w-4 h-4 text-white/60" />
               <div className="w-full h-2 overflow-hidden rounded-full bg-white/10">
                 <div
-                  className={`h-full transition-all duration-1000 ${
-                    timeLeftPercentage > 66 ? 'bg-green-500' :
-                    timeLeftPercentage > 33 ? 'bg-yellow-500' :
-                    'bg-red-500'
-                  }`}
+                  className={`h-full transition-all duration-1000 ${timeLeftPercentage > 66 ? 'bg-green-500' :
+                      timeLeftPercentage > 33 ? 'bg-yellow-500' :
+                        'bg-red-500'
+                    }`}
                   style={{ width: `${timeLeftPercentage}%` }}
                 />
               </div>
-              <span className={`text-sm font-medium ${
-                timeLeftPercentage > 66 ? 'text-green-400' :
-                timeLeftPercentage > 33 ? 'text-yellow-400' :
-                'text-red-400'
-              }`}>{state.timeLeft}s</span>
-              
+              <span className={`text-sm font-medium ${timeLeftPercentage > 66 ? 'text-green-400' :
+                  timeLeftPercentage > 33 ? 'text-yellow-400' :
+                    'text-red-400'
+                }`}>{state.timeLeft}s</span>
+
               {state.streak > 0 && (
                 <div className="flex items-center gap-1 text-yellow-400 ml-1">
                   <Zap className="w-4 h-4" fill="currentColor" />
@@ -677,11 +733,10 @@ export const CryptoTrivia: React.FC = () => {
 
         <div className="max-w-2xl mb-6 text-center sm:mb-10">
           <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
-            <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs ${
-              question.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
-              question.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-              'bg-red-500/20 text-red-400'
-            }`}>
+            <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs ${question.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                question.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                  'bg-red-500/20 text-red-400'
+              }`}>
               {question.difficulty}
             </span>
             <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs text-blue-400 rounded-full bg-blue-500/20">
@@ -700,15 +755,14 @@ export const CryptoTrivia: React.FC = () => {
               key={index}
               onClick={() => handleAnswer(index)}
               disabled={state.showFeedback}
-              className={`p-3 sm:p-4 rounded-xl transition-all ${
-                state.showFeedback
+              className={`p-3 sm:p-4 rounded-xl transition-all ${state.showFeedback
                   ? index === question.correctAnswer
                     ? 'bg-green-500/20 text-green-400'
                     : state.selectedAnswer === index
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-white/5 opacity-50'
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-white/5 opacity-50'
                   : 'bg-white/5 hover:bg-white/10 hover:scale-[1.02]'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-sm sm:text-base">{answer}</span>
@@ -735,7 +789,36 @@ export const CryptoTrivia: React.FC = () => {
     const newHighScore = Math.max(state.highScore, correctAnswers);
     const isNewHighScore = newHighScore > state.highScore;
 
+  if (!gameSessionSaved.current && userData && userData.accessToken && usernameResponse && usernameResponse.exists && usernameResponse.username) {
+    gameSessionSaved.current = true; 
+    
+    const gameSession: GameSession = {
+      user_id: usernameResponse.username,
+      game_id: 'crypto-trivia',
+      tokens_earned: tokens,
+      score: state.score,
+      accuracy: percentage,
+      streak: state.bestStreak,
+      played_at: sessionStartTime
+    };
 
+    // Save to database
+    saveGameSession(gameSession);
+
+    // Update global game stats
+    if (gameStats) {
+      updateGameStats({
+        triviaStats: {
+          gamesPlayed: gameStats.triviaStats.gamesPlayed + 1,
+          tokensEarned: gameStats.triviaStats.tokensEarned + tokens,
+          highScore: Math.max(gameStats.triviaStats.highScore, state.score),
+          accuracy: (gameStats.triviaStats.accuracy + percentage) / 2,
+          bestStreak: Math.max(gameStats.triviaStats.bestStreak, state.bestStreak)
+        },
+        totalTokens: gameStats.totalTokens + tokens
+      });
+    }
+  }
     return (
       <div className="flex flex-col items-center justify-center h-full p-4">
         <div className="flex items-center justify-center w-20 h-20 mb-6 sm:w-24 sm:h-24 sm:mb-8 rounded-full bg-blue-500/20">
@@ -775,6 +858,7 @@ export const CryptoTrivia: React.FC = () => {
         </div>
       </div>
     );
+
   };
 
   return (
