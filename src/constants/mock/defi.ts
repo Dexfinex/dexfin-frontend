@@ -33,7 +33,7 @@ export const isEnabledPosition = ({ chainId, protocol, tokenPair, type }: { chai
 }
 
 export interface Offering extends Position {
-    chainId: number;
+    chainId: number[];
 }
 
 export const STAKING_TOKENS = [
@@ -136,7 +136,7 @@ export const BORROWING_LIST = [
 
 export const offerings: Offering[] = [
     {
-        "chainId": 56,
+        "chainId": [56],
         "address": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2",
         "protocol": "Uniswap v2",
         "protocol_id": "uniswap-v2",
@@ -190,7 +190,7 @@ export const offerings: Offering[] = [
         "factory": "0x8909dc15e40173ff4699343b6eb8132c65e18ec6"
     },
     {
-        "chainId": 1,
+        "chainId": [1],
         "apy": 3.1,
         "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
         "protocol": "Lido",
@@ -217,7 +217,7 @@ export const offerings: Offering[] = [
         "logo": "https://cdn.moralis.io/defi/lido.png"
     },
     {
-        "chainId": 1,
+        "chainId": [1, 8453],
         "apy": 1.63,
         "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
         "protocol": "Aave V3",
@@ -257,7 +257,7 @@ export const offerings: Offering[] = [
         "logo": "https://cdn.moralis.io/defi/aave.png"
     },
     {
-        "chainId": 1,
+        "chainId": [1],
         "apy": 1.63,
         "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
         "protocol": "Aave V3",

@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { numberToHex } from "viem";
 
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
-import { TokenChainIcon } from '../swap/components/TokenIcon';
+import { TokenChainListIcon } from '../swap/components/TokenIcon';
 import useDefiStore, { Position } from '../../store/useDefiStore';
 import { getTypeIcon, getTypeColor, } from "../../utils/defi.util";
 import { offerings } from "../../constants/mock/defi";
@@ -69,14 +69,14 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
 
             <div className="space-y-3">
                 {filteredOfferings.map((offering, index) => {
-                    const isEnabled = offering.chainId === Number(chainId);
+                    const isEnabled = offering.chainId.includes(Number(chainId));
                     return (
                         <div
                             key={index}
                             className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
                         >
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                <TokenChainIcon src={offering.logo || ""} alt={offering.protocol || ""} size={"lg"} chainId={Number(offering.chainId)} />
+                                <TokenChainListIcon src={offering.logo || ""} alt={offering.protocol || ""} size={"lg"} chainIds={offering.chainId} />
 
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-2">
