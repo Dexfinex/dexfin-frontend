@@ -1,5 +1,4 @@
 import React, { useContext } from "react";
-import { numberToHex } from "viem";
 
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import { TokenChainListIcon } from '../swap/components/TokenIcon';

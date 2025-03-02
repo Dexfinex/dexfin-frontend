@@ -12,6 +12,7 @@ import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
+import { LENDING_LIST } from "../../constants/mock/defi.ts";
 
 interface ModalState {
     type: string | null;
@@ -33,9 +34,11 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
     const { getTokenBalance } = useTokenBalanceStore();
     const { chainId } = useContext(Web3AuthContext);
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
-    const lendTokenInfo = modalState.position?.tokens[0];
-    const tokenInInfo = lendTokenInfo;
-    const tokenInBalance = lendTokenInfo ? getTokenBalance(lendTokenInfo?.contract_address || "", Number(chainId)) : null;
+    const lendTokenInfo = LENDING_LIST.find((token) => {
+        return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
+    });
+    const tokenInBalance = lendTokenInfo?.tokenIn ? getTokenBalance(lendTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
+    const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
 
     const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
 
@@ -45,6 +48,10 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
     })
 
     const { getTokenPrice, tokenPrices } = useTokenStore();
+    const { refetch: refetchTokensPrices } = useGetTokenPrices({
+        tokenAddresses: [tokenInInfo?.contract_address || ""],
+        chainId: Number(chainId),
+    })
 
     const nativeTokenPrice = useMemo(() => {
         if (chainId && nativeTokenAddress) {
@@ -52,6 +59,13 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
         }
         return 0;
     }, [getTokenPrice, nativeTokenAddress, chainId, tokenPrices])
+
+    const tokenInPrice = useMemo(() => {
+        if (chainId && tokenInInfo?.contract_address) {
+            return getTokenPrice(tokenInInfo?.contract_address.toLowerCase(), Number(chainId))
+        }
+        return 0;
+    }, [chainId, tokenInInfo, tokenPrices, getTokenPrice])
 
     const isErrorTokenAmount = useMemo(() => {
         if (tokenAmount === "") {
@@ -68,6 +82,12 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
             refetchNativeTokenPrice()
         }
     }, [chainId, nativeTokenAddress, nativeTokenPrice])
+
+    useEffect(() => {
+        if (chainId && tokenInInfo) {
+            refetchTokensPrices();
+        }
+    }, [chainId, tokenInInfo]);
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -164,6 +184,22 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
                             <div className='flex justify-between'>
                                 <div>
                                     <span className='ml-2 text-sm text-white/60'>
+                                        USD Value
+                                    </span>
+                                </div>
+                                <div className='items-center flex'>
+                                    <span className='ml-2 text-sm'>
+                                        {
+                                            isGasEstimationLoading ?
+                                                <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                                                : `$ ${formatNumberByFrac((Number(tokenAmount) * Number(tokenInPrice)) || 0)}`}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className='flex justify-between'>
+                                <div>
+                                    <span className='ml-2 text-sm text-white/60'>
                                         Network Fee
                                     </span>
                                 </div>
@@ -182,7 +218,9 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
                     <button
                         className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
                         onClick={async () => {
-                            lendHandler();
+                            if (tokenAmount) {
+                                lendHandler();
+                            }
                         }}
                     >
                         {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : "Lend"}

@@ -203,6 +203,57 @@ export const BORROWING_LIST = [
     }
 ];
 
+export const LENDING_LIST = [
+    {
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "logo": "https://cdn.moralis.io/defi/aave.png",
+        "chainId": 1,
+        "tokenIn": {
+            "token_type": "native",
+            "name": "ETH",
+            "symbol": "ETH",
+            "contract_address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+            "decimals": "18",
+            "logo": "/images/token/eth.png",
+            "thumbnail": "/images/token/eth.png",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "Aave Ethereum WETH",
+            "symbol": "aEthWETH",
+            "contract_address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+            "decimals": "18",
+            "logo": "https://etherscan.io/token/images/aave_weth.png",
+            "thumbnail": "https://etherscan.io/token/images/aave_weth.png",
+        },
+    },
+    {
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "logo": "https://cdn.moralis.io/defi/aave.png",
+        "chainId": 8453,
+        "tokenIn": {
+            "token_type": "native",
+            "name": "ETH",
+            "symbol": "ETH",
+            "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "decimals": "18",
+            "logo": "/images/token/eth.png",
+            "thumbnail": "/images/token/eth.png",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "Aave Ethereum WETH",
+            "symbol": "aEthWETH",
+            "contract_address": "0xd4a0e0b9149bcee3c920d2e00b5de09138fd8bb7",
+            "decimals": "18",
+            "logo": "https://etherscan.io/token/images/aave_weth.png",
+            "thumbnail": "https://etherscan.io/token/images/aave_weth.png",
+        },
+    }
+];
+
 export const offerings: Offering[] = [
     {
         "chainId": [56],
@@ -326,7 +377,7 @@ export const offerings: Offering[] = [
         "logo": "https://cdn.moralis.io/defi/aave.png"
     },
     {
-        "chainId": [1],
+        "chainId": [1, 8453],
         "apy": 1.63,
         "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
         "protocol": "Aave V3",
