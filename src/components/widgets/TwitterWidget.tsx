@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useGetTwitterInfo } from '../../hooks/useGetTwitterInfo';
-
+import { getRelativeTime } from "../../utils/getRelativeTime"
 interface Tweet {
   id: string;
   author: {
@@ -29,25 +29,6 @@ export const TwitterWidget: React.FC = () => {
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-
-  // Function to format relative time
-  const getRelativeTime = (dateString: string): string => {
-    const now = new Date();
-    const tweetDate = new Date(dateString);
-    const diffInSeconds = Math.floor((now.getTime() - tweetDate.getTime()) / 1000);
-
-    if (diffInSeconds < 60) {
-      return `${diffInSeconds}s ago`;
-    } else if (diffInSeconds < 3600) {
-      return `${Math.floor(diffInSeconds / 60)}m ago`;
-    } else if (diffInSeconds < 86400) {
-      return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    } else if (diffInSeconds < 604800) {
-      return `${Math.floor(diffInSeconds / 86400)}d ago`;
-    } else {
-      return tweetDate.toLocaleDateString();
-    }
-  };
 
   // Use useMemo to convert API tweets to the Tweet format
   const convertedTweets = useMemo(() => {
