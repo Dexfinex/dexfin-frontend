@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useGetTwitterInfo } from '../../hooks/useGetTwitterInfo';
-import { getRelativeTime } from "../../utils/getRelativeTime"
+import { getRelativeTime } from "../../utils/twitter-widget.util"
 interface Tweet {
   id: string;
   author: {
