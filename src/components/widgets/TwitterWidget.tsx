@@ -24,7 +24,6 @@ export const TwitterWidget: React.FC = () => {
   // Get data from the hook
   const { data: apiTweets, loading, error: apiError } = useGetTwitterInfo();
 
-  console.log("latest tweets : ", apiTweets);
   // State for the processed tweets
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +36,6 @@ export const TwitterWidget: React.FC = () => {
         // Extract data from the API response
         const userData = item.data.user || {};
         const latestTweetsData = item.data.tweets || {};
-        console.log("userdata : ------", userData);
-        console.log("tweets : ----- ", latestTweetsData[0])
-
         // Get the tweet timestamp and format as relative time
         const tweetTimestamp = latestTweetsData[0].created_at || '';
         const relativeTime = tweetTimestamp ? getRelativeTime(tweetTimestamp) : 'recent';
