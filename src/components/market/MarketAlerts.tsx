@@ -231,19 +231,26 @@ export const MarketAlerts: React.FC = () => {
         const config = getTypeConfig(type);
         return config ? (
             <span className={`px-3 py-1 rounded-full text-sm ${config.color}`}>
-        {config.label.toUpperCase()}
-      </span>
+                {config.label.toUpperCase()}
+            </span>
         ) : null;
     };
 
     return (
-        <div className="p-6">
+        <div className="p-6 relative">
+            {/* Glass Effect Overlay - Coming Soon Message */}
+            <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl'>
+                <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm">
+                    Coming Soon
+                </button>
+            </div>
+
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                     <h2 className="text-xl font-semibold">Alerts</h2>
                     <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-sm">
-            {alerts.filter(a => a.isActive).length} Active
-          </span>
+                        {alerts.filter(a => a.isActive).length} Active
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-2">
