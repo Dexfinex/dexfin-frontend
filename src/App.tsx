@@ -54,6 +54,8 @@ export default function App() {
         menuItems,
         chatUser,
         setChatUser,
+        isrewardsOpen,
+        setIsRewardsOpen,
 
         isUsernameModalOpen
     } = useStore();
@@ -139,14 +141,14 @@ export default function App() {
     }, [theme]);
 
     // Find rewards menu item
-    const rewardsMenuItem = menuItems.find(item => item.id === 'rewards');
-    const isRewardsOpen = rewardsMenuItem?.isStarred || false;
-    const setIsRewardsOpen = (open: boolean) => {
-        console.log("open", open)
-        if (rewardsMenuItem) {
-            useStore.getState().toggleStarMenuItem('rewards');
-        }
-    };
+    // const rewardsMenuItem = menuItems.find(item => item.id === 'rewards');
+    // const isRewardsOpen = rewardsMenuItem?.isStarred || false;
+    // const setIsRewardsOpen = (open: boolean) => {
+    //     console.log("open", open)
+    //     if (rewardsMenuItem) {
+    //         useStore.getState().toggleStarMenuItem('rewards');
+    //     }
+    // };
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -208,7 +210,7 @@ export default function App() {
                 onClose={() => setIsGamesOpen(false)}
             />
             <RewardsModal
-                isOpen={isRewardsOpen}
+                isOpen={isrewardsOpen}
                 onClose={() => setIsRewardsOpen(false)}
             />
             <TradingViewModal

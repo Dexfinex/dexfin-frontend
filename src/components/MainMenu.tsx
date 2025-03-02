@@ -18,6 +18,7 @@ export const MainMenu: React.FC = () => {
     setIsSocialFeedOpen,
     setIsGamesOpen,
     setTradeOpen,
+    setIsRewardsOpen,
     isTopbarBottom
   } = useStore();
 
@@ -64,6 +65,9 @@ export const MainMenu: React.FC = () => {
         case 'trade':
           setTradeOpen(true);
           break;
+        case 'rewards':
+          setIsRewardsOpen(true);
+          break;
       }
     }, 0);
   };
@@ -91,8 +95,7 @@ export const MainMenu: React.FC = () => {
                   <div
                     key={item.id}
                     className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 transition-colors group cursor-pointer"
-                    // onClick={() => handleMenuItemClick(item.id)}
-                    onClick={() => toggleStarMenuItem(item.id)}
+                    onClick={() => handleMenuItemClick(item.id)}
                   >
                     {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
                     {/* @ts-expect-error */}

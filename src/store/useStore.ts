@@ -141,11 +141,13 @@ interface StoreState {
   setIsGamesOpen: (isOpen: boolean) => void;
   istrade: boolean;
   setTradeOpen: (isOpen: boolean) => void;
+  isrewardsOpen: boolean;
+  setIsRewardsOpen: (isOpen: boolean) => void;
 
   isUsernameModalOpen: boolean;
   setIsUsernameModalOpen: (isOpen: boolean) => void;
 
-  
+
 
   // Market Data View
   marketDataView: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed';
@@ -183,7 +185,7 @@ interface StoreState {
     };
     totalTokens: number;
   };
-  user:{
+  user: {
     id: string;
   } | null;
   updateGameStats: (stats: Partial<StoreState['gameStats']>) => void;
@@ -221,8 +223,8 @@ interface StoreState {
 
 
 const useStore = create<StoreState>((set) => ({
-  user:null,
-  setUser:(user: any)=> set({user}),
+  user: null,
+  setUser: (user: any) => set({ user }),
   // Menu Items
   menuItems: [
     { id: 'ai', label: 'AI Agent', icon: 'Bot', isStarred: false },
@@ -272,7 +274,8 @@ const useStore = create<StoreState>((set) => ({
   setTradeOpen: (isOpen) => set({ istrade: isOpen }),
   isUsernameModalOpen: false,
   setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
-
+  isrewardsOpen: false,
+  setIsRewardsOpen: (isOpen) => set({ isrewardsOpen: isOpen }),
   // Market Data View
   marketDataView: 'overview',
   setMarketDataView: (view) => set({ marketDataView: view }),
