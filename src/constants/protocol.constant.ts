@@ -14,5 +14,6 @@ export const PRIMARY_ADDRESS_BY_PROTOCOL: Record<string, Record<number, string>>
     },
     "aave-v3": {
         1: '0xD322A49006FC828F9B5B37Ab215F99B4E5caB19C', // Ethereum Mainnet (ETH)
+        8453: '0xD4a0e0b9149BCee3C920d2E00b5dE09138fd8bb7', // Ethereum Mainnet (ETH)
     }
 }

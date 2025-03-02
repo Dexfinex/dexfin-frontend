@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useEffect } from "react";
-import { X, ArrowLeft, ArrowDown, ArrowRight } from 'lucide-react';
+import { X, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
 import { TokenChainIcon } from "../swap/components/TokenIcon";
@@ -54,6 +54,10 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
     })
 
     const { getTokenPrice, tokenPrices } = useTokenStore();
+    const { refetch: refetchTokensPrices } = useGetTokenPrices({
+        tokenAddresses: [tokenInInfo?.contract_address || "", tokenOutInfo?.contract_address || ""],
+        chainId: Number(chainId),
+    })
 
     const nativeTokenPrice = useMemo(() => {
         if (chainId && nativeTokenAddress) {
@@ -61,6 +65,20 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
         }
         return 0;
     }, [getTokenPrice, nativeTokenAddress, chainId, tokenPrices])
+
+    const tokenInPrice = useMemo(() => {
+        if (chainId && tokenInInfo?.contract_address) {
+            return getTokenPrice(tokenInInfo?.contract_address.toLowerCase(), Number(chainId))
+        }
+        return 0;
+    }, [chainId, tokenInInfo, tokenPrices, getTokenPrice])
+
+    const tokenOutPrice = useMemo(() => {
+        if (chainId && tokenOutInfo) {
+            return getTokenPrice(tokenOutInfo?.contract_address.toLowerCase(), Number(chainId))
+        }
+        return 0;
+    }, [chainId, tokenOutInfo, tokenPrices, getTokenPrice])
 
     const isErrorTokenAmount = useMemo(() => {
         if (tokenAmount === "") {
@@ -73,12 +91,12 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
     }, [tokenAmount, tokenInBalance])
 
     const priceRatio = useMemo(() => {
-        if (tokenInBalance?.usdPrice && tokenOutBalance?.usdPrice) {
-            const ratio = tokenInBalance?.usdPrice / tokenOutBalance?.usdPrice
+        if (tokenInPrice && tokenOutPrice) {
+            const ratio = tokenInPrice / tokenOutPrice
             return ratio;
         }
         return 1;
-    }, [tokenInBalance, tokenOutBalance]);
+    }, [tokenInPrice, tokenOutPrice]);
 
     const availableBorrowAmount = useMemo(() => {
         return Number(formatNumberByFrac(Number(tokenAmount) * 0.7 * Number(priceRatio), 2));
@@ -99,6 +117,12 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
             refetchNativeTokenPrice()
         }
     }, [chainId, nativeTokenAddress, nativeTokenPrice])
+
+    useEffect(() => {
+        if (chainId && tokenInInfo && tokenOutInfo) {
+            refetchTokensPrices();
+        }
+    }, [chainId, tokenInInfo, tokenOutInfo]);
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -200,11 +224,11 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenOutBalance?.logo || ""} alt={tokenOutBalance?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenInBalance?.logo || ""} alt={tokenInBalance?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <div className='flex items-center ml-2'>
-                                            {formatNumberByFrac(Number(tokenOutBalance?.balance))}
+                                            {formatNumberByFrac(Number(tokenOutBalance?.balance || "0"))}
                                             <ArrowRight className="mr-1 ml-1 w-3 h-3" />
-                                            {formatNumberByFrac(Number(tokenOutBalance?.balance) + Number(borrowingTokenAmount))}
+                                            {formatNumberByFrac(Number(tokenOutBalance?.balance || "0") + Number(borrowingTokenAmount))}
                                         </div>
                                         <span className='ml-1 text-sm text-white/60'>
                                             {tokenOutBalance?.symbol || ""}

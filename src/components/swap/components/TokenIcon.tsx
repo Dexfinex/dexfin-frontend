@@ -103,7 +103,7 @@ export function TokenChainListIcon({ src, alt, size = 'md', chainIds, className 
       <div className={`flex  mt-[-10px] padding-1 absolute ${chainListSizeClasses[size]} w-${chainWidth}`}>
         {
           chainIds.map((chainId, index) =>
-            <div key={uuid()} className={`border border-white-600 rounded-full ${index === 0 ? "" : `ml-[-8px]`}`}>
+            <div key={uuid()} className={`border border-white-600 rounded-full ${index === 0 ? "" : `ml-[-10px]`}`}>
               <img src={getChainIcon(chainId) || ""} className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 ${chainSizeClasses[size]}`} />
             </div>
           )

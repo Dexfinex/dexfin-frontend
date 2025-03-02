@@ -105,17 +105,14 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
 
                                 <button
                                     onClick={async () => {
-                                        if (Number(chainId) === Number(offering.chainId)) {
+                                        if (offering.chainId.includes(Number(chainId))) {
                                             const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
                                             handleAction(
                                                 getAddActionName({ type: offering.type }),
                                                 position || offering
                                             );
-                                        } else {
-                                            await switchChain(parseInt(numberToHex(Number(offering.chainId)), 16));
                                         }
-                                    }
-                                    }
+                                    }}
                                     className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg ${isEnabled ? "" : "opacity-70"}`}
                                     disabled={!isEnabled}
                                 >
