@@ -136,11 +136,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                     </span>
                                                     <span className="text-white/40 hidden sm:block">•</span>
                                                     {
-                                                        position.tokens.map((token) => {
-                                                            return (
-                                                                `${token?.symbol} `
-                                                            )
-                                                        })
+                                                        position.tokens.map((token, index) => position.type === "Borrowed" && index === 0 ? "" : `${token?.symbol} `)
                                                     }
                                                 </div>
 
@@ -149,14 +145,17 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                         <span className="text-sm text-white/60">Amount</span>
                                                         <div className="text-lg">${formatNumberByFrac(position.amount)}</div>
                                                     </div>
-                                                    <div>
-                                                        <span className="text-sm text-white/60">APY</span>
-                                                        <div className="text-emerald-400">{(formatNumberByFrac(position.apy) || "0")}%</div>
-                                                    </div>
+                                                    {
+                                                        position.apy &&
+                                                        <div>
+                                                            <span className="text-sm text-white/60">APY</span>
+                                                            <div className="text-emerald-400">{(formatNumberByFrac(position.apy) || "0")}%</div>
+                                                        </div>
+                                                    }
                                                     {position.rewards && (
                                                         <div>
-                                                            <span className="text-sm text-white/60">Rewards</span>
-                                                            <div className="text-blue-400">+{(formatNumberByFrac(position.rewards) || "0")}% APR</div>
+                                                            <span className={`text-sm text-white/60`}>Rewards</span>
+                                                            <div className={`${position.rewards > 0 ? "text-blue-400" : "text-red-400"}`}>{(formatNumberByFrac(position.rewards) || "0")}% APR</div>
                                                         </div>
                                                     )}
                                                     {!!position.healthFactor && (
