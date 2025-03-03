@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   LayoutGrid,
@@ -39,12 +39,35 @@ const widgetConfigs = [
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('widgets');
   const { widgetVisibility, toggleWidgetVisibility, resetWidgetVisibility } = useStore();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if the screen is mobile sized
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const mobile = window.innerWidth < 640;
+      setIsMobile(mobile);
+      
+      // If on mobile and 'widgets' tab is selected, switch to 'appearance'
+      if (mobile && activeTab === 'widgets') {
+        setActiveTab('appearance');
+      }
+    };
+    
+    // Initial check
+    checkScreenSize();
+    
+    // Add event listener
+    window.addEventListener('resize', checkScreenSize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, [activeTab]);
 
   if (!isOpen) return null;
 
   const tabs = [
-    { id: 'widgets', label: 'Widgets', icon: LayoutGrid },
-    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'widgets', label: 'Widgets', icon: LayoutGrid, disabled: isMobile },
+    { id: 'appearance', label: 'Appearance', icon: Palette, disabled: false },
   ];
 
   return (
@@ -67,10 +90,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as SettingsTab)}
+                onClick={() => !tab.disabled && setActiveTab(tab.id as SettingsTab)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors whitespace-nowrap mr-2 md:mr-0 md:w-full md:mb-2 ${
                   activeTab === tab.id ? 'bg-white/10' : 'hover:bg-white/5'
-                }`}
+                } ${tab.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                disabled={tab.disabled}
               >
                 <tab.icon className="w-5 h-5 flex-shrink-0" />
                 <span>{tab.label}</span>
@@ -80,7 +104,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
           {/* Content - scrollable container */}
           <div className="flex-1 p-4 md:p-6 overflow-y-auto settings-scrollbar">
-            {activeTab === 'widgets' ? (
+            {activeTab === 'widgets' && !isMobile ? (
               <>
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
                   <div>
