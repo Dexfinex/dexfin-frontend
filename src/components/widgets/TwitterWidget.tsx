@@ -1,8 +1,8 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useGetTwitterInfo } from '../../hooks/useGetTwitterInfo';
 import { getRelativeTime } from "../../utils/twitter-widget.util"
+
 interface Tweet {
   id: string;
   author: {
@@ -13,7 +13,7 @@ interface Tweet {
   };
   content: string;
   timestamp: string;
-  createdAt: string; // Adding actual timestamp for sorting
+  createdAt: string;
   stats: {
     replies: number;
     retweets: number;
@@ -32,49 +32,124 @@ export const TwitterWidget: React.FC = () => {
 
   // Use useMemo to convert API tweets to the Tweet format
   const convertedTweets = useMemo(() => {
-    if (apiTweets && Array.isArray(apiTweets) && apiTweets.length > 0) {
-      return apiTweets.map((item: any, index) => {
-        // Extract data from the API response
-        const userData = item.data.user || {};
-        const latestTweetsData = item.data.tweets || {};
-        // Get the tweet timestamp and format as relative time
-        const tweetTimestamp = latestTweetsData[0].created_at || '';
-        const relativeTime = tweetTimestamp ? getRelativeTime(tweetTimestamp) : 'recent';
+    const result: Tweet[] = [];
 
-        return {
+    if (!apiTweets || !Array.isArray(apiTweets) || apiTweets.length === 0) {
+      return result;
+    }
+
+    apiTweets.forEach((item: any, index) => {
+      // Skip invalid items
+      if (!item || !item.data) {
+        return;
+      }
+
+      try {
+        // Extract username - this appears to be available at the top level
+        const username = item.username || 'unknown';
+
+        // Handle the case where user data might be missing
+        const userData = item.data && item.data.user ? item.data.user : null;
+
+        // Check if tweets array exists and has at least one item
+        const tweetsArray = item.data && item.data.tweets && Array.isArray(item.data.tweets)
+          ? item.data.tweets
+          : [];
+
+        if (tweetsArray.length === 0) {
+          // Create a placeholder tweet if no tweets are available
+          result.push({
+            id: String(index + 1),
+            author: {
+              name: userData?.name || username || 'Unknown User',
+              handle: username,
+              avatar: userData?.profile_image_url || '/default-avatar.png',
+              verified: !!userData?.verified
+            },
+            content: 'Tweet data unavailable',
+            timestamp: 'unknown',
+            createdAt: new Date().toISOString(),
+            stats: { replies: 0, retweets: 0, likes: 0 }
+          });
+          console.log("result : ", result)
+          return;
+        }
+
+        // Process each available tweet
+        const tweet = tweetsArray[0];
+
+        // Skip this tweet if it's completely empty
+        if (!tweet) {
+          return;
+        }
+
+        // Get the timestamp safely
+        let tweetTimestamp = '';
+        let relativeTime = 'recent';
+
+        if (tweet.created_at) {
+          tweetTimestamp = tweet.created_at;
+          try {
+            relativeTime = getRelativeTime(tweetTimestamp);
+          } catch (e) {
+            console.error('Error parsing date:', e);
+            relativeTime = 'recent';
+          }
+        }
+
+        // Get user details from the tweet if not available in userData
+        const tweetUser = tweet.user || {};
+
+        result.push({
           id: String(index + 1),
           author: {
-            name: (userData.name || latestTweetsData[0].user.username || '').toString(),
-            handle: item.username || '',
-            avatar: userData.profile_image_url,
-            verified: userData.verified
+            name: userData?.name || tweetUser.username || username || 'Unknown User',
+            handle: username,
+            avatar: userData?.profile_image_url || '/default-avatar.png',
+            verified: !!userData?.verified
           },
-          content: latestTweetsData[0].text || 'No content available',
+          content: tweet.text || 'No content available',
           timestamp: relativeTime,
-          createdAt: tweetTimestamp, 
+          createdAt: tweetTimestamp || new Date().toISOString(),
           stats: {
-            replies: latestTweetsData[0].reply_count || 0,
-            retweets: latestTweetsData[0].retweet_count || 0,
-            likes: latestTweetsData[0].favorite_count || 0
+            replies: tweet.reply_count || 0,
+            retweets: tweet.retweet_count || 0,
+            likes: tweet.favorite_count || 0
           }
-        };
-      });
-    }
-    return [];
+        });
+      } catch (err) {
+        console.error('Error processing tweet:', err);
+        // Don't add the tweet if processing failed
+      }
+    });
+
+    return result;
   }, [apiTweets]);
 
-  // Update tweets state when convertedTweets changes and sort them by timestamp
+  // Update tweets state when convertedTweets changes
   useEffect(() => {
-    // Sort tweets from newest to oldest
-    const sortedTweets = [...convertedTweets].sort((a, b) => {
-      // If no valid timestamp, push to the end
-      if (!a.createdAt) return 1;
-      if (!b.createdAt) return -1;
-      // Sort from newest (larger timestamp) to oldest (smaller timestamp)
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
-    
-    setTweets(sortedTweets);
+    if (convertedTweets.length > 0) {
+      try {
+        // Sort tweets from newest to oldest
+        const sortedTweets = [...convertedTweets].sort((a, b) => {
+          if (!a.createdAt) return 1;
+          if (!b.createdAt) return -1;
+
+          try {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          } catch (err) {
+            return 0;
+          }
+        });
+
+        setTweets(sortedTweets);
+      } catch (err) {
+        console.error('Error sorting tweets:', err);
+        setTweets(convertedTweets);
+      }
+    } else {
+      setTweets([]);
+    }
   }, [convertedTweets]);
 
   useEffect(() => {
@@ -155,6 +230,9 @@ export const TwitterWidget: React.FC = () => {
                   src={tweet.author.avatar}
                   alt={tweet.author.name}
                   className="w-8 h-8 rounded-full"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/default-avatar.png';
+                  }}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-1">
