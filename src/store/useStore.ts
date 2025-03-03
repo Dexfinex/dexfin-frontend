@@ -310,32 +310,27 @@ const useStore = create<StoreState>((set) => ({
       id: 'twitter',
       type: 'Twitter Feed',
       position: { x: 775, y: 20 },
-      size: { width: 360, height: 540 }
+      size: { width: 360, height: 440 }
     },
-    // {
-    //   id: 'price-converter',
-    //   type: 'Price Converter',
-    //   position: { x: 780, y: 355 },
-    //   size: { width: 324, height: 360 }
-    // },
+
     {
       id: 'portfolio',
       type: 'Portfolio Overview',
       position: { x: 1155, y: 20 },
       size: { width: 360, height: 540 }
     },
-    // {
-    //   id: 'twitter',
-    //   type: 'Twitter Feed',
-    //   position: { x: 1124, y: 355 },
-    //   size: { width: 360, height: 540 }
-    // },
-    // {
-    //   id: 'direct-messages',
-    //   type: 'Direct Messages',
-    //   position: { x: 780, y: 735 },
-    //   size: { width: 360, height: 540 }
-    // }
+    {
+      id: 'price-converter',
+      type: 'Price Converter',
+      position: { x: 775, y: 475 },
+      size: { width: 360, height: 300 }
+    },
+    {
+      id: 'direct-messages',
+      type: 'Direct Messages',
+      position: { x: 1535, y: 20 },
+      size: { width: 360, height: 540 }
+    }
   ],
   updateWidget: (id, updates) => set((state) => ({
     widgets: state.widgets.map((widget) =>
@@ -348,11 +343,11 @@ const useStore = create<StoreState>((set) => ({
     'Market Pulse': true,
     'Fear & Greed Index': true,
     'Quick Swap': false,
-    'Price Converter': true,
+    'Price Converter': false,
     'Trending': true,
     'Ask Anything': true,
     'Twitter Feed': true,
-    'Direct Messages': true
+    'Direct Messages': false
   },
   toggleWidgetVisibility: (type) => set((state) => ({
     widgetVisibility: {
