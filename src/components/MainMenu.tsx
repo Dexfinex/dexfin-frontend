@@ -18,6 +18,7 @@ export const MainMenu: React.FC = () => {
     setIsSocialFeedOpen,
     setIsGamesOpen,
     setTradeOpen,
+    setIsRewardsOpen,
     isTopbarBottom
   } = useStore();
 
@@ -64,6 +65,9 @@ export const MainMenu: React.FC = () => {
         case 'trade':
           setTradeOpen(true);
           break;
+        case 'rewards':
+          setIsRewardsOpen(true);
+          break;
       }
     }, 0);
   };
@@ -107,7 +111,7 @@ export const MainMenu: React.FC = () => {
                       <Icons.Star
                         className={`w-3.5 h-3.5 transition-colors ${item.isStarred
                           ? 'text-yellow-400'
-                          : 'text-white/40 opacity-0 group-hover:opacity-100'
+                          : 'text-white/40  group-hover:opacity-100'
                           }`}
                       />
                     </div>

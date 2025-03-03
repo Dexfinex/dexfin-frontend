@@ -48,6 +48,10 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
     })
 
     const { getTokenPrice, tokenPrices } = useTokenStore();
+    const { refetch: refetchTokensPrices } = useGetTokenPrices({
+        tokenAddresses: [tokenInInfo?.contract_address || "", tokenOutInfo?.contract_address || ""],
+        chainId: Number(chainId),
+    })
 
     const nativeTokenPrice = useMemo(() => {
         if (chainId && nativeTokenAddress) {
@@ -55,6 +59,20 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
         }
         return 0;
     }, [getTokenPrice, nativeTokenAddress, chainId, tokenPrices])
+
+    const tokenInPrice = useMemo(() => {
+        if (chainId && tokenInInfo?.contract_address) {
+            return getTokenPrice(tokenInInfo?.contract_address.toLowerCase(), Number(chainId))
+        }
+        return 0;
+    }, [chainId, tokenInInfo, tokenPrices, getTokenPrice])
+
+    const tokenOutPrice = useMemo(() => {
+        if (chainId && tokenOutInfo) {
+            return getTokenPrice(tokenOutInfo?.contract_address.toLowerCase(), Number(chainId))
+        }
+        return 0;
+    }, [chainId, tokenOutInfo, tokenPrices, getTokenPrice])
 
     const isErrorTokenAmount = useMemo(() => {
         if (tokenAmount === "") {
@@ -67,18 +85,24 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
     }, [tokenAmount, tokenInBalance])
 
     const priceRatio = useMemo(() => {
-        if (tokenInBalance?.usdPrice && tokenOutBalance?.usdPrice) {
-            const ratio = tokenInBalance?.usdPrice / tokenOutBalance?.usdPrice
+        if (tokenInPrice && tokenOutPrice) {
+            const ratio = tokenInPrice / tokenOutPrice
             return ratio;
         }
         return 1;
-    }, [tokenInBalance, tokenOutBalance]);
+    }, [tokenInPrice, tokenOutPrice]);
 
     useEffect(() => {
         if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
             refetchNativeTokenPrice()
         }
     }, [chainId, nativeTokenAddress, nativeTokenPrice])
+
+    useEffect(() => {
+        if (chainId && tokenInInfo && tokenOutInfo) {
+            refetchTokensPrices();
+        }
+    }, [chainId, tokenInInfo, tokenOutInfo]);
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -170,13 +194,13 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                                 <div className='flex justify-between'>
                                     <div>
                                         <span className='ml-2 text-sm text-white/60'>
-                                            New {tokenOutBalance?.symbol || ""} amount
+                                            New {tokenOutInfo?.symbol || ""} amount
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenOutBalance?.logo || ""} alt={tokenOutBalance?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <span className='ml-2'>
-                                            {formatNumberByFrac(Number(tokenOutBalance?.balance) + Number(tokenAmount), 4)}
+                                            {formatNumberByFrac((Number(tokenOutBalance?.balance) || 0) + Number(tokenAmount), 4)}
                                         </span>
                                         <span className='ml-1 text-sm text-white/60'>
                                             {tokenOutBalance?.symbol || ""}
@@ -255,7 +279,7 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                                         <div className='items-center flex'>
                                             <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                             <span className='ml-2'>
-                                                {formatNumberByFrac(Number(tokenOutBalance?.balance))}
+                                                {formatNumberByFrac(Number(tokenOutBalance?.balance) || 0)}
                                             </span>
                                             <span className='ml-1 text-sm text-white/60'>
                                                 {tokenOutInfo?.symbol || ""}

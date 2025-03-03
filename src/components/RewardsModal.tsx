@@ -489,6 +489,13 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
             : 'w-[90%] h-[90%] rounded-xl'
         }`}
       >
+        {/* Glass Effect Overlay - Coming Soon Message */}
+        <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl'>
+          <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm">
+            Coming Soon
+          </button>
+        </div>
+        
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/10">

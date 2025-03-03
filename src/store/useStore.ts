@@ -139,13 +139,15 @@ interface StoreState {
   setIsSocialFeedOpen: (isOpen: boolean) => void;
   isGamesOpen: boolean;
   setIsGamesOpen: (isOpen: boolean) => void;
-  istrade: boolean;
+  isTradeOpen: boolean;
   setTradeOpen: (isOpen: boolean) => void;
+  isrewardsOpen: boolean;
+  setIsRewardsOpen: (isOpen: boolean) => void;
 
   isUsernameModalOpen: boolean;
   setIsUsernameModalOpen: (isOpen: boolean) => void;
 
-  
+
 
   // Market Data View
   marketDataView: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed';
@@ -183,7 +185,7 @@ interface StoreState {
     };
     totalTokens: number;
   };
-  user:{
+  user: {
     id: string;
   } | null;
   updateGameStats: (stats: Partial<StoreState['gameStats']>) => void;
@@ -221,8 +223,8 @@ interface StoreState {
 
 
 const useStore = create<StoreState>((set) => ({
-  user:null,
-  setUser:(user: any)=> set({user}),
+  user: null,
+  setUser: (user: any) => set({ user }),
   // Menu Items
   menuItems: [
     { id: 'ai', label: 'AI Agent', icon: 'Bot', isStarred: false },
@@ -268,11 +270,12 @@ const useStore = create<StoreState>((set) => ({
   setIsSocialFeedOpen: (isOpen) => set({ isSocialFeedOpen: isOpen }),
   isGamesOpen: false,
   setIsGamesOpen: (isOpen) => set({ isGamesOpen: isOpen }),
-  istrade: false,
-  setTradeOpen: (isOpen) => set({ istrade: isOpen }),
+  isTradeOpen: false,
+  setTradeOpen: (isOpen) => set({ isTradeOpen: isOpen }),
   isUsernameModalOpen: false,
   setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
-
+  isrewardsOpen: false,
+  setIsRewardsOpen: (isOpen) => set({ isrewardsOpen: isOpen }),
   // Market Data View
   marketDataView: 'overview',
   setMarketDataView: (view) => set({ marketDataView: view }),
@@ -280,8 +283,8 @@ const useStore = create<StoreState>((set) => ({
   // Widgets
   widgets: [
     {
-      id: 'portfolio',
-      type: 'Portfolio Overview',
+      id: 'market-pulse',
+      type: 'Market Pulse',
       position: { x: 20, y: 20 },
       size: { width: 360, height: 540 }
     },
@@ -292,47 +295,47 @@ const useStore = create<StoreState>((set) => ({
       size: { width: 360, height: 360 }
     },
     {
-      id: 'market-pulse',
-      type: 'Market Pulse',
-      position: { x: 20, y: 580 },
-      size: { width: 360, height: 486 }
-    },
-    {
       id: 'fear-greed',
       type: 'Fear & Greed Index',
-      position: { x: 400, y: 400 },
+      position: { x: 20, y: 580 },
       size: { width: 360, height: 270 }
-    },
-    {
-      id: 'quick-swap',
-      type: 'Quick Swap',
-      position: { x: 780, y: 20 },
-      size: { width: 324, height: 315 }
-    },
-    {
-      id: 'price-converter',
-      type: 'Price Converter',
-      position: { x: 780, y: 355 },
-      size: { width: 324, height: 360 }
     },
     {
       id: 'trending',
       type: 'Trending',
-      position: { x: 1124, y: 20 },
+      position: { x: 400, y: 400 },
       size: { width: 360, height: 315 }
     },
     {
       id: 'twitter',
       type: 'Twitter Feed',
-      position: { x: 1124, y: 355 },
+      position: { x: 775, y: 20 },
       size: { width: 360, height: 540 }
     },
+    // {
+    //   id: 'price-converter',
+    //   type: 'Price Converter',
+    //   position: { x: 780, y: 355 },
+    //   size: { width: 324, height: 360 }
+    // },
     {
-      id: 'direct-messages',
-      type: 'Direct Messages',
-      position: { x: 780, y: 735 },
+      id: 'portfolio',
+      type: 'Portfolio Overview',
+      position: { x: 1155, y: 20 },
       size: { width: 360, height: 540 }
-    }
+    },
+    // {
+    //   id: 'twitter',
+    //   type: 'Twitter Feed',
+    //   position: { x: 1124, y: 355 },
+    //   size: { width: 360, height: 540 }
+    // },
+    // {
+    //   id: 'direct-messages',
+    //   type: 'Direct Messages',
+    //   position: { x: 780, y: 735 },
+    //   size: { width: 360, height: 540 }
+    // }
   ],
   updateWidget: (id, updates) => set((state) => ({
     widgets: state.widgets.map((widget) =>
