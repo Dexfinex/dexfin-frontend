@@ -8,4 +8,5 @@ export interface TwitterInfo {
     last_seen: {
         timestamp: string;
     }
+    profile_image_url: string;
 }

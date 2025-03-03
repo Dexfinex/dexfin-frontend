@@ -17,7 +17,7 @@ import ProtocolStatistic from './defi/ProtocolStatistic.tsx';
 
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
 import { mapChainId2NativeAddress } from "../config/networks.ts";
-import { STAKING_TOKENS, BORROWING_LIST } from '../constants/mock/defi.ts';
+import { STAKING_TOKENS, BORROWING_LIST, LENDING_LIST } from '../constants/mock/defi.ts';
 import { OfferingList } from './defi/OfferlingList.tsx';
 import GlobalMetric from './defi/GlobalMetric.tsx';
 import RedeemModal from './defi/RedeemModal.tsx';
@@ -152,14 +152,20 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const lendHandler = async () => {
     if (signer && Number(tokenAmount) > 0) {
       setConfirming("Approving...");
+      const lendTokenInfo = LENDING_LIST.find((token) => {
+        return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
+      });
+      const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
+      const tokenOutInfo = lendTokenInfo?.tokenOut ? lendTokenInfo?.tokenOut : null;
+
       enSoActionMutation({
         chainId: Number(chainId),
         fromAddress: address,
         routingStrategy: "router",
         action: "deposit",
         protocol: (modalState.position?.protocol_id || "").toLowerCase(),
-        tokenIn: [tokenBalance1?.address || ""],
-        tokenOut: [modalState?.position?.address || ""],
+        tokenIn: [tokenInInfo?.contract_address || ""],
+        tokenOut: [tokenOutInfo?.contract_address || ""],
         amountIn: [Number(tokenAmount)],
         signer: signer,
         receiver: address,

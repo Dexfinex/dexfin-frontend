@@ -18,6 +18,7 @@ export const MainMenu: React.FC = () => {
     setIsSocialFeedOpen,
     setIsGamesOpen,
     setTradeOpen,
+    setIsRewardsOpen,
     isTopbarBottom
   } = useStore();
 
@@ -63,6 +64,9 @@ export const MainMenu: React.FC = () => {
           break;
         case 'trade':
           setTradeOpen(true);
+          break;
+        case 'rewards':
+          setIsRewardsOpen(true);
           break;
       }
     }, 0);

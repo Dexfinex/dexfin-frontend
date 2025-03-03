@@ -240,7 +240,7 @@ export const AskAnythingWidget: React.FC = () => {
 
   return (
     <>
-      <div className="w-[800px] h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg flex items-center px-4 gap-3 shadow-lg">
+      <div className="glass w-[800px] h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg flex items-center px-4 gap-3 shadow-lg">
         <input
           type="text"
           placeholder="Ask anything... (Try saying 'open dashboard', 'open calendar', 'open technical', etc.)"

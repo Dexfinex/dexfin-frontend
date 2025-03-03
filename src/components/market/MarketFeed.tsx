@@ -5,11 +5,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { NewsWidget } from '../widgets/NewsWidget';
 import { TwitterWidget } from '../widgets/TwitterWidget';
 import { TrendingWidget } from '../widgets/TrendingWidget';
+import { TransactionWidget } from '../widgets/TransactionWidget';
 import { AddWidgetModal } from './AddWidgetModal';
 
 interface Widget {
   id: string;
-  type: 'news' | 'twitter' | 'trending';
+  type: 'News' | 'Twitter' | 'Trending' | 'Whale Transactions';
   position: { x: number; y: number };
 }
 
@@ -47,9 +48,9 @@ const DraggableWidget: React.FC<DraggableWidgetProps> = ({ id, type, position, o
       className="bg-white/5 rounded-xl"
     >
       <div className="flex items-center justify-between p-3 border-b border-white/10">
-        <div 
-          className="flex items-center gap-2 cursor-move" 
-          {...attributes} 
+        <div
+          className="flex items-center gap-2 cursor-move"
+          {...attributes}
           {...listeners}
         >
           <GripVertical className="w-4 h-4 text-white/40" />
@@ -73,7 +74,7 @@ export const MarketFeed: React.FC = () => {
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [showAddWidget, setShowAddWidget] = useState(false);
 
-  const addWidget = (type: 'news' | 'twitter' | 'trending') => {
+  const addWidget = (type: 'News' | 'Twitter' | 'Trending' | 'Whale Transactions') => {
     const newWidget: Widget = {
       id: Math.random().toString(36).substring(7),
       type,
@@ -92,9 +93,9 @@ export const MarketFeed: React.FC = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, delta } = event;
     const widget = widgets.find(w => w.id === active.id);
-    
+
     if (widget) {
-      setWidgets(prev => prev.map(w => 
+      setWidgets(prev => prev.map(w =>
         w.id === active.id ? {
           ...w,
           position: {
@@ -128,9 +129,10 @@ export const MarketFeed: React.FC = () => {
               position={widget.position}
               onRemove={removeWidget}
             >
-              {widget.type === 'news' && <NewsWidget />}
-              {widget.type === 'twitter' && <TwitterWidget />}
-              {widget.type === 'trending' && <TrendingWidget />}
+              {widget.type === 'News' && <NewsWidget />}
+              {widget.type === 'Twitter' && <TwitterWidget />}
+              {widget.type === 'Trending' && <TrendingWidget />}
+              {widget.type === 'Whale Transactions' && <TransactionWidget />}
             </DraggableWidget>
           ))}
         </DndContext>
