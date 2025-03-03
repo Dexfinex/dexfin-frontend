@@ -24,7 +24,7 @@ interface AssetInfoProps {
     setTokenBalance: (token: TokenBalance | null) => void;
 }
 
-const aboutText = "The text surrounded by the component will be truncated. Anything surrounded by the component could be evaluated as text. The component react-show-more-text/ShowMoreText is fork of react-show-more/ShowMore, applied improvements, added onClick event, works with React 16.x.x, React 18.x.x, Next.Js 13.3.x and upper."
+const aboutText = "The text surrounded by the component will be truncated. Anything surrounded by the component could be evaluated as text. The component react-show-more-text/ShowMoreText is fork of react-show-more/ShowMore, applied improvements, added onClick event, works with React 16.x.x, React 18.x.x, Next.Js 13.3.x and upper.";
 
 // Mock price data (replace with API data)
 const mockData = {
@@ -168,30 +168,30 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                 </ResponsiveContainer>
 
                 {/* Buttons for time range selection */}
-                <div className="flex justify-evenly space-x-2 mb-4">
+                <div className="flex justify-evenly space-x-1 sm:space-x-2 mb-4">
                     {["1D", "1W", "1M", "1Y", "ALL"].map((range) => (
                         <button
                             key={range}
                             onClick={() => setSelectedRange(range as keyof typeof mockData)}
-                            className="text-white/90 bg-white/20 w-16 rounded-md hover:bg-white/10"
+                            className={`text-white/90 bg-white/20 w-14 sm:w-16 py-1 rounded-md hover:bg-white/10 text-xs sm:text-sm ${selectedRange === range ? 'bg-white/30' : ''}`}
                         >
-                            <span className="text-sm">{range}</span>
+                            {range}
                         </button>
                     ))}
                 </div>
 
                 <div className="mt-4">
-                    <p className="text-white/70 font-bold">Your Balance</p>
+                    <p className="text-white/70 font-bold text-sm sm:text-base">Your Balance</p>
                     <div className="mt-1 px-2 py-3 bg-white/5 rounded-xl flex gap-2">
                         <div className="flex items-center">
-                            <img src={tokenBalance.logo} className="w-10 h-10 rounded-full" />
+                            <img src={tokenBalance.logo} className="w-8 sm:w-10 h-8 sm:h-10 rounded-full" />
                         </div>
                         <div className="flex-1">
-                            <div className="flex justify-between">
+                            <div className="flex justify-between text-sm sm:text-base">
                                 <span>{tokenBalance.symbol}</span>
                                 <span>{formatUsdValue(tokenBalance.usdPrice)}</span>
                             </div>
-                            <div className="flex justify-between text-white/70 text-sm">
+                            <div className="flex justify-between text-white/70 text-xs sm:text-sm">
                                 <span>{tokenBalance.balance} {tokenBalance.symbol}</span>
                                 <span>{formatUsdValue(tokenBalance.usdValue)}</span>
                             </div>
@@ -200,20 +200,20 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                 </div>
 
                 <div className="mt-4">
-                    <p className="text-white/70 font-bold">About</p>
+                    <p className="text-white/70 font-bold text-sm sm:text-base">About</p>
                     <ShowMoreLess text={aboutText} maxLength={100} />
                 </div>
 
                 <div className="mt-4">
-                    <p className="text-white/70 font-bold">About</p>
+                    <p className="text-white/70 font-bold text-sm sm:text-base">About</p>
                     <div className="flex gap-2">
                         <button
-                            className="text-white/90 bg-white/20 text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
+                            className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
                         >
                             Websites
                         </button>
                         <button
-                            className="text-white/90 bg-white/20 text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
+                            className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
                         >
                             X
                         </button>
@@ -221,8 +221,8 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                 </div>
 
                 <div className="mt-4">
-                    <p className="text-white/70 font-bold">Info</p>
-                    <div className="bg-white/5 rounded-xl">
+                    <p className="text-white/70 font-bold text-sm sm:text-base">Info</p>
+                    <div className="bg-white/5 rounded-xl text-xs sm:text-sm">
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
                             <span className="text-white/70">Symbol</span>
                             <span>{tokenBalance.symbol}</span>
@@ -247,8 +247,8 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                 </div>
 
                 <div className="mt-4 mb-4">
-                    <p className="text-white/70 font-bold">24h Performance</p>
-                    <div className="bg-white/5 rounded-xl">
+                    <p className="text-white/70 font-bold text-sm sm:text-base">24h Performance</p>
+                    <div className="bg-white/5 rounded-xl text-xs sm:text-sm">
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
                             <span className="text-white/70">Volume</span>
                             <span>$962.45M</span>
@@ -274,6 +274,23 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
     const [showBuyDrawer, setShowBuyDrawer] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<TokenBalance | null>(null);
+    const [drawerWidth, setDrawerWidth] = useState("400px");
+
+    // Update drawer width based on screen size
+    useEffect(() => {
+        const handleResize = () => {
+            const width = window.innerWidth;
+            if (width <= 768) {
+                setDrawerWidth(width <= 360 ? "300px" : width <= 480 ? "350px" : "380px");
+            } else {
+                setDrawerWidth("400px");
+            }
+        };
+        
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
 
@@ -298,8 +315,9 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                 initial={{ x: "100%" }}
                 animate={{ x: isOpen ? 0 : "100%" }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className={`fixed right-0 top-0 h-full w-[400px] ${theme === "dark" ? "glass bg-dark" : "glass bg-light"} shadow-xl z-50 flex flex-col p-5 rounded-l-2xl
-                        border-l border-white py-8`}
+                className={`fixed right-0 top-0 h-full shadow-xl z-50 flex flex-col p-3 sm:p-5 rounded-l-2xl
+                        border-l border-white py-6 sm:py-8 ${theme === "dark" ? "glass bg-dark" : "glass bg-light"}`}
+                style={{ width: drawerWidth }}
             >
                 {/* Close Button */}
                 {isOpen && <div onClick={() => setIsOpen(false)} className="absolute top-0 bottom-0 left-[-40px] w-[40px] pt-4 cursor-pointer flex justify-evenly h-[98%] m-auto rounded-2xl
@@ -312,13 +330,13 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
 
                 {/* TopBar */}
                 <div className="flex items-center justify-between">
-                    <button className="flex items-end gap-3">
-                        <Wallet className="text-blue-500 w-6 h-6" />
+                    <div className="flex items-end gap-2 sm:gap-3">
+                        <Wallet className="text-blue-500 w-5 h-5 sm:w-6 sm:h-6" />
                         <Accounts evmAddress={address} solAddress={solanaWalletInfo?.publicKey || ""} />
-                    </button>
+                    </div>
 
-                    <button className={`p-2 flex items-center gap-1 text-sm rounded-xl hover:bg-white/10 ${theme === "dark" ? "text-white/70" : "text-black/70"}`} onClick={handleDisconnect}>
-                        <XCircle className="w-4 h-4" /> Disconnect
+                    <button className={`p-1.5 sm:p-2 flex items-center gap-1 text-xs sm:text-sm rounded-xl hover:bg-white/10 ${theme === "dark" ? "text-white/70" : "text-black/70"}`} onClick={handleDisconnect}>
+                        <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Disconnect
                     </button>
                 </div>
 
@@ -331,73 +349,70 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                         :
                         <>
                             {/* Total Balance */}
-                            <div className="bg-white/10 rounded-xl p-4 mt-5">
-                                <div className="text-sm text-white/60">Total Balance</div>
-                                <div className="text-3xl font-bold mt-1">
+                            <div className="bg-white/10 rounded-xl p-3 sm:p-4 mt-4 sm:mt-5">
+                                <div className="text-xs sm:text-sm text-white/60">Total Balance</div>
+                                <div className="text-xl sm:text-3xl font-bold mt-1">
                                     {
                                         isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)
                                     }
                                 </div>
                                 {
                                     !isLoadingBalance && <div className="flex items-center gap-1 mt-1 text-green-400">
-                                        <TrendingUp className="w-4 h-4" />
-                                        <span>+1.57% TODAY</span>
+                                        <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                        <span className="text-xs sm:text-sm">+1.57% TODAY</span>
                                     </div>
                                 }
                             </div>
 
                             {/* Quick Actions */}
-                            <div className="grid grid-cols-3 gap-3 mt-5">
+                            <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-5">
                                 <button
                                     disabled={tokenBalances.length === 0}
                                     onClick={() => setShowSendDrawer(true)}
-                                    className={`flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors ${tokenBalances.length === 0 ? "opacity-[0.6] disabled:pointer-events-none disabled:cursor-default" : ""}`}
+                                    className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors ${tokenBalances.length === 0 ? "opacity-[0.6] disabled:pointer-events-none disabled:cursor-default" : ""}`}
                                 >
-                                    <Send className="w-5 h-5" />
-                                    <span>Send</span>
+                                    <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-xs sm:text-sm">Send</span>
                                 </button>
                                 <button
                                     onClick={() => setShowReceiveDrawer(true)}
-                                    className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
+                                    className="flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
                                 >
-                                    <ArrowDown className="w-5 h-5" />
-                                    <span>Receive</span>
+                                    <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-xs sm:text-sm">Receive</span>
                                 </button>
                                 <button
                                     disabled={true}
                                     onClick={() => setShowBuyDrawer(true)}
-                                    className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors opacity-[0.7]"
+                                    className="flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors opacity-[0.7]"
                                 >
-                                    <CreditCard className="w-5 h-5" />
-                                    <span>Buy</span>
+                                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-xs sm:text-sm">Buy</span>
                                 </button>
                             </div>
 
                             {/* Assets List */}
-                            <div className="space-y-2 mt-5 overflow-y-auto ai-chat-scrollbar max-h-[calc(100%-180px)]">
+                            <div className="space-y-2 mt-4 sm:mt-5 overflow-y-auto ai-chat-scrollbar max-h-[calc(100vh-230px)]">
                                 {
                                     isLoadingBalance ?
                                         <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
                                         : tokenBalances.map((position, index) => (
                                             <button
                                                 key={position.chain + position.symbol + index}
-                                                className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                                                className="flex w-full items-center justify-between p-2.5 sm:p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
                                                 onClick={() => handleAsset(position)}
                                             >
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2 sm:gap-3">
                                                     <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(position.chain)} />
                                                     <div className='flex flex-col justify-start items-start'>
-                                                        <div className="font-medium">{position.symbol}</div>
-                                                        <div className="text-sm text-white/60">
+                                                        <div className="font-medium text-sm sm:text-base">{position.symbol}</div>
+                                                        <div className="text-xs sm:text-sm text-white/60 truncate max-w-[120px] sm:max-w-none">
                                                             {`${formatNumberByFrac(position.balance)} ${position.symbol}`}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
+                                                <div className="text-right text-sm sm:text-base">
                                                     <div>{formatUsdValue(position.usdValue)}</div>
-                                                    {/* <div className="text-sm text-green-400">
-                              {formatApy(0)} APY
-                            </div> */}
                                                 </div>
                                             </button>
                                         ))
@@ -406,6 +421,14 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                         </>
                 }
             </motion.div>
+
+            {/* Backdrop for mobile */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+                    onClick={() => setIsOpen(false)}
+                />
+            )}
 
             {/* Drawers */}
             <SendDrawer
