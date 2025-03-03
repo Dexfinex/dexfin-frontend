@@ -139,7 +139,7 @@ interface StoreState {
   setIsSocialFeedOpen: (isOpen: boolean) => void;
   isGamesOpen: boolean;
   setIsGamesOpen: (isOpen: boolean) => void;
-  istrade: boolean;
+  isTradeOpen: boolean;
   setTradeOpen: (isOpen: boolean) => void;
 
   isUsernameModalOpen: boolean;
@@ -268,8 +268,8 @@ const useStore = create<StoreState>((set) => ({
   setIsSocialFeedOpen: (isOpen) => set({ isSocialFeedOpen: isOpen }),
   isGamesOpen: false,
   setIsGamesOpen: (isOpen) => set({ isGamesOpen: isOpen }),
-  istrade: false,
-  setTradeOpen: (isOpen) => set({ istrade: isOpen }),
+  isTradeOpen: false,
+  setTradeOpen: (isOpen) => set({ isTradeOpen: isOpen }),
   isUsernameModalOpen: false,
   setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
 

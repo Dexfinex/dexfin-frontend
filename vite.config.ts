@@ -18,6 +18,7 @@ export default defineConfig({
         global: 'globalThis'
       },
       // Enable esbuild polyfill plugins
+/*
       plugins: [
         NodeGlobalsPolyfillPlugin({
           buffer: true,
@@ -25,9 +26,10 @@ export default defineConfig({
         }),
         NodeModulesPolyfillPlugin(),
       ]
+*/
     }
   },
-  build: {
+/*  build: {
     rollupOptions: {
       plugins: [
         inject({
@@ -49,12 +51,12 @@ export default defineConfig({
     commonjsOptions: {
       include: [/node_modules/], // Ensure CommonJS modules are handled
     },
-  },
-  resolve: {
+  },*/
+/*  resolve: {
     alias: {
       buffer: 'buffer/', // Explicitly resolve buffer module
     }
-  },
+  },*/
   server: {
     host: true,
     port: 5173
