@@ -330,12 +330,12 @@ const useStore = create<StoreState>((set) => ({
     //   position: { x: 1124, y: 355 },
     //   size: { width: 360, height: 540 }
     // },
-    // {
-    //   id: 'direct-messages',
-    //   type: 'Direct Messages',
-    //   position: { x: 780, y: 735 },
-    //   size: { width: 360, height: 540 }
-    // }
+    {
+      id: 'direct-messages',
+      type: 'Direct Messages',
+      position: { x: 775, y: 580 },
+      size: { width: 360, height: 540 }
+    }
   ],
   updateWidget: (id, updates) => set((state) => ({
     widgets: state.widgets.map((widget) =>
