@@ -292,15 +292,12 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
     };
     const checkWalletAndUsername = async (): Promise<{ exists: boolean, message?: string }> => {
         try {
-            const currentAddress = address;
-
-            if (!currentAddress) {
+            if (!address) {
                 return {
                     exists: false,
                     message: "No wallet is connected. Please connect a wallet first."
                 };
             }
-            console.log(currentAddress)
 
             if (!userData?.accessToken) {
                 console.log("No access token available, fetching user data first");
