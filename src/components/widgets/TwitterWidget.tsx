@@ -13,6 +13,7 @@ interface Tweet {
   };
   content: string;
   timestamp: string;
+  createdAt: string; // Adding actual timestamp for sorting
   stats: {
     replies: number;
     retweets: number;
@@ -50,6 +51,7 @@ export const TwitterWidget: React.FC = () => {
           },
           content: latestTweetsData[0].text || 'No content available',
           timestamp: relativeTime,
+          createdAt: tweetTimestamp, 
           stats: {
             replies: latestTweetsData[0].reply_count || 0,
             retweets: latestTweetsData[0].retweet_count || 0,
@@ -61,9 +63,18 @@ export const TwitterWidget: React.FC = () => {
     return [];
   }, [apiTweets]);
 
-  // Update tweets state when convertedTweets changes
+  // Update tweets state when convertedTweets changes and sort them by timestamp
   useEffect(() => {
-    setTweets(convertedTweets);
+    // Sort tweets from newest to oldest
+    const sortedTweets = [...convertedTweets].sort((a, b) => {
+      // If no valid timestamp, push to the end
+      if (!a.createdAt) return 1;
+      if (!b.createdAt) return -1;
+      // Sort from newest (larger timestamp) to oldest (smaller timestamp)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    
+    setTweets(sortedTweets);
   }, [convertedTweets]);
 
   useEffect(() => {
@@ -114,12 +125,9 @@ export const TwitterWidget: React.FC = () => {
     );
   }
 
-  const displayedTweets = tweets;
-
   return (
     <div className="p-4 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
-
         <div className="flex items-center gap-2">
           <span className="text-xs text-white/60">
             {tweets.length > 0 ? `${tweets.length} tweets` : '-'}
@@ -137,7 +145,7 @@ export const TwitterWidget: React.FC = () => {
 
       {tweets.length > 0 ? (
         <div className="flex-1 space-y-3 overflow-y-auto ai-chat-scrollbar max-h-96">
-          {displayedTweets.map((tweet) => (
+          {tweets.map((tweet) => (
             <div
               key={tweet.id}
               className="p-3 rounded-lg bg-black/20 hover:bg-black/30 transition-colors"

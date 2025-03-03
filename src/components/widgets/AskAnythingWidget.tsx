@@ -12,7 +12,7 @@ export const AskAnythingWidget: React.FC = () => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [isProcessing/*, setIsProcessing*/] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [recognitionInstance, setRecognitionInstance] = useState<any>(null);
   const [isManualStop, setIsManualStop] = useState(false);
   const [noSpeechTimeout, setNoSpeechTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -29,11 +29,8 @@ export const AskAnythingWidget: React.FC = () => {
     setIsCartOpen,
     setIsSocialFeedOpen,
     setIsGamesOpen,
-    // setIsWalletOpen,
     setMarketDataView,
     setTradeOpen,
-    // setWallpaper,
-    // wallpapers
   } = useStore();
 
   const voiceCommands: VoiceCommand[] = [
@@ -93,59 +90,53 @@ export const AskAnythingWidget: React.FC = () => {
   };
 
   const processCommand = (text: string) => {
-    const commands = text.toLowerCase().split(/\s+(?:and|&)\s+/i);
-    
-    commands.forEach(async (command) => {
-      const normalizedCommand = command.trim();
+    setIsProcessing(true);
+    try {
+      const commands = text.toLowerCase().split(/\s+(?:and|&)\s+/i);
       
-      if (normalizedCommand.includes('open settings')) {
-        setIsSettingsOpen(true);
-        return;
-      }
-      
-      if (normalizedCommand.includes('change wallpaper to')) {
-/*
-        const wallpaperName = normalizedCommand.split('to').pop()?.trim();
-        if (wallpaperName && wallpapers) {
-          const wallpaper = wallpapers.find(w => 
-            w.name.toLowerCase() === wallpaperName.toLowerCase()
-          );
-          if (wallpaper) {
-            setWallpaper(wallpaper);
-          }
+      commands.forEach(async (command) => {
+        const normalizedCommand = command.trim();
+        
+        if (normalizedCommand.includes('open settings')) {
+          setIsSettingsOpen(true);
+          return;
         }
-*/
-        return;
-      }
+        
+        if (normalizedCommand.includes('change wallpaper to')) {
+          // Wallpaper functionality commented out in original code
+          return;
+        }
 
-      if (normalizedCommand.includes('open dashboard')) {
-        setIsDashboardOpen(true);
-      } else if (normalizedCommand.includes('open defi')) {
-        setIsDefiOpen(true);
-      } else if (normalizedCommand.includes('open swap')) {
-        setIsSwapOpen(true);
-      } else if (normalizedCommand.includes('open market data')) {
-        setIsMarketDataOpen(true);
-      } else if (normalizedCommand.includes('show trending')) {
-        setIsMarketDataOpen(true);
-        setMarketDataView('trending');
-      } else if (normalizedCommand.includes('open chat')) {
-        setIsChatOpen(true);
-      } else if (normalizedCommand.includes('open cart')) {
-        setIsCartOpen(true);
-      } else if (normalizedCommand.includes('open social')) {
-        setIsSocialFeedOpen(true);
-      } else if (normalizedCommand.includes('open games')) {
-        setIsGamesOpen(true);
-      } else if (normalizedCommand.includes('open wallet')) {
-        // setIsWalletOpen(true);
-      } else if (normalizedCommand.includes('open assistant')) {
-        setIsAIAgentOpen(true);
-      }
-      else if (normalizedCommand.includes('open trade')) {
-        setTradeOpen(true);
-      }
-    });
+        if (normalizedCommand.includes('open dashboard')) {
+          setIsDashboardOpen(true);
+        } else if (normalizedCommand.includes('open defi')) {
+          setIsDefiOpen(true);
+        } else if (normalizedCommand.includes('open swap')) {
+          setIsSwapOpen(true);
+        } else if (normalizedCommand.includes('open market data')) {
+          setIsMarketDataOpen(true);
+        } else if (normalizedCommand.includes('show trending')) {
+          setIsMarketDataOpen(true);
+          setMarketDataView('trending');
+        } else if (normalizedCommand.includes('open chat')) {
+          setIsChatOpen(true);
+        } else if (normalizedCommand.includes('open cart')) {
+          setIsCartOpen(true);
+        } else if (normalizedCommand.includes('open social')) {
+          setIsSocialFeedOpen(true);
+        } else if (normalizedCommand.includes('open games')) {
+          setIsGamesOpen(true);
+        } else if (normalizedCommand.includes('open wallet')) {
+          // setIsWalletOpen(true); // Commented out in original
+        } else if (normalizedCommand.includes('open assistant')) {
+          setIsAIAgentOpen(true);
+        } else if (normalizedCommand.includes('open trade')) {
+          setTradeOpen(true);
+        }
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const startListening = useCallback(() => {
@@ -288,26 +279,44 @@ export const AskAnythingWidget: React.FC = () => {
     setTranscript('');
   }, [cleanupRecognition]);
 
+  // Determine if we're on a small screen (mobile)
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 600);
+    };
+    
+    // Initial check
+    checkScreenSize();
+    
+    // Listen for resize events
+    window.addEventListener('resize', checkScreenSize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
   return (
-    <div className="relative">
+    <div className="relative w-full px-4 sm:px-0">
       <VoiceModal 
         isOpen={isListening} 
         transcript={transcript}
         commands={voiceCommands}
       />
 
-      <div className="glass w-[800px] h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg flex items-center px-4 gap-3 shadow-lg">
+      <div className={`glass w-full sm:w-[800px] h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg flex items-center ${isSmallScreen ? 'px-2' : 'px-4'} gap-2 shadow-lg mx-auto`}>
         <input
           type="text"
-          placeholder='Try saying "Open settings and change wallpaper to Downtown" or "Show Bitcoin price and latest news"'
+          placeholder={'Open Settings, Open Assistant..'}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          className={`flex-1 bg-transparent outline-none ${theme === 'light' ? 'text-gray-900 placeholder:text-gray-500' : 'text-white placeholder:text-white/40'}`}
+          className={`flex-1 bg-transparent outline-none text-ellipsis overflow-hidden ${theme === 'light' ? 'text-gray-900 placeholder:text-gray-500' : 'text-white placeholder:text-white/40'}`}
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           <button 
-            className={`p-1.5 rounded-md transition-colors ${
+            className={`p-1 sm:p-1.5 rounded-md transition-colors ${
               isListening 
                 ? 'bg-red-500/50' 
                 : theme === 'light'
@@ -316,23 +325,24 @@ export const AskAnythingWidget: React.FC = () => {
             } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={(e) => {
               e.stopPropagation();
-              // eslint-disable-next-line @typescript-eslint/no-unused-expressions
               isListening ? stopListening() : startListening();
             }}
             disabled={isProcessing}
+            aria-label={isListening ? "Stop listening" : "Start voice command"}
           >
-            <Mic className="w-5 h-5" />
+            <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <button
             onClick={handleClick}
-            className={`p-1.5 rounded-md transition-colors ${
+            className={`p-1 sm:p-1.5 rounded-md transition-colors ${
               theme === 'light'
                 ? 'hover:bg-black/20 text-gray-900'
                 : 'hover:bg-white/10 text-white'
             } ${!input.trim() && 'opacity-50 cursor-not-allowed'}`}
             disabled={!input.trim()}
+            aria-label="Send command"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>
