@@ -5,6 +5,7 @@ import { TokenChainListIcon } from '../swap/components/TokenIcon';
 import useDefiStore, { Position } from '../../store/useDefiStore';
 import { getTypeIcon, getTypeColor, } from "../../utils/defi.util";
 import { offerings } from "../../constants/mock/defi";
+import { TokenIcon } from "../swap/components/TokenIcon";
 
 interface OfferingListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
@@ -84,11 +85,16 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                             {offering.type}
                                         </span>
                                         <span className="text-white/40 hidden sm:block">•</span>
-                                        <span className="text-sm text-white/60">
+                                        <div className="flex">
                                             {
-                                                offering.tokens.map((token) => `${token.symbol} `)
+                                                offering.tokens.map((token, index) => ((offering.type === "Borrowed" || offering.type === "Supplied") && index === 0) || ((offering.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" />)
                                             }
-                                        </span>
+                                            <span className="ml-2 text-sm text-white/60">
+                                                {
+                                                    offering.tokens.map((token, index) => ((offering.type === "Borrowed" || offering.type === "Supplied") && index === 0) || ((offering.type === "Liquidity") && index === 2) ? "" : `${token?.symbol} `)
+                                                }
+                                            </span>
+                                        </div>
                                     </div>
 
                                     <div className="flex items-center gap-6">

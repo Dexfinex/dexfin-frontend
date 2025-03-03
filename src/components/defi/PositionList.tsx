@@ -5,7 +5,7 @@ import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import useDefiStore, { Position } from '../../store/useDefiStore';
 import { getTypeIcon, getTypeColor } from "../../utils/defi.util";
 import { formatNumberByFrac, formatHealthFactor } from "../../utils/common.util";
-
+import { TokenIcon } from "../swap/components/TokenIcon";
 import { isEnabledPosition } from "../../constants/mock/defi";
 
 
@@ -135,8 +135,13 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                         {position.type}
                                                     </span>
                                                     <span className="text-white/40 hidden sm:block">•</span>
+                                                    <div className="flex">
+                                                        {
+                                                            position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" />)
+                                                        }
+                                                    </div>
                                                     {
-                                                        position.tokens.map((token, index) => position.type === "Borrowed" && index === 0 ? "" : `${token?.symbol} `)
+                                                        position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : `${token?.symbol} `)
                                                     }
                                                 </div>
 
