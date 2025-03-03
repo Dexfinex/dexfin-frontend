@@ -12,7 +12,7 @@ import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStor
 import { SendDrawer } from "./wallet/SendDrawer";
 import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
-import { Skeleton, Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverHeader, PopoverBody, Button } from '@chakra-ui/react';
+import { Skeleton, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
 
 interface WalletDrawerProps {
     isOpen: boolean,
@@ -114,26 +114,26 @@ const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAdd
     return (
         <Popover>
             <PopoverTrigger>
-                <div className="flex items-center text-white/70 hover:text-white/90 gap-1 cursor-pointer">
+                <div className="flex items-center text-white/90 hover:text-white/70 gap-1">
                     <span>Account</span>
                     <Copy className="w-3 h-3" />
                 </div>
             </PopoverTrigger>
             <PopoverContent className="!w-[236px] !border-1 !border-transparent !bg-black !p-2">
-                <button className="flex items-center justify-between p-1 hover:text-white/70" onClick={handleEvmCopy}>
+                <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70" onClick={handleEvmCopy}>
                     <span className="flex items-center gap-1">
                         <img src="https://cdn.moralis.io/eth/0x.png" className="w-4 h-4" />
                         <span>Ethereum</span>
                     </span>
                     {evmCopied ? <CheckCircle className="w-3 h-3 text-green-500" /> : <span>{shrinkAddress(evmAddress)}</span>}
-                </button>
-                <button className="flex items-center justify-between p-1 hover:text-white/70" onClick={handleSolCopy}>
+                </div>
+                <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70" onClick={handleSolCopy}>
                     <span className="flex items-center gap-1">
                         <img src="https://assets.coingecko.com/coins/images/4128/small/solana.png" className="w-4 h-4" />
                         <span>Solana</span>
                     </span>
                     {solCopied ? <CheckCircle className="w-3 h-3 text-green-500" /> : <span>{shrinkAddress(solAddress)}</span>}
-                </button>
+                </div>
             </PopoverContent>
         </Popover>
     )
@@ -157,17 +157,15 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                 <ArrowLeft className="w-5 h-5" />
             </button>
 
-            <div className="overflow-y-auto ai-chat-scrollbar max-h-[calc(100vh-280px)]">
-                <p className="text-center text-lg sm:text-xl text-white">{tokenBalance.symbol}</p>
-                <p className="text-center text-xl sm:text-2xl text-green-500 font-bold">$2000</p>
-                <div className="h-[200px] sm:h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                            <Tooltip content={<CustomTooltip />} />
-                            <Line type="monotone" dataKey="price" stroke="#22c55e" strokeWidth={2} dot={{ fill: "#22c55e" }} />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
+            <div className="overflow-y-auto ai-chat-scrollbar max-h-[calc(100vh-140px)]">
+                <p className="text-center text-xl text-white">{tokenBalance.symbol}</p>
+                <p className="text-center text-2xl text-green-500 font-bold">$2000</p>
+                <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={chartData}>
+                        <Tooltip content={<CustomTooltip />} />
+                        <Line type="monotone" dataKey="price" stroke="#22c55e" strokeWidth={2} dot={{ fill: "#22c55e" }} />
+                    </LineChart>
+                </ResponsiveContainer>
 
                 {/* Buttons for time range selection */}
                 <div className="flex justify-evenly space-x-1 sm:space-x-2 mb-4">

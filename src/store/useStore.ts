@@ -139,7 +139,7 @@ interface StoreState {
   setIsSocialFeedOpen: (isOpen: boolean) => void;
   isGamesOpen: boolean;
   setIsGamesOpen: (isOpen: boolean) => void;
-  istrade: boolean;
+  isTradeOpen: boolean;
   setTradeOpen: (isOpen: boolean) => void;
   isrewardsOpen: boolean;
   setIsRewardsOpen: (isOpen: boolean) => void;
@@ -270,8 +270,8 @@ const useStore = create<StoreState>((set) => ({
   setIsSocialFeedOpen: (isOpen) => set({ isSocialFeedOpen: isOpen }),
   isGamesOpen: false,
   setIsGamesOpen: (isOpen) => set({ isGamesOpen: isOpen }),
-  istrade: false,
-  setTradeOpen: (isOpen) => set({ istrade: isOpen }),
+  isTradeOpen: false,
+  setTradeOpen: (isOpen) => set({ isTradeOpen: isOpen }),
   isUsernameModalOpen: false,
   setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
   isrewardsOpen: false,
@@ -330,7 +330,7 @@ const useStore = create<StoreState>((set) => ({
       type: 'Direct Messages',
       position: { x: 1535, y: 20 },
       size: { width: 360, height: 540 }
-    }
+    },
   ],
   updateWidget: (id, updates) => set((state) => ({
     widgets: state.widgets.map((widget) =>
