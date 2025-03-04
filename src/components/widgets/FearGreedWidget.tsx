@@ -1,14 +1,31 @@
+
 import React from 'react';
 import { AlertCircle, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
-import useFearGreedStore from '../../store/useFearGreedStore';
 import { useGetFearGreed } from '../../hooks/useFearGreed';
 
+// Helper function to format time as "X min ago" or "X h ago"
+const formatTimeAgo = (timestamp: string): string => {
+  const timestampNum = parseInt(timestamp);
+  const now = Math.floor(Date.now() / 1000);
+  const seconds = now - timestampNum;
+  
+  if (seconds < 60) {
+    return 'just now';
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}min ago`;
+  } else if (seconds < 86400) {
+    const hours = Math.floor(seconds / 3600);
+    return `${hours}h ago`;
+  } else {
+    const days = Math.floor(seconds / 86400);
+    return `${days}d ago`;
+  }
+};
 
 export const FearGreedWidget: React.FC = () => {
-  1
-  const { isLoading, error, refetch } = useGetFearGreed();
-  const { data } = useFearGreedStore();
-
+  const { isLoading, error, refetch, data } = useGetFearGreed();
+  console.log("feargreed data : ", data);
   const handleRefresh = async () => {
     await refetch()
   };
@@ -37,8 +54,10 @@ export const FearGreedWidget: React.FC = () => {
   }
 
   const fearGreedValue = data?.value || 0;
-  const change = data ? fearGreedValue - data.previousClose : 0;
+  const change = data?.dailyChange || 0;
   const color = getColor(fearGreedValue);
+  // Format timestamp as "X min ago" or "X h ago"
+  const timeAgo = data?.timestamp ? formatTimeAgo(data.timestamp) : '';
 
   return (
     <div className="p-4 h-full flex flex-col">
@@ -100,7 +119,7 @@ export const FearGreedWidget: React.FC = () => {
 
             {data && (
               <div className="text-xs text-white/40">
-                Updated: {new Date(parseInt(data.timestamp) * 1000).toLocaleTimeString()}
+                Updated: {timeAgo}
               </div>
             )}
           </div>
