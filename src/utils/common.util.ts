@@ -82,6 +82,30 @@ export const getHourAndMinute = (timestamp: number) => {
     return timeString;
 }
 
+export const getMonthDayHour = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const day = date.getDate();
+
+    return `${hours}:${minutes} , ${month} ${day}`;
+}
+
+export const getMonthDayYear = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${month} ${day}, ${year}`;
+}
+
 /**
  * Compares two wallet addresses in uppercase.
  * @param address1 - The first wallet address.

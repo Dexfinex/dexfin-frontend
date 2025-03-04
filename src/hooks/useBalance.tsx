@@ -221,7 +221,6 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 
 		const tokens = await dexfinv3Service.getAllWalletTokens(activeWalletAddress, solanaWalletInfo?.publicKey || "");
 
-		console.log('all tokens = ', tokens)
 		return tokens;
 	}, [activeChainId, activeWalletAddress, solanaWalletInfo]);
 
@@ -236,7 +235,7 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 
 	useEffect(() => {
 		if (!data) return;
-
+		
 		const newBalance = data.map((item) => ({
 			chain: item.chain,
 			address: item.tokenAddress as string,
@@ -247,7 +246,8 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 			decimals: item.decimals,
 			usdPrice: item.usdPrice,
 			usdValue: item.usdValue,
-			tokenId: item.tokenId
+			tokenId: item.tokenId,
+			network: item.network
 		} as unknown as TokenBalance));
 
 		const existingBalances = useTokenBalanceStore.getState().tokenBalances;

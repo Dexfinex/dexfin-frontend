@@ -1,12 +1,12 @@
 import React, { useContext, useState, useEffect } from "react";
 import { Web3AuthContext } from "../providers/Web3AuthContext";
-import { motion } from "framer-motion";
+import { motion, time } from "framer-motion";
 import { useStore } from "../store/useStore";
 import { TokenChainIcon } from "./swap/components/TokenIcon";
 import { CheckCircle, Copy, Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, ArrowLeft } from "lucide-react";
 import { mockDeFiPositions, mockDeFiStats, formatUsdValue, formatApy, getHealthFactorColor, } from '../lib/wallet';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { shrinkAddress, formatNumberByFrac, formatNumber } from "../utils/common.util";
+import { shrinkAddress, formatNumberByFrac, formatNumber, getHourAndMinute, getMonthDayHour, getMonthDayYear } from "../utils/common.util";
 import { useWalletBalance } from "../hooks/useBalance";
 import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStore";
 import { SendDrawer } from "./wallet/SendDrawer";
@@ -14,6 +14,7 @@ import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
 import { Skeleton, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
 import { coingeckoService } from "../services/coingecko.service";
+import { birdeyeService } from "../services/birdeye.service";
 
 interface WalletDrawerProps {
     isOpen: boolean,
@@ -25,49 +26,31 @@ interface AssetInfoProps {
     setTokenBalance: (token: TokenBalance | null) => void;
 }
 
-// Mock price data (replace with API data)
-const mockData = {
-    "1D": [
-        { time: "00:00", price: 120 },
-        { time: "06:00", price: 125 },
-        { time: "12:00", price: 123 },
-        { time: "18:00", price: 130 },
-        { time: "23:59", price: 128 }
-    ],
-    "1W": [
-        { time: "Mon", price: 110 },
-        { time: "Tue", price: 115 },
-        { time: "Wed", price: 112 },
-        { time: "Thu", price: 118 },
-        { time: "Fri", price: 125 },
-        { time: "Sat", price: 122 },
-        { time: "Sun", price: 130 }
-    ],
-    "1M": [
-        { time: "Week 1", price: 105 },
-        { time: "Week 2", price: 110 },
-        { time: "Week 3", price: 120 },
-        { time: "Week 4", price: 125 }
-    ],
-    "1Y": [
-        { time: "Jan", price: 90 },
-        { time: "Apr", price: 110 },
-        { time: "Jul", price: 140 },
-        { time: "Oct", price: 130 },
-        { time: "Dec", price: 150 }
-    ],
-    "ALL": [
-        { time: "2019", price: 30 },
-        { time: "2020", price: 50 },
-        { time: "2021", price: 100 },
-        { time: "2022", price: 130 },
-        { time: "2023", price: 150 }
-    ]
+type ChartPriceType = {
+    time: string,
+    price: number
+}
+
+type ChartTimeType = "1D" | "1W" | "1M" | "1Y"
+
+type TimeRangeType = {
+    mseconds: number,
+    interval: string
+}
+
+const customMapTimeRange: Record<string, TimeRangeType> = {
+    "1D": { mseconds: 6048000, interval: "15m" },
+    "1W": { mseconds: 25920000, interval: "1d" },
+    "1M": { mseconds: 77760000, interval: "4h" },
+    "1Y": { mseconds: 155520000, interval: "1d" },
 };
 
-const CustomTooltip: React.FC<{ active?: boolean; payload?: { value: number }[]; }> = ({ active, payload }) => {
+const CustomTooltip: React.FC<{ active?: boolean; payload?: any[]; }> = ({ active, payload }) => {
     if (active && payload && payload.length) {
-        return <span className="text-green-500 text-sm font-bold">{payload[0].value}</span>
+        return <div className="text-green-500 text-sm font-bold flex flex-col items-center">
+            <span>{payload[0]?.payload.time}</span>
+            <span>${payload[0].value}</span>
+        </div>
     }
     return null;
 }
@@ -139,24 +122,67 @@ const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAdd
 }
 
 export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance }) => {
-    const [selectedRange, setSelectedRange] = useState<keyof typeof mockData>("1D");
-    const [chartData, setChartData] = useState(mockData[selectedRange]);
+    const [selectedRange, setSelectedRange] = useState<ChartTimeType>("1D");
+    const [chartData, setChartData] = useState<Array<ChartPriceType> | null>(null);
     const [info, setInfo] = useState<any>(null);
 
     useEffect(() => {
-        setChartData(mockData[selectedRange]); // Replace this with an API call if needed
+        getChartData()
     }, [selectedRange]);
 
     useEffect(() => {
         if (tokenBalance.tokenId) {
             getTokenInfo(tokenBalance)
+            getChartData()
         }
     }, [tokenBalance])
 
     const getTokenInfo = async (token: TokenBalance) => {
         const info = await coingeckoService.getInfo(token.tokenId)
-        console.log('info = ', info)
         setInfo(info)
+    }
+
+    const formatChartData = (data: any) => {
+        return data.map((e: { time: number, close: number }) => {
+            let readableTime = ""
+
+            if (selectedRange === "1D") {
+                readableTime = getHourAndMinute(e.time)
+            } else if (selectedRange === "1W") {
+                readableTime = getMonthDayHour(e.time)
+            } else if (selectedRange === "1M") {
+                readableTime = getMonthDayHour(e.time)
+            } else if (selectedRange === "1Y") {
+                readableTime = getMonthDayYear(e.time)
+            }
+
+            return {
+                time: readableTime,
+                price: Number(formatNumberByFrac(e.close))
+            }
+        })
+    }
+
+    const getChartData = async () => {
+        const currentTime = Math.round(Date.now() / 1000) - 60
+
+        if (tokenBalance.network?.id === "solana") {
+            const address = (tokenBalance.address === 'solana' ? "So11111111111111111111111111111111111111112" : tokenBalance.address)
+            const timeFrom = currentTime - customMapTimeRange[selectedRange].mseconds
+
+            const data = await birdeyeService.getOHLCV(address, customMapTimeRange[selectedRange].interval, timeFrom, currentTime)
+            if (data.length > 0) {
+                const cData = formatChartData(data)
+                setChartData([...cData])
+            }
+        } else { // will add 0x
+            const timeFrom = currentTime - customMapTimeRange[selectedRange].mseconds
+            const data = await coingeckoService.getOHLCV(tokenBalance.tokenId, customMapTimeRange[selectedRange].interval, timeFrom, currentTime)
+            if (data.length > 0) {
+                const cData = formatChartData(data)
+                setChartData([...cData])
+            }
+        }
     }
 
     const handleBack = () => {
@@ -229,20 +255,24 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                         </div>
                 }
 
-                <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={chartData}>
-                        <Tooltip content={<CustomTooltip />} />
-                        <Line type="monotone" dataKey="price" stroke="#22c55e" strokeWidth={2} dot={{ fill: "#22c55e" }} />
-                    </LineChart>
-                </ResponsiveContainer>
+                {
+                    chartData ?
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={chartData}>
+                                <Tooltip content={<CustomTooltip />} />
+                                <Line type="monotone" dataKey="price" stroke="#22c55e" strokeWidth={1} dot={false} />
+                            </LineChart>
+                        </ResponsiveContainer> :
+                        <Skeleton className="w-full h-[280px] my-4" />
+                }
 
                 {/* Buttons for time range selection */}
                 <div className="flex justify-evenly space-x-1 sm:space-x-2 mb-4">
-                    {["1D", "1W", "1M", "1Y", "ALL"].map((range) => (
+                    {["1D", "1W", "1M", "1Y", "ALL"].map((range: any) => (
                         <button
                             key={range}
-                            onClick={() => setSelectedRange(range as keyof typeof mockData)}
-                            className={`text-white/90 bg-white/20 w-14 sm:w-16 py-1 rounded-md hover:bg-white/10 text-xs sm:text-sm ${selectedRange === range ? 'bg-white/30' : ''}`}
+                            onClick={() => setSelectedRange(range)}
+                            className={`text-white/90 bg-white/20 w-14 sm:w-16 py-1 rounded-md hover:bg-white/10 text-xs sm:text-sm ${selectedRange === range ? 'bg-white/40' : ''}`}
                         >
                             {range}
                         </button>

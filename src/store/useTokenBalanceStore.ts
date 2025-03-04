@@ -12,6 +12,12 @@ export interface TokenBalance {
   usdPrice: number;
   usdValue: number;
   tokenId: string;
+  network?: {
+    chainId: number;
+    icon: string;
+    id: string;
+    name: string;
+  }
 }
 
 // Define the store's state and actions
