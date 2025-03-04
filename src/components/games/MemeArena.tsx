@@ -5,7 +5,11 @@ import { CharacterSelect } from './MemeArenaCharacterSelect';
 import BattleArena from './MemeArenaBattle';
 import { characters, tournamentOpponents } from '../../data/memeArenaCharacters';
 
-export const MemeArena: React.FC = () => {
+interface MemeArenaProps {
+  gameType?: string;
+}
+
+export const MemeArena: React.FC<MemeArenaProps> = ({ gameType = 'ARENA' }) => {
   const [state, setState] = useState<GameState>({
     screen: 'character-select',
     playerCharacter: null,
@@ -172,7 +176,6 @@ export const MemeArena: React.FC = () => {
 
     // Player's turn
     if (state.turn === 'player') {
-      // Update combo based on action type
       if (state.lastAction === action.type) {
         newState.combo = Math.min(state.combo + 1, 5);
       } else {

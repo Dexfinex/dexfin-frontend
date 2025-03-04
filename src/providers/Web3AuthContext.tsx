@@ -174,8 +174,8 @@ export const Web3AuthContext = createContext<Web3AuthContextType>(defaultWeb3Aut
 const entryPoint = getEntryPoint("0.7");
 const kernelVersion = KERNEL_V3_1;
 
-import {getLoginUserId} from "../components/market/Calendar/api/Calendar-api.ts";
-import {checkUsername} from "../hooks/useUsername-api.ts";
+import { getLoginUserId } from "../components/market/Calendar/api/Calendar-api.ts";
+import { checkUsername } from "../components/games/api/useUsername-api.ts";
 
 const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
@@ -258,6 +258,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
     const fetchUserData = async () => {
         try {
+            console.log("sdfsfasdfasdfas")
             setUserDataLoading(true);
             const currentAddress = address;
 
@@ -309,6 +310,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 }
             }
             // Get username data from backend
+            console.log(userData.accessToken)
             const response = await checkUsername(userData.accessToken);
             console.log(response.username)
 

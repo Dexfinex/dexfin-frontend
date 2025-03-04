@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Timer, Trophy, RotateCcw, Gamepad2 } from 'lucide-react';
+import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
+import { GameSession } from '../GamesModal';
+import { saveGameHistory,fetchGameId } from "./api/useGame-api.ts";
 
+interface CryptoPexesoProps {
+  gameType?: string;
+}
 interface Card {
   id: number;
   token: string;
@@ -40,7 +46,7 @@ const shuffleArray = <T extends unknown>(array: T[]): T[] => {
   return newArray;
 };
 
-export const CryptoPexeso: React.FC = () => {
+export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' }) => {
   const [cards, setCards] = useState<Card[]>(createBoard());
   const [flippedIndexes, setFlippedIndexes] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
@@ -52,7 +58,37 @@ export const CryptoPexeso: React.FC = () => {
   const [bestMoves, setBestMoves] = useState<number | null>(null);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
-
+  
+  // Add Web3AuthContext and game session tracking
+  const { userData } = useContext(Web3AuthContext);
+  const gameSessionSaved = useRef(false);
+  const [gameData, setGameData] = useState<any[]>([]);
+  const [gameId, setGameId] = useState<string>("");
+  useEffect(() => {
+    const loadGameData = async () => {
+      if (userData && userData.accessToken) {
+        try {
+          const data = await fetchGameId(userData.accessToken);
+          
+          if (Array.isArray(data)) {
+            setGameData(data);
+            
+            // Find the game ID based on the gameType
+            const game = data.find(g => g.type === gameType);
+            if (game) {
+              setGameId(game.id);
+            } else {
+              console.warn(`No game found with type ${gameType}`);
+            }
+          }
+        } catch (error) {
+          console.error("Error loading game data:", error);
+        }
+      }
+    };
+    
+    loadGameData();
+  }, [userData, gameType]);
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (gameStarted && timeLeft > 0 && !isGameOver) {
@@ -80,6 +116,55 @@ export const CryptoPexeso: React.FC = () => {
       }
     }
   }, [matches, timeLeft, moves, bestTime, bestMoves]);
+
+
+  useEffect(() => {
+    if (!isGameOver) {
+      gameSessionSaved.current = false;
+    }
+  }, [isGameOver]);
+
+
+  useEffect(() => {
+    if (isGameOver && !gameSessionSaved.current && 
+        userData && userData.accessToken && gameId) {
+      
+      const isVictory = matches === tokens.length;
+      const accuracy = timeLeft > 0 ? (matches / tokens.length) * 100 : 0;
+      
+      // Calculate tokens earned based on game performance
+      const baseReward = isVictory ? 100 : 0;
+      const timeBonus = isVictory ? timeLeft * 2 : 0; 
+      const streakBonus = bestStreak * 5; 
+      const totalReward = baseReward + timeBonus + streakBonus;
+      
+      const gameSession: GameSession = {
+        gameId: gameId,
+        tokensEarned: totalReward,
+        score: matches,
+        accuracy: accuracy,
+        streak: bestStreak,
+        winStatus: isVictory,
+      };
+      
+      // Save to database and mark as saved
+      saveGameSession(gameSession);
+      gameSessionSaved.current = true;
+    }
+  }, [isGameOver, matches, timeLeft, bestStreak, userData, gameId]);
+
+
+
+  const saveGameSession = async (gameSession: GameSession) => {
+    try {
+      if (gameSession && userData &&userData.accessToken) {
+        const response = await saveGameHistory(userData.accessToken, gameSession);
+        console.log(response);
+      }
+    } catch (error) {
+      console.error('Error saving game session:', error);
+    }
+  };
 
   const handleCardClick = (index: number) => {
     if (!gameStarted) {
@@ -144,6 +229,7 @@ export const CryptoPexeso: React.FC = () => {
     setIsGameOver(false);
     setGameStarted(false);
     setCurrentStreak(0);
+    gameSessionSaved.current = false;
   };
 
   const renderCard = (card: Card, index: number) => (
@@ -178,70 +264,104 @@ export const CryptoPexeso: React.FC = () => {
     </button>
   );
 
-  const renderGameOver = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div className="relative glass border border-white/10 rounded-xl p-8 w-[400px] text-center">
-        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center mb-6">
-          <Trophy className="w-10 h-10 text-emerald-400" />
-        </div>
-        
-        <h2 className="text-2xl font-bold mb-2">
-          {matches === tokens.length ? 'Congratulations!' : 'Time\'s Up!'}
-        </h2>
-        
-        <p className="text-white/60 mb-6">
-          {matches === tokens.length
-            ? 'You matched all pairs!'
-            : `You matched ${matches} out of ${tokens.length} pairs`}
-        </p>
-
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-            <div className="text-2xl font-bold">{moves}</div>
-            <div className="text-sm text-white/60">Moves</div>
+  const renderGameOver = () => {
+    const isVictory = matches === tokens.length;
+    const accuracy = timeLeft > 0 ? (matches / tokens.length) * 100 : 0;
+    const baseReward = isVictory ? 100 : 0;
+    const timeBonus = isVictory ? timeLeft * 2 : 0;
+    const streakBonus = bestStreak * 5;
+    const totalReward = baseReward + timeBonus + streakBonus;
+    
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="relative glass border border-white/10 rounded-xl p-8 w-[400px] text-center">
+          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center mb-6">
+            <Trophy className="w-10 h-10 text-emerald-400" />
           </div>
-          <div className="p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-            <div className="text-2xl font-bold">{60 - timeLeft}s</div>
-            <div className="text-sm text-white/60">Time</div>
-          </div>
-        </div>
+          
+          <h2 className="text-2xl font-bold mb-2">
+            {isVictory ? 'Congratulations!' : 'Time\'s Up!'}
+          </h2>
+          
+          <p className="text-white/60 mb-6">
+            {isVictory
+              ? 'You matched all pairs!'
+              : `You matched ${matches} out of ${tokens.length} pairs`}
+          </p>
 
-        {(bestTime !== null || bestMoves !== null || bestStreak > 0) && (
-          <div className="mb-8">
-            <h3 className="text-lg font-medium mb-4">Best Scores</h3>
-            <div className="grid grid-cols-3 gap-4">
-              {bestTime !== null && (
-                <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-                  <div className="text-xl font-bold text-emerald-400">{bestTime}s</div>
-                  <div className="text-sm text-white/60">Best Time</div>
-                </div>
-              )}
-              {bestMoves !== null && (
-                <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-                  <div className="text-xl font-bold text-emerald-400">{bestMoves}</div>
-                  <div className="text-sm text-white/60">Best Moves</div>
-                </div>
-              )}
-              {bestStreak > 0 && (
-                <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-                  <div className="text-xl font-bold text-emerald-400">{bestStreak}x</div>
-                  <div className="text-sm text-white/60">Best Streak</div>
-                </div>
-              )}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+              <div className="text-2xl font-bold">{moves}</div>
+              <div className="text-sm text-white/60">Moves</div>
+            </div>
+            <div className="p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+              <div className="text-2xl font-bold">{60 - timeLeft}s</div>
+              <div className="text-sm text-white/60">Time</div>
             </div>
           </div>
-        )}
 
-        <button
-          onClick={resetGame}
-          className="px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 rounded-lg transition-colors font-medium"
-        >
-          Play Again
-        </button>
+          {isVictory && (
+            <div className="mb-8 p-4 border border-white/10 rounded-lg bg-gradient-to-br from-teal-500/10 to-emerald-500/10">
+              <h3 className="text-lg font-medium mb-4">Rewards</h3>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-white/60">Base Reward:</span>
+                  <span>{baseReward} tokens</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/60">Time Bonus:</span>
+                  <span className="text-teal-400">+{timeBonus} tokens</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/60">Streak Bonus:</span>
+                  <span className="text-emerald-400">+{streakBonus} tokens</span>
+                </div>
+                <div className="h-px my-2 bg-white/10" />
+                <div className="flex justify-between font-medium">
+                  <span>Total Reward:</span>
+                  <span>{totalReward} tokens</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(bestTime !== null || bestMoves !== null || bestStreak > 0) && (
+            <div className="mb-8">
+              <h3 className="text-lg font-medium mb-4">Best Scores</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {bestTime !== null && (
+                  <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+                    <div className="text-xl font-bold text-emerald-400">{bestTime}s</div>
+                    <div className="text-sm text-white/60">Best Time</div>
+                  </div>
+                )}
+                {bestMoves !== null && (
+                  <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+                    <div className="text-xl font-bold text-emerald-400">{bestMoves}</div>
+                    <div className="text-sm text-white/60">Best Moves</div>
+                  </div>
+                )}
+                {bestStreak > 0 && (
+                  <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+                    <div className="text-xl font-bold text-emerald-400">{bestStreak}x</div>
+                    <div className="text-sm text-white/60">Best Streak</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={resetGame}
+            className="px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 rounded-lg transition-colors font-medium"
+          >
+            Play Again
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="h-full p-6">

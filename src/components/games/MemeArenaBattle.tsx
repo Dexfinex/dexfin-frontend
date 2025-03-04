@@ -4,23 +4,27 @@ import { GameState, Action, StatusEffect } from '../../types/memeArena';
 import { MemeArenaTutorial } from './MemeArenaTutorial';
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 import { GameSession } from '../GamesModal';
-import axios from 'axios';
+import {saveGameHistory, fetchGameId} from "./api/useGame-api.ts"
+
 
 interface BattleArenaProps {
   state: GameState;
   onAction: (action: Action) => void;
   onNewGame: () => void;
+  gameType?: string;
 }
 
 const BattleArena: React.FC<BattleArenaProps> = ({
   state,
   onAction,
-  onNewGame
+  onNewGame,
+  gameType = 'ARENA'
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
-  const [usernameResponse, setUsernameResponse] = useState<{exists: boolean, message?: string, username?: string}>();
-  const { userData, checkWalletAndUsername } = useContext(Web3AuthContext);
+  const { userData } = useContext(Web3AuthContext);
   const gameSessionSaved = useRef(false);
+  const [gameData, setGameData] = useState<any[]>([]);
+  const [gameId, setGameId] = useState<string>("");
 
   // Auto-scroll battle logs
   useEffect(() => {
@@ -31,21 +35,40 @@ const BattleArena: React.FC<BattleArenaProps> = ({
   }, [state.battleLogs]);
 
   useEffect(() => {
-    checkUsername();
-  }, [userData, checkWalletAndUsername]);
-
-  // Reset game session saved flag when game is not over
-  useEffect(() => {
     if (!state.isGameOver) {
       gameSessionSaved.current = false;
     }
   }, [state.isGameOver]);
+  useEffect(() => {
+    const loadGameData = async () => {
+      if (userData && userData.accessToken) {
+        try {
+          const data = await fetchGameId(userData.accessToken);
+          console.log("Game data loaded:", data);
+          
+          if (Array.isArray(data)) {
+            setGameData(data);
+            
+            const game = data.find(g => g.type === gameType);
+            if (game) {
+              setGameId(game.id);
+            } else {
+              console.warn(`No game found with type ${gameType}`);
+            }
+          }
+        } catch (error) {
+          console.error("Error loading game data:", error);
+        }
+      }
+    };
+    
+    loadGameData();
+  }, [userData, gameType]);
 
   // Save game session when game is over
   useEffect(() => {
     if (state.isGameOver && !gameSessionSaved.current && 
-        userData && userData.accessToken && 
-        usernameResponse && usernameResponse.exists && usernameResponse.username) {
+        userData&&gameId) {
       
       const isVictory = state.aiHP <= 0;
       const baseReward = 100;
@@ -55,46 +78,26 @@ const BattleArena: React.FC<BattleArenaProps> = ({
       const totalReward = baseReward + comboBonus + criticalBonus + perfectBonus;
       
       const gameSession: GameSession = {
-        user_id: usernameResponse.username,
-        game_id: 'meme-arena',
-        tokens_earned: isVictory ? totalReward : 0,
+        gameId: gameId,
+        tokensEarned: isVictory ? totalReward : 0,
         score: state.battleStats.totalDamageDealt,
-        accuracy: 0, // Not applicable for arena game
+        accuracy: 0, 
         streak: state.battleStats.maxCombo,
-        win_status: isVictory,
-        played_at: new Date()
+        winStatus: isVictory,
       };
       
-      // Save to database and mark as saved
       saveGameSession(gameSession);
       gameSessionSaved.current = true;
     }
-  }, [state.isGameOver, state.aiHP, userData, usernameResponse]);
-
-  const checkUsername = async () => {
-    try {
-      const response = await checkWalletAndUsername();
-      if (response.exists && response.message) {
-        // Extract username from the message
-        // The message format is "Username exists for this wallet: {username}"
-        const usernameMatch = response.message.match(/Username exists for this wallet: (.+)$/);
-        if (usernameMatch && usernameMatch[1]) {
-          setUsernameResponse({...response, username: usernameMatch[1]});
-        }
-      } else {
-        setUsernameResponse(response);
-      }
-    } catch (error) {
-      console.error("Error checking username:", error);
-    }
-  };
+  }, [state.isGameOver, state.aiHP, userData, gameId, state.battleStats]);
 
   const saveGameSession = async (gameSession: GameSession) => {
-    try {
-      
-      console.log('Saving game session:', gameSession);
-      
-      console.log('Game session saved successfully');
+
+    try{
+      if(gameSession && userData &&userData.accessToken){
+        const response = await saveGameHistory(userData.accessToken, gameSession);
+        console.log("Game session save response",response)
+      }
     } catch (error) {
       console.error('Error saving game session:', error);
     }
