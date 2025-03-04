@@ -6,7 +6,7 @@ import { CartModalProps, TokenPurchaseDetails } from '../../types/cart.type';
 import { useTokenBuyHandler } from '../../hooks/useTokenBuyHandler';
 import { useStore } from '../../store/useStore';
 import useTokenStore from '../../store/useTokenStore';
-import { X, ShoppingCart } from 'lucide-react';
+import { X, ShoppingCart, Minimize2, Maximize2 } from 'lucide-react';
 import Spinner from './components/Spinner';
 import SearchHeader from './components/SearchHeader';
 import CoinGrid from './components/CoinGrid';
@@ -26,6 +26,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const [allTransactionsComplete, setAllTransactionsComplete] = useState(false);
   const [tokenDetails, setTokenDetails] = useState<TokenPurchaseDetails[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const { address: walletAddress, chainId: walletChainId } = useContext(Web3AuthContext);
   const { cartItems, addToCart, removeFromCart, updateQuantity, clearCart } = useStore();
@@ -39,6 +40,10 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     isConfirmed
   } = useTokenBuyHandler();
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
   // Check if document exists and set up a listener for theme changes
   useEffect(() => {
     const checkTheme = () => {
@@ -48,10 +53,10 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
         setIsDarkMode(false);
       }
     };
-    
+
     // Check initial theme
     checkTheme();
-    
+
     // Set up MutationObserver to watch for class changes on the html element
     if (typeof MutationObserver !== 'undefined') {
       const observer = new MutationObserver((mutations) => {
@@ -61,7 +66,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
           }
         });
       });
-      
+
       observer.observe(document.documentElement, { attributes: true });
       return () => observer.disconnect();
     }
@@ -199,8 +204,21 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <div className="relative glass border border-black/10 dark:border-white/10 shadow-lg w-[95%] md:w-[90%] h-[95%] md:h-[90%] rounded-xl overflow-hidden">
+      <div className={`relative glass border border-black/10 shadow-lg  rounded-xl overflow-hidden  ${isFullscreen
+        ? 'w-full h-full rounded-none'
+        : 'w-[90%] h-[90%] rounded-xl'
+        }`}>
         <span className="flex justify-end p-2">
+          <button
+            onClick={toggleFullscreen}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
+          </button>
           <button onClick={onClose} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
             <X className="w-4 h-4" />
           </button>
