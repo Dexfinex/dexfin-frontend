@@ -28,7 +28,7 @@ export const calendarService = {
             }
             return data.data.login;
         } catch (error) {
-            console.error('Error during registration:', {
+            console.error('Error during login:', {
                 error: error instanceof Error ? {
                     name: error.name,
                     message: error.message,
@@ -53,7 +53,7 @@ export const calendarService = {
             return data.data
         }
         catch (error) {
-            console.error('Error fetching calendar events:', {
+            console.error('Error delete calendar events:', {
                 error: error instanceof Error ? {
                     name: error.name,
                     message: error.message,

@@ -1,4 +1,4 @@
-import { usernameService } from "../services/username.service";
+import { usernameService } from "../../../services/username.service";
 export const checkUsername = async (accessToken: any)=>{
     const data = await usernameService.checkUsername(accessToken);
     return data;

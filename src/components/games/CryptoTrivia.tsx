@@ -2,11 +2,13 @@ import React, { useState, useEffect, useContext, useRef  } from 'react';
 import { X, Trophy, Timer, ArrowLeft, Brain, Check, X as XIcon, Heart, Zap, Shield, Clock } from 'lucide-react';
 import { GameSession } from '../GamesModal';
 import { useStore } from '../../store/useStore';
-import { boolean } from 'zod';
+import {saveGameHistory, fetchGameId} from "./api/useGame-api.ts"
 
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 
-
+interface CryptoTriviaProps {
+  gameType?: string;
+}
 interface GameState {
   screen: 'menu' | 'difficulty' | 'game' | 'results';
   difficulty: 'Easy' | 'Medium' | 'Hard';
@@ -28,6 +30,7 @@ interface GameState {
   streak: number;
   multiplier: number;
 }
+
 
 interface Question {
   question: string;
@@ -307,19 +310,19 @@ function getRandomQuestions(difficulty: 'Easy' | 'Medium' | 'Hard'): Question[] 
   return shuffleArray(difficultyQuestions).slice(0, requiredQuestions);
 }
 
-export const CryptoTrivia: React.FC = () => {
+export const CryptoTrivia: React.FC<CryptoTriviaProps> = ({ gameType = 'TRIVIA' }) => {
 
-  // const { userInfo } = useContext(Web3AuthContext);
-  // useContext(Web3AuthContext);
 
-  const { userData, checkWalletAndUsername } = useContext(Web3AuthContext);
-  const [usernameResponse, setUsernameResponse] = useState<{exists: boolean, message?: string, username?: string}>();
+  const { userData } = useContext(Web3AuthContext);
+
   const gameSessionSaved = useRef(false);
-  const usernameChecked = useRef(false);
+
+  const [gameData, setGameData] = useState<any[]>([]);
+  const [gameId, setGameId] = useState<string>("");
 
 
 
-  const { user, gameStats, updateGameStats } = useStore();
+  const { gameStats, updateGameStats } = useStore();
   const [sessionStartTime, setSessionStartTime] = useState<Date>(new Date());
   const [state, setState] = useState<GameState>({
     screen: 'menu',
@@ -345,38 +348,79 @@ export const CryptoTrivia: React.FC = () => {
   const [gameQuestions, setGameQuestions] = useState<Question[]>([]);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   useEffect(() => {
-   
-    checkUsername()
-    // if (userData && userData.accessToken) {
-    //   checkUsername();
-    // }
-  }, [userData, checkWalletAndUsername]);
+    const loadGameData = async () => {
+      if (userData && userData.accessToken) {
+        try {
+          const data = await fetchGameId(userData.accessToken);
+          
+          if (Array.isArray(data)) {
+            setGameData(data);
+            
+            const game = data.find(g => g.type === gameType);
+            if (game) {
+              console.log(`Found game with type ${gameType}:`, game);
+              setGameId(game.id);
+            } else {
+              console.warn(`No game found with type ${gameType}`);
+            }
+          }
+        } catch (error) {
+          console.error("Error loading game data:", error);
+        }
+      }
+    };
+    
+    loadGameData();
+  }, [userData, gameType]);
+
   useEffect(() => {
     if (state.screen === 'menu' || state.screen === 'difficulty') {
       gameSessionSaved.current = false;
     }
   }, [state.screen]);
 
-  const checkUsername = async () => {
-    try {
-      const response = await checkWalletAndUsername();
-      console.log(response)
-      if (response.exists && response.message) {
-        // Extract username from the message
-        // The message format is "Username exists for this wallet: {username}"
-        const usernameMatch = response.message.match(/Username exists for this wallet: (.+)$/);
-        if (usernameMatch && usernameMatch[1]) {
-          setUsernameResponse({...response, username: usernameMatch[1]});
-        }
-      } else {
-        setUsernameResponse(response);
-      }
-    } catch (error) {
-      console.error("Error checking username:", error);
-    }
-  };
+  
   useEffect(() => {
-    // Check if screen is mobile size
+    
+    if (state.screen === 'results' && !gameSessionSaved.current && 
+        userData && userData.accessToken) {
+          
+      
+      gameSessionSaved.current = true;
+      
+      const correctAnswers = state.answers.filter(a => a).length;
+      const totalQuestions = QUESTIONS_PER_GAME[state.difficulty];
+      const percentage = (correctAnswers / totalQuestions) * 100;
+      const tokens = Math.round(correctAnswers * difficultySettings[state.difficulty].tokenBase * state.multiplier);
+      const winStatus = percentage >=70;
+      
+      const gameSession: GameSession = {
+        gameId: gameId,
+        tokensEarned: tokens,
+        score: state.score,
+        accuracy: percentage,
+        streak: state.bestStreak,
+        winStatus:winStatus,
+      };
+
+      console.log("Saving game session",gameSession)
+      saveGameSession(gameSession);
+
+      if (gameStats) {
+        updateGameStats({
+          triviaStats: {
+            gamesPlayed: gameStats.triviaStats.gamesPlayed + 1,
+            tokensEarned: gameStats.triviaStats.tokensEarned + tokens,
+            highScore: Math.max(gameStats.triviaStats.highScore, state.score),
+            accuracy: (gameStats.triviaStats.accuracy + percentage) / 2,
+            bestStreak: Math.max(gameStats.triviaStats.bestStreak, state.bestStreak)
+          },
+          totalTokens: gameStats.totalTokens + tokens
+        });
+      }
+    }
+  }, [state.screen, userData, gameStats, state.answers, state.difficulty, state.multiplier, state.score, state.bestStreak, sessionStartTime]);
+  useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -547,7 +591,16 @@ const endGame = () => {
     }
   };
   const saveGameSession = async (gameSession: GameSession) => {
-    console.log(gameSession)
+    console.log('userData', userData)
+    try{
+      if(gameSession && userData&& userData.accessToken){
+        const response = await saveGameHistory(userData.accessToken, gameSession);
+        console.log(response)
+      }
+    } catch (error) {
+      console.error('Error saving game session:', error);
+    }
+
 
   }
   const renderMenu = () => (
@@ -789,36 +842,6 @@ const endGame = () => {
     const newHighScore = Math.max(state.highScore, correctAnswers);
     const isNewHighScore = newHighScore > state.highScore;
 
-  if (!gameSessionSaved.current && userData && userData.accessToken && usernameResponse && usernameResponse.exists && usernameResponse.username) {
-    gameSessionSaved.current = true; 
-    
-    const gameSession: GameSession = {
-      user_id: usernameResponse.username,
-      game_id: 'crypto-trivia',
-      tokens_earned: tokens,
-      score: state.score,
-      accuracy: percentage,
-      streak: state.bestStreak,
-      played_at: sessionStartTime
-    };
-
-    // Save to database
-    saveGameSession(gameSession);
-
-    // Update global game stats
-    if (gameStats) {
-      updateGameStats({
-        triviaStats: {
-          gamesPlayed: gameStats.triviaStats.gamesPlayed + 1,
-          tokensEarned: gameStats.triviaStats.tokensEarned + tokens,
-          highScore: Math.max(gameStats.triviaStats.highScore, state.score),
-          accuracy: (gameStats.triviaStats.accuracy + percentage) / 2,
-          bestStreak: Math.max(gameStats.triviaStats.bestStreak, state.bestStreak)
-        },
-        totalTokens: gameStats.totalTokens + tokens
-      });
-    }
-  }
     return (
       <div className="flex flex-col items-center justify-center h-full p-4">
         <div className="flex items-center justify-center w-20 h-20 mb-6 sm:w-24 sm:h-24 sm:mb-8 rounded-full bg-blue-500/20">
