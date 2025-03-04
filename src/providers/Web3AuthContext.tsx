@@ -438,6 +438,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
             const provider = new Web3Provider(kernelProvider);
             setProvider(provider)
             setSigner(provider.getSigner())
+            setChainId(chainId)
 
 
             const walletClient = createWalletClient({
