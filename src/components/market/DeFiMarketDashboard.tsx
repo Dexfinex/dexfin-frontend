@@ -110,8 +110,9 @@ const DeFiMarketDashboard: React.FC = () => {
     useGetDefillamaProtocols();
     //usegetdexvolume
     const { DexVolume: dexVolume } = useGetDexVolume();
+    console.log("dexVolume : ", dexVolume);
     const { ChainTVLdata: chainTvlData, isLoading } = useGetChainTVL();
-    const { Protocolsdata: protocolsData, ProtocolsisLoading } = useGetDefillamaProtocols();
+    const { Protocolsdata: protocolsData } = useGetDefillamaProtocols();
     const [topProtocols, setTopProtocols] = useState<any[]>([]);
     const { getDeFiStats, getChainTVL, setChainTVLs } = useDefillamaStore();
     const [tradeVolume, setTradeVolume] = useState<CexVolume | null>(null);

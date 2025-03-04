@@ -74,7 +74,14 @@ export const SocialFeedModal: React.FC<SocialFeedModalProps> = ({ isOpen, onClos
             Coming Soon
           </button>
         </div>
-
+        {/* Close button - positioned absolutely in the top-right corner for better visibility */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-white/20 rounded-lg transition-colors z-20"
+          aria-label="Close modal"
+        >
+          <X className="w-5 h-5 text-white" />
+        </button>
         {/* Left Navigation */}
         <div className="w-64 border-r border-white/10">
           <div className="p-4 space-y-2">

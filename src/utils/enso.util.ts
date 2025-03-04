@@ -55,39 +55,3 @@ export const generateEnSoExecuteAction = (
 export const getPrimaryAddress = ({ chainId, protocol }: { chainId: number, protocol: string }) => {
     return PRIMARY_ADDRESS_BY_PROTOCOL[protocol][chainId];
 }
-
-export const generateEnSoBorrowAction = ({ protocol, tokenIn, amountIn, tokenOut, amountOut, receiver }: { protocol: string, tokenIn: string[], amountIn: string[], tokenOut: string[], amountOut: string[], receiver: string }) => {
-    // aave-v3 eth->usdc
-    return [
-        {
-            "protocol": protocol,
-            "action": "deposit",
-            "args": {
-                "tokenIn": tokenIn.length === 1 ? tokenIn[0].toString() : tokenIn,
-                "tokenOut": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
-                "amountIn": amountIn.length === 1 ? amountIn[0].toString() : amountIn,
-                "primaryAddress": "0xD322A49006FC828F9B5B37Ab215F99B4E5caB19C",
-            },
-        },
-        {
-            "protocol": protocol,
-            "action": "borrow",
-            "args": {
-                "collateral": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-                "tokenOut": tokenOut.length === 1 ? tokenOut[0].toString() : tokenOut,
-                "amountOut": amountOut.length === 1 ? amountOut[0].toString() : amountOut,
-                "primaryAddress": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
-                "receiver": receiver
-            }
-        },
-        {
-            "protocol": "erc20",
-            "action": "transfer",
-            "args": {
-                "token": tokenOut.length === 1 ? tokenOut[0].toString() : tokenOut,
-                "receiver": receiver,
-                "amount": amountOut.length === 1 ? amountOut[0].toString() : amountOut
-            }
-        }
-    ];
-}
