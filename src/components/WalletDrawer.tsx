@@ -101,7 +101,7 @@ const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAdd
     return (
         <Popover>
             <PopoverTrigger>
-                <div className="flex items-center text-white/90 hover:text-white/70 gap-1">
+                <div className="flex items-center text-white/90 hover:text-white/70 gap-1 cursor-pointer">
                     <span>Account</span>
                     <Copy className="w-3 h-3" />
                 </div>
@@ -477,7 +477,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
         </div>
 
         {/* Assets List */}
-        <div className="flex-1 space-y-2 mt-4 sm:mt-5 overflow-y-auto ai-chat-scrollbar max-h-[calc(100vh-350px)] mx-4">
+        <div className="flex-1 space-y-2 mt-4 sm:mt-5 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-300px)] mx-4">
             {
                 isLoadingBalance ?
                     <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
@@ -490,13 +490,13 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                             <div className="flex items-center gap-3">
                                 <TokenChainIcon src={token.logo} alt={token.name} size={"lg"} chainId={Number(token.chain)} />
                                 <div className='flex flex-col justify-start items-start'>
-                                    <div className="font-medium">{token.symbol}</div>
-                                    <div className="text-sm text-white/60">
+                                    <div className="font-medium text-sm sm:text-md">{token.symbol}</div>
+                                    <div className="text-xs sm:text-sm text-white/60">
                                         {`${formatNumberByFrac(token.balance)} ${token.symbol}`}
                                     </div>
                                 </div>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right text-sm md:text-md">
                                 <span>{formatUsdValue(token.usdValue)}</span>
                                 {/* <div className="text-sm text-green-400">
                                 {formatApy(0)} APY
@@ -561,29 +561,29 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
             {/* DeFi Overview */}
             <div className="grid grid-cols-3 gap-4">
                 <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-sm text-white/60">Total Value Locked</div>
-                    <div className="text-2xl font-bold mt-1">
+                    <div className="text-xs sm:text-sm text-white/60">Total Value Locked</div>
+                    <div className="text-lg sm:text-2xl font-bold mt-1">
                         {formatUsdValue(mockDeFiStats.totalValueLocked)}
                     </div>
-                    <div className="text-sm text-white/60 mt-1">
+                    <div className="text-xs sm:text-sm text-white/60 mt-1">
                         {mockDeFiStats.distribution.lending}% Lending
                     </div>
                 </div>
                 <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-sm text-white/60">Daily Yield</div>
-                    <div className="text-2xl font-bold mt-1">
+                    <div className="text-xs sm:text-sm text-white/60">Daily Yield</div>
+                    <div className="text-lg sm:text-2xl font-bold mt-1">
                         {formatUsdValue(mockDeFiStats.dailyYield)}
                     </div>
-                    <div className="text-sm text-green-400 mt-1">
+                    <div className="text-xs sm:text-sm text-green-400 mt-1">
                         {formatApy(mockDeFiStats.averageApy)} APY
                     </div>
                 </div>
                 <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-sm text-white/60">Risk Level</div>
-                    <div className="text-2xl font-bold mt-1">
+                    <div className="text-xs sm:text-sm text-white/60">Risk Level</div>
+                    <div className="text-lg sm:text-2xl font-bold mt-1">
                         {mockDeFiStats.riskLevel}
                     </div>
-                    <div className="text-sm text-white/60 mt-1">
+                    <div className="text-xs sm:text-sm text-white/60 mt-1">
                         {mockDeFiStats.distribution.borrowing}% Borrowed
                     </div>
                 </div>
@@ -604,21 +604,21 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                                     className="w-8 h-8"
                                 />
                                 <div>
-                                    <div className="font-medium">{position.protocol}</div>
-                                    <div className="text-sm text-white/60">{position.type}</div>
+                                    <div className="text-sm sm:text-md font-medium">{position.protocol}</div>
+                                    <div className="text-xs sm:text-sm text-white/60">{position.type}</div>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <div className="text-lg font-medium">
+                                <div className="text-md sm:text-lg font-medium">
                                     {formatUsdValue(position.value)}
                                 </div>
-                                <div className="text-sm text-green-400">
+                                <div className="text-xs sm:text-sm text-green-400">
                                     {formatApy(position.apy)} APY
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-4 text-xs sm:text-sm">
                             <div>
                                 <span className="text-white/60">Amount:</span>{' '}
                                 {`${formatNumberByFrac(position.amount)} ${position.token.symbol}`}
