@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, GripVertical } from 'lucide-react';
 import { DndContext, DragEndEvent, useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { NewsWidget } from '../widgets/NewsWidget';
 import { TwitterWidget } from '../widgets/TwitterWidget';
 import { TrendingWidget } from '../widgets/TrendingWidget';
+import { TransactionWidget } from '../widgets/TransactionWidget';
 import { AddWidgetModal } from './AddWidgetModal';
 
 interface Widget {
   id: string;
-  type: 'news' | 'twitter' | 'trending';
+  type: 'News' | 'Twitter' | 'Trending' | 'Whale Transactions';
   position: { x: number; y: number };
 }
 
@@ -18,15 +19,26 @@ interface DraggableWidgetProps {
   type: string;
   position: { x: number; y: number };
   onRemove: (id: string) => void;
+  isGridMode: boolean;
   children: React.ReactNode;
 }
 
-const DraggableWidget: React.FC<DraggableWidgetProps> = ({ id, type, position, onRemove, children }) => {
+const DraggableWidget: React.FC<DraggableWidgetProps> = ({
+  id,
+  type,
+  position,
+  onRemove,
+  isGridMode,
+  children
+}) => {
+  // Only enable dragging in desktop free-positioning mode
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id,
+    disabled: isGridMode,
   });
 
-  const style = transform ? {
+  // Style based on mode
+  const style = !isGridMode ? (transform ? {
     transform: CSS.Transform.toString(transform),
     position: 'absolute',
     left: position.x,
@@ -38,7 +50,7 @@ const DraggableWidget: React.FC<DraggableWidgetProps> = ({ id, type, position, o
     left: position.x,
     top: position.y,
     width: 400
-  };
+  }) : {};
 
   return (
     <div
@@ -47,12 +59,12 @@ const DraggableWidget: React.FC<DraggableWidgetProps> = ({ id, type, position, o
       className="bg-white/5 rounded-xl"
     >
       <div className="flex items-center justify-between p-3 border-b border-white/10">
-        <div 
-          className="flex items-center gap-2 cursor-move" 
-          {...attributes} 
-          {...listeners}
+        <div
+          className={`flex items-center gap-2 ${!isGridMode ? 'cursor-move' : ''}`}
+          {...(!isGridMode ? attributes : {})}
+          {...(!isGridMode ? listeners : {})}
         >
-          <GripVertical className="w-4 h-4 text-white/40" />
+          {!isGridMode && <GripVertical className="w-4 h-4 text-white/40" />}
           <span className="font-medium">{type}</span>
         </div>
         <button
@@ -72,16 +84,46 @@ const DraggableWidget: React.FC<DraggableWidgetProps> = ({ id, type, position, o
 export const MarketFeed: React.FC = () => {
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [showAddWidget, setShowAddWidget] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const addWidget = (type: 'news' | 'twitter' | 'trending') => {
+  // Detect if we're on mobile or desktop
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', checkMobile);
+    checkMobile(); // Initial check
+
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Get default position based on widget type
+  const getDefaultPosition = (type: 'News' | 'Twitter' | 'Trending' | 'Whale Transactions') => {
+    switch (type) {
+      case 'News':
+        return { x: 20, y: 20 };
+      case 'Twitter':
+        return { x: 430, y: 20 };
+      case 'Trending':
+        return { x: 840, y: 20 };
+      case 'Whale Transactions':
+        return { x: 1250, y: 20 };
+      default:
+        return { x: 20, y: 20 };
+    }
+  };
+
+  const addWidget = (type: 'News' | 'Twitter' | 'Trending' | 'Whale Transactions') => {
+    const position = getDefaultPosition(type);
+    
     const newWidget: Widget = {
       id: Math.random().toString(36).substring(7),
       type,
-      position: {
-        x: 20 + (widgets.length * 20), // Offset each new widget
-        y: 20 + (widgets.length * 20)
-      }
+      position
     };
+    
     setWidgets(prev => [...prev, newWidget]);
   };
 
@@ -92,9 +134,9 @@ export const MarketFeed: React.FC = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, delta } = event;
     const widget = widgets.find(w => w.id === active.id);
-    
+
     if (widget) {
-      setWidgets(prev => prev.map(w => 
+      setWidgets(prev => prev.map(w =>
         w.id === active.id ? {
           ...w,
           position: {
@@ -103,6 +145,57 @@ export const MarketFeed: React.FC = () => {
           }
         } : w
       ));
+    }
+  };
+
+  const getWidgetComponent = (type: string) => {
+    switch (type) {
+      case 'News': return <NewsWidget />;
+      case 'Twitter': return <TwitterWidget />;
+      case 'Trending': return <TrendingWidget />;
+      case 'Whale Transactions': return <TransactionWidget />;
+      default: return null;
+    }
+  };
+
+  // Render widgets based on device
+  const renderWidgets = () => {
+    if (isMobile) {
+      // Mobile vertical stack layout
+      return (
+        <div className="flex flex-col space-y-4">
+          {widgets.map(widget => (
+            <DraggableWidget
+              key={widget.id}
+              id={widget.id}
+              type={widget.type}
+              position={widget.position}
+              onRemove={removeWidget}
+              isGridMode={true}
+            >
+              {getWidgetComponent(widget.type)}
+            </DraggableWidget>
+          ))}
+        </div>
+      );
+    } else {
+      // Desktop draggable layout with fixed positions
+      return (
+        <DndContext onDragEnd={handleDragEnd}>
+          {widgets.map(widget => (
+            <DraggableWidget
+              key={widget.id}
+              id={widget.id}
+              type={widget.type}
+              position={widget.position}
+              onRemove={removeWidget}
+              isGridMode={false}
+            >
+              {getWidgetComponent(widget.type)}
+            </DraggableWidget>
+          ))}
+        </DndContext>
+      );
     }
   };
 
@@ -118,22 +211,11 @@ export const MarketFeed: React.FC = () => {
         </button>
       </div>
 
-      <div className="relative h-[calc(100vh-200px)] overflow-auto ai-chat-scrollbar">
-        <DndContext onDragEnd={handleDragEnd}>
-          {widgets.map(widget => (
-            <DraggableWidget
-              key={widget.id}
-              id={widget.id}
-              type={widget.type}
-              position={widget.position}
-              onRemove={removeWidget}
-            >
-              {widget.type === 'news' && <NewsWidget />}
-              {widget.type === 'twitter' && <TwitterWidget />}
-              {widget.type === 'trending' && <TrendingWidget />}
-            </DraggableWidget>
-          ))}
-        </DndContext>
+      <div
+        ref={containerRef}
+        className={`relative ${!isMobile ? 'h-[calc(100vh-200px)]' : ''} overflow-auto overflow-x-scroll ai-chat-scrollbar`}
+      >
+        {renderWidgets()}
       </div>
 
       <AddWidgetModal

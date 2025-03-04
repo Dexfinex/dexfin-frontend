@@ -47,7 +47,7 @@ export const StarMenu: React.FC = () => {
                                             className={`w-4 h-4 transition-colors ${
                                                 item.isStarred
                                                     ? 'text-yellow-400'
-                                                    : 'text-white/40 opacity-0 group-hover:opacity-100'
+                                                    : 'text-white/40  group-hover:opacity-100'
                                             }`}
                                         />
                                     </button>

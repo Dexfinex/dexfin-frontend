@@ -478,10 +478,12 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
 
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-0">
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative w-full glass border border-black/10 dark:border-white/10 shadow-lg overflow-hidden transition-all duration-300 ease-in-out ${isFullscreen ? "h-full rounded-none" : "max-w-7xl h-[90vh] rounded-xl"
+        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
+          ? 'w-full h-full rounded-none'
+          : 'w-[90%] h-[90%] rounded-xl'
           }`}
       >
         {/* Header */}
@@ -506,7 +508,9 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
               </svg>
             </button>
             <button onClick={toggleFullscreen} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              {isFullscreen ?
+                <Minimize2 className="w-4 h-4" /> :
+                <Maximize2 className="w-4 h-4" />}
             </button>
             <button onClick={onClose} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
               <X className="w-4 h-4" />

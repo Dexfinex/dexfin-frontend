@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  Trophy, X, Maximize2, Minimize2, Star, Clock, 
+import {
+  Trophy, X, Maximize2, Minimize2, Star, Clock,
   Award, Target, Gift, ChevronRight, TrendingUp,
   Lock, CheckCircle2, Info
 } from 'lucide-react';
@@ -16,7 +16,7 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeTab, setActiveTab] = useState<'status' | 'progress' | 'badges' | 'challenges' | 'perks'>('status');
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
-  
+
   const { rewards } = useStore();
 
   const toggleFullscreen = () => {
@@ -185,17 +185,15 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
           {['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].map((tier, index) => {
             const isCurrentTier = tier === rewards.currentTier;
             const isPastTier = index < ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].indexOf(rewards.currentTier);
-            
+
             return (
               <div key={tier} className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                  isCurrentTier ? 'bg-blue-500' :
-                  isPastTier ? 'bg-green-500/20' : 'bg-white/10'
-                }`}>
-                  <Trophy className={`w-6 h-6 ${
-                    isCurrentTier ? 'text-white' :
-                    isPastTier ? 'text-green-400' : 'text-white/40'
-                  }`} />
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isCurrentTier ? 'bg-blue-500' :
+                    isPastTier ? 'bg-green-500/20' : 'bg-white/10'
+                  }`}>
+                  <Trophy className={`w-6 h-6 ${isCurrentTier ? 'text-white' :
+                      isPastTier ? 'text-green-400' : 'text-white/40'
+                    }`} />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -209,19 +207,18 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
                   <div className="flex items-center gap-2 mt-1">
                     <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
                       <div
-                        className={`h-full transition-all ${
-                          isPastTier ? 'bg-green-500' :
-                          isCurrentTier ? 'bg-blue-500' : 'bg-white/20'
-                        }`}
+                        className={`h-full transition-all ${isPastTier ? 'bg-green-500' :
+                            isCurrentTier ? 'bg-blue-500' : 'bg-white/20'
+                          }`}
                         style={{
                           width: isPastTier ? '100%' :
-                                 isCurrentTier ? `${(rewards.xp % 10000) / 100}%` : '0%'
+                            isCurrentTier ? `${(rewards.xp % 10000) / 100}%` : '0%'
                         }}
                       />
                     </div>
                     <span className="text-sm text-white/60">
                       {isPastTier ? '10,000' :
-                       isCurrentTier ? `${rewards.xp % 10000}/10,000` : '0/10,000'}
+                        isCurrentTier ? `${rewards.xp % 10000}/10,000` : '0/10,000'}
                     </span>
                   </div>
                 </div>
@@ -417,8 +414,8 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
       {['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].map((tier) => {
         const tierPerks = rewards.perks.filter(perk => perk.tier === tier);
         const isCurrent = rewards.currentTier === tier;
-        const isUnlocked = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].indexOf(rewards.currentTier) >= 
-                          ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].indexOf(tier);
+        const isUnlocked = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].indexOf(rewards.currentTier) >=
+          ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].indexOf(tier);
 
         return (
           <div key={tier} className="bg-white/5 rounded-xl p-6">
@@ -444,24 +441,20 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
               {tierPerks.map(perk => (
                 <div
                   key={perk.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg ${
-                    isUnlocked ? 'bg-white/10' : 'bg-white/5'
-                  }`}
+                  className={`flex items-center gap-3 p-3 rounded-lg ${isUnlocked ? 'bg-white/10' : 'bg-white/5'
+                    }`}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    isUnlocked ? 'bg-blue-500/20' : 'bg-white/10'
-                  }`}>
-                    <Gift className={`w-5 h-5 ${
-                      isUnlocked ? 'text-blue-400' : 'text-white/40'
-                    }`} />
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isUnlocked ? 'bg-blue-500/20' : 'bg-white/10'
+                    }`}>
+                    <Gift className={`w-5 h-5 ${isUnlocked ? 'text-blue-400' : 'text-white/40'
+                      }`} />
                   </div>
                   <div>
                     <div className={`font-medium ${!isUnlocked && 'text-white/40'}`}>
                       {perk.name}
                     </div>
-                    <div className={`text-sm ${
-                      isUnlocked ? 'text-white/60' : 'text-white/40'
-                    }`}>
+                    <div className={`text-sm ${isUnlocked ? 'text-white/60' : 'text-white/40'
+                      }`}>
                       {perk.description}
                     </div>
                   </div>
@@ -483,12 +476,26 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${
-          isFullscreen
+        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
             ? 'w-full h-full rounded-none'
             : 'w-[90%] h-[90%] rounded-xl'
-        }`}
+          }`}
       >
+        {/* Glass Effect Overlay - Coming Soon Message */}
+        <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl'>
+          <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm">
+            Coming Soon
+          </button>
+          {/* Close button - positioned absolutely in the top-right corner for better visibility */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-white/20 rounded-lg transition-colors z-20"
+            aria-label="Close modal"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+        </div>
+
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -520,45 +527,40 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
           <div className="flex items-center gap-2 p-4 border-b border-white/10">
             <button
               onClick={() => setActiveTab('status')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                activeTab === 'status' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'status' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               <Star className="w-4 h-4" />
               <span>Status</span>
             </button>
             <button
               onClick={() => setActiveTab('progress')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                activeTab === 'progress' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'progress' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               <TrendingUp className="w-4 h-4" />
               <span>Progress</span>
             </button>
             <button
               onClick={() => setActiveTab('badges')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                activeTab === 'badges' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'badges' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               <Award className="w-4 h-4" />
               <span>Badges</span>
             </button>
             <button
               onClick={() => setActiveTab('challenges')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                activeTab === 'challenges' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'challenges' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               <Target className="w-4 h-4" />
               <span>Challenges</span>
             </button>
             <button
               onClick={() => setActiveTab('perks')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                activeTab === 'perks' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'perks' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               <Gift className="w-4 h-4" />
               <span>Perks</span>

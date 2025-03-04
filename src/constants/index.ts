@@ -23,9 +23,9 @@ export const mapRpcUrls: Record<number, string> = {
 
 const BASE_HOST_DOMAIN = 'dexfinv3-backend-production.up.railway.app'
 
-export const COINGECKO_BASE_URL =`https://${BASE_HOST_DOMAIN}/coingecko`
+export const COINGECKO_BASE_URL = `https://${BASE_HOST_DOMAIN}/coingecko`
 
-export const BIRDEYE_BASE_URL =`https://${BASE_HOST_DOMAIN}/birdeye`
+export const BIRDEYE_BASE_URL = `https://${BASE_HOST_DOMAIN}/birdeye`
 
 export const DEFILLAMA_BASE_URL = `https://${BASE_HOST_DOMAIN}/defillama`;
 
@@ -41,13 +41,15 @@ export const OPENAI_BASE_URL = `https://${BASE_HOST_DOMAIN}/openai`;
 
 export const ENSO_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/enso';
 
-export const CALENDAR_BASE_URL='https://dexfinv3-backend-production.up.railway.app/calendar';
+export const CALENDAR_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/calendar';
 
-export const USERAUTH_BASE_URL= "https://dexfinv3-backend-production.up.railway.app/graphql";
+export const USERAUTH_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/graphql";
 
-export const USERNAMEAUTH_BASE_URL="https://dexfinv3-backend-production.up.railway.app/auth";
+export const USERNAMEAUTH_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/auth";
 
-export const TECHNICALANALYSIS_BASE_URL= "https://dexfinv3-backend-production.up.railway.app/technical";
+export const TECHNICALANALYSIS_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/technical";
+
+export const COINGECKO_URL = "https://api.coingecko.com/api/v3";
 
 export const GAME_SYSTEM_BASEURL= "https://dexfinv3-backend-production.up.railway.app/game-system";
 

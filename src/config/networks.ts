@@ -5,7 +5,7 @@ import {
     aurora, ronin, boba, cronos, telos, metis, ubiq, velas,
     klaytn, nahmii, meter, theta, syscoin,
     moonbeam, astar, canto, zksync, kava,
-    base, linea, Chain
+    base, linea, Chain, sepolia
 } from "viem/chains";
 import { TokenType } from "../types/swap.type.ts";
 import { NULL_ADDRESS } from "../constants";
@@ -211,7 +211,8 @@ export const mapChainId2ViemChain: Record<number, Chain> = {
     324: zksync,
     2222: kava,
     8453: base,
-    59144: linea
+    59144: linea,
+    [sepolia.id]: sepolia,
 };
 
 export const mapPopularTokens: Record<number, TokenType[]> = {

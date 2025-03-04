@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { 
-  X, 
-  LayoutGrid, 
-  Palette, 
-  Newspaper, 
-  LineChart, 
-  Gauge, 
-  RefreshCw, 
-  DollarSign, 
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  LayoutGrid,
+  Palette,
+  Newspaper,
+  LineChart,
+  Gauge,
+  RefreshCw,
+  DollarSign,
   MessageSquare,
   TrendingUp,
   Twitter,
@@ -39,48 +39,74 @@ const widgetConfigs = [
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('widgets');
   const { widgetVisibility, toggleWidgetVisibility, resetWidgetVisibility } = useStore();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if the screen is mobile sized
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const mobile = window.innerWidth < 640;
+      setIsMobile(mobile);
+      
+      // If on mobile and 'widgets' tab is selected, switch to 'appearance'
+      if (mobile && activeTab === 'widgets') {
+        setActiveTab('appearance');
+      }
+    };
+    
+    // Initial check
+    checkScreenSize();
+    
+    // Add event listener
+    window.addEventListener('resize', checkScreenSize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, [activeTab]);
 
   if (!isOpen) return null;
 
   const tabs = [
-    { id: 'widgets', label: 'Widgets', icon: LayoutGrid },
-    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'widgets', label: 'Widgets', icon: LayoutGrid, disabled: isMobile },
+    { id: 'appearance', label: 'Appearance', icon: Palette, disabled: false },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="glass w-full max-w-5xl rounded-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="glass w-full max-w-5xl rounded-xl flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <h2 className="text-xl font-semibold">Settings</h2>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        
-        <div className="flex">
-          {/* Sidebar */}
-          <div className="w-56 p-4 border-r border-white/10">
+
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+          {/* Sidebar - stacks on mobile, side by side on larger screens */}
+          <div className="md:w-56 p-4 md:border-r border-white/10 flex md:flex-col overflow-x-auto md:overflow-x-visible">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as SettingsTab)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                onClick={() => !tab.disabled && setActiveTab(tab.id as SettingsTab)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors whitespace-nowrap mr-2 md:mr-0 md:w-full md:mb-2 ${
                   activeTab === tab.id ? 'bg-white/10' : 'hover:bg-white/5'
-                }`}
+                } ${tab.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                disabled={tab.disabled}
               >
-                <tab.icon className="w-5 h-5" />
+                <tab.icon className="w-5 h-5 flex-shrink-0" />
                 <span>{tab.label}</span>
               </button>
             ))}
           </div>
-          {/* Content */}
-          <div className="flex-1 p-6 max-h-[calc(100vh-200px)] overflow-y-auto settings-scrollbar">
-            {activeTab === 'widgets' ? (
+
+          {/* Content - scrollable container */}
+          <div className="flex-1 p-4 md:p-6 overflow-y-auto settings-scrollbar">
+            {activeTab === 'widgets' && !isMobile ? (
               <>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
                   <div>
                     <h3 className="text-lg font-medium">Widget Visibility</h3>
                     <p className="text-sm text-white/60">
@@ -89,35 +115,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   </div>
                   <button
                     onClick={resetWidgetVisibility}
-                    className="px-3 py-1 text-sm rounded-lg hover:bg-white/10 transition-colors"
+                    className="px-3 py-1 text-sm rounded-lg hover:bg-white/10 transition-colors self-start md:self-center"
                   >
                     Reset All
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {widgetConfigs.map(({ type, icon: Icon, description, comingSoon }) => (
                     <div
                       key={type}
-                      className="flex items-center justify-between p-4 rounded-lg glass"
+                      className="flex items-center justify-between p-3 md:p-4 rounded-lg glass"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-white/5">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="p-2 rounded-lg bg-white/5 flex-shrink-0">
                           <Icon className="w-5 h-5" />
                         </div>
-                        <div>
-                          <h4 className="font-medium">{type}</h4>
-                          {comingSoon && (
+                        <div className="min-w-0">
+                          <h4 className="font-medium truncate">{type}</h4>
+                          {comingSoon ? (
                             <span className="text-xs text-blue-400 font-medium">Coming soon</span>
+                          ) : (
+                            <p className="text-sm text-white/60 truncate">{description}</p>
                           )}
-                          {/* <p className="text-sm text-white/60">{description}</p> */}
                         </div>
                       </div>
                       <button
                         onClick={() => !comingSoon && toggleWidgetVisibility(type)}
-                        className={`w-12 h-6 rounded-full transition-colors ${
+                        className={`w-12 h-6 rounded-full transition-colors ml-2 flex-shrink-0 ${
                           widgetVisibility[type] && !comingSoon ? 'bg-blue-500' : 'bg-white/10'
                         } relative ${comingSoon ? 'opacity-50 cursor-not-allowed' : ''}`}
                         disabled={comingSoon}
+                        aria-label={`Toggle ${type}`}
                       >
                         <div
                           className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${

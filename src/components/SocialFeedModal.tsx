@@ -1,11 +1,11 @@
-import React, {useState} from 'react';
-import {BarChart2, Bell, Maximize2, MessageSquare, Minimize2, Search, TrendingUp, X} from 'lucide-react';
-import {LeaderboardContent} from './social/components/LeaderboardContent';
-import {FeedContent} from './social/components/FeedContent';
-import {RallyingContent} from './social/components/RallyingContent';
-import {ExploreContent} from './social/components/ExploreContent';
-import {mockMints, mockRallyingTokens, mockSwaps, mockTraders, mockVirtuals} from './social/data/mockData';
-import {useStore} from '../store/useStore';
+import React, { useState } from 'react';
+import { BarChart2, Bell, Maximize2, MessageSquare, Minimize2, Search, TrendingUp, X } from 'lucide-react';
+import { LeaderboardContent } from './social/components/LeaderboardContent';
+import { FeedContent } from './social/components/FeedContent';
+import { RallyingContent } from './social/components/RallyingContent';
+import { ExploreContent } from './social/components/ExploreContent';
+import { mockMints, mockRallyingTokens, mockSwaps, mockTraders, mockVirtuals } from './social/data/mockData';
+import { useStore } from '../store/useStore';
 
 interface SocialFeedModalProps {
   isOpen: boolean;
@@ -24,8 +24,8 @@ export const SocialFeedModal: React.FC<SocialFeedModalProps> = ({ isOpen, onClos
   };
 
   const handleFollow = (traderId: string) => {
-    setFollowedTraders(prev => 
-      prev.includes(traderId) 
+    setFollowedTraders(prev =>
+      prev.includes(traderId)
         ? prev.filter(id => id !== traderId)
         : [...prev, traderId]
     );
@@ -63,56 +63,64 @@ export const SocialFeedModal: React.FC<SocialFeedModalProps> = ({ isOpen, onClos
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out flex ${
-          isFullscreen
-            ? 'w-full h-full rounded-none'
-            : 'w-[90%] h-[90%] rounded-xl'
-        }`}
+        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out flex ${isFullscreen
+          ? 'w-full h-full rounded-none'
+          : 'w-[90%] h-[90%] rounded-xl'
+          }`}
       >
+        {/* Glass Effect Overlay - Coming Soon Message */}
+        <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl'>
+          <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm">
+            Coming Soon
+          </button>
+        </div>
+        {/* Close button - positioned absolutely in the top-right corner for better visibility */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-white/20 rounded-lg transition-colors z-20"
+          aria-label="Close modal"
+        >
+          <X className="w-5 h-5 text-white" />
+        </button>
         {/* Left Navigation */}
         <div className="w-64 border-r border-white/10">
           <div className="p-4 space-y-2">
             <button
               onClick={() => setActiveNavItem('feed')}
-              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                activeNavItem === 'feed' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeNavItem === 'feed' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               <MessageSquare className="w-5 h-5" />
               <span>Feed</span>
             </button>
             <button
               onClick={() => setActiveNavItem('rallying')}
-              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                activeNavItem === 'rallying' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeNavItem === 'rallying' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               <TrendingUp className="w-5 h-5" />
               <span>Rallying</span>
             </button>
             <button
               onClick={() => setActiveNavItem('explore')}
-              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                activeNavItem === 'explore' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeNavItem === 'explore' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               <Search className="w-5 h-5" />
               <span>Explore</span>
             </button>
             <button
               onClick={() => setActiveNavItem('notifications')}
-              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                activeNavItem === 'notifications' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeNavItem === 'notifications' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               <Bell className="w-5 h-5" />
               <span>Notifications</span>
             </button>
             <button
               onClick={() => setActiveNavItem('leaderboard')}
-              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                activeNavItem === 'leaderboard' ? 'bg-white/10' : 'hover:bg-white/5'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeNavItem === 'leaderboard' ? 'bg-white/10' : 'hover:bg-white/5'
+                }`}
             >
               <BarChart2 className="w-5 h-5" />
               <span>Leaderboard</span>

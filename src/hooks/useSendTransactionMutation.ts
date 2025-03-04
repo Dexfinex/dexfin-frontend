@@ -18,11 +18,11 @@ interface mutationDataParams {
 }
 
 export const useSendTransactionMutation = () => {
-  const { chainId } = useContext(Web3AuthContext);
+  const { chainId, signer } = useContext(Web3AuthContext);
 
   return useMutation({
     mutationFn: async (data: mutationDataParams) => {
-      if (!data.sendAddress || !data.signer || !data.sendAmount) {
+      if (!data.sendAddress || !signer || !data.sendAmount) {
         throw new Error("sendAddress, signer, sendAmount must be provided");
       }
 
@@ -32,12 +32,12 @@ export const useSendTransactionMutation = () => {
         const amountValue = ethers.utils.parseEther(Number(data.sendAmount).toFixed(8).replace(/\.?0+$/,""));
 
         const tx = {
-          to: data.tokenAddress,
+          to: data.sendAddress,
           gasPrice: data.gasPrice,
           gasLimit: data.gasLimit, // Example static gas limit
           value: amountValue,
         };
-        const transactionResponse = await data.signer?.sendTransaction(tx);
+        const transactionResponse = await signer?.sendTransaction(tx);
         const receipt = await transactionResponse.wait();
         console.log("Transaction successful:", receipt);
 
@@ -46,7 +46,7 @@ export const useSendTransactionMutation = () => {
         const tokenContract = new ethers.Contract(
           data.tokenAddress as string,
           erc20Abi,
-          data.signer
+          signer
         );
 
         const decimals = await tokenContract.decimals();
@@ -67,7 +67,7 @@ export const useSendTransactionMutation = () => {
           value: 0n,
         };
 
-        const transactionResponse = await data.signer?.sendTransaction(tx);
+        const transactionResponse = await data.signer!.sendTransaction(tx);
         const receipt = await transactionResponse.wait();
         console.log("Transaction successful:", receipt);
         return receipt;

@@ -1,9 +1,10 @@
-import {coinGeckoApi} from "./api.service.ts";
-import {CoinData, CoinGeckoToken, Ganiner, Loser, SearchResult, TrendingCoin} from "../types";
-import {ChartDataPoint} from "../types/swap.type.ts";
-import {TokenTypeB} from "../types/cart.type.ts";
+import { coinGeckoApi } from "./api.service.ts";
+import { CoinData, CoinGeckoToken, Ganiner, Loser, SearchResult, TrendingCoin } from "../types";
+import { ChartDataPoint } from "../types/swap.type.ts";
+import { TokenTypeB } from "../types/cart.type.ts";
 import axios from "axios";
-import {MarketCapToken} from "../components/market/MarketCap.tsx";
+import { MarketCapToken } from "../components/market/MarketCap.tsx";
+import { COINGECKO_URL } from "../constants/index.ts";
 
 interface CoinGeckoStableToken {
     id: string;
@@ -156,7 +157,7 @@ export const coingeckoService = {
     },
     getCoinGeckoIdFrom: async (tokenAddress: string, chainId: number): Promise<string> => {
         try {
-            const {data} = await coinGeckoApi.get<string>(`/token-id/${chainId}?addresses=${tokenAddress}`);
+            const { data } = await coinGeckoApi.get<string>(`/token-id/${chainId}?addresses=${tokenAddress}`);
             return data;
         } catch (e) {
             console.log(e);
@@ -165,8 +166,26 @@ export const coingeckoService = {
     },
     getTokenPrices: async (chainId: number, address: (string | null)[]): Promise<Record<string, string>> => {
         try {
-            const response = await coinGeckoApi.get<Record<string, string>>(`/prices/${chainId}?addresses=${address}`);
-            return response.data;
+            /**
+             * @dev
+             * Base chain native token price returns null
+             * get weth token price
+            **/
+            if (chainId === 8453) {
+                const nativeTokenAddress = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+                const wrapNativeTokenAddress = "0x4200000000000000000000000000000000000006"
+                const nativeIndex = address.findIndex(item => item === nativeTokenAddress);
+                const addresses = address.map(item => item?.toLowerCase() == nativeTokenAddress ? wrapNativeTokenAddress : item)
+
+                const response = await coinGeckoApi.get<Record<string, string>>(`/prices/${chainId}?addresses=${addresses}`);
+                if (nativeIndex !== -1) {
+                    response.data[nativeTokenAddress] = response.data[wrapNativeTokenAddress]
+                }
+                return response.data;
+            } else {
+                const response = await coinGeckoApi.get<Record<string, string>>(`/prices/${chainId}?addresses=${address}`);
+                return response.data;
+            }
         } catch (e) {
             console.log(e);
         }
@@ -234,5 +253,15 @@ export const coingeckoService = {
             return [];
         }
     },
+    getInfo: async (tokenId: string): Promise<any> => {
+        try {
+            const response = await axios.get(`${COINGECKO_URL}/coins/${tokenId}`);
 
+            return response.data;
+        } catch (err) {
+            console.log('get token info err: ', err);
+        }
+
+        return null;
+    }
 }
