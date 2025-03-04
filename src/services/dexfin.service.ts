@@ -158,5 +158,47 @@ export const dexfinv3Service = {
       console.log("Failed to fetch evm defi protocols:", error);
       throw error;
     }
+  },
+
+  getAllWalletTokens: async (evmAddress: string, solAddress: string) => {
+    let result: EvmWalletBalanceResponseType[] = [];
+
+    try {
+      const { data } = await dexfinv3Api.get<any[]>(
+        `/wallet/tokens?evmAddress=${evmAddress}&solAddress=${solAddress}`
+      );
+
+      if (data.length > 0) {
+        data.forEach(token => {
+          if (token.network.id == "solana") {
+            result.push({
+              tokenAddress: token.mint,
+              symbol: token.symbol,
+              name: token.name,
+              logo: token.logo,
+              thumbnail: "",
+              decimals: token.decimals,
+              balance: token.amountRaw,
+              balanceDecimal: Number(token.amount),
+              usdPrice: token.usdValue,
+              usdValue: token.usdPrice,
+              chain: "0x384",
+              network: token.network,
+              tokenId: token.tokenId
+            } as EvmWalletBalanceResponseType)
+          } else {
+            result.push({
+              ...token,
+            })
+          }
+        })
+      }
+
+      return result
+    } catch (error) {
+      console.log("Failed to fetch evm wallet balance:", error);
+    }
+
+    return [];
   }
 };

@@ -6,13 +6,14 @@ import { TokenChainIcon } from "./swap/components/TokenIcon";
 import { CheckCircle, Copy, Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, ArrowLeft } from "lucide-react";
 import { mockDeFiPositions, mockDeFiStats, formatUsdValue, formatApy, getHealthFactorColor, } from '../lib/wallet';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { shrinkAddress, formatNumberByFrac } from "../utils/common.util";
+import { shrinkAddress, formatNumberByFrac, formatNumber } from "../utils/common.util";
 import { useWalletBalance } from "../hooks/useBalance";
 import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStore";
 import { SendDrawer } from "./wallet/SendDrawer";
 import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
 import { Skeleton, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
+import { coingeckoService } from "../services/coingecko.service";
 
 interface WalletDrawerProps {
     isOpen: boolean,
@@ -23,8 +24,6 @@ interface AssetInfoProps {
     tokenBalance: TokenBalance;
     setTokenBalance: (token: TokenBalance | null) => void;
 }
-
-const aboutText = "The text surrounded by the component will be truncated. Anything surrounded by the component could be evaluated as text. The component react-show-more-text/ShowMoreText is fork of react-show-more/ShowMore, applied improvements, added onClick event, works with React 16.x.x, React 18.x.x, Next.Js 13.3.x and upper.";
 
 // Mock price data (replace with API data)
 const mockData = {
@@ -142,13 +141,69 @@ const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAdd
 export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance }) => {
     const [selectedRange, setSelectedRange] = useState<keyof typeof mockData>("1D");
     const [chartData, setChartData] = useState(mockData[selectedRange]);
+    const [info, setInfo] = useState<any>(null);
 
     useEffect(() => {
         setChartData(mockData[selectedRange]); // Replace this with an API call if needed
     }, [selectedRange]);
 
+    useEffect(() => {
+        if (tokenBalance.tokenId) {
+            getTokenInfo(tokenBalance)
+        }
+    }, [tokenBalance])
+
+    const getTokenInfo = async (token: TokenBalance) => {
+        const info = await coingeckoService.getInfo(token.tokenId)
+        console.log('info = ', info)
+        setInfo(info)
+    }
+
     const handleBack = () => {
         setTokenBalance(null)
+    }
+
+    const renderSocialBtns = (links: any) => {
+        let discordUrl = ""
+
+        if (links.chat_url.length > 0) {
+            discordUrl = links.chat_url.find((url: string) => url.includes("discord"))
+        }
+
+        return <div className="flex gap-2">
+            {links.homepage[0] && <a
+                className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
+                target="_blank"
+                href={links.homepage[0]}
+            >
+                Websites
+            </a>}
+
+            {links.twitter_screen_name && <a
+                className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
+                target="_blank"
+                href={`https://x.com/${links.twitter_screen_name}`}
+            >
+                X
+            </a>}
+
+            {links.telegram_channel_identifier && <a
+                className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
+                target="_blank"
+                href={`https://t.me/${links.telegram_channel_identifier}`}
+            >
+                Telegram
+            </a>}
+
+
+            {discordUrl && <a
+                className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
+                target="_blank"
+                href={discordUrl}
+            >
+                Discord
+            </a>}
+        </div>
     }
 
     return (
@@ -158,8 +213,22 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
             </button>
 
             <div className="overflow-y-auto ai-chat-scrollbar max-h-[calc(100vh-140px)]">
-                <p className="text-center text-xl text-white">{tokenBalance.symbol}</p>
-                <p className="text-center text-2xl text-green-500 font-bold">$2000</p>
+                {
+                    info?.name ?
+                        <p className="text-center text-xl text-white">{info.name}</p> :
+                        <div className="w-full flex justify-center">
+                            <Skeleton className="w-24 h-7" />
+                        </div>
+                }
+
+                {
+                    info?.market_data?.current_price?.usd ?
+                        <p className="text-center text-2xl text-green-500 font-bold">${info.market_data.current_price.usd}</p> :
+                        <div className="w-full flex justify-center">
+                            <Skeleton className="w-24 h-7 mt-1" />
+                        </div>
+                }
+
                 <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartData}>
                         <Tooltip content={<CustomTooltip />} />
@@ -191,8 +260,8 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                                 <span>{tokenBalance.symbol}</span>
                                 <span>{formatUsdValue(tokenBalance.usdPrice)}</span>
                             </div>
-                            <div className="flex justify-between text-white/70 text-xs sm:text-sm">
-                                <span>{tokenBalance.balance} {tokenBalance.symbol}</span>
+                            <div className="flex justify-between text-white/70 text-sm">
+                                <span>{formatNumberByFrac(tokenBalance.balance)} {tokenBalance.symbol}</span>
                                 <span>{formatUsdValue(tokenBalance.usdValue)}</span>
                             </div>
                         </div>
@@ -200,24 +269,20 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                 </div>
 
                 <div className="mt-4">
-                    <p className="text-white/70 font-bold text-sm sm:text-base">About</p>
-                    <ShowMoreLess text={aboutText} maxLength={100} />
+                    <p className="text-white/70 font-bold">About</p>
+                    {
+                        info?.description?.en ?
+                            <ShowMoreLess text={info.description.en} maxLength={150} /> :
+                            <Skeleton className="w-full h-24" />
+                    }
+
                 </div>
 
                 <div className="mt-4">
                     <p className="text-white/70 font-bold text-sm sm:text-base">About</p>
-                    <div className="flex gap-2">
-                        <button
-                            className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
-                        >
-                            Websites
-                        </button>
-                        <button
-                            className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
-                        >
-                            X
-                        </button>
-                    </div>
+                    {
+                        info?.links ? renderSocialBtns(info?.links) : <Skeleton className="w-full h-24" />
+                    }
                 </div>
 
                 <div className="mt-4">
@@ -229,24 +294,36 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
                             <span className="text-white/70">Network</span>
-                            <span>Ethereum</span>
+                            <span>Network</span>
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
                             <span className="text-white/70">Market Cap</span>
-                            <span>$266.85B</span>
+                            {
+                                info?.market_data?.market_cap?.usd ?
+                                    <span className="">${formatNumber(info?.market_data?.market_cap?.usd)}</span> :
+                                    <Skeleton className="w-16 h-6" />
+                            }
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
                             <span className="text-white/70">Total Supply</span>
-                            <span>120.58M</span>
+                            {
+                                info?.market_data?.total_supply ?
+                                    <span className="">${formatNumber(info?.market_data?.total_supply)}</span> :
+                                    <Skeleton className="w-16 h-6" />
+                            }
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
                             <span className="text-white/70">Circulating Supply</span>
-                            <span>120.58M</span>
+                            {
+                                info?.market_data?.circulating_supply ?
+                                    <span className="">${formatNumber(info?.market_data?.circulating_supply)}</span> :
+                                    <Skeleton className="w-16 h-6" />
+                            }
                         </div>
                     </div>
                 </div>
 
-                <div className="mt-4 mb-4">
+                {/* <div className="mt-4 mb-4">
                     <p className="text-white/70 font-bold text-sm sm:text-base">24h Performance</p>
                     <div className="bg-white/5 rounded-xl text-xs sm:text-sm">
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
@@ -254,11 +331,15 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                             <span>$962.45M</span>
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
+                            <span className="text-white/70">Trades</span>
+                            <span>$962.45M</span>
+                        </div>
+                        <div className="flex justify-between py-2 px-3 border-b border-black/50">
                             <span className="text-white/70">Traders</span>
                             <span>47772</span>
                         </div>
                     </div>
-                </div>
+                </div> */}
             </div>
         </div>
     )
@@ -286,7 +367,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                 setDrawerWidth("400px");
             }
         };
-        
+
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
@@ -396,23 +477,26 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                                 {
                                     isLoadingBalance ?
                                         <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
-                                        : tokenBalances.map((position, index) => (
+                                        : tokenBalances.map((token, index) => (
                                             <button
-                                                key={position.chain + position.symbol + index}
-                                                className="flex w-full items-center justify-between p-2.5 sm:p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                                                onClick={() => handleAsset(position)}
+                                                key={token.chain + token.symbol + index}
+                                                className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                                                onClick={() => handleAsset(token)}
                                             >
-                                                <div className="flex items-center gap-2 sm:gap-3">
-                                                    <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(position.chain)} />
+                                                <div className="flex items-center gap-3">
+                                                    <TokenChainIcon src={token.logo} alt={token.name} size={"lg"} chainId={Number(token.chain)} />
                                                     <div className='flex flex-col justify-start items-start'>
-                                                        <div className="font-medium text-sm sm:text-base">{position.symbol}</div>
-                                                        <div className="text-xs sm:text-sm text-white/60 truncate max-w-[120px] sm:max-w-none">
-                                                            {`${formatNumberByFrac(position.balance)} ${position.symbol}`}
+                                                        <div className="font-medium">{token.symbol}</div>
+                                                        <div className="text-sm text-white/60">
+                                                            {`${formatNumberByFrac(token.balance)} ${token.symbol}`}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="text-right text-sm sm:text-base">
-                                                    <div>{formatUsdValue(position.usdValue)}</div>
+                                                <div className="text-right">
+                                                    <span>{formatUsdValue(token.usdValue)}</span>
+                                                    {/* <div className="text-sm text-green-400">
+                                                    {formatApy(0)} APY
+                                                    </div> */}
                                                 </div>
                                             </button>
                                         ))

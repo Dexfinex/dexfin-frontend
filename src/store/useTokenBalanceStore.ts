@@ -11,6 +11,7 @@ export interface TokenBalance {
   decimals: number;
   usdPrice: number;
   usdValue: number;
+  tokenId: string;
 }
 
 // Define the store's state and actions

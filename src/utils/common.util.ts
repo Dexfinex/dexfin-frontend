@@ -175,6 +175,14 @@ export const formatNumberByFrac = (
     return getFixedNum(num, fixedCount);
 };
 
+export const formatNumber = (num: number): string => {
+    if (num >= 1e12) return (num / 1e12).toFixed(2) + "T"; // Trillion
+    if (num >= 1e9) return (num / 1e9).toFixed(2) + "B"; // Billion
+    if (num >= 1e6) return (num / 1e6).toFixed(2) + "M"; // Million
+    if (num >= 1e3) return (num / 1e3).toFixed(2) + "K"; // Thousand
+    return num.toString(); // Less than 1K
+}
+
 export const formatHealthFactor = (num: number) => {
     if (num > 1e9) {
         return "∞";
