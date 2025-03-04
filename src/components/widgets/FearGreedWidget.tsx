@@ -2,7 +2,7 @@
 import React from 'react';
 import { AlertCircle, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
 import { useGetFearGreed } from '../../hooks/useFearGreed';
-import { formatTimeAgo } from '../../utils/format-timestamp.util';
+import { formatTimeAgo } from '../../utils/formatter.util';
 
 export const FearGreedWidget: React.FC = () => {
   const { isLoading, error, refetch, data } = useGetFearGreed();
