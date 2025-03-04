@@ -5,6 +5,7 @@ import {TokenSelectorModal} from "./TokenSelectorModal.tsx";
 import {Skeleton} from "@chakra-ui/react";
 import {formatNumberByFrac} from "../../../utils/common.util.ts";
 
+
 interface TokenSelectorProps {
     selectedToken?: TokenType | null;
     selectedChainId?: number | null;
