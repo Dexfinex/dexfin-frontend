@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  X, Filter, Clock, ExternalLink, Bell, 
-  RefreshCw, ArrowRightLeft, Wallet, 
+import {
+  X, Filter, Clock, ExternalLink, Bell,
+  RefreshCw, ArrowRightLeft, Wallet,
   Coins, Landmark, CheckCircle2, XCircle,
   ChevronDown
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useWebSocketAlert, AlertData } from '../hooks/useWebsocket';
 
 interface Notification {
   id: string;
@@ -20,7 +21,9 @@ interface Notification {
 
 interface NotificationPanelProps {
   isOpen: boolean;
+  userId: string;
   onClose: () => void;
+  autoConnect: boolean;
 }
 
 const mockNotifications: Notification[] = [
@@ -76,7 +79,16 @@ const mockNotifications: Notification[] = [
   }
 ];
 
-export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose }) => {
+export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, userId, autoConnect = true }) => {
+  const {
+    isConnected,
+    alerts,
+    unreadCount: websocketUnreadCount,
+    markAllAsRead: markAllAlertsAsRead,
+    markAsRead: markAlertAsRead
+  } = useWebSocketAlert({ userId, autoConnect });
+  console.log(isConnected);
+
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -86,7 +98,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
   const isTopbarBottom = useStore((state) => state.isTopbarBottom);
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelWidth, setPanelWidth] = useState(400);
-  
+
   // Update panel width based on screen size
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -97,7 +109,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
           setPanelWidth(400);
         }
       };
-      
+
       handleResize();
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
@@ -107,7 +119,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
   const formatRelativeTime = (date: Date) => {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
+
     if (diffInSeconds < 60) return 'Just now';
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
@@ -140,19 +152,23 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
     .filter(n => selectedType === 'all' || n.type === selectedType)
     .filter(n => selectedStatus === 'all' || n.status === selectedStatus)
     .sort((a, b) => {
-      return sortBy === 'newest' 
+      return sortBy === 'newest'
         ? b.timestamp.getTime() - a.timestamp.getTime()
         : a.timestamp.getTime() - b.timestamp.getTime();
     });
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const localUnreadCount = notifications.filter(n => !n.isRead).length;
 
-  const markAllAsRead = () => {
+  const totalUnreadCount = localUnreadCount + websocketUnreadCount;
+
+  const markAllNotificationsAsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    // Also mark all websocket alerts as read
+    markAllAlertsAsRead();
   };
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => 
+  const markNotificationAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n =>
       n.id === id ? { ...n, isRead: true } : n
     ));
   };
@@ -178,14 +194,14 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
   const mobileStyles = {
     width: `${panelWidth}px`,
     right: '10px',
-    left: 'auto', 
-    position: 'fixed' as 'fixed', 
-    top: isTopbarBottom ? 'auto' : '60px', 
+    left: 'auto',
+    position: 'fixed' as 'fixed',
+    top: isTopbarBottom ? 'auto' : '60px',
     bottom: isTopbarBottom ? '60px' : 'auto'
   };
 
   return (
-    <div 
+    <div
       ref={panelRef}
       className="glass border border-white/10 rounded-xl shadow-lg z-50"
       style={mobileStyles}
@@ -195,15 +211,15 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
         <div className="flex items-center gap-3">
           <Bell className="w-5 h-5" />
           <h2 className="text-lg font-medium">Notifications</h2>
-          {unreadCount > 0 && (
+          {totalUnreadCount > 0 && (
             <span className="px-2 py-0.5 rounded-full bg-blue-500 text-xs font-medium">
-              {unreadCount} new
+              {totalUnreadCount} new
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={markAllAsRead}
+            onClick={markAllNotificationsAsRead}
             className="text-sm text-white/60 hover:text-white transition-colors"
           >
             Mark all as read
@@ -240,11 +256,11 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
               </div>
               <ChevronDown className={`w-4 h-4 transition-transform ${showTypeDropdown ? 'rotate-180' : ''}`} />
             </button>
-            
+
             {showTypeDropdown && (
               <>
-                <div 
-                  className="fixed inset-0 z-10" 
+                <div
+                  className="fixed inset-0 z-10"
                   onClick={() => setShowTypeDropdown(false)}
                 />
                 <div className="absolute top-full left-0 right-0 mt-1 py-1 glass rounded-lg z-20 border border-white/10">
@@ -255,9 +271,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
                         setSelectedType(type.value);
                         setShowTypeDropdown(false);
                       }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-white/10 transition-colors ${
-                        selectedType === type.value ? 'bg-white/10' : ''
-                      }`}
+                      className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-white/10 transition-colors ${selectedType === type.value ? 'bg-white/10' : ''
+                        }`}
                     >
                       {type.icon ? <type.icon className="w-4 h-4" /> : null}
                       <span>{type.label}</span>
@@ -293,8 +308,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
 
             {showStatusDropdown && (
               <>
-                <div 
-                  className="fixed inset-0 z-10" 
+                <div
+                  className="fixed inset-0 z-10"
                   onClick={() => setShowStatusDropdown(false)}
                 />
                 <div className="absolute top-full left-0 right-0 mt-1 py-1 glass rounded-lg z-20 border border-white/10">
@@ -305,15 +320,13 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
                         setSelectedStatus(status.value);
                         setShowStatusDropdown(false);
                       }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-white/10 transition-colors ${
-                        selectedStatus === status.value ? 'bg-white/10' : ''
-                      }`}
+                      className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-white/10 transition-colors ${selectedStatus === status.value ? 'bg-white/10' : ''
+                        }`}
                     >
                       {status.icon && (
-                        <status.icon className={`w-4 h-4 ${
-                          status.value === 'success' ? 'text-green-400' :
+                        <status.icon className={`w-4 h-4 ${status.value === 'success' ? 'text-green-400' :
                           status.value === 'failed' ? 'text-red-400' : ''
-                        }`} />
+                          }`} />
                       )}
                       <span>{status.label}</span>
                     </button>
@@ -360,10 +373,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
             {filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
-                onClick={() => markAsRead(notification.id)}
-                className={`p-4 hover:bg-white/5 transition-colors cursor-pointer ${
-                  !notification.isRead ? 'bg-white/5' : ''
-                }`}
+                onClick={() => markNotificationAsRead(notification.id)}
+                className={`p-4 hover:bg-white/5 transition-colors cursor-pointer ${!notification.isRead ? 'bg-white/5' : ''
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   <div className={`p-2 rounded-lg ${getTypeColor(notification.type)}`}>
@@ -388,7 +400,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-white/40" />
                         <span className="text-sm text-white/60">
-                          {notification.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          {notification.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                       <a
