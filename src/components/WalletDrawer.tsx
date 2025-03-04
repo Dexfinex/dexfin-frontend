@@ -333,7 +333,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
                             <span className="text-white/70">Network</span>
-                            <span>Network</span>
+                            <span>{tokenBalance.network?.name || ""}</span>
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
                             <span className="text-white/70">Market Cap</span>
