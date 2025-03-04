@@ -62,7 +62,7 @@ const useDefiStore = create<DefiStoreState>((set) => ({
     setPositions: (evmPositions) => {
         const netAPY = evmPositions.reduce((sum, p) => sum + (p?.account_data?.net_apy || 0), 0) / evmPositions.length || 0;
         const healthFactor = evmPositions.reduce((sum, p) => sum + (p?.account_data?.health_factor || 0), 0);
-        const protocolTypes = [...new Set(evmPositions.map((position) => (capitalizeFirstLetter(position.position.label))))];
+        const protocolTypes = [...new Set(evmPositions.map((position) => (capitalizeFirstLetter(position?.position?.label || ""))))];
         const positions = evmPositions.map((position) => ({
             address: position.position.address,
             protocol: position.protocol_name,

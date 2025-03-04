@@ -4,7 +4,7 @@ import { erc20Abi } from "viem";
 import { JsonRpcSigner } from "@ethersproject/providers";
 
 import { enSoService } from "../services/enso.service.ts";
-import { generateEnSoExecuteAction, generateEnSoBorrowAction } from "../utils/enso.util.ts";
+import { generateEnSoExecuteAction } from "../utils/enso.util.ts";
 import { mapChainId2NativeAddress } from "../config/networks.ts";
 import { compareWalletAddresses } from "../utils/common.util.ts";
 import { ENSO_ROUTER_ADDRESS } from "../constants/enso.constants.ts";
