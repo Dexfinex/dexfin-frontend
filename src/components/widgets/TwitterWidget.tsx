@@ -23,6 +23,7 @@ interface Tweet {
 
 export const TwitterWidget: React.FC = () => {
   // Get data from the hook
+  console.log("twitter data....")
   const { data: apiTweets, loading, error: apiError } = useGetTwitterInfo();
 
   // State for the processed tweets
