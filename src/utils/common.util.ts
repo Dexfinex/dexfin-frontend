@@ -106,6 +106,22 @@ export const getMonthDayYear = (timestamp: number) => {
     return `${month} ${day}, ${year}`;
 }
 
+export const getFullDate = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+    const formattedDate = date.toLocaleString('en-US', {
+        weekday: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+    });
+
+    return formattedDate;
+}
+
 /**
  * Compares two wallet addresses in uppercase.
  * @param address1 - The first wallet address.

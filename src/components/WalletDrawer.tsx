@@ -6,7 +6,7 @@ import { TokenChainIcon } from "./swap/components/TokenIcon";
 import { CheckCircle, Copy, Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, ArrowLeft, LayoutGrid, History, Landmark, ExternalLink, Clock } from "lucide-react";
 import { mockDeFiPositions, mockDeFiStats, formatUsdValue, formatApy, getHealthFactorColor, } from '../lib/wallet';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { shrinkAddress, formatNumberByFrac, formatNumber, getHourAndMinute, getMonthDayHour, getMonthDayYear, formatDate } from "../utils/common.util";
+import { shrinkAddress, formatNumberByFrac, formatNumber, getHourAndMinute, getMonthDayHour, getMonthDayYear, formatDate, getFullDate } from "../utils/common.util";
 import { useWalletBalance } from "../hooks/useBalance";
 import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStore";
 import { SendDrawer } from "./wallet/SendDrawer";
@@ -39,14 +39,15 @@ type ChartTimeType = "1D" | "1W" | "1M" | "1Y"
 
 type TimeRangeType = {
     mseconds: number,
-    interval: string
+    interval: string,
+    solInterval: string
 }
 
 const customMapTimeRange: Record<string, TimeRangeType> = {
-    "1D": { mseconds: 6048000, interval: "15m" },
-    "1W": { mseconds: 25920000, interval: "1d" },
-    "1M": { mseconds: 77760000, interval: "4h" },
-    "1Y": { mseconds: 155520000, interval: "1d" },
+    "1D": { mseconds: 86400, solInterval: "15m", interval: "1H" },
+    "1W": { mseconds: 604800, solInterval: "1H", interval: "1D" },
+    "1M": { mseconds: 2592000, solInterval: "4H", interval: "1W" },
+    "1Y": { mseconds: 31536000, solInterval: "1D", interval: "1Y" },
 };
 
 const CustomTooltip: React.FC<{ active?: boolean; payload?: any[]; }> = ({ active, payload }) => {
@@ -151,13 +152,13 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
             let readableTime = ""
 
             if (selectedRange === "1D") {
-                readableTime = getHourAndMinute(e.time)
+                readableTime = getHourAndMinute(e.time * 1000)
             } else if (selectedRange === "1W") {
-                readableTime = getMonthDayHour(e.time)
+                readableTime = getMonthDayHour(e.time * 1000)
             } else if (selectedRange === "1M") {
-                readableTime = getMonthDayHour(e.time)
+                readableTime = getMonthDayHour(e.time * 1000)
             } else if (selectedRange === "1Y") {
-                readableTime = getMonthDayYear(e.time)
+                readableTime = getMonthDayYear(e.time * 1000)
             }
 
             return {
@@ -173,8 +174,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
         if (tokenBalance.network?.id === "solana") {
             const address = (tokenBalance.address === 'solana' ? "So11111111111111111111111111111111111111112" : tokenBalance.address)
             const timeFrom = currentTime - customMapTimeRange[selectedRange].mseconds
-
-            const data = await birdeyeService.getOHLCV(address, customMapTimeRange[selectedRange].interval, timeFrom, currentTime)
+            const data = await birdeyeService.getOHLCV(address, customMapTimeRange[selectedRange].solInterval, timeFrom, currentTime)
             if (data.length > 0) {
                 const cData = formatChartData(data)
                 setChartData([...cData])
@@ -182,6 +182,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
         } else { // will add 0x
             const timeFrom = currentTime - customMapTimeRange[selectedRange].mseconds
             const data = await coingeckoService.getOHLCV(tokenBalance.tokenId, customMapTimeRange[selectedRange].interval, timeFrom, currentTime)
+            console.log('chat data = ', data)
             if (data.length > 0) {
                 const cData = formatChartData(data)
                 setChartData([...cData])
@@ -237,7 +238,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
     }
 
     return (
-        <div className="mt-4">
+        <div className="mt-4 mx-4">
             <button className="rounded-full text-white/70 hover:bg-white/10 p-2" onClick={handleBack}>
                 <ArrowLeft className="w-5 h-5" />
             </button>
@@ -272,7 +273,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
 
                 {/* Buttons for time range selection */}
                 <div className="flex justify-evenly space-x-1 sm:space-x-2 mb-4">
-                    {["1D", "1W", "1M", "1Y", "ALL"].map((range: any) => (
+                    {["1D", "1W", "1M", "1Y"].map((range: any) => (
                         <button
                             key={range}
                             onClick={() => setSelectedRange(range)}
@@ -285,21 +286,25 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
 
                 <div className="mt-4">
                     <p className="text-white/70 font-bold text-sm sm:text-base">Your Balance</p>
-                    <div className="mt-1 px-2 py-3 bg-white/5 rounded-xl flex gap-2">
-                        <div className="flex items-center">
-                            <img src={tokenBalance.logo} className="w-8 sm:w-10 h-8 sm:h-10 rounded-full" />
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex justify-between text-sm sm:text-base">
-                                <span>{tokenBalance.symbol}</span>
-                                <span>{formatUsdValue(tokenBalance.usdPrice)}</span>
-                            </div>
-                            <div className="flex justify-between text-white/70 text-sm">
-                                <span>{formatNumberByFrac(tokenBalance.balance)} {tokenBalance.symbol}</span>
-                                <span>{formatUsdValue(tokenBalance.usdValue)}</span>
-                            </div>
-                        </div>
-                    </div>
+                    {
+                        info?.market_data?.current_price?.usd ?
+                            <div className="mt-1 px-2 py-3 bg-white/5 rounded-xl flex gap-2">
+                                <div className="flex items-center">
+                                    <img src={tokenBalance.logo} className="w-8 sm:w-10 h-8 sm:h-10 rounded-full" />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between text-sm sm:text-base">
+                                        <span>{tokenBalance.symbol}</span>
+                                        <span>${info.market_data.current_price.usd}</span>
+                                    </div>
+                                    <div className="flex justify-between text-white/70 text-sm">
+                                        <span>{formatNumberByFrac(tokenBalance.balance)} {tokenBalance.symbol}</span>
+                                        <span>{formatUsdValue(info.market_data.current_price.usd * tokenBalance.balance)}</span>
+                                    </div>
+                                </div>
+                            </div> :
+                            <Skeleton className="mt-2 w-full h-14" />
+                    }
                 </div>
 
                 <div className="mt-4">
@@ -424,7 +429,6 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
         // }
         // setSelectedBalanceIndex(index);
         // setShowSendDrawer(true);
-        console.log('token = ', token)
         setSelectedAsset(token)
     }
 
