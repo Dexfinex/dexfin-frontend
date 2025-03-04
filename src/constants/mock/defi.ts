@@ -34,6 +34,7 @@ export const isEnabledPosition = ({ chainId, protocol, tokenPair, type }: { chai
 
 export interface Offering extends Position {
     chainId: number[];
+    apyToken: string;
 }
 
 export const STAKING_TOKENS = [
@@ -263,6 +264,7 @@ export const offerings: Offering[] = [
         "type": "Liquidity",
         "amount": 0,
         "apy": 0,
+        "apyToken": "USDC-USDT",
         "tokens": [
             {
                 "token_type": "supplied",
@@ -312,6 +314,7 @@ export const offerings: Offering[] = [
     {
         "chainId": [1],
         "apy": 3.1,
+        "apyToken": "stETH",
         "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
         "protocol": "Lido",
         "protocol_id": "lido",
@@ -339,6 +342,7 @@ export const offerings: Offering[] = [
     {
         "chainId": [1, 8453],
         "apy": 1.63,
+        "apyToken": "USDC",
         "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
         "protocol": "Aave V3",
         "protocol_id": "aave-v3",
@@ -379,6 +383,7 @@ export const offerings: Offering[] = [
     {
         "chainId": [1, 8453],
         "apy": 1.63,
+        "apyToken": "USDC",
         "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
         "protocol": "Aave V3",
         "protocol_id": "aave-v3",
