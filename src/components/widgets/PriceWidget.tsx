@@ -212,13 +212,13 @@ export const MarketPulseWidget: React.FC = () => {
       {/* Chart and Stats */}
       <div className="flex-1 flex flex-col p-4">
         {/* Chart */}
-        <div className="flex-1">
+        <div className="flex mb-4">
           {loading ? (
             <div className="h-full flex items-center justify-center">
               <Clock className="w-6 h-6 text-white/40 animate-spin" />
             </div>
           ) : data ? (
-            <div className="h-[calc(100%-100px)]">
+            <div className="">
               <PriceChart data={data} />
             </div>
           ) : null}
@@ -226,7 +226,7 @@ export const MarketPulseWidget: React.FC = () => {
 
         {/* Stats */}
         {data && (
-          <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="bg-white/5 rounded-lg p-3">
               <div className="text-sm text-white/60 mb-1">Market Cap</div>
               <div className="font-medium">
