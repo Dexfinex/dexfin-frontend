@@ -5,6 +5,7 @@ import { SlippageOption, TokenType } from "../../types/swap.type";
 import { SlippageSettings } from "../swap/SlippageSettings";
 import { ConfirmSwapModal } from "../swap/modals/ConfirmSwapModal.tsx";
 import { NULL_ADDRESS } from "../../constants";
+import {SolanaSwapBox} from "../swap/components/SolanaSwapBox.tsx";
 
 export const QuickSwapWidget: React.FC = () => {
   const [fromToken, setFromToken] = useState<TokenType | null>({
@@ -74,7 +75,7 @@ export const QuickSwapWidget: React.FC = () => {
 
   return (
     <>
-      <Flex h="full" direction={{ base: "column", md: "row" }}  maxH="90vh">
+      <Flex h="full" direction={{ base: "column", md: "row" }} maxH="90vh">
         {/* Right Side - Swap Interface */}
         <Box minW={["100%", "400px"]} p={6}>
           {/* Header */}
@@ -100,18 +101,33 @@ export const QuickSwapWidget: React.FC = () => {
           {/* Swap Interface and Wallet */}
           <div
             className="p-2.5 border border-white/5 relative z-50 w-full rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
-            <SwapBox
-              fromToken={fromToken}
-              toToken={toToken}
-              fromAmount={fromAmount}
-              toAmount={toAmount}
-              onFromTokenSelect={onFromTokenSelect}
-              onToTokenSelect={onToTokenSelect}
-              onFromAmountChange={setFromAmount}
-              onToAmountChange={setToAmount}
-              onSwitch={handleSwitch}
-              slippage={slippage}
-            />
+            {fromToken?.chainId === 900 ? (
+              <SolanaSwapBox
+                fromToken={fromToken}
+                toToken={toToken}
+                fromAmount={fromAmount}
+                toAmount={toAmount}
+                onFromTokenSelect={onFromTokenSelect}
+                onToTokenSelect={onToTokenSelect}
+                onFromAmountChange={setFromAmount}
+                onToAmountChange={setToAmount}
+                onSwitch={handleSwitch}
+                slippage={slippage}
+              />
+            ) : (
+              <SwapBox
+                fromToken={fromToken}
+                toToken={toToken}
+                fromAmount={fromAmount}
+                toAmount={toAmount}
+                onFromTokenSelect={onFromTokenSelect}
+                onToTokenSelect={onToTokenSelect}
+                onFromAmountChange={setFromAmount}
+                onToAmountChange={setToAmount}
+                onSwitch={handleSwitch}
+                slippage={slippage}
+              />
+            )}
           </div>
         </Box>
       </Flex>
