@@ -35,20 +35,20 @@ export const AskAnythingWidget: React.FC = () => {
 
   const voiceCommands: VoiceCommand[] = [
     { 
-      command: "Open settings and change wallpaper to Downtown",
-      description: "Chain multiple commands together"
+      command: "Open Assistant",
+      description: ""
     },
     {
-      command: "Open market data and show trending tokens",
-      description: "Navigate and view data in sequence"
+      command: "Open Settings",
+      description: ""
     },
     {
-      command: "Open dashboard and show portfolio",
-      description: "Combined navigation commands"
+      command: "Open Swap",
+      description: ""
     },
     {
-      command: "Show Bitcoin price and latest news",
-      description: "Get multiple data points at once"
+      command: "Open DeFi",
+      description: ""
     }
   ];
 
