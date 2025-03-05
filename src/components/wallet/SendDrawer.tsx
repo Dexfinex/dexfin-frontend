@@ -59,7 +59,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     const { tokenBalances } = useTokenBalanceStore();
     const [recentAddresses, setRecentAddresses] = useState<string[]>([]);
     const { mutate: sendTransactionMutate } = useSendTransactionMutation();
-    const { isChainSwitching, chainId, signer, isConnected, login, switchChain } = useContext(Web3AuthContext);
+    const { isChainSwitching, chainId, signer, isConnected, login, switchChain, walletType } = useContext(Web3AuthContext);
 
     useEffect(() => {
         setSelectedAsset(assets[selectedAssetIndex] || {})
@@ -176,6 +176,19 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
             });
         }
         const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
+
+        console.log('chain = ', chainId)
+        console.log('transaction data = ', {
+            tokenAddress: selectedAsset.address,
+            sendAddress: _address,
+            sendAmount: Number(amount),
+            signer,
+            gasLimit: gasData.gasLimit,
+            gasPrice: gasData.gasPrice,
+        })
+
+
+        return
         sendTransactionMutate(
             {
                 tokenAddress: selectedAsset.address,
@@ -498,12 +511,15 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                             </div>
                         </div>
                         <div className='w-full flex justify-end items-end'>
-                            <div className="text-sm text-white/60">
-                                Network Fee: {
-                                    isGasEstimationLoading ?
-                                        <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
-                                        : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
-                            </div>
+                            {
+                                walletType === "EMBEDDED" ?
+                                    <span className='text-sm text-green-500'>Network Fee: Free</span> :
+                                    <div className="text-sm text-white/60">
+                                        Network Fee: {
+                                            isGasEstimationLoading ?
+                                                <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                                                : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                                    </div>}
                         </div>
                     </div>
                 ) : null}
@@ -518,11 +534,11 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                             {
                                 isConfirming ?
                                     (
-                                        <div>
+                                        <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Confirming...
                                         </div>
                                     ) : isChainSwitching ? (
-                                        <div>
+                                        <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Switching Chain...
                                         </div>
                                     ) : <div>Send {selectedAsset.symbol}</div>

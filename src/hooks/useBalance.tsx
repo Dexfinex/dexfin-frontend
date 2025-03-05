@@ -235,7 +235,7 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 
 	useEffect(() => {
 		if (!data) return;
-		
+
 		const newBalance = data.map((item) => ({
 			chain: item.chain,
 			address: item.tokenAddress as string,
@@ -244,8 +244,8 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 			logo: item.logo,
 			balance: item.balanceDecimal,
 			decimals: item.decimals,
-			usdPrice: item.usdPrice,
-			usdValue: item.usdValue,
+			usdPrice: item.usdValue,
+			usdValue: item.usdPrice,
 			tokenId: item.tokenId,
 			network: item.network
 		} as unknown as TokenBalance));
