@@ -1,22 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect,useContext } from 'react';
 import { Trophy, Swords, Brain, Coins, ArrowRight } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { Web3AuthContext } from '../../providers/Web3AuthContext';
+import { fetchUserStatistics,fetchTotalUserTokens } from './api/useGame-api';
 
 export const GameStats: React.FC = () => {
   const [claimingTokens, setClaimingTokens] = useState(false);
-  const { gameStats } = useStore();
+  const { gameStats,updateGameStats, setAllGameStats } = useStore();
+  const { userData, checkWalletAndUsername } = useContext(Web3AuthContext);
+  const [isLoading, setIsLoading] = useState(false);
+  const [usernameResponse, setUsernameResponse] = useState<{exists: boolean, message?: string, username?: string}>();
   const canClaim = gameStats.totalTokens >= 5000;
 
   const handleClaimTokens = () => {
     if (!canClaim) return;
     
     setClaimingTokens(true);
-    // Simulate token claiming process
     setTimeout(() => {
-      // Here you would handle the actual token claiming logic
       setClaimingTokens(false);
     }, 2000);
   };
+
+
+  useEffect(() => {
+    const loadTokens = async () => {
+      setIsLoading(true);
+      try {
+        if(userData&& userData.accessToken){
+          const statsData = await fetchUserStatistics(userData.accessToken);
+          if (Array.isArray(statsData)) {
+            const triviaGame = statsData.find(game => game.gameType === 'TRIVIA');
+            const arenaGame = statsData.find(game => game.gameType === 'ARENA');
+            
+            let totalTokens = 0;
+            statsData.forEach(game => {
+              if (game && 'tokensEarned' in game && typeof game.tokensEarned === 'number') {
+                totalTokens += game.tokensEarned;
+              }
+            });
+            
+            console.log("Calculated total tokens:", totalTokens);
+            
+            updateGameStats({
+              triviaStats: {
+                gamesPlayed: triviaGame?.totalPlayed || 0,
+                tokensEarned: triviaGame?.tokensEarned || 0,
+                highScore: triviaGame?.highScore || 0,
+                accuracy: triviaGame?.accuracy || 0,
+                bestStreak: triviaGame?.bestStreak || 0
+              },
+              arenaStats: {
+                battlesPlayed: arenaGame?.totalPlayed || 0,
+                tokensEarned: arenaGame?.tokensEarned || 0,
+                wins: arenaGame?.wins || 0,
+                winRate: arenaGame?.winRate || 0,
+                bestStreak: arenaGame?.bestStreak || 0
+              },
+              totalTokens: totalTokens
+            });
+          } else {
+            try {
+              const tokens = await fetchTotalUserTokens(userData.accessToken);
+              setAllGameStats(tokens);
+            } catch (error) {
+              console.error("Error fetching tokens:", error);
+              setAllGameStats(0);
+            }
+          }
+        } else {
+          setAllGameStats(0);
+        }
+      } catch (error) {
+        console.error('Error loading tokens:', error);
+
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTokens();
+  }, [setAllGameStats, userData]);
 
   return (
     <div className="p-3 sm:p-6 h-full overflow-y-auto">
@@ -27,7 +90,13 @@ export const GameStats: React.FC = () => {
             <h3 className="text-xl sm:text-2xl font-bold mb-2">Total Tokens</h3>
             <div className="flex items-center gap-2">
               <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
-              <span className="text-2xl sm:text-3xl font-bold">{gameStats.totalTokens}</span>
+              <span className="text-2xl sm:text-3xl font-bold">
+                {typeof gameStats.totalTokens === 'number'
+                      ? gameStats.totalTokens
+                      : typeof gameStats.totalTokens === 'object' && gameStats.totalTokens && 'totalTokens' in gameStats.totalTokens
+                        ? gameStats.totalTokens
+                        : 0}
+                </span>
             </div>
           </div>
           <button
@@ -45,7 +114,7 @@ export const GameStats: React.FC = () => {
         </div>
         {!canClaim && (
           <p className="text-xs sm:text-sm text-white/60 mt-3 sm:mt-4">
-            Earn {5000 - gameStats.totalTokens} more tokens to claim rewards
+            Earn {5000 - gameStats.totalTokens || 0} more tokens to claim rewards
           </p>
         )}
       </div>
@@ -66,23 +135,23 @@ export const GameStats: React.FC = () => {
           <div className="space-y-3 sm:space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-white/60">Games Played</span>
-              <span className="font-medium">{gameStats.triviaStats.gamesPlayed}</span>
+              <span className="font-medium">{gameStats?.triviaStats?.gamesPlayed||0}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-white/60">Tokens Earned</span>
-              <span className="font-medium">{gameStats.triviaStats.tokensEarned}</span>
+              <span className="font-medium">{gameStats?.triviaStats?.tokensEarned||0}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-white/60">High Score</span>
-              <span className="font-medium">{gameStats.triviaStats.highScore}/10</span>
+              <span className="font-medium">{gameStats?.triviaStats?.highScore ||0}/10</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-white/60">Accuracy</span>
-              <span className="font-medium">{gameStats.triviaStats.accuracy}%</span>
+              <span className="font-medium">{gameStats?.triviaStats?.accuracy ||0}%</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-white/60">Best Streak</span>
-              <span className="font-medium">{gameStats.triviaStats.bestStreak}</span>
+              <span className="font-medium">{gameStats?.triviaStats?.bestStreak||0}</span>
             </div>
           </div>
         </div>
@@ -102,23 +171,23 @@ export const GameStats: React.FC = () => {
           <div className="space-y-3 sm:space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-white/60">Battles Played</span>
-              <span className="font-medium">{gameStats.arenaStats.battlesPlayed}</span>
+              <span className="font-medium">{gameStats?.arenaStats?.battlesPlayed || 0}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-white/60">Tokens Earned</span>
-              <span className="font-medium">{gameStats.arenaStats.tokensEarned}</span>
+              <span className="font-medium">{gameStats?.arenaStats?.tokensEarned || 0}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-white/60">Wins</span>
-              <span className="font-medium">{gameStats.arenaStats.wins}</span>
+              <span className="font-medium">{gameStats?.arenaStats?.wins || 0}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-white/60">Win Rate</span>
-              <span className="font-medium">{gameStats.arenaStats.winRate}%</span>
+              <span className="font-medium">{gameStats?.arenaStats?.winRate || 0}%</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-white/60">Best Streak</span>
-              <span className="font-medium">{gameStats.arenaStats.bestStreak}</span>
+              <span className="font-medium">{gameStats?.arenaStats?.bestStreak || 0}</span>
             </div>
           </div>
         </div>
@@ -147,7 +216,7 @@ export const GameStats: React.FC = () => {
               <div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-500 transition-all"
-                  style={{ width: `${(gameStats.triviaStats.highScore / 10) * 100}%` }}
+                  style={{ width: `${((gameStats?.triviaStats?.highScore || 0) / 10) * 100}%` }}
                 />
               </div>
             </div>
@@ -163,7 +232,7 @@ export const GameStats: React.FC = () => {
               <div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-purple-500 transition-all"
-                  style={{ width: `${(gameStats.arenaStats.wins / 10) * 100}%` }}
+                  style={{ width: `${((gameStats?.arenaStats?.wins || 0) / 10) * 100}%` }}
                 />
               </div>
             </div>

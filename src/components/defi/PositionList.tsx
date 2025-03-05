@@ -151,18 +151,20 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                         <div className="text-lg">${formatNumberByFrac(position.amount)}</div>
                                                     </div>
                                                     {
-                                                        position.apy &&
-                                                        <div>
-                                                            <span className="text-sm text-white/60">APY</span>
-                                                            <div className="text-emerald-400">{(formatNumberByFrac(position.apy) || "0")}%</div>
-                                                        </div>
+                                                        position.apy ?
+                                                            <div>
+                                                                <span className="text-sm text-white/60">APY</span>
+                                                                <div className="text-emerald-400">{(formatNumberByFrac(position.apy) || "0")}%</div>
+                                                            </div>
+                                                            : null
                                                     }
-                                                    {position.rewards && (
+                                                    {position.rewards ?
                                                         <div>
                                                             <span className={`text-sm text-white/60`}>Rewards</span>
                                                             <div className={`${position.rewards > 0 ? "text-blue-400" : "text-red-400"}`}>{(formatNumberByFrac(position.rewards) || "0")}% APR</div>
                                                         </div>
-                                                    )}
+                                                        : null
+                                                    }
                                                     {!!position.healthFactor && (
                                                         <div>
                                                             <span className="text-sm text-white/60">Health Factor</span>

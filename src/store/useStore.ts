@@ -189,6 +189,7 @@ interface StoreState {
     id: string;
   } | null;
   updateGameStats: (stats: Partial<StoreState['gameStats']>) => void;
+  setAllGameStats: (tokens: number) => void;
 
   // Appearance
   currentWallpaper: Wallpaper;
@@ -396,20 +397,20 @@ const useStore = create<StoreState>((set) => ({
   // Game Stats
   gameStats: {
     triviaStats: {
-      gamesPlayed: 15,
-      tokensEarned: 1850,
-      highScore: 9,
-      accuracy: 78,
-      bestStreak: 5
+      gamesPlayed: 0,
+      tokensEarned: 0,
+      highScore: 0,
+      accuracy: 0,
+      bestStreak: 0
     },
     arenaStats: {
-      battlesPlayed: 12,
-      tokensEarned: 1400,
-      wins: 8,
-      winRate: 66.7,
-      bestStreak: 3
+      battlesPlayed: 0,
+      tokensEarned: 0,
+      wins: 0,
+      winRate: 0,
+      bestStreak: 0
     },
-    totalTokens: 3250
+    totalTokens: 0
   },
   updateGameStats: (stats) => set((state) => ({
     gameStats: {
@@ -417,6 +418,27 @@ const useStore = create<StoreState>((set) => ({
       ...stats
     }
   })),
+
+  setAllGameStats: (data) => set((state) => {
+    if (typeof data === 'number') {
+      return {
+        gameStats: {
+          ...state.gameStats,
+          totalTokens: data
+        }
+      };
+    }
+    
+
+    return {
+      gameStats: {
+        ...state.gameStats,
+        totalTokens: 0
+      }
+    };
+  }),
+
+  
 
   // Appearance
   currentWallpaper: wallpapersList[0],

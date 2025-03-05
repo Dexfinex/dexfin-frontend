@@ -4,6 +4,7 @@ import { ChartDataPoint } from "../types/swap.type.ts";
 import { TokenTypeB } from "../types/cart.type.ts";
 import axios from "axios";
 import { MarketCapToken } from "../components/market/MarketCap.tsx";
+import { COINGECKO_URL } from "../constants/index.ts";
 
 interface CoinGeckoStableToken {
     id: string;
@@ -252,5 +253,15 @@ export const coingeckoService = {
             return [];
         }
     },
+    getInfo: async (tokenId: string): Promise<any> => {
+        try {
+            const response = await axios.get(`${COINGECKO_URL}/coins/${tokenId}`);
 
+            return response.data;
+        } catch (err) {
+            console.log('get token info err: ', err);
+        }
+
+        return null;
+    }
 }
