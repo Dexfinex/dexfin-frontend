@@ -9,7 +9,7 @@ import { offerings } from "../../constants/mock/defi";
 import { TokenIcon } from "../swap/components/TokenIcon";
 import { useGetDefillamaPoolByOffering } from "../../hooks/useDefillama";
 import useDefillamaStore from "../../store/useDefillamaStore";
-import { formatNumberByFrac } from "../../utils/common.util";
+import { formatNumberByFrac, formatNumber } from "../../utils/common.util";
 
 interface OfferingListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
@@ -127,7 +127,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                             <span className="text-sm text-white/60">TVL</span>
                                             <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
                                                 }`}>
-                                                {isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'3rem'} h={'1rem'}></Skeleton> : `$${formatNumberByFrac(poolInfo?.tvlUsd) || "0"}`}
+                                                {isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'3rem'} h={'1rem'}></Skeleton> : `$${formatNumber(Number(poolInfo?.tvlUsd) || 0)}`}
                                             </div>
                                         </div>
                                     </div>

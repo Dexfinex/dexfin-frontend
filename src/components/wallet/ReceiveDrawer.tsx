@@ -212,7 +212,7 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ setPage, page }) =
           {
             walletAddress ?
               <div className="flex items-center cursor-pointer hover:text-white/80" onClick={handleCopy}>
-                <div className="font-bold text-sm mr-2">
+                <div className="font-bold text-sm mr-1">
                   {walletAddress}
                 </div>
                 <button className="rounded-lg transition-colors">

@@ -70,14 +70,14 @@ const ShowMoreLess: React.FC<{ text: string, maxLength: number }> = ({ text, max
     const toggleExpand = () => setIsExpanded(!isExpanded);
 
     return (
-        <div className={`${theme === "dark" ? "text-white/70" : "text-black/70"} text-md`}>
-            <p>
+        <div className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>
+            <p className="text-sm sm:text-md">
                 {isExpanded ? text : text.slice(0, maxLength) + (text.length > maxLength ? "..." : "")}
             </p>
             {text.length > maxLength && (
                 <button
                     onClick={toggleExpand}
-                    className="text-blue-500 hover:text-blue-600 mt-1"
+                    className="text-blue-500 hover:text-blue-600 mt-1 text-sm sm:text-md"
                 >
                     {isExpanded ? "Show Less" : "Show More"}
                 </button>
@@ -178,9 +178,8 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
         const currentTime = Math.round(Date.now() / 1000) - 60
 
         if (tokenBalance.network?.id === "solana") {
-            const address = (tokenBalance.address === 'solana' ? "So11111111111111111111111111111111111111112" : tokenBalance.address)
             const timeFrom = currentTime - customMapTimeRange[selectedRange].mseconds
-            const data = await birdeyeService.getOHLCV(address, customMapTimeRange[selectedRange].solInterval, timeFrom, currentTime)
+            const data = await birdeyeService.getOHLCV(tokenBalance.address, customMapTimeRange[selectedRange].solInterval, timeFrom, currentTime)
             if (data.length > 0) {
                 const cData = formatChartData(data)
                 setChartData([...cData])

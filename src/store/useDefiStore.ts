@@ -71,7 +71,7 @@ const useDefiStore = create<DefiStoreState>((set) => ({
             amount: position.position.balance_usd,
             tokens: position.position.tokens,
             apy: position.position?.position_details?.apy,
-            rewards: position.total_projected_earnings_usd.yearly,
+            rewards: position.position?.position_details?.projected_earnings_usd?.yearly,
             healthFactor: position.account_data?.health_factor || 0,
             logo: position.protocol_logo,
             factory: position.position?.position_details?.factory,
