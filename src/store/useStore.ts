@@ -287,12 +287,12 @@ const useStore = create<StoreState>((set) => ({
       id: 'market-pulse',
       type: 'Market Pulse',
       position: { x: 10, y: 20 },
-      size: { width: 360, height: 540 }
+      size: { width: 360, height: 490 }
     },
     {
       id: 'fear-greed',
       type: 'Fear & Greed Index',
-      position: { x: 10, y: 580 },
+      position: { x: 10, y: 530 },
       size: { width: 360, height: 270 }
     },
     {
