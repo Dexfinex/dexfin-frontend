@@ -109,6 +109,17 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
             <MenuItem
               bgColor={'blackAlpha.50'}
               _hover={{ bg: 'whiteAlpha.100' }}
+              onClick={() => { setInput('Analyze ETH market sentiment') }}
+            >
+              <Box>
+                <Text>Analyze ETH market sentiment</Text>
+                <Text fontSize="xs" color="gray.500">Get sentiment analysis for ETH</Text>
+              </Box>
+            </MenuItem>
+
+            <MenuItem
+              bgColor={'blackAlpha.50'}
+              _hover={{ bg: 'whiteAlpha.100' }}
               onClick={() => { setInput('Show trending coins') }}
             >
               <Box>
@@ -481,6 +492,16 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
                     <Box>
                       <Text>ETH Technical Analysis</Text>
                       <Text fontSize="xs" color="gray.500">Get detailed ETH analysis</Text>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem
+                    bgColor={'blackAlpha.50'}
+                    _hover={{ bg: 'whiteAlpha.100' }}
+                    onClick={() => { setInput('Analyze ETH market sentiment'); onDrawerClose(); }}
+                  >
+                    <Box>
+                      <Text>Analyze ETH market sentiment</Text>
+                      <Text fontSize="xs" color="gray.500">Get sentiment analysis for ETH</Text>
                     </Box>
                   </MenuItem>
                   <MenuItem
