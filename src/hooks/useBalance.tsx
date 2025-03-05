@@ -235,7 +235,7 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 
 	useEffect(() => {
 		if (!data) return;
-		
+
 		const newBalance = data.map((item) => ({
 			chain: item.chain,
 			address: item.tokenAddress as string,

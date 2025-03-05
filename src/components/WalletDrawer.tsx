@@ -304,7 +304,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                                         <span>${info.market_data.current_price.usd}</span>
                                     </div>
                                     <div className={`flex justify-between ${theme === "dark" ? "text-white/70" : "text-black/70"} text-sm`}>
-                                        <span>{formatNumberByFrac(tokenBalance.balance)} {tokenBalance.symbol}</span>
+                                        <span>{formatNumberByFrac(tokenBalance.balance, 5)} {tokenBalance.symbol}</span>
                                         <span>{formatUsdValue(info.market_data.current_price.usd * tokenBalance.balance)}</span>
                                     </div>
                                 </div>
@@ -507,7 +507,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                                 <div className='flex flex-col justify-start items-start'>
                                     <div className="font-medium text-sm sm:text-md">{token.symbol}</div>
                                     <div className="text-xs sm:text-sm text-white/60">
-                                        {`${formatNumberByFrac(token.balance)} ${token.symbol}`}
+                                        {`${formatNumberByFrac(token.balance, 5)} ${token.symbol}`}
                                     </div>
                                 </div>
                             </div>
@@ -588,7 +588,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                         <div className="flex items-center gap-4 text-xs sm:text-sm">
                             <div>
                                 <span className="text-white/60">Amount:</span>{' '}
-                                {`${formatNumberByFrac(position.amount)} ${position.token.symbol}`}
+                                {`${formatNumberByFrac(position.amount, 5)} ${position.token.symbol}`}
                             </div>
                             {position.rewards && (
                                 <div>

@@ -174,8 +174,8 @@ export const dexfinv3Service = {
               decimals: token.decimals,
               balance: token.amountRaw,
               balanceDecimal: Number(token.amount),
-              usdPrice: token.usdValue,
-              usdValue: token.usdPrice,
+              usdPrice: token.usdPrice,
+              usdValue: token.usdValue,
               chain: "0x384",
               network: token.network,
               tokenId: token.tokenId
