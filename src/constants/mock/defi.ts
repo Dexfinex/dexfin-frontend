@@ -35,6 +35,7 @@ export const isEnabledPosition = ({ chainId, protocol, tokenPair, type }: { chai
 export interface Offering extends Position {
     chainId: number[];
     apyToken: string;
+    disabled?:boolean;
 }
 
 export const STAKING_TOKENS = [
@@ -433,9 +434,10 @@ export const offerings: Offering[] = [
         "logo": "https://cdn.moralis.io/defi/aave.png"
     },
     {
-        "chainId": [-1],
+        "chainId": [1],
         "apy": 0,
         "apyToken": "SUSDE",
+        "disabled": true,
         "address": "0xcdd26eb5eb2ce0f203a84553853667ae69ca29ce",
         "protocol": "Pendle Finance",
         "protocol_id": "pendle",
