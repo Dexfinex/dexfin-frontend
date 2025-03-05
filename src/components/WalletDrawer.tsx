@@ -781,6 +781,8 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                             amount: Number(p.balance),
                             logo: p.logo,
                             chain: p.chain,
+                            decimals: p.decimals,
+                            network: p.network?.name || ""
                         }))}
                         setPage={setPage}
                     />

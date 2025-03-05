@@ -1,4 +1,4 @@
-import {createContext, useEffect, useState} from "react";
+import { createContext, useEffect, useState } from "react";
 import {
     getSolanaWrappedKeyMetaDataByPkpEthAddress,
     getWrappedKeyMetaDatas,
@@ -10,10 +10,10 @@ import {
 import useAuthenticate from "../hooks/auth/useAuthenticate";
 import useAccounts from "../hooks/auth/useAccounts";
 import useSession from "../hooks/auth/useSession";
-import {AuthMethod, ILitNodeClient, IRelayPKP, SessionSigs} from "@lit-protocol/types";
-import {PKPEthersWallet} from "@lit-protocol/pkp-ethers";
-import {ExternalProvider, JsonRpcSigner, Web3Provider} from "@ethersproject/providers";
-import {Connector, useAccount, useSwitchChain} from "wagmi";
+import { AuthMethod, ILitNodeClient, IRelayPKP, SessionSigs } from "@lit-protocol/types";
+import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
+import { ExternalProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers";
+import { Connector, useAccount, useSwitchChain } from "wagmi";
 import useLocalStorage from "../hooks/useLocalStorage";
 import {
     LOCAL_STORAGE_AUTH_REDIRECT_TYPE,
@@ -22,9 +22,10 @@ import {
     mapPaymasterUrls,
     mapRpcUrls,
 } from "../constants";
-import {SavedWalletInfo, type SolanaWalletInfoType} from "../types/auth";
-import {exportPrivateKey, generatePrivateKey} from "@lit-protocol/wrapped-keys/src/lib/api";
-import {Keypair, VersionedTransaction} from "@solana/web3.js";
+import { SavedWalletInfo, type SolanaWalletInfoType } from "../types/auth";
+import { exportPrivateKey, generatePrivateKey } from "@lit-protocol/wrapped-keys/src/lib/api";
+import { Keypair, VersionedTransaction, Connection, PublicKey, Transaction, sendAndConfirmTransaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { getOrCreateAssociatedTokenAccount, createTransferInstruction } from '@solana/spl-token';
 import {
     createPublicClient,
     createWalletClient,
@@ -33,9 +34,9 @@ import {
     SendTransactionParameters,
     type WalletClient
 } from "viem";
-import {http} from "@wagmi/core";
-import {signerToEcdsaValidator} from "@zerodev/ecdsa-validator";
-import {getEntryPoint, KERNEL_V3_1} from "@zerodev/sdk/constants";
+import { http } from "@wagmi/core";
+import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
+import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import {
     type CreateKernelAccountReturnType,
     createKernelAccount,
@@ -44,10 +45,11 @@ import {
     getUserOperationGasPrice,
     KernelEIP1193Provider
 } from "@zerodev/sdk";
-import {ETHRequestSigningPayload} from "@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types";
-import {ethers} from "ethers";
-import {mapChainId2ViemChain} from "../config/networks.ts";
-import {useStore} from "../store/useStore.ts";
+import { ETHRequestSigningPayload } from "@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types";
+import { ethers } from "ethers";
+import { mapChainId2ViemChain } from "../config/networks.ts";
+import { useStore } from "../store/useStore.ts";
+import { connection as SolanaConnection } from "../config/solana.ts";
 import axios from "axios";
 
 export type WalletType = 'EOA' | 'EMBEDDED' | 'UNKNOWN';
@@ -94,6 +96,7 @@ interface Web3AuthContextType {
     isLoadingStoredWallet: boolean,
     solanaWalletInfo: SolanaWalletInfoType | undefined,
     signSolanaTransaction: (solanaTransaction: VersionedTransaction) => Promise<VersionedTransaction | null>,
+    transferSolToken: (recipientAddress: string, tokenMintAddress: string, amount: number, decimals: number) => Promise<string>,
 
     userData: UserData | null,
     fetchUserData: () => Promise<void>,
@@ -158,6 +161,9 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     signSolanaTransaction: async () => {
         return null
     },
+    transferSolToken: async () => {
+        return ""
+    },
     userData: null,
     fetchUserData: async () => {
     },
@@ -165,7 +171,7 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     walletType: 'UNKNOWN',
 
     checkWalletAndUsername: async () => {
-        return {exists: false};
+        return { exists: false };
     }
 
 };
@@ -177,7 +183,7 @@ const kernelVersion = KERNEL_V3_1;
 import { getLoginUserId } from "../components/market/Calendar/api/Calendar-api.ts";
 import { checkUsername } from "../components/games/api/useUsername-api.ts";
 
-const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
+const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const redirectUri = ORIGIN;
     const [isConnected, setIsConnected] = useState(false);
@@ -209,7 +215,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         chainId: wagmiChainId,
     } = useAccount()
 
-    const {switchChain: switchChainWagmi} = useSwitchChain()
+    const { switchChain: switchChainWagmi } = useSwitchChain()
 
     const {
         authMethod,
@@ -426,11 +432,11 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 client: publicClient,
                 paymaster: {
                     getPaymasterData(userOperation) {
-                        return zerodevPaymaster.sponsorUserOperation({userOperation})
+                        return zerodevPaymaster.sponsorUserOperation({ userOperation })
                     }
                 },
                 userOperation: {
-                    estimateFeesPerGas: async ({bundlerClient}) => {
+                    estimateFeesPerGas: async ({ bundlerClient }) => {
                         return getUserOperationGasPrice(bundlerClient)
                     }
                 }
@@ -547,38 +553,38 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
                 chainId: chainId ?? 1,
             })
 
-            ;(async () => {
-                let solanaWalletData: SolanaWalletInfoType | undefined = undefined
-                try {
-                    const wrappedKeyMetaDataList = await getWrappedKeyMetaDatas(sessionSigs)
-                    const targetMetaData = getSolanaWrappedKeyMetaDataByPkpEthAddress(wrappedKeyMetaDataList, currentAccount.ethAddress)
-                    if (!targetMetaData) {
-                        const {id, pkpAddress, generatedPublicKey} = await generatePrivateKey({
-                            pkpSessionSigs: sessionSigs,
-                            network: 'solana',
-                            memo: "solana address",
-                            litNodeClient: litNodeClient as ILitNodeClient,
-                        });
-                        // console.log("generated", pkpAddress, generatedPublicKey)
-                        solanaWalletData = {
-                            publicKey: generatedPublicKey,
-                            pkpAddress: pkpAddress,
-                            wrappedKeyId: id,
+                ; (async () => {
+                    let solanaWalletData: SolanaWalletInfoType | undefined = undefined
+                    try {
+                        const wrappedKeyMetaDataList = await getWrappedKeyMetaDatas(sessionSigs)
+                        const targetMetaData = getSolanaWrappedKeyMetaDataByPkpEthAddress(wrappedKeyMetaDataList, currentAccount.ethAddress)
+                        if (!targetMetaData) {
+                            const { id, pkpAddress, generatedPublicKey } = await generatePrivateKey({
+                                pkpSessionSigs: sessionSigs,
+                                network: 'solana',
+                                memo: "solana address",
+                                litNodeClient: litNodeClient as ILitNodeClient,
+                            });
+                            // console.log("generated", pkpAddress, generatedPublicKey)
+                            solanaWalletData = {
+                                publicKey: generatedPublicKey,
+                                pkpAddress: pkpAddress,
+                                wrappedKeyId: id,
+                            }
+                        } else {
+                            solanaWalletData = {
+                                publicKey: targetMetaData.publicKey,
+                                pkpAddress: targetMetaData.pkpAddress,
+                                wrappedKeyId: targetMetaData.id,
+                            }
                         }
-                    } else {
-                        solanaWalletData = {
-                            publicKey: targetMetaData.publicKey,
-                            pkpAddress: targetMetaData.pkpAddress,
-                            wrappedKeyId: targetMetaData.id,
-                        }
-                    }
 
-                    setSolanaWalletInfo(solanaWalletData)
-                    fetchUserData();
-                } catch (err) {
-                    console.log("error during initialize solana address", err)
-                }
-            })()
+                        setSolanaWalletInfo(solanaWalletData)
+                        fetchUserData();
+                    } catch (err) {
+                        console.log("error during initialize solana address", err)
+                    }
+                })()
 
         }
     }, [authMethod, chainId, currentAccount, sessionSigs, setProviderByPKPWallet, setStoredWalletInfo, solanaWalletInfo])
@@ -659,6 +665,78 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         return null
     }
 
+    const transferSolToken = async (recipientAddress: string, tokenMintAddress: string, amount: number, decimals: number) => {
+        if (solanaWalletInfo && sessionSigs) {
+            try {
+                const privateKey = await exportPrivateKey({
+                    pkpSessionSigs: sessionSigs!,
+                    litNodeClient,
+                    network: "solana",
+                    id: solanaWalletInfo.wrappedKeyId,
+                });
+
+                const keypair = Keypair.fromSecretKey(Buffer.from(privateKey.decryptedPrivateKey, "hex"));
+
+                if (tokenMintAddress === "So11111111111111111111111111111111111111112") {
+                    console.log('transfer native sol')
+                    const transaction = new Transaction().add(
+                        SystemProgram.transfer({
+                            fromPubkey: keypair.publicKey,
+                            toPubkey: new PublicKey(recipientAddress),
+                            lamports: amount * LAMPORTS_PER_SOL,
+                        })
+                    );
+                    console.log('transaction = ', transaction);
+
+                    const signature = await sendAndConfirmTransaction(SolanaConnection, transaction, [keypair]);
+                    console.log("Transaction Signature:", signature);
+                    return signature;
+                } else {
+                    console.log(`1 - Getting Source Token Account`);
+                    let sourceAccount = await getOrCreateAssociatedTokenAccount(
+                        SolanaConnection,
+                        keypair,
+                        new PublicKey(tokenMintAddress),
+                        keypair.publicKey
+                    );
+                    console.log(`    Source Account: ${sourceAccount.address.toString()}`);
+
+                    console.log(`2 - Getting Destination Token Account`);
+                    let destinationAccount = await getOrCreateAssociatedTokenAccount(
+                        SolanaConnection,
+                        keypair,
+                        new PublicKey(tokenMintAddress),
+                        new PublicKey(recipientAddress)
+                    );
+                    console.log(`    Destination Account: ${destinationAccount.address.toString()}`);
+
+                    const tx = new Transaction();
+                    tx.add(createTransferInstruction(
+                        sourceAccount.address,
+                        destinationAccount.address,
+                        keypair.publicKey,
+                        amount * Math.pow(10, decimals)
+                    ))
+
+                    const latestBlockHash = await SolanaConnection.getLatestBlockhash('confirmed');
+                    tx.recentBlockhash = await latestBlockHash.blockhash;
+                    const signature = await sendAndConfirmTransaction(SolanaConnection, tx, [keypair]);
+                    console.log(
+                        '\x1b[32m', //Green Text
+                        `   Transaction Success!🎉`,
+                        `\n    https://explorer.solana.com/tx/${signature}`
+                    );
+
+                    return signature;
+                }
+            } catch (err) {
+                console.log('transfer sol token err: ', err)
+            }
+        }
+
+        return "";
+    }
+
     const login = () => {
         useStore.getState().setIsSigninModalOpen(true)
     }
@@ -674,7 +752,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
     const switchChain = async (chainId: number) => {
         try {
             if (isWagmiWalletConnected) {
-                await switchChainWagmi({chainId})
+                await switchChainWagmi({ chainId })
                 const walletClient = createWalletClient({
                     account: connectedWalletAddress,
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -731,6 +809,7 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
 
         solanaWalletInfo,
         signSolanaTransaction,
+        transferSolToken,
 
         walletClient,
         setWalletClient,
