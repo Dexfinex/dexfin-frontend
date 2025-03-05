@@ -1,0 +1,147 @@
+export const yields_data =
+    [{
+        "chainId": 1,
+        "address": "0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF",
+        "decimals": 18,
+        "name": "Balancer GHO/USDT/USDC",
+        "symbol": "GHO/USDT/USDC",
+        "logosUri": [],
+        "type": "defi",
+        "protocolSlug": "balancer-v2",
+        "underlyingTokens": [{
+            "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "chainId": 1,
+            "type": "base",
+            "decimals": 6,
+            "name": "USDC",
+            "symbol": "USDC",
+            "logosUri": ["https://assets.coingecko.com/coins/images/6319/thumb/usdc.png?1696506694"]
+        }, {
+            "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+            "chainId": 1,
+            "type": "base",
+            "decimals": 6,
+            "name": "Tether",
+            "symbol": "USDT",
+            "logosUri": ["https://assets.coingecko.com/coins/images/325/thumb/Tether.png?1696501661"]
+        }, {
+            "address": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
+            "chainId": 1,
+            "type": "base",
+            "decimals": 18,
+            "name": "GHO",
+            "symbol": "GHO",
+            "logosUri": ["https://assets.coingecko.com/coins/images/30663/thumb/gho-token-logo.png?1720517092"]
+        }, {
+            "address": "0x8353157092ED8Be69a9DF8F95af097bbF33Cb2aF",
+            "chainId": 1,
+            "type": "defi",
+            "decimals": 18,
+            "name": "Balancer GHO/USDT/USDC",
+            "symbol": "GHO/USDT/USDC",
+            "logosUri": []
+        }],
+        "primaryAddress": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+        "apy": 3.99942,
+        "tvl": 2636229743333630
+    }, {
+        "chainId": 1,
+        "address": "0xc3d688B66703497DAA19211EEdff47f25384cdc3",
+        "decimals": 6,
+        "name": "Compound USDC",
+        "symbol": "cUSDCv3",
+        "logosUri": [],
+        "type": "defi",
+        "protocolSlug": "compound-v3",
+        "underlyingTokens": [{
+            "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "chainId": 1,
+            "type": "base",
+            "decimals": 6,
+            "name": "USDC",
+            "symbol": "USDC",
+            "logosUri": ["https://assets.coingecko.com/coins/images/6319/thumb/usdc.png?1696506694"]
+        }],
+        "primaryAddress": "0xc3d688B66703497DAA19211EEdff47f25384cdc3",
+        "apy": 4.2227,
+        "tvl": 154445074.22
+    }, {
+        "chainId": 1,
+        "address": "0xAb96AA0ee764924f49fbB372f3B4db9c2cB24Ea2",
+        "decimals": 18,
+        "name": "USDLxUSDC",
+        "symbol": "USDLUSDC",
+        "logosUri": [],
+        "type": "defi",
+        "protocolSlug": "curve-dex",
+        "underlyingTokens": [{
+            "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "chainId": 1,
+            "type": "base",
+            "decimals": 6,
+            "name": "USDC",
+            "symbol": "USDC",
+            "logosUri": ["https://assets.coingecko.com/coins/images/6319/thumb/usdc.png?1696506694"]
+        }, {
+            "address": "0xbdC7c08592Ee4aa51D06C27Ee23D5087D65aDbcD",
+            "chainId": 1,
+            "type": "base",
+            "decimals": 18,
+            "name": "Lift Dollar",
+            "symbol": "USDL",
+            "logosUri": ["https://assets.coingecko.com/coins/images/38484/thumb/USDL-Token-200px.png?1725022887"]
+        }],
+        "primaryAddress": "0xAb96AA0ee764924f49fbB372f3B4db9c2cB24Ea2",
+        "apy": 1.65,
+        "tvl": 29919666.87
+    }, {
+        "chainId": 1,
+        "address": "0x4DEcE678ceceb27446b35C672dC7d61F30bAD69E",
+        "decimals": 18,
+        "name": "Curve.fi Factory Plain Pool: crvUSD/USDC",
+        "symbol": "crvUSDUSDC-f",
+        "logosUri": [],
+        "type": "defi",
+        "protocolSlug": "curve-dex",
+        "underlyingTokens": [{
+            "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "chainId": 1,
+            "type": "base",
+            "decimals": 6,
+            "name": "USDC",
+            "symbol": "USDC",
+            "logosUri": ["https://assets.coingecko.com/coins/images/6319/thumb/usdc.png?1696506694"]
+        }, {
+            "address": "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E",
+            "chainId": 1,
+            "type": "base",
+            "decimals": 18,
+            "name": "crvUSD",
+            "symbol": "CRVUSD",
+            "logosUri": ["https://assets.coingecko.com/coins/images/30118/thumb/0xf939e0a03fb07f59a73314e73794be0e57ac1b4e.png?1721097561"]
+        }],
+        "primaryAddress": "0x4DEcE678ceceb27446b35C672dC7d61F30bAD69E",
+        "apy": 4.39183,
+        "tvl": 29667303.31
+    }, {
+        "chainId": 1,
+        "address": "0x39AA39c021dfbaE8faC545936693aC917d5E7563",
+        "decimals": 8,
+        "name": "cUSDC",
+        "symbol": "CUSDC",
+        "logosUri": ["https://assets.coingecko.com/coins/images/9442/thumb/Compound_USDC.png?1696509534"],
+        "type": "defi",
+        "protocolSlug": "compound-v2",
+        "underlyingTokens": [{
+            "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "chainId": 1,
+            "type": "base",
+            "decimals": 6,
+            "name": "USDC",
+            "symbol": "USDC",
+            "logosUri": ["https://assets.coingecko.com/coins/images/6319/thumb/usdc.png?1696506694"]
+        }],
+        "primaryAddress": "0x39AA39c021dfbaE8faC545936693aC917d5E7563",
+        "apy": 1.79502,
+        "tvl": 29403990.01
+    }];

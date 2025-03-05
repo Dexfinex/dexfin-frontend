@@ -128,8 +128,7 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
                         </div>
                         <div className="ml-auto text-right">
                             <div className={`text-emerald-400`}>
-                                {/* {modalState.position?.apy || 0}% APY */}
-                                1.87% APY
+                                {modalState.position?.apy || 0}% APY
                             </div>
                         </div>
                     </div>
