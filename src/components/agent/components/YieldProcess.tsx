@@ -6,6 +6,7 @@ import { Web3AuthContext } from '../../../providers/Web3AuthContext';
 import { formatVolume } from '../../../utils/agent.tsx';
 import { FailedTransaction } from '../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../modals/SuccessModal.tsx';
+import {protocolLogos} from '../../../constants/agent.constants.ts'
 interface YieldProcessProps {
   onClose: () => void;
   yields: Yield[];
@@ -183,23 +184,25 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
           <div
             key={index}
             onClick={() => setSelectedProtocol(yieldItem)}
-            className={`p-4 rounded-xl transition-all cursor-pointer ${selectedProtocol?.token.address === yieldItem.token.address
+            className={`p-4 rounded-xl transition-all cursor-pointer ${selectedProtocol?.address === yieldItem.address
               ? 'bg-blue-500/20 border border-blue-500/50'
               : 'bg-white/5 hover:bg-white/10 border border-transparent'
               }`}
           >
             <div className="flex items-center gap-4 mb-2">
-              {yieldItem?.logoURI &&
+              
+              {yieldItem.protocolLogo[0] &&
                 <img
-                  src={yieldItem?.logoURI}
-                  alt={yieldItem?.protocol}
+                  src={protocolLogos[yieldItem?.protocolSlug] ? protocolLogos[yieldItem?.protocolSlug] : yieldItem?.protocolLogo[0] + '?raw=true'}
+                  alt={yieldItem?.protocolSlug}
                   className="w-8 h-8 object-contain rounded"
                 />
               }
               <div className="flex-1 flex items-center justify-between">
+
                 <h4 className="font-medium">{yieldItem.protocolSlug}</h4>
                 <div className="text-lg font-semibold text-blue-400">
-                  {yieldItem.token.apy.toFixed(2)}% APY
+                  {yieldItem.apy.toFixed(2)}% APY
                 </div>
               </div>
             </div>
@@ -208,11 +211,11 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
                 <div>
                   <span className="text-white/40">TVL:</span>{' '}
                   <span className="text-white/80">
-                    {formatVolume(yieldItem.token.tvl)}
+                    {yieldItem.tvl>1000000000000000 ? formatVolume(yieldItem.tvl/100000000): formatVolume(yieldItem.tvl)}
                   </span>
                 </div>
                 <div className="text-lg font-semibold">
-                  {yieldItem.token.symbol}
+                  {yieldItem.symbol}
                 </div>
               </div>
             </div>
@@ -246,14 +249,10 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 mb-6">
         <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-          {selectedProtocol?.logoURI && <img
-            src={selectedProtocol?.logoURI}
-            alt={selectedProtocol?.protocol}
-            className="w-8 h-8 object-contain rounded"
-          />}
+
         </div>
         <div>
-          <h3 className="text-xl font-medium">{selectedProtocol?.protocol}</h3>
+          <h3 className="text-xl font-medium">{selectedProtocol?.protocolSlug}</h3>
           <p className="text-white/60">Ready to execute yield strategy</p>
         </div>
       </div>
@@ -264,12 +263,12 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
         <div className="space-y-4">
           <div className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
-              {selectedProtocol?.token.underlyingTokens[0].logosUri &&
-                <img
-                  src="https://assets.coingecko.com/coins/images/6319/thumb/usdc.png?1696506694"
-                  alt="USDC"
-                  className="w-8 h-8 object-contain"
-                />}
+
+              <img
+                src="https://assets.coingecko.com/coins/images/6319/thumb/usdc.png?1696506694"
+                alt="USDC"
+                className="w-8 h-8 object-contain"
+              />
               <div>
                 <div className="text-sm text-white/60">Amount</div>
                 <div className="text-lg font-medium">{amount} USDC</div>
@@ -277,16 +276,16 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
             </div>
             <ArrowRight className="w-5 h-5 text-white/40" />
             <div className="flex items-center gap-3">
-              {selectedProtocol?.token.logosUri[0] &&
+              {selectedProtocol?.logosUri[0] &&
                 <img
-                  src={selectedProtocol?.token.logosUri[0]}
-                  alt={selectedProtocol?.token.name}
+                  src={selectedProtocol?.logosUri[0]}
+                  alt={selectedProtocol?.name}
                   className="w-8 h-8"
                 />
               }
               <div className="text-right">
                 <div className="text-sm text-white/60"></div>
-                <div className="text-lg font-medium">{selectedProtocol?.token.symbol}</div>
+                <div className="text-lg font-medium">{selectedProtocol?.symbol}</div>
               </div>
             </div>
           </div>
@@ -295,7 +294,7 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
             <div className="flex justify-between mb-2">
               <span className="text-white/60">Expected APY</span>
               <span className="text-blue-400 font-medium">
-                {selectedProtocol?.token?.apy.toFixed(2)}%
+                {selectedProtocol?.apy.toFixed(2)}%
               </span>
             </div>
             <div className="flex justify-between mb-2">
@@ -338,20 +337,20 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
               className="w-12 h-12"
             />
             <ArrowRight className="w-6 h-6 text-white/40" />
-            {selectedProtocol?.token?.logosUri[0] &&
+            {selectedProtocol?.logosUri[0] &&
               <img
-                src={selectedProtocol?.token?.logosUri[0]}
-                alt={selectedProtocol?.token?.name}
+                src={selectedProtocol?.logosUri[0]}
+                alt={selectedProtocol?.name}
                 className="w-12 h-12"
               />
             }
           </div>
           <p className="mt-4 text-white/60">
-            Depositing {amount} USDC into {selectedProtocol?.token.name}
+            Depositing {amount} USDC into {selectedProtocol?.name}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`Your USDC has been successfully deposited into ${selectedProtocol?.token.name}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`Your USDC has been successfully deposited into ${selectedProtocol?.name}`} />
       )}
     </div>
   );
@@ -388,7 +387,7 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Deposit  ${amount} USDC for ${selectedProtocol?.token.name} via ${selectedProtocol?.protocol}`}
+          description={`Deposit  ${amount} USDC for ${selectedProtocol?.name} via ${selectedProtocol?.protocolSlug}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (

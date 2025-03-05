@@ -28,33 +28,29 @@ export type Step = {
 }
 
 export type Yield = {
-  protocol: string;
+  protocolLogo: string[];
+  chainId: number;
+  address: string;
+  decimals: number;
+  name: string;
+  symbol: string;
+  logosUri: string[],
+  type: string;
   protocolSlug: string;
-  token: {
-    chainId: number;
-    address: string;
-    decimals: number;
-    name: string;
-    symbol: string;
-    logosUri: string[],
-    type: string;
-    protocolSlug: string;
-    underlyingTokens: [
-      {
-        address: string;
-        chainId: number;
-        type: string;
-        decimals: number;
-        name: string;
-        symbol: string;
-        logosUri: string[];
-      }
-    ],
-    primaryAddress: string;
-    apy: number;
-    tvl: number;
-  }
-  logoURI: string;
+  underlyingTokens: [
+    {
+      address: string;
+      chainId: number;
+      type: string;
+      decimals: number;
+      name: string;
+      symbol: string;
+      logosUri: string[];
+    }
+  ],
+  primaryAddress: string;
+  apy: number;
+  tvl: number;
 }
 
 export interface BrianCoinData {
