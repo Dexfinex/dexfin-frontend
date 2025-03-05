@@ -28,7 +28,7 @@ const widgetConfigs = [
   { type: 'Market News', icon: Newspaper, description: 'Latest crypto news and updates' },
   { type: 'Market Pulse', icon: LineChart, description: 'Live cryptocurrency price charts' },
   { type: 'Fear & Greed Index', icon: Gauge, description: 'Market sentiment indicator' },
-  { type: 'Quick Swap', icon: RefreshCw, description: 'Instant token swaps', comingSoon: true },
+  { type: 'Quick Swap', icon: RefreshCw, description: 'Instant token swaps' },
   { type: 'Price Converter', icon: DollarSign, description: 'Convert between tokens and fiat' },
   { type: 'Ask Anything', icon: MessageSquare, description: 'AI-powered crypto assistant' },
   { type: 'Trending', icon: TrendingUp, description: 'Top trending cryptocurrencies' },
@@ -46,19 +46,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 640;
       setIsMobile(mobile);
-      
+
       // If on mobile and 'widgets' tab is selected, switch to 'appearance'
       if (mobile && activeTab === 'widgets') {
         setActiveTab('appearance');
       }
     };
-    
+
     // Initial check
     checkScreenSize();
-    
+
     // Add event listener
     window.addEventListener('resize', checkScreenSize);
-    
+
     // Cleanup
     return () => window.removeEventListener('resize', checkScreenSize);
   }, [activeTab]);
@@ -91,9 +91,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <button
                 key={tab.id}
                 onClick={() => !tab.disabled && setActiveTab(tab.id as SettingsTab)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors whitespace-nowrap mr-2 md:mr-0 md:w-full md:mb-2 ${
-                  activeTab === tab.id ? 'bg-white/10' : 'hover:bg-white/5'
-                } ${tab.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors whitespace-nowrap mr-2 md:mr-0 md:w-full md:mb-2 ${activeTab === tab.id ? 'bg-white/10' : 'hover:bg-white/5'
+                  } ${tab.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                 disabled={tab.disabled}
               >
                 <tab.icon className="w-5 h-5 flex-shrink-0" />
@@ -122,7 +121,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {widgetConfigs.map(({ type, icon: Icon, description, comingSoon }) => (
+                  {widgetConfigs.map(({ type, icon: Icon, description }) => (
                     <div
                       key={type}
                       className="flex items-center justify-between p-3 md:p-4 rounded-lg glass"
@@ -133,25 +132,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         </div>
                         <div className="min-w-0">
                           <h4 className="font-medium truncate">{type}</h4>
-                          {comingSoon ? (
-                            <span className="text-xs text-blue-400 font-medium">Coming soon</span>
-                          ) : (
-                            <p className="text-sm text-white/60 truncate">{description}</p>
-                          )}
+
+                          <p className="text-sm text-white/60 truncate">{description}</p>
                         </div>
                       </div>
                       <button
-                        onClick={() => !comingSoon && toggleWidgetVisibility(type)}
-                        className={`w-12 h-6 rounded-full transition-colors ml-2 flex-shrink-0 ${
-                          widgetVisibility[type] && !comingSoon ? 'bg-blue-500' : 'bg-white/10'
-                        } relative ${comingSoon ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        disabled={comingSoon}
+                        onClick={() => toggleWidgetVisibility(type)}
+                        className={`w-12 h-6 rounded-full transition-colors ml-2 flex-shrink-0 ${widgetVisibility[type] ? 'bg-blue-500' : 'bg-white/10'
+                          } relative`}
                         aria-label={`Toggle ${type}`}
                       >
                         <div
-                          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                            widgetVisibility[type] && !comingSoon ? 'left-7' : 'left-1'
-                          }`}
+                          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${widgetVisibility[type] ? 'left-7' : 'left-1'
+                            }`}
                         />
                       </button>
                     </div>
