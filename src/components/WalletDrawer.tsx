@@ -3,7 +3,7 @@ import { Web3AuthContext } from "../providers/Web3AuthContext";
 import { motion, time } from "framer-motion";
 import { useStore } from "../store/useStore";
 import { TokenChainIcon } from "./swap/components/TokenIcon";
-import { CheckCircle, Copy, Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, ArrowLeft, LayoutGrid, History, Landmark, ExternalLink, Clock } from "lucide-react";
+import { CheckCircle, Copy, Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, ArrowLeft, LayoutGrid, History, Landmark, ExternalLink, Clock, ImagesIcon, WalletCardsIcon } from "lucide-react";
 import { mockDeFiPositions, mockDeFiStats, formatUsdValue, formatApy, getHealthFactorColor, } from '../lib/wallet';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { shrinkAddress, formatNumberByFrac, formatNumber, getHourAndMinute, getMonthDayHour, getMonthDayYear, formatDate, getFullDate } from "../utils/common.util";
@@ -14,7 +14,7 @@ import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
 import useTokenTransferStore from '../store/useTokenTransferStore.ts';
 import { useEvmWalletTransfer } from "../hooks/useTransfer";
-import { Skeleton, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
+import { Skeleton, Popover, PopoverTrigger, PopoverContent, theme } from '@chakra-ui/react';
 import { coingeckoService } from "../services/coingecko.service";
 import { birdeyeService } from "../services/birdeye.service";
 import { TransactionType } from "../types/wallet";
@@ -35,7 +35,7 @@ type ChartPriceType = {
     price: number
 }
 
-type ChartTimeType = "1D" | "1W" | "1M" | "1Y"
+type ChartTimeType = "1D" | "1W" | "1M" | "3M"
 
 type TimeRangeType = {
     mseconds: number,
@@ -47,7 +47,7 @@ const customMapTimeRange: Record<string, TimeRangeType> = {
     "1D": { mseconds: 86400, solInterval: "15m", interval: "1H" },
     "1W": { mseconds: 604800, solInterval: "1H", interval: "1D" },
     "1M": { mseconds: 2592000, solInterval: "4H", interval: "1W" },
-    "1Y": { mseconds: 31536000, solInterval: "1D", interval: "1Y" },
+    "3M": { mseconds: 7776000, solInterval: "1D", interval: "1Y" },
 };
 
 const CustomTooltip: React.FC<{ active?: boolean; payload?: any[]; }> = ({ active, payload }) => {
@@ -62,11 +62,12 @@ const CustomTooltip: React.FC<{ active?: boolean; payload?: any[]; }> = ({ activ
 
 const ShowMoreLess: React.FC<{ text: string, maxLength: number }> = ({ text, maxLength = 100 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const { theme } = useStore();
 
     const toggleExpand = () => setIsExpanded(!isExpanded);
 
     return (
-        <div className="text-white/70">
+        <div className={`${theme === "dark" ? "text-white/70" : "text-black/70"} text-md`}>
             <p>
                 {isExpanded ? text : text.slice(0, maxLength) + (text.length > maxLength ? "..." : "")}
             </p>
@@ -85,6 +86,7 @@ const ShowMoreLess: React.FC<{ text: string, maxLength: number }> = ({ text, max
 const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAddress, solAddress }) => {
     const [evmCopied, setEvmCopied] = useState(false);
     const [solCopied, setSolCopied] = useState(false);
+    const { theme } = useStore();
 
     const handleEvmCopy = () => {
         navigator.clipboard.writeText(evmAddress);
@@ -106,27 +108,28 @@ const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAdd
                     <Copy className="w-3 h-3" />
                 </div>
             </PopoverTrigger>
-            <PopoverContent className="!w-[236px] !border-1 !border-transparent !bg-black !p-2">
-                <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70" onClick={handleEvmCopy}>
+            <PopoverContent className={`!w-[236px] !border-1 !border-transparent ${theme === "dark" ? "!bg-black" : "!bg-white"} !p-2`}>
+                <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70 cursor-pointer" onClick={handleEvmCopy}>
                     <span className="flex items-center gap-1">
-                        <img src="https://cdn.moralis.io/eth/0x.png" className="w-4 h-4" />
+                        <img src="https://cdn.moralis.io/eth/0x.png" className="w-4 h-4 mr-1" />
                         <span>Ethereum</span>
                     </span>
                     {evmCopied ? <CheckCircle className="w-3 h-3 text-green-500" /> : <span>{shrinkAddress(evmAddress)}</span>}
                 </div>
-                <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70" onClick={handleSolCopy}>
+                {solAddress && <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70 cursor-pointer" onClick={handleSolCopy}>
                     <span className="flex items-center gap-1">
-                        <img src="https://assets.coingecko.com/coins/images/4128/small/solana.png" className="w-4 h-4" />
+                        <img src="https://assets.coingecko.com/coins/images/4128/small/solana.png" className="w-4 h-4 mr-1" />
                         <span>Solana</span>
                     </span>
                     {solCopied ? <CheckCircle className="w-3 h-3 text-green-500" /> : <span>{shrinkAddress(solAddress)}</span>}
-                </div>
+                </div>}
             </PopoverContent>
         </Popover>
     )
 }
 
 export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance }) => {
+    const { theme } = useStore();
     const [selectedRange, setSelectedRange] = useState<ChartTimeType>("1D");
     const [chartData, setChartData] = useState<Array<ChartPriceType> | null>(null);
     const [info, setInfo] = useState<any>(null);
@@ -157,7 +160,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                 readableTime = getMonthDayHour(e.time * 1000)
             } else if (selectedRange === "1M") {
                 readableTime = getMonthDayHour(e.time * 1000)
-            } else if (selectedRange === "1Y") {
+            } else if (selectedRange === "3M") {
                 readableTime = getMonthDayYear(e.time * 1000)
             }
 
@@ -182,7 +185,6 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
         } else { // will add 0x
             const timeFrom = currentTime - customMapTimeRange[selectedRange].mseconds
             const data = await coingeckoService.getOHLCV(tokenBalance.tokenId, customMapTimeRange[selectedRange].interval, timeFrom, currentTime)
-            console.log('chat data = ', data)
             if (data.length > 0) {
                 const cData = formatChartData(data)
                 setChartData([...cData])
@@ -203,7 +205,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
 
         return <div className="flex gap-2">
             {links.homepage[0] && <a
-                className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
+                className={`${theme === "dark" ? "text-white/90 bg-white/20 hover:bg-white/10" : "text-black/90 bg-black/20 hover:bg-black/10"}  text-xs sm:text-sm rounded-2xl px-3 py-1`}
                 target="_blank"
                 href={links.homepage[0]}
             >
@@ -211,7 +213,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
             </a>}
 
             {links.twitter_screen_name && <a
-                className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
+                className={`${theme === "dark" ? "text-white/90 bg-white/20 hover:bg-white/10" : "text-black/90 bg-black/20 hover:bg-black/10"}  text-xs sm:text-sm rounded-2xl px-3 py-1`}
                 target="_blank"
                 href={`https://x.com/${links.twitter_screen_name}`}
             >
@@ -219,7 +221,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
             </a>}
 
             {links.telegram_channel_identifier && <a
-                className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
+                className={`${theme === "dark" ? "text-white/90 bg-white/20 hover:bg-white/10" : "text-black/90 bg-black/20 hover:bg-black/10"}  text-xs sm:text-sm rounded-2xl px-3 py-1`}
                 target="_blank"
                 href={`https://t.me/${links.telegram_channel_identifier}`}
             >
@@ -228,7 +230,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
 
 
             {discordUrl && <a
-                className="text-white/90 bg-white/20 text-xs sm:text-sm rounded-2xl hover:bg-white/10 px-3 py-1"
+                className={`${theme === "dark" ? "text-white/90 bg-white/20 hover:bg-white/10" : "text-black/90 bg-black/20 hover:bg-black/10"}  text-xs sm:text-sm rounded-2xl px-3 py-1`}
                 target="_blank"
                 href={discordUrl}
             >
@@ -239,11 +241,11 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
 
     return (
         <div className="mt-4 mx-4">
-            <button className="rounded-full text-white/70 hover:bg-white/10 p-2" onClick={handleBack}>
+            <button className={`rounded-full ${theme === "dark" ? "text-white/70 hover:bg-white/10" : "text-black/70 hover:bg-black/10"}  p-2`} onClick={handleBack}>
                 <ArrowLeft className="w-5 h-5" />
             </button>
 
-            <div className="overflow-y-auto ai-chat-scrollbar max-h-[calc(100vh-140px)]">
+            <div className="overflow-y-auto ai-chat-scrollbar max-h-[calc(100vh-132px)]">
                 {
                     info?.name ?
                         <p className="text-center text-xl text-white">{info.name}</p> :
@@ -273,11 +275,12 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
 
                 {/* Buttons for time range selection */}
                 <div className="flex justify-evenly space-x-1 sm:space-x-2 mb-4">
-                    {["1D", "1W", "1M", "1Y"].map((range: any) => (
+                    {["1D", "1W", "1M", "3M"].map((range: any) => (
                         <button
                             key={range}
                             onClick={() => setSelectedRange(range)}
-                            className={`text-white/90 bg-white/20 w-14 sm:w-16 py-1 rounded-md hover:bg-white/10 text-xs sm:text-sm ${selectedRange === range ? 'bg-white/40' : ''}`}
+                            className={`text-white/90 ${theme === "dark" ? "bg-white/20 hover:bg-white/10" : "bg-black/20 hover:bg-black/10"} w-14 sm:w-16 py-1 rounded-md text-xs sm:text-sm 
+                                        ${selectedRange === range && theme === "dark" ? 'bg-white/40' : ''} ${selectedRange === range && theme === "light" ? 'bg-black/40' : ''}`}
                         >
                             {range}
                         </button>
@@ -285,7 +288,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                 </div>
 
                 <div className="mt-4">
-                    <p className="text-white/70 font-bold text-sm sm:text-base">Your Balance</p>
+                    <p className={`${theme === "dark" ? "text-white/70" : "text-black/70"} font-bold text-sm sm:text-base`}>Your Balance</p>
                     {
                         info?.market_data?.current_price?.usd ?
                             <div className="mt-1 px-2 py-3 bg-white/5 rounded-xl flex gap-2">
@@ -297,7 +300,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                                         <span>{tokenBalance.symbol}</span>
                                         <span>${info.market_data.current_price.usd}</span>
                                     </div>
-                                    <div className="flex justify-between text-white/70 text-sm">
+                                    <div className={`flex justify-between ${theme === "dark" ? "text-white/70" : "text-black/70"} text-sm`}>
                                         <span>{formatNumberByFrac(tokenBalance.balance)} {tokenBalance.symbol}</span>
                                         <span>{formatUsdValue(info.market_data.current_price.usd * tokenBalance.balance)}</span>
                                     </div>
@@ -308,7 +311,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                 </div>
 
                 <div className="mt-4">
-                    <p className="text-white/70 font-bold">About</p>
+                    <p className={`${theme === "dark" ? "text-white/70 font-bold" : "text-black/70 font-bold"}`}>About</p>
                     {
                         info?.description?.en ?
                             <ShowMoreLess text={info.description.en} maxLength={150} /> :
@@ -318,25 +321,25 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                 </div>
 
                 <div className="mt-4">
-                    <p className="text-white/70 font-bold text-sm sm:text-base">About</p>
+                    <p className={`${theme === "dark" ? "text-white/70 font-bold" : "text-black/70 font-bold"} text-sm sm:text-base`}>About</p>
                     {
                         info?.links ? renderSocialBtns(info?.links) : <Skeleton className="w-full h-24" />
                     }
                 </div>
 
                 <div className="mt-4">
-                    <p className="text-white/70 font-bold text-sm sm:text-base">Info</p>
+                    <p className={`${theme === "dark" ? "text-white/70 font-bold" : "text-black/70 font-bold"} text-sm sm:text-base`}>Info</p>
                     <div className="bg-white/5 rounded-xl text-xs sm:text-sm">
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className="text-white/70">Symbol</span>
+                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Symbol</span>
                             <span>{tokenBalance.symbol}</span>
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className="text-white/70">Network</span>
+                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Network</span>
                             <span>{tokenBalance.network?.name || ""}</span>
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className="text-white/70">Market Cap</span>
+                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Market Cap</span>
                             {
                                 info?.market_data?.market_cap?.usd ?
                                     <span className="">${formatNumber(info?.market_data?.market_cap?.usd)}</span> :
@@ -344,15 +347,15 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                             }
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className="text-white/70">Total Supply</span>
+                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Total Supply</span>
                             {
                                 info?.market_data?.total_supply ?
                                     <span className="">${formatNumber(info?.market_data?.total_supply)}</span> :
                                     <Skeleton className="w-16 h-6" />
                             }
                         </div>
-                        <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className="text-white/70">Circulating Supply</span>
+                        <div className="flex justify-between py-2 px-3">
+                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Circulating Supply</span>
                             {
                                 info?.market_data?.circulating_supply ?
                                     <span className="">${formatNumber(info?.market_data?.circulating_supply)}</span> :
@@ -388,7 +391,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     const { theme } = useStore();
     const { address, chainId, switchChain, logout, solanaWalletInfo } = useContext(Web3AuthContext);
     const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
-    const [selectedTab, setSelectedTab] = useState<'assets' | 'activity' | 'defi'>('assets');
+    const [selectedTab, setSelectedTab] = useState<'tokens' | 'nfts' | 'pools' | 'activity'>('tokens');
     const { isLoading: isLoadingBalance } = useWalletBalance();
     const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
     const [showSendDrawer, setShowSendDrawer] = useState(false);
@@ -432,91 +435,15 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
         setSelectedAsset(token)
     }
 
-    const renderAssets = () => (<div className="flex-1">
-        {/* Total Balance */}
-        <div className="bg-white/10 rounded-xl p-3 sm:p-4 mt-4 sm:mt-5 mx-4">
-            <div className="text-xs sm:text-sm text-white/60">Total Balance</div>
-            <div className="text-xl sm:text-3xl font-bold mt-1">
-                {
-                    isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)
-                }
-            </div>
-            {
-                !isLoadingBalance && <div className="flex items-center gap-1 mt-1 text-green-400">
-                    <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="text-xs sm:text-sm">+1.57% TODAY</span>
-                </div>
-            }
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-5 mx-4">
-            <button
-                disabled={tokenBalances.length === 0}
-                onClick={() => setShowSendDrawer(true)}
-                className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors ${tokenBalances.length === 0 ? "opacity-[0.6] disabled:pointer-events-none disabled:cursor-default" : ""}`}
-            >
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="text-xs sm:text-sm">Send</span>
-            </button>
-            <button
-                onClick={() => setShowReceiveDrawer(true)}
-                className="flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
-            >
-                <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="text-xs sm:text-sm">Receive</span>
-            </button>
-            <button
-                disabled={true}
-                onClick={() => setShowBuyDrawer(true)}
-                className="flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors opacity-[0.7]"
-            >
-                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="text-xs sm:text-sm">Buy</span>
-            </button>
-        </div>
-
-        {/* Assets List */}
-        <div className="flex-1 space-y-2 mt-4 sm:mt-5 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-300px)] mx-4">
-            {
-                isLoadingBalance ?
-                    <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
-                    : tokenBalances.map((token, index) => (
-                        <button
-                            key={token.chain + token.symbol + index}
-                            className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                            onClick={() => handleAsset(token)}
-                        >
-                            <div className="flex items-center gap-3">
-                                <TokenChainIcon src={token.logo} alt={token.name} size={"lg"} chainId={Number(token.chain)} />
-                                <div className='flex flex-col justify-start items-start'>
-                                    <div className="font-medium text-sm sm:text-md">{token.symbol}</div>
-                                    <div className="text-xs sm:text-sm text-white/60">
-                                        {`${formatNumberByFrac(token.balance)} ${token.symbol}`}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="text-right text-sm md:text-md">
-                                <span>{formatUsdValue(token.usdValue)}</span>
-                                {/* <div className="text-sm text-green-400">
-                                {formatApy(0)} APY
-                                </div> */}
-                            </div>
-                        </button>
-                    ))
-            }
-        </div>
-    </div>)
-
     const renderActivity = () => (
-        <div className="space-y-3 flex-1 mt-6 mx-4">
+        <div className="space-y-3 flex-1 mt-4 sm:mt-5 mx-4">
             {
-                transfers.length === 0 && <div className='w-full h-full flex justify-center items-center align-center'><h2 className='text-white/60 italic'>No activities yet</h2></div>
+                transfers.length === 0 && <div className='w-full h-full flex justify-center items-center align-center mt-20'><h2 className='text-white/60 italic'>No activities yet</h2></div>
             }
             {
-                transfers.map((tx) => (
+                transfers.map((tx, index) => (
                     <div
-                        key={tx.txHash}
+                        key={tx.txHash + index}
                         className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
                     >
                         <div className="flex items-center justify-between mb-2">
@@ -556,97 +483,68 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
         </div>
     )
 
-    const renderDeFi = () => (
-        <div className="space-y-6 flex-1 mt-6 mx-4">
-            {/* DeFi Overview */}
-            <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-xs sm:text-sm text-white/60">Total Value Locked</div>
-                    <div className="text-lg sm:text-2xl font-bold mt-1">
-                        {formatUsdValue(mockDeFiStats.totalValueLocked)}
-                    </div>
-                    <div className="text-xs sm:text-sm text-white/60 mt-1">
-                        {mockDeFiStats.distribution.lending}% Lending
-                    </div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-xs sm:text-sm text-white/60">Daily Yield</div>
-                    <div className="text-lg sm:text-2xl font-bold mt-1">
-                        {formatUsdValue(mockDeFiStats.dailyYield)}
-                    </div>
-                    <div className="text-xs sm:text-sm text-green-400 mt-1">
-                        {formatApy(mockDeFiStats.averageApy)} APY
-                    </div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-xs sm:text-sm text-white/60">Risk Level</div>
-                    <div className="text-lg sm:text-2xl font-bold mt-1">
-                        {mockDeFiStats.riskLevel}
-                    </div>
-                    <div className="text-xs sm:text-sm text-white/60 mt-1">
-                        {mockDeFiStats.distribution.borrowing}% Borrowed
-                    </div>
-                </div>
-            </div>
-
-            {/* DeFi Positions */}
-            <div className="space-y-3">
-                {sortedMockDeFiPositions.map((position) => (
-                    <div
-                        key={position.id}
-                        className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
-                    >
-                        <div className="flex items-center justify-between mb-3">
+    const renderTokens = () => (
+        <div className="flex-1 space-y-2 mt-4 sm:mt-5 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-290px)] mx-4">
+            {
+                isLoadingBalance ?
+                    <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
+                    : tokenBalances.map((token, index) => (
+                        <button
+                            key={token.chain + token.symbol + index}
+                            className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                            onClick={() => handleAsset(token)}
+                        >
                             <div className="flex items-center gap-3">
-                                <img
-                                    src={position.protocolLogo}
-                                    alt={position.protocol}
-                                    className="w-8 h-8"
-                                />
-                                <div>
-                                    <div className="text-sm sm:text-md font-medium">{position.protocol}</div>
-                                    <div className="text-xs sm:text-sm text-white/60">{position.type}</div>
+                                <TokenChainIcon src={token.logo} alt={token.name} size={"lg"} chainId={Number(token.chain)} />
+                                <div className='flex flex-col justify-start items-start'>
+                                    <div className="font-medium text-sm sm:text-md">{token.symbol}</div>
+                                    <div className="text-xs sm:text-sm text-white/60">
+                                        {`${formatNumberByFrac(token.balance)} ${token.symbol}`}
+                                    </div>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <div className="text-md sm:text-lg font-medium">
-                                    {formatUsdValue(position.value)}
-                                </div>
-                                <div className="text-xs sm:text-sm text-green-400">
-                                    {formatApy(position.apy)} APY
-                                </div>
+                            <div className="text-right text-sm md:text-md">
+                                <span>{formatUsdValue(token.usdValue)}</span>
+                                {/* <div className="text-sm text-green-400">
+                        {formatApy(0)} APY
+                        </div> */}
                             </div>
-                        </div>
+                        </button>
+                    ))
+            }
+        </div>
+    )
 
-                        <div className="flex items-center gap-4 text-xs sm:text-sm">
-                            <div>
-                                <span className="text-white/60">Amount:</span>{' '}
-                                {`${formatNumberByFrac(position.amount)} ${position.token.symbol}`}
-                            </div>
-                            {position.rewards && (
-                                <div>
-                                    <span className="text-white/60">Rewards:</span>{' '}
-                                    {formatUsdValue(position.rewards.value)}
-                                </div>
-                            )}
-                            {position.healthFactor && (
-                                <div>
-                                    <span className="text-white/60">Health:</span>{' '}
-                                    <span className={getHealthFactorColor(position.healthFactor)}>
-                                        {position.healthFactor.toFixed(2)}
-                                    </span>
-                                </div>
-                            )}
-                            <div className="flex items-center gap-1 ml-auto text-white/60">
-                                <Clock className="w-4 h-4" />
-                                <span>
-                                    {Math.floor((Date.now() - position.startDate.getTime()) / (1000 * 60 * 60 * 24))}d
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                ))}
+    const renderNfts = () => (
+        <div className="flex-1 mt-4 sm:mt-5 mx-4">
+            <div className="flex flex-col items-center text-white/90 mt-24">
+                <ImagesIcon className="w-20 h-20" />
+                <p className="text-xl sm:text-2xl mt-2">No NFTs yet</p>
+                <p className={`text-xs sm:text-sm ${theme === "dark" ? 'text-white/70' : 'text-black/70'}`}>Buy or transfer NFTs to this wallet to get started.</p>
+                <a
+                    className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors mt-4`}
+                    href="https://opensea.io"
+                    target="_blank"
+                >
+                    <span className="text-xs sm:text-sm">Explore NFTs</span>
+                </a>
             </div>
+        </div>
+    )
+
+    const renderPools = () => (
+        <div className="flex-1 mt-4 sm:mt-5 mx-4">
+            <div className="flex flex-col items-center text-white/90 mt-24">
+                <WalletCardsIcon className="w-20 h-20" />
+                <p className="text-xl sm:text-2xl mt-2">No Pools yet</p>
+                <p className={`text-xs sm:text-sm ${theme === "dark" ? 'text-white/70' : 'text-black/70'}`}>Open a new position or create a pool to get started.</p>
+                <a
+                    className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors mt-4`}
+                >
+                    <span className="text-xs sm:text-sm">+ New position</span>
+                </a>
+            </div>
+
         </div>
     )
 
@@ -657,7 +555,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                 animate={{ x: isOpen ? 0 : "100%" }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className={`fixed right-0 top-0 h-full shadow-xl z-50 flex flex-col rounded-l-2xl pt-6
-                        border-l border-white ${theme === "dark" ? "glass bg-dark" : "glass bg-light"}`}
+                border-l border-white ${theme === "dark" ? "glass bg-dark" : "glass bg-light"}`}
                 style={{ width: drawerWidth }}
             >
                 {/* Close Button */}
@@ -688,49 +586,100 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                             setTokenBalance={setSelectedAsset}
                         />
                         :
-                        <div className="flex-1 flex flex-col">
-                            {selectedTab === 'assets' && renderAssets()}
-                            {selectedTab === 'activity' && renderActivity()}
-                            {selectedTab === 'defi' && renderDeFi()}
+                        <div className="flex-1">
+                            {/* Total Balance */}
+                            <div className="bg-white/10 rounded-xl p-3 sm:p-4 mt-4 sm:mt-5 mx-4">
+                                <div className="text-xs sm:text-sm text-white/60">Total Balance</div>
+                                <div className="text-xl sm:text-3xl font-bold mt-1">
+                                    {
+                                        isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)
+                                    }
+                                </div>
+                                {
+                                    !isLoadingBalance && <div className="flex items-center gap-1 mt-1 text-green-400">
+                                        <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                        <span className="text-xs sm:text-sm">+1.57% TODAY</span>
+                                    </div>
+                                }
+                            </div>
 
-                            {/* Bottom Tab Bar */}
-                            <div className="flex items-center justify-around p-2 border-t border-white/10">
+                            {/* Quick Actions */}
+                            <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-5 mx-4">
                                 <button
-                                    onClick={() => setSelectedTab('assets')}
-                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'assets' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                                    disabled={tokenBalances.length === 0}
+                                    onClick={() => setShowSendDrawer(true)}
+                                    className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors ${tokenBalances.length === 0 ? "opacity-[0.6] disabled:pointer-events-none disabled:cursor-default" : ""}`}
+                                >
+                                    <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-xs sm:text-sm">Send</span>
+                                </button>
+                                <button
+                                    onClick={() => setShowReceiveDrawer(true)}
+                                    className="flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
+                                >
+                                    <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-xs sm:text-sm">Receive</span>
+                                </button>
+                                <button
+                                    disabled={true}
+                                    onClick={() => setShowBuyDrawer(true)}
+                                    className="flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors opacity-[0.7]"
+                                >
+                                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-xs sm:text-sm">Buy</span>
+                                </button>
+                            </div>
+
+                            {/* Tabs */}
+                            <div className="flex items-center justify-around mt-4 sm:mt-5">
+                                <button
+                                    onClick={() => setSelectedTab('tokens')}
+                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'tokens' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
                                         }`}
                                 >
-                                    <LayoutGrid className="w-4 h-4" />
-                                    <span className="text-xs">Assets</span>
+                                    <span className="text-xs sm:text-sm">Tokens</span>
                                 </button>
+                                <button
+                                    onClick={() => setSelectedTab('nfts')}
+                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'nfts' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                                        }`}
+                                >
+                                    <span className="text-xs sm:text-sm">NFTs</span>
+                                </button>
+                                <button
+                                    onClick={() => setSelectedTab('pools')}
+                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'pools' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                                        }`}
+                                >
+                                    <span className="text-xs sm:text-sm">Pools</span>
+                                </button>
+
                                 <button
                                     onClick={() => setSelectedTab('activity')}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'activity' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
                                         }`}
                                 >
-                                    <History className="w-4 h-4" />
-                                    <span className="text-xs">Activity</span>
-                                </button>
-                                <button
-                                    onClick={() => setSelectedTab('defi')}
-                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'defi' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                                        }`}
-                                >
-                                    <Landmark className="w-4 h-4" />
-                                    <span className="text-xs">DeFi</span>
+                                    <span className="text-xs sm:text-sm">Activity</span>
                                 </button>
                             </div>
+
+                            {selectedTab === "tokens" && renderTokens()}
+                            {selectedTab === "nfts" && renderNfts()}
+                            {selectedTab === "pools" && renderPools()}
+                            {selectedTab === "activity" && renderActivity()}
                         </div>
                 }
             </motion.div>
 
             {/* Backdrop for mobile */}
-            {isOpen && (
-                <div
-                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-                    onClick={() => setIsOpen(false)}
-                />
-            )}
+            {
+                isOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+                        onClick={() => setIsOpen(false)}
+                    />
+                )
+            }
 
             {/* Drawers */}
             <SendDrawer
@@ -770,6 +719,6 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
             />
         </>
     );
-};
+}
 
 export default WalletDrawer;
