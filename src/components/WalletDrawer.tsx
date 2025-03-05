@@ -35,7 +35,7 @@ type ChartPriceType = {
     price: number
 }
 
-type ChartTimeType = "1D" | "1W" | "1M" | "1Y"
+type ChartTimeType = "1D" | "1W" | "1M" | "3M"
 
 type TimeRangeType = {
     mseconds: number,
@@ -47,7 +47,7 @@ const customMapTimeRange: Record<string, TimeRangeType> = {
     "1D": { mseconds: 86400, solInterval: "15m", interval: "1H" },
     "1W": { mseconds: 604800, solInterval: "1H", interval: "1D" },
     "1M": { mseconds: 2592000, solInterval: "4H", interval: "1W" },
-    "1Y": { mseconds: 31536000, solInterval: "1D", interval: "1Y" },
+    "3M": { mseconds: 7776000, solInterval: "1D", interval: "1Y" },
 };
 
 const CustomTooltip: React.FC<{ active?: boolean; payload?: any[]; }> = ({ active, payload }) => {
@@ -109,18 +109,18 @@ const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAdd
             <PopoverContent className="!w-[236px] !border-1 !border-transparent !bg-black !p-2">
                 <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70" onClick={handleEvmCopy}>
                     <span className="flex items-center gap-1">
-                        <img src="https://cdn.moralis.io/eth/0x.png" className="w-4 h-4" />
+                        <img src="https://cdn.moralis.io/eth/0x.png" className="w-4 h-4 mr-1" />
                         <span>Ethereum</span>
                     </span>
                     {evmCopied ? <CheckCircle className="w-3 h-3 text-green-500" /> : <span>{shrinkAddress(evmAddress)}</span>}
                 </div>
-                <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70" onClick={handleSolCopy}>
+                {solAddress && <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70" onClick={handleSolCopy}>
                     <span className="flex items-center gap-1">
-                        <img src="https://assets.coingecko.com/coins/images/4128/small/solana.png" className="w-4 h-4" />
+                        <img src="https://assets.coingecko.com/coins/images/4128/small/solana.png" className="w-4 h-4 mr-1" />
                         <span>Solana</span>
                     </span>
                     {solCopied ? <CheckCircle className="w-3 h-3 text-green-500" /> : <span>{shrinkAddress(solAddress)}</span>}
-                </div>
+                </div>}
             </PopoverContent>
         </Popover>
     )
@@ -157,7 +157,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                 readableTime = getMonthDayHour(e.time * 1000)
             } else if (selectedRange === "1M") {
                 readableTime = getMonthDayHour(e.time * 1000)
-            } else if (selectedRange === "1Y") {
+            } else if (selectedRange === "3M") {
                 readableTime = getMonthDayYear(e.time * 1000)
             }
 
@@ -182,7 +182,6 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
         } else { // will add 0x
             const timeFrom = currentTime - customMapTimeRange[selectedRange].mseconds
             const data = await coingeckoService.getOHLCV(tokenBalance.tokenId, customMapTimeRange[selectedRange].interval, timeFrom, currentTime)
-            console.log('chat data = ', data)
             if (data.length > 0) {
                 const cData = formatChartData(data)
                 setChartData([...cData])
@@ -273,7 +272,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
 
                 {/* Buttons for time range selection */}
                 <div className="flex justify-evenly space-x-1 sm:space-x-2 mb-4">
-                    {["1D", "1W", "1M", "1Y"].map((range: any) => (
+                    {["1D", "1W", "1M", "3M"].map((range: any) => (
                         <button
                             key={range}
                             onClick={() => setSelectedRange(range)}
