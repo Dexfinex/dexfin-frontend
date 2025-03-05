@@ -87,8 +87,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
     markAllAsRead: markAllAlertsAsRead,
     markAsRead: markAlertAsRead
   } = useWebSocketAlert({ userId, autoConnect });
-  console.log(isConnected);
-
+  console.log(alerts);
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');

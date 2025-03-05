@@ -12,6 +12,7 @@ import { Web3AuthContext } from "../providers/Web3AuthContext";
 import { useToast } from '@chakra-ui/react';
 
 export const Header: React.FC = () => {
+  const { userData, fetchUserData, address, isConnected, walletType } = useContext(Web3AuthContext);
   const isSettingsOpen = useStore((state) => state.isSettingsOpen);
   const setIsSettingsOpen = useStore((state) => state.setIsSettingsOpen);
   const isTopbarVisible = useStore((state) => state.isTopbarVisible);
@@ -24,7 +25,6 @@ export const Header: React.FC = () => {
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const { isConnected } = useContext(Web3AuthContext);
   const toast = useToast();
 
   // Check screen size
@@ -32,13 +32,13 @@ export const Header: React.FC = () => {
     const checkScreenSize = () => {
       setIsSmallScreen(window.innerWidth < 640);
     };
-    
+
     // Initial check
     checkScreenSize();
-    
+
     // Add resize listener
     window.addEventListener('resize', checkScreenSize);
-    
+
     // Cleanup
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
@@ -109,11 +109,11 @@ export const Header: React.FC = () => {
           {/* Left section */}
           <div className="flex items-center gap-1 sm:gap-3">
             <MainMenu />
-            
+
             {!isSmallScreen && (
               <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
             )}
-            
+
             <div className="h-6 w-auto relative">
               <img
                 src="https://i.imgur.com/PMmM0EA.png"
@@ -129,7 +129,7 @@ export const Header: React.FC = () => {
           {/* Right section - Adaptive for small screens */}
           <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
             {!isSmallScreen && <StarMenu />}
-            
+
             <div className="relative">
               <button
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -143,6 +143,8 @@ export const Header: React.FC = () => {
               </button>
               {isNotificationsOpen && (
                 <NotificationPanel
+                  userId='cm7ux3jjn0000jl6w8rxt8wan'
+                  autoConnect={true}
                   isOpen={isNotificationsOpen}
                   onClose={() => setIsNotificationsOpen(false)}
                 />
@@ -185,7 +187,7 @@ export const Header: React.FC = () => {
                 )}
               </button>
             )}
-            
+
             <button
               onClick={toggleTheme}
               className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -198,7 +200,7 @@ export const Header: React.FC = () => {
                 <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               )}
             </button>
-            
+
             <AccountMenu />
           </div>
         </div>
