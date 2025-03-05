@@ -12,7 +12,7 @@ import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
-import { formatNumberByFrac } from '../../utils/common.util';
+import { compareWalletAddresses, formatNumberByFrac } from '../../utils/common.util';
 import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
 import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
@@ -20,9 +20,9 @@ import { TransactionError } from '../../types';
 import { mapChainId2ExplorerUrl } from '../../config/networks.ts';
 import { TokenChainIcon, TokenIcon } from '../swap/components/TokenIcon.tsx';
 import { cropString } from '../../utils/index.ts';
-import { compareWalletAddresses } from '../../utils/common.util';
 import { useStore } from '../../store/useStore.ts';
 import { PageType } from '../WalletDrawer.tsx';
+import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 
 interface SendDrawerProps {
     // isOpen: boolean;
@@ -55,6 +55,8 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     const [address, setAddress] = useState("");
     const [showSelectedEnsInfo, setShowSelectedEnsInfo] = useState(false);
     const { theme } = useStore();
+    const { tokenBalances } = useTokenBalanceStore();
+
 
     const { mutate: sendTransactionMutate } = useSendTransactionMutation();
     const { isChainSwitching, chainId, signer, isConnected, login, switchChain } = useContext(Web3AuthContext);
@@ -67,9 +69,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     //     if (isLargerThan800) return 'w-[80%] rounded-xl';
 
     //     return 'w-full h-full rounded-none';
-
     // }, [isLargerThan1200, isLargerThan800])
-
     useEffect(() => {
         setSelectedAsset(assets[selectedAssetIndex] || {})
     }, [selectedAssetIndex])
@@ -210,6 +210,11 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     );
 
     // if (!isOpen) return null;
+    const renderUsdValue = () => {
+        const price = tokenBalances.find(token => token.address === selectedAsset.address)?.usdPrice || 0
+        const value = amount ? amount * price : 0
+        return <span className={`${amount !== selectedAsset.amount ? "right-14" : "right-3"} absolute  top-1/2 -translate-y-1/2 text-white/60 text-xs`}>${formatNumberByFrac(value)}</span>
+    }
 
     return (
         <div className="mt-4 sm:mt-5 mx-4">
@@ -232,7 +237,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                         </button>
                     </div>
                 </div> */}
-
             <button className={`rounded-full ${theme === "dark" ? "text-white/70 hover:bg-white/10" : "text-black/70 hover:bg-black/10"}  p-2`} onClick={() => setPage("main")}>
                 <ArrowLeft className="w-5 h-5" />
             </button>
@@ -253,8 +257,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                                 <div className="font-medium">
                                     {selectedAsset.name}
                                     {!compareWalletAddresses(selectedAsset.address, mapChainId2NativeAddress[Number(selectedAsset.chain)]) &&
-                                        <span
-                                            className='ml-1 text-sm font-light'>({cropString(selectedAsset.address || "", 4)})</span>}
+                                        <span className='ml-1 text-sm font-light'>({cropString(selectedAsset.address || "", 4)})</span>}
                                 </div>
                                 <div className="text-sm text-white/60">
                                     Balance: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
@@ -336,6 +339,11 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
 
                             })}
                         />
+
+                        {
+                            (amount && amount > 0) ? renderUsdValue() : null
+                        }
+                      
                         {
                             amount !== selectedAsset.amount &&
                             < button
