@@ -391,7 +391,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     const { theme } = useStore();
     const { address, chainId, switchChain, logout, solanaWalletInfo } = useContext(Web3AuthContext);
     const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
-    const [selectedTab, setSelectedTab] = useState<'tokens' | 'nfts' | 'pools' | 'activity'>('tokens');
+    const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
     const { isLoading: isLoadingBalance } = useWalletBalance();
     const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
     const [showSendDrawer, setShowSendDrawer] = useState(false);
@@ -512,6 +512,100 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                         </button>
                     ))
             }
+        </div>
+    )
+
+    const renderDeFi = () => (
+        <div className="space-y-6 mt-4 sm:mt-5 mx-4 flex-1">
+            {/* DeFi Overview */}
+            <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white/5 rounded-xl p-4">
+                    <div className="text-xs sm:text-sm text-white/60">Total Value Locked</div>
+                    <div className="text-xl sm:text-2xl font-bold mt-1">
+                        {formatUsdValue(mockDeFiStats.totalValueLocked)}
+                    </div>
+                    <div className="text-xs sm:text-sm text-white/60 mt-1">
+                        {mockDeFiStats.distribution.lending}% Lending
+                    </div>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4">
+                    <div className="text-xs sm:text-sm text-white/60">Daily Yield</div>
+                    <div className="text-xl sm:text-2xl font-bold mt-1">
+                        {formatUsdValue(mockDeFiStats.dailyYield)}
+                    </div>
+                    <div className="text-xs sm:text-sm text-green-400 mt-1">
+                        {formatApy(mockDeFiStats.averageApy)} APY
+                    </div>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4">
+                    <div className="text-xs sm:text-sm text-white/60">Risk Level</div>
+                    <div className="text-xl sm:text-2xl font-bold mt-1">
+                        {mockDeFiStats.riskLevel}
+                    </div>
+                    <div className="text-xs sm:text-sm text-white/60 mt-1">
+                        {mockDeFiStats.distribution.borrowing}% Borrowed
+                    </div>
+                </div>
+            </div>
+
+            {/* DeFi Positions */}
+            <div className="space-y-3">
+                {sortedMockDeFiPositions.map((position) => (
+                    <div
+                        key={position.id}
+                        className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
+                    >
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                                <img
+                                    src={position.protocolLogo}
+                                    alt={position.protocol}
+                                    className="w-8 h-8"
+                                />
+                                <div>
+                                    <div className="text-sm sm:text-md font-medium">{position.protocol}</div>
+                                    <div className="text-xs sm:text-sm text-white/60">{position.type}</div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-md sm:text-lg font-medium">
+                                    {formatUsdValue(position.value)}
+                                </div>
+                                <div className="text-xs sm:text-sm text-green-400">
+                                    {formatApy(position.apy)} APY
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-xs sm:text-sm">
+                            <div>
+                                <span className="text-white/60">Amount:</span>{' '}
+                                {`${formatNumberByFrac(position.amount)} ${position.token.symbol}`}
+                            </div>
+                            {position.rewards && (
+                                <div>
+                                    <span className="text-white/60">Rewards:</span>{' '}
+                                    {formatUsdValue(position.rewards.value)}
+                                </div>
+                            )}
+                            {position.healthFactor && (
+                                <div>
+                                    <span className="text-white/60">Health:</span>{' '}
+                                    <span className={getHealthFactorColor(position.healthFactor)}>
+                                        {position.healthFactor.toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="flex items-center gap-1 ml-auto text-white/60">
+                                <Clock className="w-4 h-4" />
+                                <span>
+                                    {Math.floor((Date.now() - position.startDate.getTime()) / (1000 * 60 * 60 * 24))}d
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     )
 
@@ -639,7 +733,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                                 >
                                     <span className="text-xs sm:text-sm">Tokens</span>
                                 </button>
-                                <button
+                                {/* <button
                                     onClick={() => setSelectedTab('nfts')}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'nfts' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
                                         }`}
@@ -652,7 +746,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                                         }`}
                                 >
                                     <span className="text-xs sm:text-sm">Pools</span>
-                                </button>
+                                </button> */}
 
                                 <button
                                     onClick={() => setSelectedTab('activity')}
@@ -661,12 +755,20 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                                 >
                                     <span className="text-xs sm:text-sm">Activity</span>
                                 </button>
+                                <button
+                                    onClick={() => setSelectedTab('defi')}
+                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'defi' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                                        }`}
+                                >
+                                    <span className="text-xs sm:text-sm">Defi</span>
+                                </button>
                             </div>
 
                             {selectedTab === "tokens" && renderTokens()}
-                            {selectedTab === "nfts" && renderNfts()}
-                            {selectedTab === "pools" && renderPools()}
                             {selectedTab === "activity" && renderActivity()}
+                            {selectedTab === "defi" && renderDeFi()}
+                            {/* {selectedTab === "nfts" && renderNfts()} */}
+                            {/* {selectedTab === "pools" && renderPools()} */}
                         </div>
                 }
             </motion.div>
