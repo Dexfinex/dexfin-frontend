@@ -96,10 +96,10 @@ export const ReceiveDrawer: React.FC<ReceiveDrawerProps> = ({ setPage, page }) =
       QRCode.toDataURL(walletAddress, {
         width: 200,
         margin: 1,
-        color: {
-          dark: '#ffffff',
-          light: '#00000000'
-        }
+        // color: {
+        //   dark: '#ffffff',
+        //   light: '#00000000'
+        // }
       })
         .then(url => setQrCode(url))
         .catch(err => console.error('Error generating QR code:', err))
