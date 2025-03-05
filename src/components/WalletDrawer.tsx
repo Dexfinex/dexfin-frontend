@@ -178,9 +178,8 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
         const currentTime = Math.round(Date.now() / 1000) - 60
 
         if (tokenBalance.network?.id === "solana") {
-            const address = (tokenBalance.address === 'solana' ? "So11111111111111111111111111111111111111112" : tokenBalance.address)
             const timeFrom = currentTime - customMapTimeRange[selectedRange].mseconds
-            const data = await birdeyeService.getOHLCV(address, customMapTimeRange[selectedRange].solInterval, timeFrom, currentTime)
+            const data = await birdeyeService.getOHLCV(tokenBalance.address, customMapTimeRange[selectedRange].solInterval, timeFrom, currentTime)
             if (data.length > 0) {
                 const cData = formatChartData(data)
                 setChartData([...cData])

@@ -164,8 +164,9 @@ export const dexfinv3Service = {
       if (data.length > 0) {
         data.forEach(token => {
           if (token.network.id == "solana") {
+            const tokenAddress = (token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint)
             result.push({
-              tokenAddress: token.mint,
+              tokenAddress,
               symbol: token.symbol,
               name: token.name,
               logo: token.logo,
