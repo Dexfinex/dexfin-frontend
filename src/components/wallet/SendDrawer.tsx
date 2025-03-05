@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useContext, useEffect } from 'react';
-import { Skeleton, Spinner, SkeletonCircle, useMediaQuery } from '@chakra-ui/react';
-import { X, Search, ArrowRight, ChevronDown, Wallet, XCircle, Send, ArrowLeft } from 'lucide-react';
+import { Skeleton, Spinner, SkeletonCircle } from '@chakra-ui/react';
+import { Search, ArrowRight, ChevronDown, Wallet, XCircle, ArrowLeft } from 'lucide-react';
 import { FieldValues, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -12,7 +12,7 @@ import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
-import { compareWalletAddresses, formatNumberByFrac } from '../../utils/common.util';
+import { compareWalletAddresses, formatNumberByFrac, shrinkAddress } from '../../utils/common.util';
 import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
 import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
@@ -23,6 +23,7 @@ import { cropString } from '../../utils/index.ts';
 import { useStore } from '../../store/useStore.ts';
 import { PageType } from '../WalletDrawer.tsx';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
+import makeBlockie from 'ethereum-blockies-base64';
 
 interface SendDrawerProps {
     // isOpen: boolean;
@@ -56,20 +57,10 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     const [showSelectedEnsInfo, setShowSelectedEnsInfo] = useState(false);
     const { theme } = useStore();
     const { tokenBalances } = useTokenBalanceStore();
-
-
+    const [recentAddresses, setRecentAddresses] = useState<string[]>([]);
     const { mutate: sendTransactionMutate } = useSendTransactionMutation();
-    const { isChainSwitching, chainId, signer, isConnected, login, switchChain } = useContext(Web3AuthContext);
+    const { isChainSwitching, chainId, signer, isConnected, login, switchChain, walletType } = useContext(Web3AuthContext);
 
-    const [isLargerThan1200] = useMediaQuery('(min-width: 1200px)');
-    const [isLargerThan800] = useMediaQuery('(min-width: 800px)');
-
-    // const walletContainerWidth = useMemo(() => {
-    //     if (isLargerThan1200) return 'w-[50%] rounded-xl';
-    //     if (isLargerThan800) return 'w-[80%] rounded-xl';
-
-    //     return 'w-full h-full rounded-none';
-    // }, [isLargerThan1200, isLargerThan800])
     useEffect(() => {
         setSelectedAsset(assets[selectedAssetIndex] || {})
     }, [selectedAssetIndex])
@@ -79,6 +70,14 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
             setSelectedAsset(assets[0])
         }
     }, [assets, selectedAsset])
+
+    useEffect(() => {
+        const item = localStorage.getItem("recentSendAddresses")
+        if (item) {
+            const addresses = JSON.parse(item)
+            setRecentAddresses(addresses)
+        }
+    }, [])
 
     const schema = z.object({
         amount: z.number({
@@ -177,6 +176,19 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
             });
         }
         const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
+
+        console.log('chain = ', chainId)
+        console.log('transaction data = ', {
+            tokenAddress: selectedAsset.address,
+            sendAddress: _address,
+            sendAmount: Number(amount),
+            signer,
+            gasLimit: gasData.gasLimit,
+            gasPrice: gasData.gasPrice,
+        })
+
+
+        return
         sendTransactionMutate(
             {
                 tokenAddress: selectedAsset.address,
@@ -192,6 +204,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                     setHash(receipt.transactionHash)
                     setTxModalOpen(true)
                     setValue("amount", "")
+                    saveAddress(address)
                     setAddress("")
                     console.log('success', receipt);
                 },
@@ -214,6 +227,16 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
         const price = tokenBalances.find(token => token.address === selectedAsset.address)?.usdPrice || 0
         const value = amount ? amount * price : 0
         return <span className={`${amount !== selectedAsset.amount ? "right-14" : "right-3"} absolute  top-1/2 -translate-y-1/2 text-white/60 text-xs`}>${formatNumberByFrac(value)}</span>
+    }
+
+    const saveAddress = (address: string) => {
+        let addresses = JSON.parse(localStorage.getItem("recentSendAddresses") || "[]");
+        if (!addresses.includes(address)) {
+            addresses.unshift(address);
+            addresses = addresses.slice(0, 3); // Keep only the last 3 addresses
+        }
+
+        localStorage.setItem("recentSendAddresses", JSON.stringify(addresses));
     }
 
     return (
@@ -343,7 +366,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                         {
                             (amount && amount > 0) ? renderUsdValue() : null
                         }
-                      
+
                         {
                             amount !== selectedAsset.amount &&
                             < button
@@ -438,6 +461,18 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                         </div>
                     }
                 </div>
+
+                {/* recent addresses */}
+                {recentAddresses.length > 0 && <div>
+                    <label className="block text-sm text-white/60 mb-2">Recent</label>
+                    {
+                        recentAddresses.map((address, index) => <div key={index} onClick={() => setAddress(address)} className='cursor-pointer text-sm py-2 px-1 rounded-md text-white/70 hover:bg-white/10 flex items-center gap-2'>
+                            <img src={makeBlockie(address)} className='w-8 h-8 rounded-full' />
+                            <span>{shrinkAddress(address)}</span>
+                        </div>)
+                    }
+                </div>}
+
                 {/* Preview */}
                 {showPreview ? (
                     <div className="p-4 bg-white/5 rounded-lg">
@@ -476,12 +511,15 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                             </div>
                         </div>
                         <div className='w-full flex justify-end items-end'>
-                            <div className="text-sm text-white/60">
-                                Network Fee: {
-                                    isGasEstimationLoading ?
-                                        <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
-                                        : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
-                            </div>
+                            {
+                                walletType === "EMBEDDED" ?
+                                    <span className='text-sm text-green-500'>Network Fee: Free</span> :
+                                    <div className="text-sm text-white/60">
+                                        Network Fee: {
+                                            isGasEstimationLoading ?
+                                                <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                                                : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                                    </div>}
                         </div>
                     </div>
                 ) : null}
@@ -496,11 +534,11 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                             {
                                 isConfirming ?
                                     (
-                                        <div>
+                                        <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Confirming...
                                         </div>
                                     ) : isChainSwitching ? (
-                                        <div>
+                                        <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Switching Chain...
                                         </div>
                                     ) : <div>Send {selectedAsset.symbol}</div>
