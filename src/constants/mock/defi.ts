@@ -252,6 +252,30 @@ export const LENDING_LIST = [
             "logo": "https://etherscan.io/token/images/aave_weth.png",
             "thumbnail": "https://etherscan.io/token/images/aave_weth.png",
         },
+    },
+    {
+        "protocol": "Pendle Finance",
+        "protocol_id": "pendle",
+        "logo": "https://cryptologos.cc/logos/pendle-pendle-logo.svg?v=040",
+        "chainId": 1,
+        "tokenIn": {
+            "token_type": "erc20",
+            "name": "USDC",
+            "symbol": "USDC",
+            "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "decimals": "6",
+            "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+            "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "Staked USDe",
+            "symbol": "sUSDe",
+            "contract_address": "0x9d39a5de30e57443bff2a8307a4256c8797a3497",
+            "decimals": "18",
+            "logo": "https://coin-images.coingecko.com/coins/images/33669/large/sUSDe-Symbol-Color.png?1716307680",
+            "thumbnail": "https://coin-images.coingecko.com/coins/images/33669/large/sUSDe-Symbol-Color.png?1716307680",
+        },
     }
 ];
 
@@ -383,7 +407,7 @@ export const offerings: Offering[] = [
     {
         "chainId": [1, 8453],
         "apy": 1.63,
-        "apyToken": "USDC",
+        "apyToken": "wETH",
         "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
         "protocol": "Aave V3",
         "protocol_id": "aave-v3",
@@ -407,5 +431,33 @@ export const offerings: Offering[] = [
         "rewards": 0,
         "healthFactor": 17.41,
         "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": [-1],
+        "apy": 0,
+        "apyToken": "SUSDE",
+        "address": "0xcdd26eb5eb2ce0f203a84553853667ae69ca29ce",
+        "protocol": "Pendle Finance",
+        "protocol_id": "pendle",
+        "type": "Lending",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "erc20",
+                "name": "USDC",
+                "symbol": "USDC",
+                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": "6",
+                "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 0,
+        "logo": "https://cryptologos.cc/logos/pendle-pendle-logo.svg?v=040"
     }
 ];

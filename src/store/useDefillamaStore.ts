@@ -79,20 +79,24 @@ const useDefillamaStore = create<DefillamaStore>((set, get) => ({
 
         let result: DefillamaPool[] = [...state.offeringPools];
 
+        /**
+         * @todo
+         * filter pool by id
+         **/
         for (const pool of offeringPools) {
-            const index = result.findIndex((item) =>
-                item.chain.toLowerCase() === pool.chain.toLowerCase() &&
-                item.symbol.toLowerCase() === pool.symbol.toLowerCase() &&
-                item.protocol.toLowerCase() === pool.protocol.toLowerCase()
-            );
-            if (index === -1) {
-                result = [...result, pool];
-            }
+            // const index = result.findIndex((item) =>
+            //     item.chain.toLowerCase() === pool.chain.toLowerCase() &&
+            //     item.symbol.toLowerCase() === pool.symbol.toLowerCase() &&
+            //     item.protocol.toLowerCase() === pool.protocol.toLowerCase()
+            // );
+            // if (index === -1) {
+            // }
+            result = [...result, pool];
         }
 
-        result.sort((a, b) => Number(a.apy) > Number(b.apy) ? -1 : 1);
+        result.sort((a, b) => Number(a.tvlUsd) > Number(b.tvlUsd) ? -1 : 1);
 
-        set({ offeringPools: offeringPools });
+        set({ offeringPools: result });
     },
 
     setProtocols: (protocols: DefillamaProtocol[]) => {

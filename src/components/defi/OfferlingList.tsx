@@ -136,10 +136,11 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                 <button
                                     onClick={async () => {
                                         if (offering.chainId.includes(Number(chainId))) {
-                                            const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
+                                            const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol);
+                                            let data = (position && offering.protocol_id !== "pendle") ? { ...position, apy: Number(poolInfo?.apy) } : { ...offering, apy: Number(poolInfo?.apy) }
                                             handleAction(
                                                 getAddActionName({ type: offering.type }),
-                                                position || offering
+                                                data
                                             );
                                         }
                                     }}
