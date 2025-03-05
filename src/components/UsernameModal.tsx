@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { X } from 'lucide-react';
-import { registerUsername } from '../hooks/useUsername-api';
+import { registerUsername } from './games/api/useUsername-api';
 
 interface UsernameModalProps {
   isOpen: boolean;

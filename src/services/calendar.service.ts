@@ -1,9 +1,9 @@
 import { DayEvent } from "../components/market/Calendar/MarketCalendar.tsx";
 import { calendarApi, userAuthApi } from "./api.service.ts";
 
-const REGISTER_MUTATION = `
-  mutation register($data: AuthInput!) {
-    register(data: $data) {
+const LOGIN_MUTATION = `
+  mutation login($data: LoginInput!) {
+    login(data: $data) {
       accessToken
     }
   }
@@ -16,20 +16,19 @@ export const calendarService = {
             const variables = {
                 data: {
                     walletAddress,
-                    username: "ddddq"
                 }
             };
             const { data } = await userAuthApi.post('', {
-                query: REGISTER_MUTATION,
+                query: LOGIN_MUTATION,
                 variables
             });
             console.log(data);
             if (data.errors) {
                 throw new Error(data.errors[0].message);
             }
-            return data.data.register;
+            return data.data.login;
         } catch (error) {
-            console.error('Error during registration:', {
+            console.error('Error during login:', {
                 error: error instanceof Error ? {
                     name: error.name,
                     message: error.message,
@@ -54,7 +53,7 @@ export const calendarService = {
             return data.data
         }
         catch (error) {
-            console.error('Error fetching calendar events:', {
+            console.error('Error delete calendar events:', {
                 error: error instanceof Error ? {
                     name: error.name,
                     message: error.message,
