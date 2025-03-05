@@ -86,8 +86,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
             <div className="space-y-3">
                 {filteredOfferings.map((offering, index) => {
                     const isEnabled = (isConnected && !offering?.disabled) ? offering.chainId.includes(Number(chainId)) : false;
-                    const _chainId = isConnected ? Number(chainId) : 1;
-                    const poolInfo = getOfferingPoolByChainId(_chainId, offering.protocol_id, offering.apyToken);
+                    const poolInfo = getOfferingPoolByChainId(offering.chainId[0], offering.protocol_id, offering.apyToken);
                     return (
                         <div
                             key={index}
