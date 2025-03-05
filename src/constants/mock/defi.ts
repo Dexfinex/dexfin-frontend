@@ -35,7 +35,7 @@ export const isEnabledPosition = ({ chainId, protocol, tokenPair, type }: { chai
 export interface Offering extends Position {
     chainId: number[];
     apyToken: string;
-    disabled?:boolean;
+    disabled?: boolean;
 }
 
 export const STAKING_TOKENS = [
@@ -234,6 +234,30 @@ export const LENDING_LIST = [
         "protocol": "Aave V3",
         "protocol_id": "aave-v3",
         "logo": "https://cdn.moralis.io/defi/aave.png",
+        "chainId": 1,
+        "tokenIn": {
+            "token_type": "erc20",
+            "name": "USDC",
+            "symbol": "USDC",
+            "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "decimals": "6",
+            "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+            "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "Aave Ethereum USDC",
+            "symbol": "aEthUSDC",
+            "contract_address": "0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c",
+            "decimals": "18",
+            "logo": "https://etherscan.io/token/images/aave_weth.png",
+            "thumbnail": "https://etherscan.io/token/images/aave_weth.png",
+        },
+    },
+    {
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "logo": "https://cdn.moralis.io/defi/aave.png",
         "chainId": 8453,
         "tokenIn": {
             "token_type": "native",
@@ -249,6 +273,30 @@ export const LENDING_LIST = [
             "name": "Aave Ethereum WETH",
             "symbol": "aEthWETH",
             "contract_address": "0xd4a0e0b9149bcee3c920d2e00b5de09138fd8bb7",
+            "decimals": "18",
+            "logo": "https://etherscan.io/token/images/aave_weth.png",
+            "thumbnail": "https://etherscan.io/token/images/aave_weth.png",
+        },
+    },
+    {
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "logo": "https://cdn.moralis.io/defi/aave.png",
+        "chainId": 8453,
+        "tokenIn": {
+            "token_type": "erc20",
+            "name": "USDC",
+            "symbol": "USDC",
+            "contract_address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "decimals": "6",
+            "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+            "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "Aave Ethereum USDC",
+            "symbol": "aEthUSDC",
+            "contract_address": "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
             "decimals": "18",
             "logo": "https://etherscan.io/token/images/aave_weth.png",
             "thumbnail": "https://etherscan.io/token/images/aave_weth.png",
@@ -407,7 +455,7 @@ export const offerings: Offering[] = [
     },
     {
         "chainId": [1, 8453],
-        "apy": 1.63,
+        "apy": 0,
         "apyToken": "wETH",
         "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
         "protocol": "Aave V3",
@@ -430,7 +478,35 @@ export const offerings: Offering[] = [
             }
         ],
         "rewards": 0,
-        "healthFactor": 17.41,
+        "healthFactor": 0,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": [1, 8453],
+        "apy": 0,
+        "apyToken": "USDC",
+        "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Lending",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "erc20",
+                "name": "USDC",
+                "symbol": "USDC",
+                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": "6",
+                "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 0,
         "logo": "https://cdn.moralis.io/defi/aave.png"
     },
     {
