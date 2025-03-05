@@ -57,6 +57,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     const { theme } = useStore();
     const { tokenBalances } = useTokenBalanceStore();
 
+
     const { mutate: sendTransactionMutate } = useSendTransactionMutation();
     const { isChainSwitching, chainId, signer, isConnected, login, switchChain } = useContext(Web3AuthContext);
 
@@ -68,7 +69,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     //     if (isLargerThan800) return 'w-[80%] rounded-xl';
 
     //     return 'w-full h-full rounded-none';
-
     // }, [isLargerThan1200, isLargerThan800])
     useEffect(() => {
         setSelectedAsset(assets[selectedAssetIndex] || {})
@@ -210,7 +210,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     );
 
     // if (!isOpen) return null;
-
     const renderUsdValue = () => {
         const price = tokenBalances.find(token => token.address === selectedAsset.address)?.usdPrice || 0
         const value = amount ? amount * price : 0
@@ -238,7 +237,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                         </button>
                     </div>
                 </div> */}
-
             <button className={`rounded-full ${theme === "dark" ? "text-white/70 hover:bg-white/10" : "text-black/70 hover:bg-black/10"}  p-2`} onClick={() => setPage("main")}>
                 <ArrowLeft className="w-5 h-5" />
             </button>
@@ -345,7 +343,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                         {
                             (amount && amount > 0) ? renderUsdValue() : null
                         }
-
+                      
                         {
                             amount !== selectedAsset.amount &&
                             < button
