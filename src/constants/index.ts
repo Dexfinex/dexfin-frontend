@@ -50,6 +50,9 @@ export const USERNAMEAUTH_BASE_URL = "https://dexfinv3-backend-production.up.rai
 export const TECHNICALANALYSIS_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/technical";
 
 export const WS_CONNECTION_URL = `https://${BASE_HOST_DOMAIN}` || 'localhost:3000';
+export const COINGECKO_URL = "https://api.coingecko.com/api/v3";
+
+export const GAME_SYSTEM_BASEURL = "https://dexfinv3-backend-production.up.railway.app/game-system";
 
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 

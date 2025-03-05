@@ -2,6 +2,7 @@ import { userAuthApi, usernameAuthApi } from "./api.service.ts";
 
 export const usernameService = {
     checkUsername: async (accessToken: any) => {
+        console.log(accessToken)
         try {
             const query = `
                 query Me {
