@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Timer, Trophy, RotateCcw, Gamepad2 } from 'lucide-react';
+import { useBreakpointValue } from '@chakra-ui/react';
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 import { GameSession } from '../GamesModal';
 import { GameService } from '../../services/game.services.ts';
@@ -59,25 +60,14 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
   const [bestMoves, setBestMoves] = useState<number | null>(null);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
+
+  const isMobile = useBreakpointValue({base: true, md: false});
   
   const { userData } = useContext(Web3AuthContext);
   const gameSessionSaved = useRef(false);
   const [gameData, setGameData] = useState<any[]>([]);
   const [gameId, setGameId] = useState<string>("");
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-    };
-  }, []);
 
   useEffect(() => {
     const loadGameData = async () => {
@@ -88,7 +78,6 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
           if (Array.isArray(data)) {
             setGameData(data);
             
-            // Find the game ID based on the gameType
             const game = data.find(g => g.type === gameType);
             if (game) {
               setGameId(game.id);
