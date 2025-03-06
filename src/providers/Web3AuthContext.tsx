@@ -24,12 +24,8 @@ import {
 } from "../constants";
 import { SavedWalletInfo, type SolanaWalletInfoType } from "../types/auth";
 import { exportPrivateKey, generatePrivateKey } from "@lit-protocol/wrapped-keys/src/lib/api";
-<<<<<<< HEAD
-import { Keypair, VersionedTransaction } from "@solana/web3.js";
-=======
 import { Keypair, VersionedTransaction, Connection, PublicKey, Transaction, sendAndConfirmTransaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { getOrCreateAssociatedTokenAccount, createTransferInstruction } from '@solana/spl-token';
->>>>>>> dev
 import {
     createPublicClient,
     createWalletClient,
@@ -53,10 +49,7 @@ import { ETHRequestSigningPayload } from "@lit-protocol/pkp-ethers/src/lib/pkp-e
 import { ethers } from "ethers";
 import { mapChainId2ViemChain } from "../config/networks.ts";
 import { useStore } from "../store/useStore.ts";
-<<<<<<< HEAD
-=======
 import { connection as SolanaConnection } from "../config/solana.ts";
->>>>>>> dev
 import axios from "axios";
 
 export type WalletType = 'EOA' | 'EMBEDDED' | 'UNKNOWN';
@@ -325,7 +318,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Get username data from backend
             console.log(userData.accessToken)
             const response = await checkUsername(userData.accessToken);
-            console.log(response)
+            console.log(response.username)
 
             if (!response || !response.username || response.username.trim() === "") {
                 // Open the username registration modal
