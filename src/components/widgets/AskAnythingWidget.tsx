@@ -9,14 +9,6 @@ interface VoiceCommand {
 }
 
 export const AskAnythingWidget: React.FC = () => {
-  const [input, setInput] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [recognitionInstance, setRecognitionInstance] = useState<any>(null);
-  const [isManualStop, setIsManualStop] = useState(false);
-  const [noSpeechTimeout, setNoSpeechTimeout] = useState<NodeJS.Timeout | null>(null);
-  
   const { 
     theme,
     setIsAIAgentOpen,
@@ -31,8 +23,17 @@ export const AskAnythingWidget: React.FC = () => {
     setIsGamesOpen,
     setMarketDataView,
     setTradeOpen,
+    widgetVisibility
   } = useStore();
 
+  const [input, setInput] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [recognitionInstance, setRecognitionInstance] = useState<any>(null);
+  const [isManualStop, setIsManualStop] = useState(false);
+  const [noSpeechTimeout, setNoSpeechTimeout] = useState<NodeJS.Timeout | null>(null);
+  
   const voiceCommands: VoiceCommand[] = [
     { 
       command: "Open Assistant",
@@ -296,6 +297,11 @@ export const AskAnythingWidget: React.FC = () => {
     // Cleanup
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
+
+  // Don't render anything if the widget should be hidden
+  if (!widgetVisibility['Ask Anything']) {
+    return null;
+  }
 
   return (
     <div className="relative w-full px-4 sm:px-0">
