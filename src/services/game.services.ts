@@ -2,9 +2,8 @@ import {GameSystemApi} from "./api.service";
 import {GameSession} from "../components/GamesModal";
 export const GameService = {
     gameHistory:async(accessToken:string, saveGameSession: GameSession)=>{
-        console.log(saveGameSession)
         try{
-
+            console.log(saveGameSession)
             const {data}= await GameSystemApi.post(`/user-games-history`,saveGameSession, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -78,5 +77,20 @@ export const GameService = {
                 } : error
             });
         }
-    }
+    },
+    fetchAllGame:async()=>{
+        try{
+            const {data}= await GameSystemApi.get(`/games`, {
+            })
+            return data;
+        } catch(error){
+            console.error('Error saving Game Session:', {
+                error: error instanceof Error ? {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                } : error
+            });
+        }
+    },
 }
