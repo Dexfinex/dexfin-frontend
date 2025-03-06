@@ -9,7 +9,8 @@ import { offerings } from "../../constants/mock/defi";
 import { TokenIcon } from "../swap/components/TokenIcon";
 import { useGetDefillamaPoolByOffering } from "../../hooks/useDefillama";
 import useDefillamaStore from "../../store/useDefillamaStore";
-import { formatNumberByFrac } from "../../utils/common.util";
+import { formatNumberByFrac, formatNumber } from "../../utils/common.util";
+import { mapChainId2ChainName } from "../../config/networks";
 
 interface OfferingListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
@@ -85,9 +86,14 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
 
             <div className="space-y-3">
                 {filteredOfferings.map((offering, index) => {
-                    const isEnabled = isConnected ? offering.chainId.includes(Number(chainId)) : false;
-                    const _chainId = isConnected ? Number(chainId) : 1;
-                    const poolInfo = getOfferingPoolByChainId(_chainId, offering.protocol_id, offering.apyToken);
+                    const isEnabled = (isConnected && !offering?.disabled) ? offering.chainId.includes(Number(chainId)) : false;
+                    const poolInfoList = offering.chainId.map(chainId => {
+                        return {
+                            chainId,
+                            poolInfo: getOfferingPoolByChainId(chainId, offering.protocol_id, offering.apyToken)
+                        }
+                    });
+                    const poolInfo = getOfferingPoolByChainId(offering.chainId[0], offering.protocol_id, offering.apyToken);
                     return (
                         <div
                             key={index}
@@ -116,30 +122,43 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                     </div>
 
                                     <div className="flex items-center gap-6">
-                                        <div>
-                                            <span className="text-sm text-white/60">Base APY</span>
-                                            <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
-                                                }`}>
-                                                {isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'3rem'} h={'1rem'}></Skeleton> : `${formatNumberByFrac(poolInfo?.apy) || "0"}%`}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <span className="text-sm text-white/60">TVL</span>
-                                            <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
-                                                }`}>
-                                                {isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'3rem'} h={'1rem'}></Skeleton> : `$${formatNumberByFrac(poolInfo?.tvlUsd) || "0"}`}
-                                            </div>
-                                        </div>
+                                        {
+                                            isLoading ?
+                                                <Skeleton startColor="#444" endColor="#1d2837" w={'50%'} h={'2rem'}></Skeleton> :
+                                                poolInfoList.map((poolInfo, index) =>
+                                                    <div key={index} className="flex gap-2">
+                                                        <div>
+                                                            <div className="flex text-sm text-white/60">
+                                                                {mapChainId2ChainName[poolInfo.chainId]} APY
+                                                            </div>
+                                                            <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
+                                                                }`}>
+                                                                {`${formatNumberByFrac(poolInfo.poolInfo?.apy) || "0"}%`}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex text-sm text-white/60">
+                                                                {mapChainId2ChainName[poolInfo.chainId]} TVL
+                                                            </div>
+                                                            <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
+                                                                }`}>
+                                                                {`$${formatNumber(Number(poolInfo.poolInfo?.tvlUsd) || 0)}`}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                        }
                                     </div>
                                 </div>
 
                                 <button
                                     onClick={async () => {
                                         if (offering.chainId.includes(Number(chainId))) {
-                                            const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
+                                            const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol);
+                                            let data = (position && offering.protocol_id !== "pendle") ? { ...position, apy: Number(poolInfo?.apy) } : { ...offering, apy: Number(poolInfo?.apy) }
                                             handleAction(
                                                 getAddActionName({ type: offering.type }),
-                                                position || offering
+                                                data
                                             );
                                         }
                                     }}

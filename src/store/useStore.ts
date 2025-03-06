@@ -296,51 +296,57 @@ const useStore = create<StoreState>((set) => ({
     {
       id: 'market-pulse',
       type: 'Market Pulse',
-      position: { x: 20, y: 20 },
-      size: { width: 360, height: 540 }
-    },
-    {
-      id: 'market-news',
-      type: 'Market News',
-      position: { x: 400, y: 20 },
-      size: { width: 360, height: 360 }
+      position: { x: 10, y: 20 },
+      size: { width: 360, height: 490 }
     },
     {
       id: 'fear-greed',
       type: 'Fear & Greed Index',
-      position: { x: 20, y: 580 },
+      position: { x: 10, y: 530 },
       size: { width: 360, height: 270 }
+    },
+    {
+      id: 'market-news',
+      type: 'Market News',
+      position: { x: 380, y: 20 },
+      size: { width: 360, height: 360 }
     },
     {
       id: 'trending',
       type: 'Trending',
-      position: { x: 400, y: 400 },
+      position: { x: 380, y: 400 },
       size: { width: 360, height: 315 }
     },
     {
       id: 'twitter',
       type: 'Twitter Feed',
-      position: { x: 775, y: 20 },
+      position: { x: 750, y: 20 },
       size: { width: 360, height: 440 }
-    },
-
-    {
-      id: 'portfolio',
-      type: 'Portfolio Overview',
-      position: { x: 1155, y: 20 },
-      size: { width: 360, height: 540 }
     },
     {
       id: 'price-converter',
       type: 'Price Converter',
-      position: { x: 775, y: 475 },
+      position: { x: 750, y: 470 },
       size: { width: 360, height: 300 }
     },
     {
-      id: 'direct-messages',
-      type: 'Direct Messages',
-      position: { x: 1535, y: 20 },
+      id: 'portfolio',
+      type: 'Portfolio Overview',
+      position: { x: 1120, y: 20 },
       size: { width: 360, height: 540 }
+    },
+
+    // {
+    //   id: 'direct-messages',
+    //   type: 'Direct Messages',
+    //   position: { x: 1535, y: 20 },
+    //   size: { width: 360, height: 540 }
+    // },
+    {
+      id: 'quick-swap',
+      type: 'Quick Swap',
+      position: { x: 1490, y: 20 },
+      size: { width: 400, height: 800 }
     },
   ],
   updateWidget: (id, updates) => set((state) => ({
@@ -353,7 +359,7 @@ const useStore = create<StoreState>((set) => ({
     'Market News': true,
     'Market Pulse': true,
     'Fear & Greed Index': true,
-    'Quick Swap': false,
+    'Quick Swap': true,
     'Price Converter': false,
     'Trending': true,
     'Ask Anything': true,

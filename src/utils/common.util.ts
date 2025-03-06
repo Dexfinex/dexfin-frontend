@@ -82,6 +82,46 @@ export const getHourAndMinute = (timestamp: number) => {
     return timeString;
 }
 
+export const getMonthDayHour = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const day = date.getDate();
+
+    return `${hours}:${minutes} , ${month} ${day}`;
+}
+
+export const getMonthDayYear = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${month} ${day}, ${year}`;
+}
+
+export const getFullDate = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+    const formattedDate = date.toLocaleString('en-US', {
+        weekday: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+    });
+
+    return formattedDate;
+}
+
 /**
  * Compares two wallet addresses in uppercase.
  * @param address1 - The first wallet address.
@@ -92,9 +132,11 @@ export const compareWalletAddresses = (
     address1: string,
     address2: string,
 ): boolean => {
-    if (!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
-        return false;
-    }
+    // if (!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
+    //     return false;
+    // }
+    if (!address1 || !address2) return false;
+
     // Convert both addresses to uppercase.
     const normalizedAddress1 = address1.toUpperCase();
     const normalizedAddress2 = address2.toUpperCase();
@@ -174,6 +216,14 @@ export const formatNumberByFrac = (
 
     return getFixedNum(num, fixedCount);
 };
+
+export const formatNumber = (num: number): string => {
+    if (num >= 1e12) return (num / 1e12).toFixed(2) + "T"; // Trillion
+    if (num >= 1e9) return (num / 1e9).toFixed(2) + "B"; // Billion
+    if (num >= 1e6) return (num / 1e6).toFixed(2) + "M"; // Million
+    if (num >= 1e3) return (num / 1e3).toFixed(2) + "K"; // Thousand
+    return num.toString(); // Less than 1K
+}
 
 export const formatHealthFactor = (num: number) => {
     if (num > 1e9) {

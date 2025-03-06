@@ -14,7 +14,7 @@ import { Message } from '../../types/index.ts';
 import { TrendingCoins } from './components/Analysis/TrendingCoins.tsx';
 import { TopCoins } from './components/Analysis/TopCoins.tsx'
 import { NewsWidget } from '../widgets/NewsWidget.tsx';
-import { YieldProcess } from '../YieldProcess.tsx';
+import { YieldProcess } from './components/YieldProcess.tsx';
 import { SwapProcess } from './components/SwapProcess.tsx';
 import { BridgeProcess } from './components/BridgeProcess.tsx';
 import { PortfolioProcess } from '../PortfolioProcess.tsx';
@@ -39,7 +39,8 @@ import { TechnicalAnalysis } from './components/Analysis/TechnicalAnalysis.tsx';
 import { SentimentAnalysis } from './components/Analysis/SentimentAnalysis.tsx';
 import { PredictionAnalysis } from './components/Analysis/PredictionAnalysis.tsx';
 import { MarketOverview } from './components/Analysis/MarketOverview.tsx';
-
+import { yields_data } from '../../constants/mock/agent.ts';
+import {Yield} from '../../types/brian.type.ts';
 interface AIAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -78,6 +79,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [ensName, setEnsName] = useState('');
   const [solver, setSolver] = useState('');
   const [steps, setSteps] = useState<Step[]>([]);
+  const [yields, setYields] = useState<Yield[]>([]);
   const [description, setDescription] = useState('');
 
   // Reset all process states
@@ -244,40 +246,41 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
 
   const findFallbackResponse = async (message: string) => {
     const normalizedMessage = message.toLowerCase();
-    const data = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
-    console.log(data);
-    if (data && data.response) {
-      if (data.response.priceData) {
-        const { priceData } = data.response;
+    const response = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
+    console.log(response);
+    if (response && response.type=="price") {
+      
+      if (response.data) {
+        const { priceData } = response.data;
         return {
-          text: `The current ${data.response.name} price is $${priceData.price.toLocaleString()} (${priceData.change24h.toFixed(2)}% 24h change)\n`,
+          text: `The current ${response.data.name} price is $${priceData.price.toLocaleString()} (${priceData.change24h.toFixed(2)}% 24h change)\n`,
           priceData: {
             price: priceData.price,
             priceChange24h: priceData.change24h,
             marketCap: priceData.marketCap,
             volume24h: priceData.volume24h,
-            chartData: data.response.history,
-            name: data.response.name,
-            symbol: data.response.symbol,
-            logoURI: data.response.logo.thumb,
-            analysis: data.response.response,
+            chartData: response.data.history,
+            name: response.data.name,
+            symbol: response.data.symbol,
+            logoURI: response.data.logo.thumb,
+            analysis: response.data.response,
           }
         };
       }
-    } else if (data && data.news_items) {
+    } else if (response && response.type=="cryptonews") {
       return {
         text: 'Here are the latest crypto news updates',
-        news: data.news_items,
+        news: response.data.news_items,
       };
-    } else if (data && data.trending_coins) {
+    } else if (response && response.type=="trending") {
       return {
         text: 'Here are the currently trending tokens:',
-        trending: data.trending_coins
+        trending: response.data.trending_coins
       };
-    } else if (data && data.losers) {
+    } else if (response && response.type=="top_losers") {
       return {
         text: 'Here are the top losers',
-        losers: data.losers.map((item: any) => ({
+        losers: response.data.losers.map((item: any) => ({
           id: item.id,
           name: item.name,
           symbol: item.symbol,
@@ -289,10 +292,10 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           analysis: item.analysis,
         }))
       }
-    } else if (data && data.gainers) {
+    } else if (response && response.type=="top_gainers") {
       return {
         text: 'Here are the top gainers',
-        gainers: data.gainers.map((item: any) => ({
+        gainers: response.data.gainers.map((item: any) => ({
           id: item.id,
           name: item.name,
           symbol: item.symbol,
@@ -304,37 +307,43 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           analysis: item.analysis,
         }))
       }
-    } else if (data && data.moving_averages) {
+    } else if (response && response.type=="technical_analysis") {
       return {
-        text: `Here's the ${data.coinId} technical analysis:`,
-        technicalAnalysis: data,
+        text: `Here's the ${response.data.coinId} technical analysis:`,
+        technicalAnalysis: response.data,
       }
-    } else if (data && data.socialSentiment) {
-      const sentimentDate = Object.keys(data.socialSentiment)[0];
-      const negative_score = data.socialSentiment?.[sentimentDate]?.[Object.keys(data.socialSentiment[sentimentDate])[0]]?.Negative;
-      const positive_score = data.socialSentiment?.[sentimentDate]?.[Object.keys(data.socialSentiment[sentimentDate])[0]]?.Positive;
+    } else if (response && response.type=="sentiment") {
+      const sentimentDate = Object.keys(response.data.socialSentiment)[0];
+      const negative_score = response.data.socialSentiment?.[sentimentDate]?.[Object.keys(response.data.socialSentiment[sentimentDate])[0]]?.Negative;
+      const positive_score = response.data.socialSentiment?.[sentimentDate]?.[Object.keys(response.data.socialSentiment[sentimentDate])[0]]?.Positive;
       return {
-        text: `Here's the ${data.priceData.response.name} market sentiment analysis:`,
+        text: `Here's the ${response.data.priceData.data.response.name} market sentiment analysis:`,
         sentimentAnalysis: {
-          social_sentiment: positive_score * 100/(negative_score + positive_score),
-          trading_sentiment: data.tradingSentiment.value,
-          technical_sentiment: data.technical.rsi,
-          current_price: data.priceData.response.priceData.price,
-          price_change_percentage_24h: data.priceData.response.priceData.change24h,
-          price_history: data.priceData.response.history,
-          volume_24h: data.priceData.response.priceData.volume24h,
-          market_cap: data.priceData.response.priceData.marketCap
+          social_sentiment: positive_score * 100 / (negative_score + positive_score),
+          trading_sentiment: response.data.tradingSentiment.value,
+          technical_sentiment: response.data.technical.rsi,
+          current_price: response.data.priceData.data.priceData.price,
+          price_change_percentage_24h: response.data.priceData.data.priceData.change24h,
+          price_history: response.data.priceData.data.history,
+          volume_24h: response.data.priceData.data.priceData.volume24h,
+          market_cap: response.data.priceData.data.priceData.marketCap,
+          name: response.data.priceData.data.name
         },
       }
-    } else if (data && data.predictions) {
+    } else if (response && response.predictions) {
       return {
-        text: `Here's the ${data.coinId}  price prediction analysis:`,
-        predictionAnalysis: data,
+        text: `Here's the ${response.coinId}  price prediction analysis:`,
+        predictionAnalysis: response,
       }
-    } else if (data && data.fear) {
+    } else if (response && response.fear) {
       return {
         text: `Here's the current market overview:`,
-        marketOverview: data,
+        marketOverview: response,
+      }
+    } else if(response && response.type == "best_yields") {
+      return {
+        type: "best_yields",
+        yields: response.data,
       }
     }
 
@@ -517,6 +526,9 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           response = { text: response.text, link: response.brianData.data.value }
         } else if (response.type == "knowledge") {
           response = { text: response.text.replace(/brian/gi, "Dexfin") };
+        } else if (response.type == "best_yields") {
+          setYields(response.yields);
+          setShowYieldProcess(true);
         }
 
         if (response) {
@@ -652,7 +664,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           }`}
       >
         {showYieldProcess ? (
-          <YieldProcess onClose={() => {
+          <YieldProcess yields={yields} onClose={() => {
             setShowYieldProcess(false);
             setMessages([]);
           }} />

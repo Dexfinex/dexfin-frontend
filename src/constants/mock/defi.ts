@@ -35,6 +35,7 @@ export const isEnabledPosition = ({ chainId, protocol, tokenPair, type }: { chai
 export interface Offering extends Position {
     chainId: number[];
     apyToken: string;
+    disabled?: boolean;
 }
 
 export const STAKING_TOKENS = [
@@ -233,6 +234,54 @@ export const LENDING_LIST = [
         "protocol": "Aave V3",
         "protocol_id": "aave-v3",
         "logo": "https://cdn.moralis.io/defi/aave.png",
+        "chainId": 1,
+        "tokenIn": {
+            "token_type": "erc20",
+            "name": "USDC",
+            "symbol": "USDC",
+            "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "decimals": "6",
+            "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+            "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "Aave Ethereum USDC",
+            "symbol": "aEthUSDC",
+            "contract_address": "0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c",
+            "decimals": "18",
+            "logo": "https://etherscan.io/token/images/aave_usdc.png",
+            "thumbnail": "https://etherscan.io/token/images/aave_usdc.png",
+        },
+    },
+    {
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "logo": "https://cdn.moralis.io/defi/aave.png",
+        "chainId": 1,
+        "tokenIn": {
+            "token_type": "erc20",
+            "name": "Tether USD",
+            "symbol": "USDT",
+            "contract_address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "decimals": "6",
+            "logo": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+            "thumbnail": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "Aave Ethereum USDT",
+            "symbol": "aEthUSDT",
+            "contract_address": "0x23878914EFE38d27C4D67Ab83ed1b93A74D4086a",
+            "decimals": "18",
+            "logo": "https://etherscan.io/token/images/aave_usdt.png",
+            "thumbnail": "https://etherscan.io/token/images/aave_usdt.png",
+        },
+    },
+    {
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "logo": "https://cdn.moralis.io/defi/aave.png",
         "chainId": 8453,
         "tokenIn": {
             "token_type": "native",
@@ -251,6 +300,78 @@ export const LENDING_LIST = [
             "decimals": "18",
             "logo": "https://etherscan.io/token/images/aave_weth.png",
             "thumbnail": "https://etherscan.io/token/images/aave_weth.png",
+        },
+    },
+    {
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "logo": "https://cdn.moralis.io/defi/aave.png",
+        "chainId": 8453,
+        "tokenIn": {
+            "token_type": "erc20",
+            "name": "USDC",
+            "symbol": "USDC",
+            "contract_address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "decimals": "6",
+            "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+            "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "Aave Ethereum USDC",
+            "symbol": "aEthUSDC",
+            "contract_address": "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
+            "decimals": "18",
+            "logo": "https://etherscan.io/token/images/aave_usdc.png",
+            "thumbnail": "https://etherscan.io/token/images/aave_usdc.png",
+        },
+    },
+    {
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "logo": "https://cdn.moralis.io/defi/aave.png",
+        "chainId": 1,
+        "tokenIn": {
+            "token_type": "erc20",
+            "name": "Dai Stablecoin",
+            "symbol": "DAI",
+            "contract_address": "0x6b175474e89094c44da98b954eedeac495271d0f",
+            "decimals": "6",
+            "logo": "https://etherscan.io/token/images/dairplce_32.svg",
+            "thumbnail": "https://etherscan.io/token/images/dairplce_32.svg",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "Aave Ethereum DAI",
+            "symbol": "aEthDAI",
+            "contract_address": "0x018008bfb33d285247A21d44E50697654f754e63",
+            "decimals": "18",
+            "logo": "https://etherscan.io/token/images/aave_dai.png",
+            "thumbnail": "https://etherscan.io/token/images/aave_dai.png",
+        },
+    },
+    {
+        "protocol": "Pendle Finance",
+        "protocol_id": "pendle",
+        "logo": "https://cryptologos.cc/logos/pendle-pendle-logo.svg?v=040",
+        "chainId": 1,
+        "tokenIn": {
+            "token_type": "erc20",
+            "name": "USDC",
+            "symbol": "USDC",
+            "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "decimals": "6",
+            "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+            "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "Staked USDe",
+            "symbol": "sUSDe",
+            "contract_address": "0x9d39a5de30e57443bff2a8307a4256c8797a3497",
+            "decimals": "18",
+            "logo": "https://coin-images.coingecko.com/coins/images/33669/large/sUSDe-Symbol-Color.png?1716307680",
+            "thumbnail": "https://coin-images.coingecko.com/coins/images/33669/large/sUSDe-Symbol-Color.png?1716307680",
         },
     }
 ];
@@ -382,8 +503,8 @@ export const offerings: Offering[] = [
     },
     {
         "chainId": [1, 8453],
-        "apy": 1.63,
-        "apyToken": "USDC",
+        "apy": 0,
+        "apyToken": "wETH",
         "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
         "protocol": "Aave V3",
         "protocol_id": "aave-v3",
@@ -405,7 +526,120 @@ export const offerings: Offering[] = [
             }
         ],
         "rewards": 0,
-        "healthFactor": 17.41,
+        "healthFactor": 0,
         "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": [1, 8453],
+        "apy": 0,
+        "apyToken": "USDC",
+        "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Lending",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "erc20",
+                "name": "USDC",
+                "symbol": "USDC",
+                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": "6",
+                "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 0,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": [1],
+        "apy": 0,
+        "apyToken": "USDT",
+        "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Lending",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "erc20",
+                "name": "Tether USD",
+                "symbol": "USDT",
+                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": "6",
+                "logo": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+                "thumbnail": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 0,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": [1],
+        "apy": 0,
+        "apyToken": "DAI",
+        "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Lending",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "erc20",
+                "name": "Dai Stablecoin",
+                "symbol": "DAI",
+                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": "6",
+                "logo": "https://etherscan.io/token/images/dairplce_32.svg",
+                "thumbnail": "https://etherscan.io/token/images/dairplce_32.svg",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 0,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": [1],
+        "apy": 0,
+        "apyToken": "SUSDE",
+        "disabled": true,
+        "address": "0xcdd26eb5eb2ce0f203a84553853667ae69ca29ce",
+        "protocol": "Pendle Finance",
+        "protocol_id": "pendle",
+        "type": "Lending",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "erc20",
+                "name": "USDC",
+                "symbol": "USDC",
+                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": "6",
+                "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 0,
+        "logo": "https://cryptologos.cc/logos/pendle-pendle-logo.svg?v=040"
     }
 ];
