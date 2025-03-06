@@ -183,6 +183,16 @@ interface StoreState {
       winRate: number;
       bestStreak: number;
     };
+    huntStats: {
+      gamesPlayed: number;
+      tokensEarned: number;
+      words: number;
+      bestScore: number;
+      perfectStatus: number;
+    };
+    // hundStts:{
+
+    // };
     totalTokens: number;
   };
   user: {
@@ -410,6 +420,13 @@ const useStore = create<StoreState>((set) => ({
       wins: 0,
       winRate: 0,
       bestStreak: 0
+    },
+    huntStats: {
+      gamesPlayed: 0,
+      tokensEarned: 0,
+      words: 0,
+      bestScore: 0,
+      perfectStatus: 0
     },
     totalTokens: 0
   },
