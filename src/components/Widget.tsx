@@ -38,7 +38,12 @@ export const Widget: React.FC<WidgetProps> = ({ id, type, position, size }) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id,
   });
-  const { toggleWidgetVisibility } = useStore();
+  const { toggleWidgetVisibility, widgetVisibility } = useStore();
+
+  // If the widget is not visible according to widgetVisibility state, don't render it
+  if (!widgetVisibility[type]) {
+    return null;
+  }
 
   const style = transform ? {
     transform: CSS.Transform.toString(transform),

@@ -183,6 +183,16 @@ interface StoreState {
       winRate: number;
       bestStreak: number;
     };
+    huntStats: {
+      gamesPlayed: number;
+      tokensEarned: number;
+      words: number;
+      bestScore: number;
+      perfectStatus: number;
+    };
+    // hundStts:{
+
+    // };
     totalTokens: number;
   };
   user: {
@@ -292,7 +302,7 @@ const useStore = create<StoreState>((set) => ({
     {
       id: 'fear-greed',
       type: 'Fear & Greed Index',
-      position: { x: 10, y: 530 },
+      position: { x: 10, y: 520 },
       size: { width: 360, height: 270 }
     },
     {
@@ -302,41 +312,42 @@ const useStore = create<StoreState>((set) => ({
       size: { width: 360, height: 360 }
     },
     {
-      id: 'trending',
-      type: 'Trending',
-      position: { x: 380, y: 400 },
-      size: { width: 360, height: 315 }
-    },
-    {
       id: 'twitter',
       type: 'Twitter Feed',
+      position: { x: 380, y: 390 },
+      size: { width: 360, height: 400 }
+    },
+
+    {
+      id: 'direct-messages',
+      type: 'Direct Messages',
       position: { x: 750, y: 20 },
-      size: { width: 360, height: 440 }
+      size: { width: 360, height: 480 }
     },
     {
-      id: 'price-converter',
-      type: 'Price Converter',
-      position: { x: 750, y: 470 },
+      id: 'trending',
+      type: 'Trending',
+      position: { x: 750, y: 510 },
       size: { width: 360, height: 300 }
     },
     {
       id: 'portfolio',
       type: 'Portfolio Overview',
       position: { x: 1120, y: 20 },
-      size: { width: 360, height: 540 }
+      size: { width: 360, height: 500 }
+    },
+    {
+      id: 'price-converter',
+      type: 'Price Converter',
+      position: { x: 1120, y: 530 },
+      size: { width: 360, height: 280 }
     },
 
-    // {
-    //   id: 'direct-messages',
-    //   type: 'Direct Messages',
-    //   position: { x: 1535, y: 20 },
-    //   size: { width: 360, height: 540 }
-    // },
     {
       id: 'quick-swap',
       type: 'Quick Swap',
       position: { x: 1490, y: 20 },
-      size: { width: 400, height: 800 }
+      size: { width: 400, height: 750 }
     },
   ],
   updateWidget: (id, updates) => set((state) => ({
@@ -354,7 +365,7 @@ const useStore = create<StoreState>((set) => ({
     'Trending': true,
     'Ask Anything': true,
     'Twitter Feed': true,
-    'Direct Messages': false
+    'Direct Messages': true
   },
   toggleWidgetVisibility: (type) => set((state) => ({
     widgetVisibility: {
@@ -410,6 +421,13 @@ const useStore = create<StoreState>((set) => ({
       winRate: 0,
       bestStreak: 0
     },
+    huntStats: {
+      gamesPlayed: 0,
+      tokensEarned: 0,
+      words: 0,
+      bestScore: 0,
+      perfectStatus: 0
+    },
     totalTokens: 0
   },
   updateGameStats: (stats) => set((state) => ({
@@ -428,7 +446,7 @@ const useStore = create<StoreState>((set) => ({
         }
       };
     }
-    
+
 
     return {
       gameStats: {
@@ -438,7 +456,7 @@ const useStore = create<StoreState>((set) => ({
     };
   }),
 
-  
+
 
   // Appearance
   currentWallpaper: wallpapersList[0],
