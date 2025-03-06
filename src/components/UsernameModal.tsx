@@ -1,7 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { X } from 'lucide-react';
-import {usernameService} from "../services/username.service";
+import { authService } from "../services/auth.service";
+import { useUserData } from '../providers/UserProvider';
+
 interface UsernameModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -12,12 +14,15 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ isOpen, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { address,userData,isConnected, fetchUserData } = useContext(Web3AuthContext);
+  const { userData } = useUserData();
+
   useEffect(() => {
-    if (isConnected && !userData) {
-        fetchUserData();
-      }
-  }, [userData]);
+    if (isOpen) {
+      setUsername('');
+      setError(null);
+    }
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -27,10 +32,12 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ isOpen, onClose }) => {
     }
     
     try {
+
       setIsSubmitting(true);
       setError(null);
+
       if (userData?.accessToken) {
-        const response =  await usernameService.registerUsername(userData.accessToken, username);
+        const response =  await authService.registerUsername(username);
         console.log(response);
       }
       

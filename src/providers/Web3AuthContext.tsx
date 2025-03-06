@@ -182,6 +182,7 @@ const kernelVersion = KERNEL_V3_1;
 
 import { getLoginUserId } from "../components/market/Calendar/api/Calendar-api.ts";
 import { usernameService } from "../services/username.service.ts";
+import { authService } from "../services/auth.service.ts";
 
 const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
@@ -263,6 +264,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const fetchUserData = async () => {
+        console.log("*********fetchuser*********")
         try {
             setUserDataLoading(true);
             const currentAddress = address;
@@ -479,13 +481,14 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         setIsChainSwitching(false)
     }
-useEffect(() => {
-    // Only proceed when we have a valid address
-    if (address && address !== '') {
-        console.log("Address detected, fetching user data:", address);
-        fetchUserData();
-    }
-}, [address]);
+    useEffect(() => {
+        // Only proceed when we have a valid address
+        if (address && address !== '') {
+            console.log("Address detected, fetching user data:", address);
+            // fetchUserData();
+        }
+    }, [address]);
+
     useEffect(() => {
         const currentWalletType = detectWalletType();
         setWalletType(currentWalletType);
@@ -513,9 +516,9 @@ useEffect(() => {
                 }).extend(publicActions); // Extend with public actions
                 setWalletClient(walletClient)
 
-                fetchUserData().then(() => {
-                    checkWalletAndUsername();
-                });
+                // fetchUserData().then(() => {
+                //     checkWalletAndUsername();
+                // });
             })
         } else {
             setIsConnected(isWagmiWalletConnected)
@@ -581,7 +584,7 @@ useEffect(() => {
                         }
 
                         setSolanaWalletInfo(solanaWalletData)
-                        fetchUserData();
+                        // fetchUserData();
                     } catch (err) {
                         console.log("error during initialize solana address", err)
                     }
