@@ -25,9 +25,12 @@ interface WalletDrawerProps {
     setIsOpen: (open: boolean) => void
 }
 
+export type PageType = 'main' | 'asset' | 'send' | 'receive'
+
 interface AssetInfoProps {
     tokenBalance: TokenBalance;
     setTokenBalance: (token: TokenBalance | null) => void;
+    setPage: (type: PageType) => void;
 }
 
 type ChartPriceType = {
@@ -67,14 +70,14 @@ const ShowMoreLess: React.FC<{ text: string, maxLength: number }> = ({ text, max
     const toggleExpand = () => setIsExpanded(!isExpanded);
 
     return (
-        <div className={`${theme === "dark" ? "text-white/70" : "text-black/70"} text-md`}>
-            <p>
+        <div className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>
+            <p className="text-sm sm:text-md">
                 {isExpanded ? text : text.slice(0, maxLength) + (text.length > maxLength ? "..." : "")}
             </p>
             {text.length > maxLength && (
                 <button
                     onClick={toggleExpand}
-                    className="text-blue-500 hover:text-blue-600 mt-1"
+                    className="text-blue-500 hover:text-blue-600 mt-1 text-sm sm:text-md"
                 >
                     {isExpanded ? "Show Less" : "Show More"}
                 </button>
@@ -128,7 +131,7 @@ const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAdd
     )
 }
 
-export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance }) => {
+export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, setPage }) => {
     const { theme } = useStore();
     const [selectedRange, setSelectedRange] = useState<ChartTimeType>("1D");
     const [chartData, setChartData] = useState<Array<ChartPriceType> | null>(null);
@@ -175,9 +178,8 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
         const currentTime = Math.round(Date.now() / 1000) - 60
 
         if (tokenBalance.network?.id === "solana") {
-            const address = (tokenBalance.address === 'solana' ? "So11111111111111111111111111111111111111112" : tokenBalance.address)
             const timeFrom = currentTime - customMapTimeRange[selectedRange].mseconds
-            const data = await birdeyeService.getOHLCV(address, customMapTimeRange[selectedRange].solInterval, timeFrom, currentTime)
+            const data = await birdeyeService.getOHLCV(tokenBalance.address, customMapTimeRange[selectedRange].solInterval, timeFrom, currentTime)
             if (data.length > 0) {
                 const cData = formatChartData(data)
                 setChartData([...cData])
@@ -194,6 +196,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
 
     const handleBack = () => {
         setTokenBalance(null)
+        setPage('main')
     }
 
     const renderSocialBtns = (links: any) => {
@@ -301,7 +304,7 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
                                         <span>${info.market_data.current_price.usd}</span>
                                     </div>
                                     <div className={`flex justify-between ${theme === "dark" ? "text-white/70" : "text-black/70"} text-sm`}>
-                                        <span>{formatNumberByFrac(tokenBalance.balance)} {tokenBalance.symbol}</span>
+                                        <span>{formatNumberByFrac(tokenBalance.balance, 5)} {tokenBalance.symbol}</span>
                                         <span>{formatUsdValue(info.market_data.current_price.usd * tokenBalance.balance)}</span>
                                     </div>
                                 </div>
@@ -391,10 +394,11 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     const { theme } = useStore();
     const { address, chainId, switchChain, logout, solanaWalletInfo } = useContext(Web3AuthContext);
     const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
-    const [selectedTab, setSelectedTab] = useState<'tokens' | 'nfts' | 'pools' | 'activity'>('tokens');
+    const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
+    const [page, setPage] = useState<PageType>('main');
     const { isLoading: isLoadingBalance } = useWalletBalance();
     const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
-    const [showSendDrawer, setShowSendDrawer] = useState(false);
+    // const [showSendDrawer, setShowSendDrawer] = useState(false);
     const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
     const [showBuyDrawer, setShowBuyDrawer] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<TokenBalance | null>(null);
@@ -427,12 +431,16 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     }
 
     const handleAsset = async (token: TokenBalance) => {
-        // if (Number(chainId) !== Number(token.chain)) {
-        //     await switchChain(Number(token.chain));
-        // }
-        // setSelectedBalanceIndex(index);
-        // setShowSendDrawer(true);
         setSelectedAsset(token)
+        setPage('asset')
+    }
+
+    const handleSend = () => {
+        setPage('send')
+    }
+
+    const handleReceive = () => {
+        setPage('receive')
     }
 
     const renderActivity = () => (
@@ -499,7 +507,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                                 <div className='flex flex-col justify-start items-start'>
                                     <div className="font-medium text-sm sm:text-md">{token.symbol}</div>
                                     <div className="text-xs sm:text-sm text-white/60">
-                                        {`${formatNumberByFrac(token.balance)} ${token.symbol}`}
+                                        {`${formatNumberByFrac(token.balance, 5)} ${token.symbol}`}
                                     </div>
                                 </div>
                             </div>
@@ -515,38 +523,132 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
         </div>
     )
 
-    const renderNfts = () => (
-        <div className="flex-1 mt-4 sm:mt-5 mx-4">
-            <div className="flex flex-col items-center text-white/90 mt-24">
-                <ImagesIcon className="w-20 h-20" />
-                <p className="text-xl sm:text-2xl mt-2">No NFTs yet</p>
-                <p className={`text-xs sm:text-sm ${theme === "dark" ? 'text-white/70' : 'text-black/70'}`}>Buy or transfer NFTs to this wallet to get started.</p>
-                <a
-                    className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors mt-4`}
-                    href="https://opensea.io"
-                    target="_blank"
-                >
-                    <span className="text-xs sm:text-sm">Explore NFTs</span>
-                </a>
+    const renderDeFi = () => (
+        <div className="space-y-6 mt-4 sm:mt-5 mx-4 flex-1">
+            {/* DeFi Overview */}
+            <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white/5 rounded-xl p-4">
+                    <div className="text-xs sm:text-sm text-white/60">Total Value Locked</div>
+                    <div className="text-xl sm:text-2xl font-bold mt-1">
+                        {formatUsdValue(mockDeFiStats.totalValueLocked)}
+                    </div>
+                    <div className="text-xs sm:text-sm text-white/60 mt-1">
+                        {mockDeFiStats.distribution.lending}% Lending
+                    </div>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4">
+                    <div className="text-xs sm:text-sm text-white/60">Daily Yield</div>
+                    <div className="text-xl sm:text-2xl font-bold mt-1">
+                        {formatUsdValue(mockDeFiStats.dailyYield)}
+                    </div>
+                    <div className="text-xs sm:text-sm text-green-400 mt-1">
+                        {formatApy(mockDeFiStats.averageApy)} APY
+                    </div>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4">
+                    <div className="text-xs sm:text-sm text-white/60">Risk Level</div>
+                    <div className="text-xl sm:text-2xl font-bold mt-1">
+                        {mockDeFiStats.riskLevel}
+                    </div>
+                    <div className="text-xs sm:text-sm text-white/60 mt-1">
+                        {mockDeFiStats.distribution.borrowing}% Borrowed
+                    </div>
+                </div>
+            </div>
+
+            {/* DeFi Positions */}
+            <div className="space-y-3">
+                {sortedMockDeFiPositions.map((position) => (
+                    <div
+                        key={position.id}
+                        className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
+                    >
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                                <img
+                                    src={position.protocolLogo}
+                                    alt={position.protocol}
+                                    className="w-8 h-8"
+                                />
+                                <div>
+                                    <div className="text-sm sm:text-md font-medium">{position.protocol}</div>
+                                    <div className="text-xs sm:text-sm text-white/60">{position.type}</div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-md sm:text-lg font-medium">
+                                    {formatUsdValue(position.value)}
+                                </div>
+                                <div className="text-xs sm:text-sm text-green-400">
+                                    {formatApy(position.apy)} APY
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-xs sm:text-sm">
+                            <div>
+                                <span className="text-white/60">Amount:</span>{' '}
+                                {`${formatNumberByFrac(position.amount, 5)} ${position.token.symbol}`}
+                            </div>
+                            {position.rewards && (
+                                <div>
+                                    <span className="text-white/60">Rewards:</span>{' '}
+                                    {formatUsdValue(position.rewards.value)}
+                                </div>
+                            )}
+                            {position.healthFactor && (
+                                <div>
+                                    <span className="text-white/60">Health:</span>{' '}
+                                    <span className={getHealthFactorColor(position.healthFactor)}>
+                                        {position.healthFactor.toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="flex items-center gap-1 ml-auto text-white/60">
+                                <Clock className="w-4 h-4" />
+                                <span>
+                                    {Math.floor((Date.now() - position.startDate.getTime()) / (1000 * 60 * 60 * 24))}d
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     )
 
-    const renderPools = () => (
-        <div className="flex-1 mt-4 sm:mt-5 mx-4">
-            <div className="flex flex-col items-center text-white/90 mt-24">
-                <WalletCardsIcon className="w-20 h-20" />
-                <p className="text-xl sm:text-2xl mt-2">No Pools yet</p>
-                <p className={`text-xs sm:text-sm ${theme === "dark" ? 'text-white/70' : 'text-black/70'}`}>Open a new position or create a pool to get started.</p>
-                <a
-                    className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors mt-4`}
-                >
-                    <span className="text-xs sm:text-sm">+ New position</span>
-                </a>
-            </div>
+    // const renderNfts = () => (
+    //     <div className="flex-1 mt-4 sm:mt-5 mx-4">
+    //         <div className="flex flex-col items-center text-white/90 mt-24">
+    //             <ImagesIcon className="w-20 h-20" />
+    //             <p className="text-xl sm:text-2xl mt-2">No NFTs yet</p>
+    //             <p className={`text-xs sm:text-sm ${theme === "dark" ? 'text-white/70' : 'text-black/70'}`}>Buy or transfer NFTs to this wallet to get started.</p>
+    //             <a
+    //                 className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors mt-4`}
+    //                 href="https://opensea.io"
+    //                 target="_blank"
+    //             >
+    //                 <span className="text-xs sm:text-sm">Explore NFTs</span>
+    //             </a>
+    //         </div>
+    //     </div>
+    // )
 
-        </div>
-    )
+    // const renderPools = () => (
+    //     <div className="flex-1 mt-4 sm:mt-5 mx-4">
+    //         <div className="flex flex-col items-center text-white/90 mt-24">
+    //             <WalletCardsIcon className="w-20 h-20" />
+    //             <p className="text-xl sm:text-2xl mt-2">No Pools yet</p>
+    //             <p className={`text-xs sm:text-sm ${theme === "dark" ? 'text-white/70' : 'text-black/70'}`}>Open a new position or create a pool to get started.</p>
+    //             <a
+    //                 className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors mt-4`}
+    //             >
+    //                 <span className="text-xs sm:text-sm">+ New position</span>
+    //             </a>
+    //         </div>
+
+    //     </div>
+    // )
 
     return (
         <>
@@ -580,94 +682,126 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                 </div>
 
                 {
-                    selectedAsset ?
-                        <AssetInfo
-                            tokenBalance={selectedAsset}
-                            setTokenBalance={setSelectedAsset}
-                        />
-                        :
-                        <div className="flex-1">
-                            {/* Total Balance */}
-                            <div className="bg-white/10 rounded-xl p-3 sm:p-4 mt-4 sm:mt-5 mx-4">
-                                <div className="text-xs sm:text-sm text-white/60">Total Balance</div>
-                                <div className="text-xl sm:text-3xl font-bold mt-1">
-                                    {
-                                        isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)
-                                    }
-                                </div>
+                    page === "main" &&
+                    <div className="flex-1">
+                        {/* Total Balance */}
+                        <div className="bg-white/10 rounded-xl p-3 sm:p-4 mt-4 sm:mt-5 mx-4">
+                            <div className="text-xs sm:text-sm text-white/60">Total Balance</div>
+                            <div className="text-xl sm:text-3xl font-bold mt-1">
                                 {
-                                    !isLoadingBalance && <div className="flex items-center gap-1 mt-1 text-green-400">
-                                        <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                        <span className="text-xs sm:text-sm">+1.57% TODAY</span>
-                                    </div>
+                                    isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)
                                 }
                             </div>
-
-                            {/* Quick Actions */}
-                            <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-5 mx-4">
-                                <button
-                                    disabled={tokenBalances.length === 0}
-                                    onClick={() => setShowSendDrawer(true)}
-                                    className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors ${tokenBalances.length === 0 ? "opacity-[0.6] disabled:pointer-events-none disabled:cursor-default" : ""}`}
-                                >
-                                    <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    <span className="text-xs sm:text-sm">Send</span>
-                                </button>
-                                <button
-                                    onClick={() => setShowReceiveDrawer(true)}
-                                    className="flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
-                                >
-                                    <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    <span className="text-xs sm:text-sm">Receive</span>
-                                </button>
-                                <button
-                                    disabled={true}
-                                    onClick={() => setShowBuyDrawer(true)}
-                                    className="flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors opacity-[0.7]"
-                                >
-                                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    <span className="text-xs sm:text-sm">Buy</span>
-                                </button>
-                            </div>
-
-                            {/* Tabs */}
-                            <div className="flex items-center justify-around mt-4 sm:mt-5">
-                                <button
-                                    onClick={() => setSelectedTab('tokens')}
-                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'tokens' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                                        }`}
-                                >
-                                    <span className="text-xs sm:text-sm">Tokens</span>
-                                </button>
-                                <button
-                                    onClick={() => setSelectedTab('nfts')}
-                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'nfts' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                                        }`}
-                                >
-                                    <span className="text-xs sm:text-sm">NFTs</span>
-                                </button>
-                                <button
-                                    onClick={() => setSelectedTab('pools')}
-                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'pools' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                                        }`}
-                                >
-                                    <span className="text-xs sm:text-sm">Pools</span>
-                                </button>
-
-                                <button
-                                    onClick={() => setSelectedTab('activity')}
-                                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'activity' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                                        }`}
-                                >
-                                    <span className="text-xs sm:text-sm">Activity</span>
-                                </button>
-                            </div>
-
-                            {selectedTab === "tokens" && renderTokens()}
-                            {selectedTab === "nfts" && renderNfts()}
-                            {selectedTab === "pools" && renderPools()}
-                            {selectedTab === "activity" && renderActivity()}
+                            {
+                                !isLoadingBalance && <div className="flex items-center gap-1 mt-1 text-green-400">
+                                    <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                    <span className="text-xs sm:text-sm">+1.57% TODAY</span>
+                                </div>
+                            }
                         </div>
+
+                        {/* Quick Actions */}
+                        <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-5 mx-4">
+                            <button
+                                disabled={tokenBalances.length === 0}
+                                onClick={handleSend}
+                                className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors ${tokenBalances.length === 0 ? "opacity-[0.6] disabled:pointer-events-none disabled:cursor-default" : ""}`}
+                            >
+                                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-xs sm:text-sm">Send</span>
+                            </button>
+                            <button
+                                onClick={handleReceive}
+                                className="flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
+                            >
+                                <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-xs sm:text-sm">Receive</span>
+                            </button>
+                            <button
+                                disabled={true}
+                                onClick={() => setShowBuyDrawer(true)}
+                                className="flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors opacity-[0.7]"
+                            >
+                                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-xs sm:text-sm">Buy</span>
+                            </button>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="flex items-center justify-around mt-4 sm:mt-5">
+                            <button
+                                onClick={() => setSelectedTab('tokens')}
+                                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'tokens' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                                    }`}
+                            >
+                                <span className="text-xs sm:text-sm">Tokens</span>
+                            </button>
+
+                            <button
+                                onClick={() => setSelectedTab('activity')}
+                                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'activity' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                                    }`}
+                            >
+                                <span className="text-xs sm:text-sm">Activity</span>
+                            </button>
+                            <button
+                                onClick={() => setSelectedTab('defi')}
+                                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'defi' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                                    }`}
+                            >
+                                <span className="text-xs sm:text-sm">Defi</span>
+                            </button>
+                        </div>
+
+                        {selectedTab === "tokens" && renderTokens()}
+                        {selectedTab === "activity" && renderActivity()}
+                        {selectedTab === "defi" && renderDeFi()}
+                    </div>
+                }
+
+                {
+                    (page === "asset" && selectedAsset) &&
+                    <AssetInfo
+                        tokenBalance={selectedAsset}
+                        setTokenBalance={setSelectedAsset}
+                        setPage={setPage}
+                    />
+                }
+
+                {
+                    (page === "send") &&
+                    <SendDrawer
+                        // isOpen={showSendDrawer}
+                        selectedAssetIndex={selectedBalanceIndex}
+                        // onClose={() => setShowSendDrawer(false)}
+                        assets={tokenBalances.map(p => ({
+                            name: p.name,
+                            address: p.address,
+                            symbol: p.symbol,
+                            amount: Number(p.balance),
+                            logo: p.logo,
+                            chain: p.chain,
+                            decimals: p.decimals,
+                            network: p.network?.name || ""
+                        }))}
+                        setPage={setPage}
+                    />
+                }
+
+                {
+                    (page === "receive") &&
+                    <ReceiveDrawer
+                        // isOpen={showReceiveDrawer}
+                        // onClose={() => setShowReceiveDrawer(false)}
+                        assets={tokenBalances.map(p => ({
+                            name: p.name,
+                            symbol: p.symbol,
+                            logo: p.logo,
+                            chain: p.chain,
+                        }))}
+                        setPage={setPage}
+                        page={page}
+                    />
                 }
             </motion.div>
 
@@ -680,32 +814,6 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                     />
                 )
             }
-
-            {/* Drawers */}
-            <SendDrawer
-                isOpen={showSendDrawer}
-                selectedAssetIndex={selectedBalanceIndex}
-                onClose={() => setShowSendDrawer(false)}
-                assets={tokenBalances.map(p => ({
-                    name: p.name,
-                    address: p.address,
-                    symbol: p.symbol,
-                    amount: Number(p.balance),
-                    logo: p.logo,
-                    chain: p.chain,
-                }))}
-            />
-
-            <ReceiveDrawer
-                isOpen={showReceiveDrawer}
-                onClose={() => setShowReceiveDrawer(false)}
-                assets={tokenBalances.map(p => ({
-                    name: p.name,
-                    symbol: p.symbol,
-                    logo: p.logo,
-                    chain: p.chain,
-                }))}
-            />
 
             <BuyDrawer
                 isOpen={showBuyDrawer}

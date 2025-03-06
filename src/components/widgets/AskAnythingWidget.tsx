@@ -35,20 +35,20 @@ export const AskAnythingWidget: React.FC = () => {
 
   const voiceCommands: VoiceCommand[] = [
     { 
-      command: "Open settings and change wallpaper to Downtown",
-      description: "Chain multiple commands together"
+      command: "Open Assistant",
+      description: ""
     },
     {
-      command: "Open market data and show trending tokens",
-      description: "Navigate and view data in sequence"
+      command: "Open Settings",
+      description: ""
     },
     {
-      command: "Open dashboard and show portfolio",
-      description: "Combined navigation commands"
+      command: "Open Swap",
+      description: ""
     },
     {
-      command: "Show Bitcoin price and latest news",
-      description: "Get multiple data points at once"
+      command: "Open DeFi",
+      description: ""
     }
   ];
 
@@ -308,7 +308,7 @@ export const AskAnythingWidget: React.FC = () => {
       <div className={`glass w-[320px] sm:w-[600px] h-14 bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg flex items-center ${isSmallScreen ? 'px-2' : 'px-4'} gap-2 shadow-lg mx-auto`}>
         <input
           type="text"
-          placeholder={'Open Settings, Open Assistant..'}
+          placeholder='Type or say: Open Assistant, Open Swap...'
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}

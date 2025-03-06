@@ -69,7 +69,7 @@ export const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ isWalletPa
           <HStack mb={6} spacing={3}>
             <Activity size={24} color="var(--chakra-colors-blue-400)" />
             <Text fontSize="xl" fontWeight="bold">
-              ETH Market Sentiment
+              {data?.name} Market Sentiment
             </Text>
           </HStack>
 
