@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Flex, HStack, Text, useBreakpointValue } from '@chakra-ui/react';
-import { SwapBox } from "../swap/components/SwapBox";
+import { QuickSwapBox } from "../swap/components/QuickSwapBox";
 import { SlippageOption, TokenType } from "../../types/swap.type";
 import { SlippageSettings } from "../swap/SlippageSettings";
 import { ConfirmSwapModal } from "../swap/modals/ConfirmSwapModal.tsx";
 import { NULL_ADDRESS } from "../../constants";
-import {SolanaSwapBox} from "../swap/components/SolanaSwapBox.tsx";
+import { SolanaSwapBox } from "../swap/components/SolanaSwapBox.tsx";
 
 export const QuickSwapWidget: React.FC = () => {
   const [fromToken, setFromToken] = useState<TokenType | null>({
@@ -79,28 +79,10 @@ export const QuickSwapWidget: React.FC = () => {
         {/* Right Side - Swap Interface */}
         <Box minW={["100%", "400px"]} p={6}>
           {/* Header */}
-          <Flex justify="space-between" align="center" mb={6}>
-            <Flex align="center" gap={2}>
-              <Text fontSize="xl" fontWeight="bold">Swap</Text>
-              {/* Toggle chart button on mobile */}
-              {isMobile && (
-                <button
-                  onClick={() => setShowChart(!showChart)}
-                  className="p-2 rounded-lg bg-white/5 text-xs text-blue-400"
-                >
-                  {showChart ? "Hide Chart" : "Show Chart"}
-                </button>
-              )}
-            </Flex>
-
-            <HStack spacing={2}>
-              <SlippageSettings value={slippage} onChange={setSlippage} />
-            </HStack>
-          </Flex>
-
           {/* Swap Interface and Wallet */}
           <div
-            className="p-2.5 border border-white/5 relative z-50 w-full rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
+            className="p-2.5 border border-white/5 relative z-50 w-full rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] h-auto overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
+            <SlippageSettings value={slippage} onChange={setSlippage} />
             {fromToken?.chainId === 900 ? (
               <SolanaSwapBox
                 fromToken={fromToken}
@@ -115,7 +97,7 @@ export const QuickSwapWidget: React.FC = () => {
                 slippage={slippage}
               />
             ) : (
-              <SwapBox
+              <QuickSwapBox
                 fromToken={fromToken}
                 toToken={toToken}
                 fromAmount={fromAmount}

@@ -9,9 +9,11 @@ import { NotificationPanel } from './NotificationPanel';
 import { useStore } from '../store/useStore';
 import { WalletDrawer } from './WalletDrawer';
 import { Web3AuthContext } from "../providers/Web3AuthContext";
+import { useWebSocket } from '../providers/WebSocketProvider';
 import { useToast } from '@chakra-ui/react';
 
 export const Header: React.FC = () => {
+  const { isConnected } = useContext(Web3AuthContext);
   const isSettingsOpen = useStore((state) => state.isSettingsOpen);
   const setIsSettingsOpen = useStore((state) => state.setIsSettingsOpen);
   const isTopbarVisible = useStore((state) => state.isTopbarVisible);
@@ -24,26 +26,22 @@ export const Header: React.FC = () => {
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const { isConnected } = useContext(Web3AuthContext);
   const toast = useToast();
 
-  // Check screen size
+  const { unreadCount } = useWebSocket();
+
   useEffect(() => {
     const checkScreenSize = () => {
       setIsSmallScreen(window.innerWidth < 640);
     };
-    
-    // Initial check
+
     checkScreenSize();
-    
-    // Add resize listener
+
     window.addEventListener('resize', checkScreenSize);
-    
-    // Cleanup
+
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  // Close mobile menu when switching to larger screen
   useEffect(() => {
     if (!isSmallScreen && isMobileMenuOpen) {
       setIsMobileMenuOpen(false);
@@ -109,11 +107,11 @@ export const Header: React.FC = () => {
           {/* Left section */}
           <div className="flex items-center gap-1 sm:gap-3">
             <MainMenu />
-            
+
             {!isSmallScreen && (
               <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
             )}
-            
+
             <div className="h-6 w-auto relative">
               <img
                 src="https://i.imgur.com/PMmM0EA.png"
@@ -123,13 +121,11 @@ export const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Middle section - TopbarStarredItems */}
           <TopbarStarredItems />
 
-          {/* Right section - Adaptive for small screens */}
           <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
             {!isSmallScreen && <StarMenu />}
-            
+
             <div className="relative">
               <button
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -137,9 +133,11 @@ export const Header: React.FC = () => {
                 aria-label="Notifications"
               >
                 <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded-full text-xs flex items-center justify-center">
-                  2
-                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded-full text-xs flex items-center justify-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
               {isNotificationsOpen && (
                 <NotificationPanel
@@ -157,7 +155,6 @@ export const Header: React.FC = () => {
               <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
-            {/* Hide some buttons on very small screens */}
             {(!isSmallScreen || window.innerWidth > 380) && (
               <button
                 onClick={toggleFullscreen}
@@ -185,7 +182,7 @@ export const Header: React.FC = () => {
                 )}
               </button>
             )}
-            
+
             <button
               onClick={toggleTheme}
               className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -198,7 +195,7 @@ export const Header: React.FC = () => {
                 <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               )}
             </button>
-            
+
             <AccountMenu />
           </div>
         </div>

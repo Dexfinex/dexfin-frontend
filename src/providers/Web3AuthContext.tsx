@@ -103,7 +103,7 @@ interface Web3AuthContextType {
     getWalletType: () => WalletType,
     walletType: WalletType
 
-    checkWalletAndUsername: () => Promise<{ exists: boolean, message?: string }>;
+    checkWalletAndUsername: () => Promise<{ exists: boolean, message?: string, userId?: string }>;
 }
 
 
@@ -181,7 +181,7 @@ const entryPoint = getEntryPoint("0.7");
 const kernelVersion = KERNEL_V3_1;
 
 import { getLoginUserId } from "../components/market/Calendar/api/Calendar-api.ts";
-import { checkUsername } from "../components/games/api/useUsername-api.ts";
+import { usernameService } from "../services/username.service.ts";
 
 const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
@@ -264,16 +264,13 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const fetchUserData = async () => {
         try {
-            console.log("sdfsfasdfasdfas")
             setUserDataLoading(true);
             const currentAddress = address;
-
             if (!currentAddress) {
                 console.error("No wallet address available to fetch user data");
                 setUserDataLoading(false);
                 return;
             }
-            console.log(currentAddress)
 
             const currentWalletType = detectWalletType();
             setWalletType(currentWalletType);
@@ -281,7 +278,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const response = await getLoginUserId(currentAddress);
 
 
-            console.log(response);
             setUserData({
                 ...response,
                 walletType: currentWalletType
@@ -297,7 +293,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUserDataLoading(false);
         }
     };
-    const checkWalletAndUsername = async (): Promise<{ exists: boolean, message?: string }> => {
+    const checkWalletAndUsername = async (): Promise<{ exists: boolean, message?: string, userId?: string }> => {
         try {
             if (!address) {
                 return {
@@ -316,9 +312,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             }
             // Get username data from backend
-            console.log(userData.accessToken)
-            const response = await checkUsername(userData.accessToken);
-            console.log(response.username)
+            const response = await usernameService.checkUsername(userData.accessToken);
 
             if (!response || !response.username || response.username.trim() === "") {
                 // Open the username registration modal
@@ -332,7 +326,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             return {
                 exists: true,
-                message: `Username exists for this wallet: ${response.username}`
+                message: `Username exists for this wallet: ${response.username}`,
+                userId: response.id
             };
 
 
@@ -484,7 +479,13 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         setIsChainSwitching(false)
     }
-
+useEffect(() => {
+    // Only proceed when we have a valid address
+    if (address && address !== '') {
+        console.log("Address detected, fetching user data:", address);
+        fetchUserData();
+    }
+}, [address]);
     useEffect(() => {
         const currentWalletType = detectWalletType();
         setWalletType(currentWalletType);
