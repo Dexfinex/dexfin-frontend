@@ -17,7 +17,7 @@ import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
 import {getUSDAmount} from "../../../utils/swap.util.ts";
 
-interface SwapBoxProps {
+interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
     toToken: TokenType | null;
     fromAmount: string;
@@ -76,7 +76,7 @@ const PreviewDetailItem = ({
     )
 }
 
-export function SolanaSwapBox({
+export function CrossChainSwapBox({
                                   fromToken,
                                   toToken,
                                   fromAmount,
@@ -87,7 +87,7 @@ export function SolanaSwapBox({
                                   onToAmountChange,
                                   onSwitch,
                                   slippage,
-                              }: SwapBoxProps) {
+                              }: CrossChainSwapBoxProps) {
 
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [transactionHash, setTransactionHash] = useState<string | undefined>(undefined);
