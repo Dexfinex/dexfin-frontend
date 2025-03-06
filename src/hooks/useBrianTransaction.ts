@@ -28,6 +28,7 @@ export const useBrianTransactionMutation = () => {
       }
       for (const [index, transactionStep] of (data.transactions as any).entries()) {
         const tx = await walletClient.sendTransaction({ ...transactionStep });
+        console.log(transactionStep);
       
         if (tx) {
           const receipt = await publicClient?.waitForTransactionReceipt({ hash: tx });

@@ -1,5 +1,6 @@
 import React, { useContext, useMemo } from "react";
 import { Skeleton } from '@chakra-ui/react';
+import { ArrowUp } from 'lucide-react';
 
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import useDefiStore, { Position } from '../../store/useDefiStore';
@@ -151,22 +152,27 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                         <div className="text-lg">${formatNumberByFrac(position.amount)}</div>
                                                     </div>
                                                     {
-                                                        position.apy &&
-                                                        <div>
-                                                            <span className="text-sm text-white/60">APY</span>
-                                                            <div className="text-emerald-400">{(formatNumberByFrac(position.apy) || "0")}%</div>
-                                                        </div>
+                                                        position.apy ?
+                                                            <div>
+                                                                <span className="text-sm text-white/60">APY</span>
+                                                                <div className="text-emerald-400">{(formatNumberByFrac(position.apy) || "0")}%</div>
+                                                            </div>
+                                                            : null
                                                     }
-                                                    {position.rewards && (
+                                                    {Number(position?.rewards) > 0 ?
                                                         <div>
-                                                            <span className={`text-sm text-white/60`}>Rewards</span>
-                                                            <div className={`${position.rewards > 0 ? "text-blue-400" : "text-red-400"}`}>{(formatNumberByFrac(position.rewards) || "0")}% APR</div>
+                                                            <span className={`text-sm text-white/60`}>Rewards by year</span>
+                                                            <div className={`flex text-emerald-400 items-center gap-1`}>
+                                                                ${(formatNumberByFrac(position.rewards) || "0")}
+                                                                <ArrowUp className="w-4 h-4" />
+                                                            </div>
                                                         </div>
-                                                    )}
+                                                        : null
+                                                    }
                                                     {!!position.healthFactor && (
                                                         <div>
                                                             <span className="text-sm text-white/60">Health Factor</span>
-                                                            <div className="text-green-400">{formatHealthFactor(position.healthFactor)}</div>
+                                                            <div className="text-emerald-400">{formatHealthFactor(position.healthFactor)}</div>
                                                         </div>
                                                     )}
                                                     {position.poolShare && (

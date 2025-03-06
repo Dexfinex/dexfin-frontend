@@ -40,7 +40,7 @@ export const generateEnSoExecuteAction = (
     return [
         {
             "action": action,
-            "protocol": protocol,
+            "protocol": protocol === "pendle" ? "pendle-markets" : protocol,
             "args": {
                 "tokenIn": tokenIn.length === 1 ? tokenIn[0].toString() : tokenIn,
                 "tokenOut": tokenOut.length === 1 ? tokenOut[0].toString() : tokenOut,

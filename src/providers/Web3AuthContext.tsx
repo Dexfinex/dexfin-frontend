@@ -24,7 +24,12 @@ import {
 } from "../constants";
 import { SavedWalletInfo, type SolanaWalletInfoType } from "../types/auth";
 import { exportPrivateKey, generatePrivateKey } from "@lit-protocol/wrapped-keys/src/lib/api";
+<<<<<<< HEAD
 import { Keypair, VersionedTransaction } from "@solana/web3.js";
+=======
+import { Keypair, VersionedTransaction, Connection, PublicKey, Transaction, sendAndConfirmTransaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { getOrCreateAssociatedTokenAccount, createTransferInstruction } from '@solana/spl-token';
+>>>>>>> dev
 import {
     createPublicClient,
     createWalletClient,
@@ -48,6 +53,10 @@ import { ETHRequestSigningPayload } from "@lit-protocol/pkp-ethers/src/lib/pkp-e
 import { ethers } from "ethers";
 import { mapChainId2ViemChain } from "../config/networks.ts";
 import { useStore } from "../store/useStore.ts";
+<<<<<<< HEAD
+=======
+import { connection as SolanaConnection } from "../config/solana.ts";
+>>>>>>> dev
 import axios from "axios";
 
 export type WalletType = 'EOA' | 'EMBEDDED' | 'UNKNOWN';
@@ -94,6 +103,7 @@ interface Web3AuthContextType {
     isLoadingStoredWallet: boolean,
     solanaWalletInfo: SolanaWalletInfoType | undefined,
     signSolanaTransaction: (solanaTransaction: VersionedTransaction) => Promise<VersionedTransaction | null>,
+    transferSolToken: (recipientAddress: string, tokenMintAddress: string, amount: number, decimals: number) => Promise<string>,
 
     userData: UserData | null,
     fetchUserData: () => Promise<void>,
@@ -157,6 +167,9 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     solanaWalletInfo: undefined,
     signSolanaTransaction: async () => {
         return null
+    },
+    transferSolToken: async () => {
+        return ""
     },
     userData: null,
     fetchUserData: async () => {
@@ -660,6 +673,78 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return null
     }
 
+    const transferSolToken = async (recipientAddress: string, tokenMintAddress: string, amount: number, decimals: number) => {
+        if (solanaWalletInfo && sessionSigs) {
+            try {
+                const privateKey = await exportPrivateKey({
+                    pkpSessionSigs: sessionSigs!,
+                    litNodeClient,
+                    network: "solana",
+                    id: solanaWalletInfo.wrappedKeyId,
+                });
+
+                const keypair = Keypair.fromSecretKey(Buffer.from(privateKey.decryptedPrivateKey, "hex"));
+
+                if (tokenMintAddress === "So11111111111111111111111111111111111111112") {
+                    console.log('transfer native sol')
+                    const transaction = new Transaction().add(
+                        SystemProgram.transfer({
+                            fromPubkey: keypair.publicKey,
+                            toPubkey: new PublicKey(recipientAddress),
+                            lamports: amount * LAMPORTS_PER_SOL,
+                        })
+                    );
+                    console.log('transaction = ', transaction);
+
+                    const signature = await sendAndConfirmTransaction(SolanaConnection, transaction, [keypair]);
+                    console.log("Transaction Signature:", signature);
+                    return signature;
+                } else {
+                    console.log(`1 - Getting Source Token Account`);
+                    let sourceAccount = await getOrCreateAssociatedTokenAccount(
+                        SolanaConnection,
+                        keypair,
+                        new PublicKey(tokenMintAddress),
+                        keypair.publicKey
+                    );
+                    console.log(`    Source Account: ${sourceAccount.address.toString()}`);
+
+                    console.log(`2 - Getting Destination Token Account`);
+                    let destinationAccount = await getOrCreateAssociatedTokenAccount(
+                        SolanaConnection,
+                        keypair,
+                        new PublicKey(tokenMintAddress),
+                        new PublicKey(recipientAddress)
+                    );
+                    console.log(`    Destination Account: ${destinationAccount.address.toString()}`);
+
+                    const tx = new Transaction();
+                    tx.add(createTransferInstruction(
+                        sourceAccount.address,
+                        destinationAccount.address,
+                        keypair.publicKey,
+                        amount * Math.pow(10, decimals)
+                    ))
+
+                    const latestBlockHash = await SolanaConnection.getLatestBlockhash('confirmed');
+                    tx.recentBlockhash = await latestBlockHash.blockhash;
+                    const signature = await sendAndConfirmTransaction(SolanaConnection, tx, [keypair]);
+                    console.log(
+                        '\x1b[32m', //Green Text
+                        `   Transaction Success!🎉`,
+                        `\n    https://explorer.solana.com/tx/${signature}`
+                    );
+
+                    return signature;
+                }
+            } catch (err) {
+                console.log('transfer sol token err: ', err)
+            }
+        }
+
+        return "";
+    }
+
     const login = () => {
         useStore.getState().setIsSigninModalOpen(true)
     }
@@ -732,6 +817,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         solanaWalletInfo,
         signSolanaTransaction,
+        transferSolToken,
 
         walletClient,
         setWalletClient,
