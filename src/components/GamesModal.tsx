@@ -2,16 +2,17 @@ import React, { useState, useContext, useEffect } from 'react';
 import {
   X, Maximize2, Minimize2, Brain, Trophy, Gift,
   Swords, Target, Star, BarChart2, Users, Award,
-  Gamepad2, Clock, Coins, ArrowLeft, Lock, BarChart,
+  Gamepad2, Clock, Coins, ArrowLeft, Lock, BarChart, Search,
   Grid
 } from 'lucide-react';
 import { CryptoTrivia } from './games/CryptoTrivia';
 import { MemeArena } from './games/MemeArena';
 import { CryptoPexeso } from './games/CryptoPexeso';
+import CryptoWordHunt from './games/CryptoWordHunt';
 import { GameStats } from './games/GameStats';
 import { useStore } from '../store/useStore';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
-import { fetchGameId, fetchTotalUserTokens } from './games/api/useGame-api';
+import { fetchGameId,fetchAllGame, fetchTotalUserTokens } from './games/api/useGame-api';
 
 interface GamesModalProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ interface Game {
   name: string;
   description: string;
   icon: React.ReactNode;
-  component?: React.ComponentType<{ gameType?: string }>;  // Updated to accept gameType prop
+  component?: React.ComponentType<{ gameType?: string }>;
   comingSoon?: boolean;
   createdAt?: string;
 }
@@ -34,11 +35,15 @@ interface MemeArenaProps {
 interface CryptoPexesoProps {
   gameType?: string;
 }
+interface CryptoWordHuntProps {
+  gameType?: string;
+}
 // Mapping for game icons based on type
 const gameIconMap: Record<string, React.ReactNode> = {
   'TRIVIA': <Brain className="w-6 h-6" />,
   'ARENA': <Swords className="w-6 h-6" />,
   'PEXESO': <Grid className="w-6 h-6" />,
+  'WORDHUNT': <Search className="w-6 h-6" />,
   'SIMULATOR': <BarChart2 className="w-6 h-6" />,
   'PREDICTION': <Target className="w-6 h-6" />,
   'TOURNAMENT': <Trophy className="w-6 h-6" />
@@ -48,7 +53,8 @@ const gameIconMap: Record<string, React.ReactNode> = {
 const gameComponentMap: Record<string, React.ComponentType<{ gameType?: string }>> = {
   'TRIVIA': CryptoTrivia,
   'ARENA': MemeArena,
-  'PEXESO': CryptoPexeso
+  'PEXESO': CryptoPexeso,
+  'WORDHUNT': CryptoWordHunt
 };
 
 export interface GameSession {
@@ -60,6 +66,9 @@ export interface GameSession {
   accuracy?: number;
   winStatus?: boolean;
   streak: number;
+  words?:number;
+  perfectStatus?:boolean;
+
 }
 
 export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
@@ -87,12 +96,13 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
       setGamesLoading(true);
 
       try {
-        if (userData&&userData.accessToken) {
-          const gameData = await fetchGameId(userData.accessToken);
+        // if (userData&&!userData.accessToken) {
+          const gameData = await fetchAllGame();
+          console.log(gameData)
 
           if (Array.isArray(gameData)) {
             const transformedGames = gameData.map((dbGame: any) => {
-              const hasComponent = ['TRIVIA', 'ARENA', 'PEXESO'].includes(dbGame.type);
+              const hasComponent = ['TRIVIA', 'ARENA', 'WORDHUNT', 'PEXESO'].includes(dbGame.type);
 
               return {
                 type: dbGame.type.toLowerCase(),
@@ -107,19 +117,21 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
 
             setGames(transformedGames);
           }
+          console.log(userData);
 
+          if (userData&&userData.accessToken) {
           const totalTokens = await fetchTotalUserTokens(userData.accessToken);
           let tokenValue = 0;
           if (totalTokens !== null && typeof totalTokens === 'object' && 'totalTokens' in totalTokens) {
+
             tokenValue = totalTokens.totalTokens;
           } else if (typeof totalTokens === 'number') {
             tokenValue = totalTokens;
           }
-
           console.log("Final token value to set:", tokenValue);
           setAllGameStats(tokenValue);
-          
-        } else {
+        }
+          else {
           setAllGameStats(0);
         }
       } catch (error) {
@@ -132,7 +144,7 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
     };
 
     loadGamesAndTokens();
-  }, [isOpen, userData, setAllGameStats]);
+  }, [isOpen, setAllGameStats,userData]);
 
   if (!isOpen) return null;
 

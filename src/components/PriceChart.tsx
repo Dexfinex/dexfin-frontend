@@ -66,7 +66,7 @@ export const PriceChart: React.FC<PriceChartProps> = ({ data }) => {
           display: false,
         },
         ticks: {
-          color: 'rgba(255, 255, 255, 0.6)',
+          // color: 'rgba(255, 255, 255, 0.6)',
           maxRotation: 0,
           autoSkip: true,
           maxTicksLimit: 6,
@@ -74,10 +74,10 @@ export const PriceChart: React.FC<PriceChartProps> = ({ data }) => {
       },
       y: {
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)',
+          // color: 'rgba(255, 255, 255, 0.1)',
         },
         ticks: {
-          color: 'rgba(255, 255, 255, 0.6)',
+          // color: 'rgba(255, 255, 255, 0.6)',
         },
       },
     },

@@ -2,7 +2,6 @@ import { GameService } from "../../../services/game.services"
 import {GameSession} from "../../GamesModal";
 
 export const saveGameHistory = async (accessToken:string, saveGameSession :GameSession)=>{
-    console.log(saveGameSession)
     const data= await GameService.gameHistory(accessToken, saveGameSession);
     return data;
 }
@@ -17,5 +16,9 @@ export const fetchGameId= async(accessToken: string)=>{
 
 export const fetchTotalUserTokens= async(accessToken: string)=>{
     const data= await GameService.fetchTotalUserTokens(accessToken);
+    return data
+}
+export const fetchAllGame = async()=>{
+    const data= await GameService.fetchAllGame();
     return data
 }

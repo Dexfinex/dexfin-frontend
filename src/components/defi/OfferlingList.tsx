@@ -1,11 +1,15 @@
 import React, { useContext } from "react";
-import { numberToHex } from "viem";
+import { Skeleton } from '@chakra-ui/react';
 
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
-import { TokenChainIcon } from '../swap/components/TokenIcon';
+import { TokenChainListIcon } from '../swap/components/TokenIcon';
 import useDefiStore, { Position } from '../../store/useDefiStore';
 import { getTypeIcon, getTypeColor, } from "../../utils/defi.util";
 import { offerings } from "../../constants/mock/defi";
+import { TokenIcon } from "../swap/components/TokenIcon";
+import { useGetDefillamaPoolByOffering } from "../../hooks/useDefillama";
+import useDefillamaStore from "../../store/useDefillamaStore";
+import { formatNumberByFrac } from "../../utils/common.util";
 
 interface OfferingListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
@@ -17,8 +21,20 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
 
     const CATEGORY_LIST = ['LENDING', 'BORROWING', 'STAKING', 'LIQUIDITY'] as Position['type'][]
 
-    const { chainId, switchChain } = useContext(Web3AuthContext);
-    const { positions, } = useDefiStore();
+    const { chainId, isConnected } = useContext(Web3AuthContext);
+    const { positions } = useDefiStore();
+    const { getOfferingPoolByChainId } = useDefillamaStore();
+
+    const offeringData = offerings.map((item) => {
+        return {
+            "chainId": item.chainId,
+            "protocol": item.protocol_id,
+            "symbol": item.apyToken
+        }
+    })
+
+    const { isLoading } = useGetDefillamaPoolByOffering(offeringData);
+
 
     const filteredOfferings = offerings.filter(o => selectedPositionType === 'ALL' || o.type.toLowerCase() === selectedPositionType.toLowerCase());
 
@@ -69,27 +85,34 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
 
             <div className="space-y-3">
                 {filteredOfferings.map((offering, index) => {
-                    const isEnabled = offering.chainId === Number(chainId);
+                    const isEnabled = isConnected ? offering.chainId.includes(Number(chainId)) : false;
+                    const _chainId = isConnected ? Number(chainId) : 1;
+                    const poolInfo = getOfferingPoolByChainId(_chainId, offering.protocol_id, offering.apyToken);
                     return (
                         <div
                             key={index}
                             className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
                         >
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                <TokenChainIcon src={offering.logo || ""} alt={offering.protocol || ""} size={"lg"} chainId={Number(offering.chainId)} />
+                                <TokenChainListIcon src={offering.logo || ""} alt={offering.protocol || ""} size={"lg"} chainIds={offering.chainId} />
 
-                                <div className="flex-1">
+                                <div className="flex-1 ml-0.5">
                                     <div className="flex items-center gap-3 mb-2">
                                         <h3 className="font-medium">{offering.protocol}</h3>
                                         <span className={`text-sm ${getTypeColor(offering.type)} hidden sm:block`}>
                                             {offering.type}
                                         </span>
                                         <span className="text-white/40 hidden sm:block">•</span>
-                                        <span className="text-sm text-white/60">
+                                        <div className="flex">
                                             {
-                                                offering.tokens.map((token) => `${token.symbol} `)
+                                                offering.tokens.map((token, index) => ((offering.type === "Borrowed" || offering.type === "Supplied") && index === 0) || ((offering.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" />)
                                             }
-                                        </span>
+                                            <span className="ml-2 text-sm text-white/60">
+                                                {
+                                                    offering.tokens.map((token, index) => ((offering.type === "Borrowed" || offering.type === "Supplied") && index === 0) || ((offering.type === "Liquidity") && index === 2) ? "" : `${token?.symbol} `)
+                                                }
+                                            </span>
+                                        </div>
                                     </div>
 
                                     <div className="flex items-center gap-6">
@@ -97,7 +120,14 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                             <span className="text-sm text-white/60">Base APY</span>
                                             <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
                                                 }`}>
-                                                {offering.apy || "0"} %
+                                                {isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'3rem'} h={'1rem'}></Skeleton> : `${formatNumberByFrac(poolInfo?.apy) || "0"}%`}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className="text-sm text-white/60">TVL</span>
+                                            <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
+                                                }`}>
+                                                {isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'3rem'} h={'1rem'}></Skeleton> : `$${formatNumberByFrac(poolInfo?.tvlUsd) || "0"}`}
                                             </div>
                                         </div>
                                     </div>
@@ -105,17 +135,14 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
 
                                 <button
                                     onClick={async () => {
-                                        if (Number(chainId) === Number(offering.chainId)) {
+                                        if (offering.chainId.includes(Number(chainId))) {
                                             const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol)
                                             handleAction(
                                                 getAddActionName({ type: offering.type }),
                                                 position || offering
                                             );
-                                        } else {
-                                            await switchChain(parseInt(numberToHex(Number(offering.chainId)), 16));
                                         }
-                                    }
-                                    }
+                                    }}
                                     className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg ${isEnabled ? "" : "opacity-70"}`}
                                     disabled={!isEnabled}
                                 >

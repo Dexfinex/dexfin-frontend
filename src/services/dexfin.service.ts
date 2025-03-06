@@ -4,17 +4,10 @@ import {
   EvmWalletBalanceResponseType,
   EvmDefiPosition,
   EvmDefiProtocol,
-  SolanaNativeCoinType,
   SolanaTokensType,
   SolanaWalletReponseType
 } from "../types/dexfinv3.type.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.ts";
-
-const DEFI_DEVELOPMENT = false;
-const DEFIL_DEV_DATA = {
-  network: 1,
-  address: "0xcB1C1FdE09f811B294172696404e88E658659905"
-}
 
 export const dexfinv3Service = {
   getEvmWalletBalance: async ({
@@ -138,7 +131,7 @@ export const dexfinv3Service = {
   getEvmDeifPositionByWallet: async (chainId: number, walletAddress: string) => {
     try {
       const { data } = await dexfinv3Api.get<EvmDefiPosition[]>(
-        DEFI_DEVELOPMENT ? `/evm/defi/positions/${DEFIL_DEV_DATA.network}/${DEFIL_DEV_DATA.address}` : `/evm/defi/positions/${chainId}/${walletAddress}`
+        `/evm/defi/positions/${chainId}/${walletAddress}`
       );
 
       return data;
@@ -151,7 +144,7 @@ export const dexfinv3Service = {
   getEvmDeifProtocolsByWallet: async (chainId: number, walletAddress: string) => {
     try {
       const { data } = await dexfinv3Api.get<EvmDefiProtocol>(
-        DEFI_DEVELOPMENT ? `/evm/defi/protocols/${DEFIL_DEV_DATA.network}/${DEFIL_DEV_DATA.address}` : `/evm/defi/protocols/${chainId}/${walletAddress}`
+        `/evm/defi/protocols/${chainId}/${walletAddress}`
       );
       return data;
     } catch (error) {

@@ -44,7 +44,6 @@ const BattleArena: React.FC<BattleArenaProps> = ({
       if (userData && userData.accessToken) {
         try {
           const data = await fetchGameId(userData.accessToken);
-          console.log("Game data loaded:", data);
           
           if (Array.isArray(data)) {
             setGameData(data);

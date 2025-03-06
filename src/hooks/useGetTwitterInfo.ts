@@ -13,7 +13,7 @@ export const useGetTwitterInfo = () => {
                 console.log("getting twitter info.....");
                 setLoading(true);
                 const result = await TechnicalAnalysisService.getTwitterInfo();
-                console.log("hook twitter data : ", result);
+                // console.log("hook twitter data : ", result);
                 setData(result);
             } catch (err) {
                 console.error("Error in useGetTwitterInfo:", err);

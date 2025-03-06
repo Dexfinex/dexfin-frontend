@@ -26,10 +26,10 @@ export const TradeCard: React.FC<TradeCardProps> = ({ trade, onTokenClick }) => 
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-medium text-gray-900 dark:text-white">{trade.trader.name}</span>
-              <span className="text-gray-600 dark:text-white/60">.{trade.trader.domain}</span>
-              <span className="text-gray-400 dark:text-white/40">•</span>
-              <span className="text-gray-600 dark:text-white/60">{trade.timestamp}</span>
+              <span className="font-medium ">{trade.trader.name}</span>
+              <span className="">.{trade.trader.domain}</span>
+              <span className="">•</span>
+              <span className="">{trade.timestamp}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className={`${
@@ -41,13 +41,13 @@ export const TradeCard: React.FC<TradeCardProps> = ({ trade, onTokenClick }) => 
                  trade.type === 'MINT' ? 'Minted' :
                  'Virtual Trade'}
               </span>
-              <span className="text-gray-600 dark:text-white/60">on</span>
-              <span className="text-gray-800 dark:text-white/80">{trade.platform}</span>
+              <span className="">on</span>
+              <span className="">{trade.platform}</span>
             </div>
           </div>
         </div>
-        <button className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors">
-          <Settings className="w-4 h-4 text-gray-600 dark:text-white/60" />
+        <button className="p-2 hover:bg-black/5  rounded-lg transition-colors">
+          <Settings className="w-4 h-4 " />
         </button>
       </div>
 
@@ -67,15 +67,15 @@ export const TradeCard: React.FC<TradeCardProps> = ({ trade, onTokenClick }) => 
                 className="w-8 h-8 rounded-full"
               />
               <div>
-                <div className="font-medium text-gray-900 dark:text-white">{t.protocol.name}</div>
-                <div className="text-sm text-gray-600 dark:text-white/60">{t.protocol.symbol}</div>
+                <div className="font-medium ">{t.protocol.name}</div>
+                <div className="text-sm ">{t.protocol.symbol}</div>
               </div>
             </div>
             <div className="text-right">
               <div className={`font-medium ${t.amount > 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
                 {t.amount > 0 ? '+' : ''}{t.amount} {t.protocol.symbol}
               </div>
-              <div className="text-sm text-gray-600 dark:text-white/60">
+              <div className="text-sm ">
                 ${t.price.toFixed(2)}
               </div>
             </div>

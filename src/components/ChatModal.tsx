@@ -1500,6 +1500,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm" onClick={handleUnlock}>
               Unlock Profile
             </button>
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-white/20 rounded-lg transition-colors z-20"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
           </div>}
 
           {loading && <div className='absolute top-0 right-0 bottom-0 left-0 inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl'>

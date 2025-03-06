@@ -36,6 +36,9 @@ import { ENSRenewProcess } from './components/ENSRenewProcess.tsx';
 import { openaiService } from '../../services/openai.services.ts';
 import { PriceCard } from './components/Analysis/PriceCard.tsx';
 import { TechnicalAnalysis } from './components/Analysis/TechnicalAnalysis.tsx';
+import { SentimentAnalysis } from './components/Analysis/SentimentAnalysis.tsx';
+import { PredictionAnalysis } from './components/Analysis/PredictionAnalysis.tsx';
+import { MarketOverview } from './components/Analysis/MarketOverview.tsx';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -242,6 +245,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const findFallbackResponse = async (message: string) => {
     const normalizedMessage = message.toLowerCase();
     const data = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
+    console.log(data);
     if (data && data.response) {
       if (data.response.priceData) {
         const { priceData } = data.response;
@@ -305,6 +309,33 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         text: `Here's the ${data.coinId} technical analysis:`,
         technicalAnalysis: data,
       }
+    } else if (data && data.socialSentiment) {
+      const sentimentDate = Object.keys(data.socialSentiment)[0];
+      const negative_score = data.socialSentiment?.[sentimentDate]?.[Object.keys(data.socialSentiment[sentimentDate])[0]]?.Negative;
+      const positive_score = data.socialSentiment?.[sentimentDate]?.[Object.keys(data.socialSentiment[sentimentDate])[0]]?.Positive;
+      return {
+        text: `Here's the ${data.priceData.response.name} market sentiment analysis:`,
+        sentimentAnalysis: {
+          social_sentiment: positive_score * 100/(negative_score + positive_score),
+          trading_sentiment: data.tradingSentiment.value,
+          technical_sentiment: data.technical.rsi,
+          current_price: data.priceData.response.priceData.price,
+          price_change_percentage_24h: data.priceData.response.priceData.change24h,
+          price_history: data.priceData.response.history,
+          volume_24h: data.priceData.response.priceData.volume24h,
+          market_cap: data.priceData.response.priceData.marketCap
+        },
+      }
+    } else if (data && data.predictions) {
+      return {
+        text: `Here's the ${data.coinId}  price prediction analysis:`,
+        predictionAnalysis: data,
+      }
+    } else if (data && data.fear) {
+      return {
+        text: `Here's the current market overview:`,
+        marketOverview: data,
+      }
     }
 
     for (const [key, response] of Object.entries(fallbackResponses)) {
@@ -338,6 +369,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         const normalizedCommand = command.trim();
 
         response = await generateResponse(normalizedCommand, address, chainId);
+        console.log(response);
         if (response.type == "action" && response.brianData.type == "write") {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
@@ -498,6 +530,9 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             link: response.link,
             priceData: response.priceData,
             technicalAnalysis: response.technicalAnalysis,
+            sentimentAnalysis: response.sentimentAnalysis,
+            predictionAnalysis: response.predictionAnalysis,
+            marketOverview: response.marketOverview,
             trending: response.trending,
             losers: response.losers,
             gainers: response.gainers,
@@ -731,6 +766,21 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
                             {message.technicalAnalysis && (
                               <div className="mt-4 w-full">
                                 <TechnicalAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.technicalAnalysis}></TechnicalAnalysis>
+                              </div>
+                            )}
+                            {message.sentimentAnalysis && (
+                              <div className="mt-4 w-full">
+                                <SentimentAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.sentimentAnalysis}></SentimentAnalysis>
+                              </div>
+                            )}
+                            {message.predictionAnalysis && (
+                              <div className="mt-4 w-full">
+                                <PredictionAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></PredictionAnalysis>
+                              </div>
+                            )}
+                            {message.marketOverview && (
+                              <div className="mt-4 w-full">
+                                <MarketOverview isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></MarketOverview>
                               </div>
                             )}
                             {message.trending && <TrendingCoins coins={message.trending} />}

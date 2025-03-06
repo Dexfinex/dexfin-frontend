@@ -132,7 +132,6 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
       const isVictory = matches === tokens.length;
       const accuracy = timeLeft > 0 ? (matches / tokens.length) * 100 : 0;
       
-      // Calculate tokens earned based on game performance
       const baseReward = isVictory ? 100 : 0;
       const timeBonus = isVictory ? timeLeft * 2 : 0; 
       const streakBonus = bestStreak * 5; 
@@ -147,7 +146,6 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
         winStatus: isVictory,
       };
       
-      // Save to database and mark as saved
       saveGameSession(gameSession);
       gameSessionSaved.current = true;
     }

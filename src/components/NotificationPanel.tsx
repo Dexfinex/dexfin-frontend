@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Filter, Clock, ExternalLink, Bell, 
   RefreshCw, ArrowRightLeft, Wallet, 
@@ -84,6 +84,25 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const isTopbarBottom = useStore((state) => state.isTopbarBottom);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelWidth, setPanelWidth] = useState(400);
+  
+  // Update panel width based on screen size
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleResize = () => {
+        if (window.innerWidth <= 480) {
+          setPanelWidth(window.innerWidth - 20);
+        } else {
+          setPanelWidth(400);
+        }
+      };
+      
+      handleResize();
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   const formatRelativeTime = (date: Date) => {
     const now = new Date();
@@ -155,8 +174,22 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
 
   if (!isOpen) return null;
 
+  // Positioning styles for mobile
+  const mobileStyles = {
+    width: `${panelWidth}px`,
+    right: '10px',
+    left: 'auto', 
+    position: 'fixed' as 'fixed', 
+    top: isTopbarBottom ? 'auto' : '60px', 
+    bottom: isTopbarBottom ? '60px' : 'auto'
+  };
+
   return (
-    <div className={`absolute ${isTopbarBottom ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-[400px] glass border border-white/10 rounded-xl shadow-lg z-50`}>
+    <div 
+      ref={panelRef}
+      className="glass border border-white/10 rounded-xl shadow-lg z-50"
+      style={mobileStyles}
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-white/10">
         <div className="flex items-center gap-3">
@@ -316,7 +349,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
       </div>
 
       {/* Notifications List */}
-      <div className="max-h-[400px] overflow-y-auto notification-scrollbar">
+      <div className="max-h-[300px] overflow-y-auto notification-scrollbar">
         {filteredNotifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Bell className="w-8 h-8 text-white/40 mb-2" />
@@ -350,12 +383,12 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
                         {formatRelativeTime(notification.timestamp)}
                       </span>
                     </div>
-                    <p className="text-white/60 mt-1">{notification.details}</p>
-                    <div className="flex items-center gap-4 mt-2">
+                    <p className="text-white/60 mt-1 break-words">{notification.details}</p>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-white/40" />
                         <span className="text-sm text-white/60">
-                          {notification.timestamp.toLocaleTimeString()}
+                          {notification.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </span>
                       </div>
                       <a
@@ -365,7 +398,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
                         className="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <span>{notification.txHash}</span>
+                        <span className="truncate max-w-[80px]">{notification.txHash}</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
                       {notification.status === 'success' ? (
