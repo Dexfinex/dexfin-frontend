@@ -1,6 +1,7 @@
 import moment from 'moment/moment';
 import { ethers } from 'ethers';
 import { mapChainId2NativeAddress } from "../config/networks.ts";
+import { formatDistanceToNow } from 'date-fns';
 
 const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
 
@@ -230,4 +231,14 @@ export const formatHealthFactor = (num: number) => {
         return "∞";
     }
     return formatNumberByFrac(num);
+}
+
+export const getTimeAgo = (time: string) => {
+    const v = formatDistanceToNow(new Date(time), { addSuffix: false });
+    const result = v.replace("about ", "").replace(' ago', '').
+                    replace("seconds", 's').replace('second', 's').
+                    replace("minutes", 'm').replace('minutes', 'm').
+                    replace("hours", 'h').replace('hour', 'h').
+                    replace('days', 'd').replace('day', 'd');
+    return result;
 }

@@ -1,12 +1,13 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Web3AuthContext } from "../providers/Web3AuthContext";
 import { motion, time } from "framer-motion";
 import { useStore } from "../store/useStore";
 import { TokenChainIcon } from "./swap/components/TokenIcon";
-import { CheckCircle, Copy, Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, ArrowLeft, LayoutGrid, History, Landmark, ExternalLink, Clock, ImagesIcon, WalletCardsIcon } from "lucide-react";
+import { CheckCircle, Copy, Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, ArrowLeft, ExternalLink, Clock } from "lucide-react";
 import { mockDeFiPositions, mockDeFiStats, formatUsdValue, formatApy, getHealthFactorColor, } from '../lib/wallet';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { shrinkAddress, formatNumberByFrac, formatNumber, getHourAndMinute, getMonthDayHour, getMonthDayYear, formatDate, getFullDate } from "../utils/common.util";
+import { shrinkAddress, formatNumberByFrac, formatNumber, getHourAndMinute, getMonthDayHour, getMonthDayYear, getTimeAgo } from "../utils/common.util";
 import { useWalletBalance } from "../hooks/useBalance";
 import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStore";
 import { SendDrawer } from "./wallet/SendDrawer";
@@ -14,11 +15,13 @@ import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
 import useTokenTransferStore from '../store/useTokenTransferStore.ts';
 import { useEvmWalletTransfer } from "../hooks/useTransfer";
+import { dexfinv3Service } from "../services/dexfin.service.ts";
 import { Skeleton, Popover, PopoverTrigger, PopoverContent, theme } from '@chakra-ui/react';
 import { coingeckoService } from "../services/coingecko.service";
 import { birdeyeService } from "../services/birdeye.service";
 import { TransactionType } from "../types/wallet";
-import { mapChainId2ExplorerUrl } from "../config/networks";
+import { mapChainName2ExplorerUrl } from "../config/networks";
+import { WalletActivityType } from "../types/dexfinv3.type.ts";
 
 interface WalletDrawerProps {
     isOpen: boolean,
@@ -399,13 +402,38 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     const { isLoading: isLoadingBalance } = useWalletBalance();
     const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
     // const [showSendDrawer, setShowSendDrawer] = useState(false);
-    const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
+    // const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
     const [showBuyDrawer, setShowBuyDrawer] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<TokenBalance | null>(null);
     const [drawerWidth, setDrawerWidth] = useState("400px");
+    const [activities, setActivities] = useState<Array<WalletActivityType>>([]);
 
-    useEvmWalletTransfer();
-    const { transfers } = useTokenTransferStore();
+    // useEvmWalletTransfer();
+    // const { transfers } = useTokenTransferStore();
+
+    const fetchActivities = useCallback(async () => {
+        if (!address) {
+            return []
+        }
+
+        const activities = await dexfinv3Service.getAllActivities(address, solanaWalletInfo?.publicKey || "")
+        return activities
+    }, [address, solanaWalletInfo])
+
+    const { isLoading, refetch, data } = useQuery<any>(
+        {
+            queryKey: ['balance', address, solanaWalletInfo],
+            queryFn: fetchActivities,
+            refetchInterval: 10_000,
+        }
+    )
+
+    useEffect(() => {
+        if (JSON.stringify(activities) != JSON.stringify(data)) {
+            console.log('set activities')
+            setActivities(data)
+        }
+    }, [data])
 
     // Update drawer width based on screen size
     useEffect(() => {
@@ -444,48 +472,24 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     }
 
     const renderActivity = () => (
-        <div className="space-y-3 flex-1 mt-4 sm:mt-5 mx-4">
+        <div className="space-y-3 flex-1 mt-4 sm:mt-5 mx-4 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-290px)]">
             {
-                transfers.length === 0 && <div className='w-full h-full flex justify-center items-center align-center mt-20'><h2 className='text-white/60 italic'>No activities yet</h2></div>
+                activities.length === 0 && <div className='w-full h-full flex justify-center items-center align-center mt-20'><h2 className='text-white/60 italic'>No activities yet</h2></div>
             }
             {
-                transfers.map((tx, index) => (
-                    <div
-                        key={tx.txHash + index}
-                        className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                    >
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tx.transactionType === TransactionType.Received ? 'bg-green-500/20 text-green-400' :
-                                    tx.transactionType === TransactionType.Sent ? 'bg-red-500/20 text-red-400' :
-                                        'bg-blue-500/20 text-blue-400'
-                                    }`}>
-                                    {tx.transactionType}
-                                </span>
-                                <span className="text-sm text-white/60">
-                                    {formatDate(tx.time)}
-                                </span>
-                            </div>
-                            <a
-                                href={`${mapChainId2ExplorerUrl[chainId!]}/tx/${tx.txHash}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1 hover:bg-white/10 rounded-md transition-colors"
-                            >
-                                <ExternalLink className="w-4 h-4 text-white/40" />
-                            </a>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div>
-                                    <div className="text-sm">
-                                        {tx.transactionType === TransactionType.Received ? "+" : "-"} {formatNumberByFrac(tx.transferAmount)} {tx.tokenSymbol || ''}
-                                    </div>
-                                </div>
+                activities.length > 0 && activities.map((activity, index) => (
+                    <a key={activity.hash + index} className={`p-3 flex items-center justify-between ${theme === "dark" ? "bg-white/5 hover:bg-white/10" : "bg-black/5 hover:bg-black/10"} rounded-lg gap-2`}
+                        href={`${mapChainName2ExplorerUrl[activity.network.id]}/tx/${activity.hash}`}
+                        target="_blank">
+                        <div className="flex items-center gap-2">
+                            <img src={activity.network.icon} className="w-6 h-6 rounded-full" />
+                            <div>
+                                <div className={`text-sm ${theme === "dark" ? "text-white/70" : "text-black/70"}`}>{activity.summary}</div>
+                                <div className={`text-xs ${theme === "dark" ? "text-white/70" : "text-black/70"}`}>{shrinkAddress(activity.hash)}</div>
                             </div>
                         </div>
-                    </div>
+                        <span className={`text-sm ${theme === "dark" ? "text-white/70" : "text-black/70"} `}>{getTimeAgo(activity.date)}</span>
+                    </a>
                 ))
             }
         </div>
@@ -617,39 +621,6 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
         </div>
     )
 
-    // const renderNfts = () => (
-    //     <div className="flex-1 mt-4 sm:mt-5 mx-4">
-    //         <div className="flex flex-col items-center text-white/90 mt-24">
-    //             <ImagesIcon className="w-20 h-20" />
-    //             <p className="text-xl sm:text-2xl mt-2">No NFTs yet</p>
-    //             <p className={`text-xs sm:text-sm ${theme === "dark" ? 'text-white/70' : 'text-black/70'}`}>Buy or transfer NFTs to this wallet to get started.</p>
-    //             <a
-    //                 className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors mt-4`}
-    //                 href="https://opensea.io"
-    //                 target="_blank"
-    //             >
-    //                 <span className="text-xs sm:text-sm">Explore NFTs</span>
-    //             </a>
-    //         </div>
-    //     </div>
-    // )
-
-    // const renderPools = () => (
-    //     <div className="flex-1 mt-4 sm:mt-5 mx-4">
-    //         <div className="flex flex-col items-center text-white/90 mt-24">
-    //             <WalletCardsIcon className="w-20 h-20" />
-    //             <p className="text-xl sm:text-2xl mt-2">No Pools yet</p>
-    //             <p className={`text-xs sm:text-sm ${theme === "dark" ? 'text-white/70' : 'text-black/70'}`}>Open a new position or create a pool to get started.</p>
-    //             <a
-    //                 className={`flex items-center justify-center gap-1 sm:gap-2 p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors mt-4`}
-    //             >
-    //                 <span className="text-xs sm:text-sm">+ New position</span>
-    //             </a>
-    //         </div>
-
-    //     </div>
-    // )
-
     return (
         <>
             <motion.div
@@ -738,24 +709,25 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                             </button>
 
                             <button
-                                onClick={() => setSelectedTab('activity')}
-                                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'activity' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
-                                    }`}
-                            >
-                                <span className="text-xs sm:text-sm">Activity</span>
-                            </button>
-                            <button
                                 onClick={() => setSelectedTab('defi')}
                                 className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'defi' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
                                     }`}
                             >
                                 <span className="text-xs sm:text-sm">Defi</span>
                             </button>
+
+                            <button
+                                onClick={() => setSelectedTab('activity')}
+                                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${selectedTab === 'activity' ? 'text-blue-400' : 'text-white/60 hover:text-white/80'
+                                    }`}
+                            >
+                                <span className="text-xs sm:text-sm">Activity</span>
+                            </button>
                         </div>
 
                         {selectedTab === "tokens" && renderTokens()}
-                        {selectedTab === "activity" && renderActivity()}
                         {selectedTab === "defi" && renderDeFi()}
+                        {selectedTab === "activity" && renderActivity()}
                     </div>
                 }
 

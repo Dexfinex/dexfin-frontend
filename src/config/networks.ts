@@ -106,6 +106,17 @@ export const mapChainId2ExplorerUrl: Record<number, string> = {
     [SOLANA_CHAIN_ID]: 'https://solscan.io'
 };
 
+export const mapChainName2ExplorerUrl: Record<string, string> = {
+    'ethereum': 'https://etherscan.io', // Ethereum Mainnet Explorer
+    'bsc': 'https://bscscan.com', // Binance Smart Chain Explorer
+    'polygon': 'https://polygonscan.com', // Polygon Mainnet Explorer
+    'avalanche': 'https://snowtrace.io', // Avalanche C-Chain Explorer
+    'optimism': 'https://optimistic.etherscan.io', // Optimism Explorer
+    'arbitrum': 'https://arbiscan.io', // Arbitrum Explorer
+    'base': 'https://basescan.org', // Base Mainnet Explorer
+    'solana': 'https://solscan.io'
+};
+
 export const mapChainId2ProviderChainName: Record<number, string> = {
     1: 'ethereum',
     56: 'bsc',
