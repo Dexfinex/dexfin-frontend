@@ -56,6 +56,7 @@ export const GAME_SYSTEM_BASEURL= "https://dexfinv3-backend-production.up.railwa
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 
 export const ZEROX_BASE_URL = `https://${BASE_HOST_DOMAIN}/0x`;
+export const SWAPKIT_BASE_URL = `https://${BASE_HOST_DOMAIN}/crosschain`;
 // export const ZEROX_BASE_URL = 'http://localhost:3000/0x';
 export const DEXFIN_BACKEND_BASE_URL = `https://${BASE_HOST_DOMAIN}`;
 export const ZEROX_AFFILIATE_FEE = 50; // 0.5% affiliate fee. Denoted in Bps.
