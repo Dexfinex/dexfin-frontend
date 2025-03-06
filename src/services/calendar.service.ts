@@ -9,7 +9,6 @@ const LOGIN_MUTATION = `
   }
 `;
 
-
 export const calendarService = {
     loginUserId: async (walletAddress: string) => {
         try {
@@ -22,7 +21,6 @@ export const calendarService = {
                 query: LOGIN_MUTATION,
                 variables
             });
-            console.log(data);
             if (data.errors) {
                 throw new Error(data.errors[0].message);
             }
