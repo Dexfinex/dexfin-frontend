@@ -329,7 +329,7 @@ const useStore = create<StoreState>((set) => ({
     {
       id: 'price-converter',
       type: 'Price Converter',
-      position: { x: 1120, y: 550 },
+      position: { x: 1120, y: 530 },
       size: { width: 360, height: 280 }
     },
 
