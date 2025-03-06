@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback, useContext, useRef } from 'rea
 import { Trophy, Clock, Star, Zap, ArrowLeft, RefreshCw, CheckCircle2, Coins } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { GameSession } from '../GamesModal';
-import { saveGameHistory, fetchGameId } from "./api/useGame-api.ts";
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
+import { GameService } from '../../services/game.services.ts';
 
 interface Difficulty {
   name: string;
@@ -181,7 +181,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
     const loadGameData = async () => {
       if (userData && userData.accessToken) {
         try {
-          const data = await fetchGameId(userData.accessToken);
+          const data = await GameService.fetchUserGameId(userData.accessToken);
 
           if (Array.isArray(data)) {
             setGameData(data);
@@ -239,7 +239,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
 
     // Save to DB
     try {
-      const response = await saveGameHistory(userData.accessToken, gameSession);
+      const response = await GameService.gameHistory(userData.accessToken, gameSession);
       console.log(response);
 
       if (gameStats) {

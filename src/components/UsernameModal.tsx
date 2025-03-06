@@ -1,8 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { X } from 'lucide-react';
-import { registerUsername } from './games/api/useUsername-api';
-
+import {usernameService} from "../services/username.service";
 interface UsernameModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,7 +30,7 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ isOpen, onClose }) => {
       setIsSubmitting(true);
       setError(null);
       if (userData?.accessToken) {
-        const response = await registerUsername(userData.accessToken, username);
+        const response =  await usernameService.registerUsername(userData.accessToken, username);
         console.log(response);
       }
       

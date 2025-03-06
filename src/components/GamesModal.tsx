@@ -12,8 +12,7 @@ import CryptoWordHunt from './games/CryptoWordHunt';
 import { GameStats } from './games/GameStats';
 import { useStore } from '../store/useStore';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
-import { fetchGameId,fetchAllGame, fetchTotalUserTokens } from './games/api/useGame-api';
-
+import { GameService } from "../services/game.services"
 interface GamesModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -96,8 +95,7 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
       setGamesLoading(true);
 
       try {
-        // if (userData&&!userData.accessToken) {
-          const gameData = await fetchAllGame();
+          const gameData= await GameService.fetchAllGame();
           console.log(gameData)
 
           if (Array.isArray(gameData)) {
@@ -120,7 +118,7 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
           console.log(userData);
 
           if (userData&&userData.accessToken) {
-          const totalTokens = await fetchTotalUserTokens(userData.accessToken);
+          const totalTokens = await GameService.fetchTotalUserTokens(userData.accessToken);
           let tokenValue = 0;
           if (totalTokens !== null && typeof totalTokens === 'object' && 'totalTokens' in totalTokens) {
 

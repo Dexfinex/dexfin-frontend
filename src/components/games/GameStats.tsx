@@ -2,14 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Trophy, Swords, Brain, Coins, ArrowRight, Search } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
-import { fetchUserStatistics, fetchTotalUserTokens } from './api/useGame-api';
-
+import { GameService } from '../../services/game.services';
 export const GameStats: React.FC = () => {
   const [claimingTokens, setClaimingTokens] = useState(false);
   const { gameStats, updateGameStats, setAllGameStats } = useStore();
-  const { userData, checkWalletAndUsername } = useContext(Web3AuthContext);
+  const { userData } = useContext(Web3AuthContext);
   const [isLoading, setIsLoading] = useState(false);
-  const [usernameResponse, setUsernameResponse] = useState<{exists: boolean, message?: string, username?: string}>();
   const canClaim = gameStats.totalTokens >= 5000;
 
   const handleClaimTokens = () => {
@@ -26,7 +24,7 @@ export const GameStats: React.FC = () => {
       setIsLoading(true);
       try {
         if(userData && userData.accessToken){
-          const statsData = await fetchUserStatistics(userData.accessToken);
+          const statsData = await GameService.fetchUserStatistics(userData.accessToken);
           if (Array.isArray(statsData)) {
             const triviaGame = statsData.find(game => game.gameType === 'TRIVIA');
             const arenaGame = statsData.find(game => game.gameType === 'ARENA');
@@ -66,7 +64,7 @@ export const GameStats: React.FC = () => {
             });
           } else {
             try {
-              const tokens = await fetchTotalUserTokens(userData.accessToken);
+              const tokens = await GameService.fetchTotalUserTokens(userData.accessToken);
               setAllGameStats(tokens);
             } catch (error) {
               console.error("Error fetching tokens:", error);

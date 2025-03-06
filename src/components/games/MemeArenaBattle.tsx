@@ -4,7 +4,7 @@ import { GameState, Action, StatusEffect } from '../../types/memeArena';
 import { MemeArenaTutorial } from './MemeArenaTutorial';
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 import { GameSession } from '../GamesModal';
-import {saveGameHistory, fetchGameId} from "./api/useGame-api.ts"
+import { GameService } from '../../services/game.services.ts';
 
 
 interface BattleArenaProps {
@@ -43,7 +43,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({
     const loadGameData = async () => {
       if (userData && userData.accessToken) {
         try {
-          const data = await fetchGameId(userData.accessToken);
+          const data = await GameService.fetchUserGameId(userData.accessToken);
           
           if (Array.isArray(data)) {
             setGameData(data);
@@ -94,7 +94,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({
 
     try{
       if(gameSession && userData &&userData.accessToken){
-        const response = await saveGameHistory(userData.accessToken, gameSession);
+        const response = await GameService.gameHistory(userData.accessToken, gameSession);
         console.log("Game session save response",response)
       }
     } catch (error) {

@@ -2,8 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Timer, Trophy, RotateCcw, Gamepad2 } from 'lucide-react';
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 import { GameSession } from '../GamesModal';
-import { saveGameHistory,fetchGameId } from "./api/useGame-api.ts";
-
+import { GameService } from '../../services/game.services.ts';
 interface CryptoPexesoProps {
   gameType?: string;
 }
@@ -68,7 +67,7 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
     const loadGameData = async () => {
       if (userData && userData.accessToken) {
         try {
-          const data = await fetchGameId(userData.accessToken);
+          const data =  await GameService.fetchUserGameId(userData.accessToken);
           
           if (Array.isArray(data)) {
             setGameData(data);
@@ -156,7 +155,7 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
   const saveGameSession = async (gameSession: GameSession) => {
     try {
       if (gameSession && userData &&userData.accessToken) {
-        const response = await saveGameHistory(userData.accessToken, gameSession);
+        const response = await GameService.gameHistory(userData.accessToken, gameSession);
         console.log(response);
       }
     } catch (error) {

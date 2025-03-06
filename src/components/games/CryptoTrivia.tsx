@@ -2,9 +2,9 @@ import React, { useState, useEffect, useContext, useRef  } from 'react';
 import { X, Trophy, Timer, ArrowLeft, Brain, Check, X as XIcon, Heart, Zap, Shield, Clock } from 'lucide-react';
 import { GameSession } from '../GamesModal';
 import { useStore } from '../../store/useStore';
-import {saveGameHistory, fetchGameId} from "./api/useGame-api.ts"
 
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
+import { GameService } from '../../services/game.services.ts';
 
 interface CryptoTriviaProps {
   gameType?: string;
@@ -1462,7 +1462,7 @@ export const CryptoTrivia: React.FC<CryptoTriviaProps> = ({ gameType = 'TRIVIA' 
     const loadGameData = async () => {
       if (userData && userData.accessToken) {
         try {
-          const data = await fetchGameId(userData.accessToken);
+          const data = await GameService.fetchUserGameId(userData.accessToken);
           
           if (Array.isArray(data)) {
             setGameData(data);
@@ -1701,7 +1701,7 @@ const endGame = () => {
   const saveGameSession = async (gameSession: GameSession) => {
     try{
       if(gameSession && userData&& userData.accessToken){
-        const response = await saveGameHistory(userData.accessToken, gameSession);
+        const response =  await GameService.gameHistory(userData.accessToken, gameSession);
         console.log(response)
       }
     } catch (error) {

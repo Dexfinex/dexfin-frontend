@@ -181,7 +181,7 @@ const entryPoint = getEntryPoint("0.7");
 const kernelVersion = KERNEL_V3_1;
 
 import { getLoginUserId } from "../components/market/Calendar/api/Calendar-api.ts";
-import { checkUsername } from "../components/games/api/useUsername-api.ts";
+import { usernameService } from "../services/username.service.ts";
 
 const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
@@ -312,7 +312,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             }
             // Get username data from backend
-            const response = await checkUsername(userData.accessToken);
+            const response = await usernameService.checkUsername(userData.accessToken);
 
             if (!response || !response.username || response.username.trim() === "") {
                 // Open the username registration modal
