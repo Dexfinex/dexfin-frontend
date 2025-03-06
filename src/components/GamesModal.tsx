@@ -96,7 +96,6 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
 
       try {
           const gameData= await GameService.fetchAllGame();
-          console.log(gameData)
 
           if (Array.isArray(gameData)) {
             const transformedGames = gameData.map((dbGame: any) => {

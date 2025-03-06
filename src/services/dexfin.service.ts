@@ -5,7 +5,8 @@ import {
   EvmDefiPosition,
   EvmDefiProtocol,
   SolanaTokensType,
-  SolanaWalletReponseType
+  SolanaWalletReponseType,
+  WalletActivityType
 } from "../types/dexfinv3.type.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.ts";
 
@@ -194,5 +195,19 @@ export const dexfinv3Service = {
     }
 
     return [];
+  },
+
+  getAllActivities: async (evmAddress: string, solAddress: string) => {
+    try {
+      const { data } = await dexfinv3Api.get<any>(
+        `/wallet/activities?evmAddress=${evmAddress}&solAddress=${solAddress}`
+      );
+
+      return data
+    } catch (error) {
+      console.log("Failed to fetch evm wallet balance:", error);
+    }
+
+    return []
   }
 };

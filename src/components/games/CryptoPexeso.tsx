@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Timer, Trophy, RotateCcw, Gamepad2 } from 'lucide-react';
+import { useBreakpointValue } from '@chakra-ui/react';
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 import { GameSession } from '../GamesModal';
 import { GameService } from '../../services/game.services.ts';
+
 interface CryptoPexesoProps {
   gameType?: string;
 }
+
 interface Card {
   id: number;
   token: string;
@@ -57,22 +60,24 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
   const [bestMoves, setBestMoves] = useState<number | null>(null);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+
+  const isMobile = useBreakpointValue({base: true, md: false});
   
-  // Add Web3AuthContext and game session tracking
   const { userData } = useContext(Web3AuthContext);
   const gameSessionSaved = useRef(false);
   const [gameData, setGameData] = useState<any[]>([]);
   const [gameId, setGameId] = useState<string>("");
+
+
   useEffect(() => {
     const loadGameData = async () => {
       if (userData && userData.accessToken) {
         try {
-          const data =  await GameService.fetchUserGameId(userData.accessToken);
+          const data = await GameService.fetchUserGameId(userData.accessToken);
           
           if (Array.isArray(data)) {
             setGameData(data);
             
-            // Find the game ID based on the gameType
             const game = data.find(g => g.type === gameType);
             if (game) {
               setGameId(game.id);
@@ -88,6 +93,7 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
     
     loadGameData();
   }, [userData, gameType]);
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (gameStarted && timeLeft > 0 && !isGameOver) {
@@ -116,13 +122,11 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
     }
   }, [matches, timeLeft, moves, bestTime, bestMoves]);
 
-
   useEffect(() => {
     if (!isGameOver) {
       gameSessionSaved.current = false;
     }
   }, [isGameOver]);
-
 
   useEffect(() => {
     if (isGameOver && !gameSessionSaved.current && 
@@ -150,11 +154,9 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
     }
   }, [isGameOver, matches, timeLeft, bestStreak, userData, gameId]);
 
-
-
   const saveGameSession = async (gameSession: GameSession) => {
     try {
-      if (gameSession && userData &&userData.accessToken) {
+      if (gameSession && userData && userData.accessToken) {
         const response = await GameService.gameHistory(userData.accessToken, gameSession);
         console.log(response);
       }
@@ -233,7 +235,7 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
     <button
       key={card.id}
       onClick={() => handleCardClick(index)}
-      className={`aspect-square rounded-xl transition-all duration-500 transform perspective-1000 ${
+      className={`aspect-square rounded-xl transition-all duration-500 transform ${
         card.isFlipped || card.isMatched
           ? 'rotate-y-180'
           : 'bg-gradient-to-br from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 hover:scale-105'
@@ -243,8 +245,8 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
       <div className={`w-full h-full rounded-xl transition-all duration-500 ${
         card.isFlipped || card.isMatched ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
       }`}>
-        <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-xl border border-white/10 backdrop-blur-sm">
-          <div className="relative w-12 h-12 mb-2">
+        <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-xl border border-white/10 backdrop-blur-sm">
+          <div className="relative w-8 h-8 mb-1 md:w-12 md:h-12 md:mb-2">
             <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-emerald-500/20 rounded-full blur-xl" />
             <img
               src={card.logo}
@@ -252,7 +254,7 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
               className="relative w-full h-full object-contain"
             />
           </div>
-          <div className="text-sm font-medium bg-gradient-to-br from-teal-400 to-emerald-400 bg-clip-text text-transparent">
+          <div className="text-xs md:text-sm font-medium bg-gradient-to-br from-teal-400 to-emerald-400 bg-clip-text text-transparent">
             {card.token}
           </div>
           <div className="text-xs text-white/60">{card.symbol}</div>
@@ -272,36 +274,36 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-        <div className="relative glass border border-white/10 rounded-xl p-8 w-[400px] text-center">
-          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center mb-6">
-            <Trophy className="w-10 h-10 text-emerald-400" />
+        <div className="relative glass border border-white/10 rounded-xl p-4 md:p-8 w-full max-w-xs md:max-w-md lg:max-w-lg text-center">
+          <div className="w-16 h-16 md:w-20 md:h-20 mx-auto rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center mb-4 md:mb-6">
+            <Trophy className="w-8 h-8 md:w-10 md:h-10 text-emerald-400" />
           </div>
           
-          <h2 className="text-2xl font-bold mb-2">
+          <h2 className="text-xl md:text-2xl font-bold mb-2">
             {isVictory ? 'Congratulations!' : 'Time\'s Up!'}
           </h2>
           
-          <p className="text-white/60 mb-6">
+          <p className="text-white/60 mb-4 md:mb-6 text-sm md:text-base">
             {isVictory
               ? 'You matched all pairs!'
               : `You matched ${matches} out of ${tokens.length} pairs`}
           </p>
 
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-              <div className="text-2xl font-bold">{moves}</div>
-              <div className="text-sm text-white/60">Moves</div>
+          <div className="grid grid-cols-2 gap-2 md:gap-4 mb-4 md:mb-8">
+            <div className="p-2 md:p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+              <div className="text-xl md:text-2xl font-bold">{moves}</div>
+              <div className="text-xs md:text-sm text-white/60">Moves</div>
             </div>
-            <div className="p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-              <div className="text-2xl font-bold">{60 - timeLeft}s</div>
-              <div className="text-sm text-white/60">Time</div>
+            <div className="p-2 md:p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+              <div className="text-xl md:text-2xl font-bold">{60 - timeLeft}s</div>
+              <div className="text-xs md:text-sm text-white/60">Time</div>
             </div>
           </div>
 
           {isVictory && (
-            <div className="mb-8 p-4 border border-white/10 rounded-lg bg-gradient-to-br from-teal-500/10 to-emerald-500/10">
-              <h3 className="text-lg font-medium mb-4">Rewards</h3>
-              <div className="space-y-1.5 text-sm">
+            <div className="mb-4 md:mb-8 p-3 md:p-4 border border-white/10 rounded-lg bg-gradient-to-br from-teal-500/10 to-emerald-500/10">
+              <h3 className="text-base md:text-lg font-medium mb-2 md:mb-4">Rewards</h3>
+              <div className="space-y-1 md:space-y-1.5 text-xs md:text-sm">
                 <div className="flex justify-between">
                   <span className="text-white/60">Base Reward:</span>
                   <span>{baseReward} tokens</span>
@@ -314,7 +316,7 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
                   <span className="text-white/60">Streak Bonus:</span>
                   <span className="text-emerald-400">+{streakBonus} tokens</span>
                 </div>
-                <div className="h-px my-2 bg-white/10" />
+                <div className="h-px my-1 md:my-2 bg-white/10" />
                 <div className="flex justify-between font-medium">
                   <span>Total Reward:</span>
                   <span>{totalReward} tokens</span>
@@ -324,25 +326,25 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
           )}
 
           {(bestTime !== null || bestMoves !== null || bestStreak > 0) && (
-            <div className="mb-8">
-              <h3 className="text-lg font-medium mb-4">Best Scores</h3>
-              <div className="grid grid-cols-3 gap-4">
+            <div className="mb-4 md:mb-8">
+              <h3 className="text-base md:text-lg font-medium mb-2 md:mb-4">Best Scores</h3>
+              <div className="grid grid-cols-3 gap-2 md:gap-4">
                 {bestTime !== null && (
-                  <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-                    <div className="text-xl font-bold text-emerald-400">{bestTime}s</div>
-                    <div className="text-sm text-white/60">Best Time</div>
+                  <div className="p-2 md:p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+                    <div className="text-lg md:text-xl font-bold text-emerald-400">{bestTime}s</div>
+                    <div className="text-xs md:text-sm text-white/60">Best Time</div>
                   </div>
                 )}
                 {bestMoves !== null && (
-                  <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-                    <div className="text-xl font-bold text-emerald-400">{bestMoves}</div>
-                    <div className="text-sm text-white/60">Best Moves</div>
+                  <div className="p-2 md:p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+                    <div className="text-lg md:text-xl font-bold text-emerald-400">{bestMoves}</div>
+                    <div className="text-xs md:text-sm text-white/60">Best Moves</div>
                   </div>
                 )}
                 {bestStreak > 0 && (
-                  <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-                    <div className="text-xl font-bold text-emerald-400">{bestStreak}x</div>
-                    <div className="text-sm text-white/60">Best Streak</div>
+                  <div className="p-2 md:p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+                    <div className="text-lg md:text-xl font-bold text-emerald-400">{bestStreak}x</div>
+                    <div className="text-xs md:text-sm text-white/60">Best Streak</div>
                   </div>
                 )}
               </div>
@@ -351,7 +353,7 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
 
           <button
             onClick={resetGame}
-            className="px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 rounded-lg transition-colors font-medium"
+            className="px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 rounded-lg transition-colors font-medium text-sm md:text-base"
           >
             Play Again
           </button>
@@ -361,43 +363,45 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
   };
 
   return (
-    <div className="h-full p-6">
+    <div className="h-full w-full flex flex-col overflow-hidden">
       {/* Game Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-2">
-            <Timer className="w-5 h-5 text-teal-400" />
-            <span className="text-2xl font-bold">{timeLeft}s</span>
+      <div className={`flex items-center ${isMobile ? 'justify-between mb-4' : 'justify-between mb-8'} px-2 md:px-6 pt-2 md:pt-6`}>
+        <div className={`flex items-center ${isMobile ? 'gap-2 md:gap-4' : 'gap-4 md:gap-8'}`}>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Timer className="w-4 h-4 md:w-5 md:h-5 text-teal-400" />
+            <span className={`${isMobile ? 'text-lg' : 'text-xl md:text-2xl'} font-bold`}>{timeLeft}s</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-emerald-400" />
-            <span className="text-2xl font-bold">{matches}</span>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Trophy className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
+            <span className={`${isMobile ? 'text-lg' : 'text-xl md:text-2xl'} font-bold`}>{matches}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Gamepad2 className="w-5 h-5 text-teal-400" />
-            <span className="text-2xl font-bold">{moves}</span>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Gamepad2 className="w-4 h-4 md:w-5 md:h-5 text-teal-400" />
+            <span className={`${isMobile ? 'text-lg' : 'text-xl md:text-2xl'} font-bold`}>{moves}</span>
           </div>
-          {currentStreak > 0 && (
-            <div className="px-3 py-1 bg-gradient-to-r from-teal-500/20 to-emerald-500/20 rounded-full">
-              <span className="text-lg font-bold text-emerald-400">{currentStreak}x Streak!</span>
-            </div>
-          )}
         </div>
 
-        <button
-          onClick={resetGame}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-        >
-          <RotateCcw className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {currentStreak > 0 && (
+            <div className="px-2 py-0.5 md:px-3 md:py-1 bg-gradient-to-r from-teal-500/20 to-emerald-500/20 rounded-full">
+              <span className={`${isMobile ? 'text-sm' : 'text-base md:text-lg'} font-bold text-emerald-400`}>{currentStreak}x</span>
+            </div>
+          )}
+          <button
+            onClick={resetGame}
+            className="p-1 md:p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
+          </button>
+        </div>
       </div>
 
-      {/* Game Grid */}
-      <div className="grid grid-cols-4 gap-4">
-        {cards.map((card, index) => renderCard(card, index))}
+      <div className="flex-grow px-2 md:px-6 pb-2 md:pb-6 flex items-center justify-center">
+        <div className="grid grid-cols-4 gap-2 md:gap-4 w-full max-w-2xl mx-auto">
+          {cards.map((card, index) => renderCard(card, index))}
+        </div>
       </div>
 
-      {/* Game Over Modal */}
       {isGameOver && renderGameOver()}
     </div>
   );
