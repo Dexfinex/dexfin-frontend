@@ -36,6 +36,8 @@ interface SendDrawerProps {
         amount: number;
         logo: string;
         chain: number;
+        decimals: number;
+        network: string;
     }[];
     setPage: (type: PageType) => void;
 }
@@ -59,7 +61,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     const { tokenBalances } = useTokenBalanceStore();
     const [recentAddresses, setRecentAddresses] = useState<string[]>([]);
     const { mutate: sendTransactionMutate } = useSendTransactionMutation();
-    const { isChainSwitching, chainId, signer, isConnected, login, switchChain, walletType } = useContext(Web3AuthContext);
+    const { isChainSwitching, chainId, signer, isConnected, login, switchChain, walletType, transferSolToken } = useContext(Web3AuthContext);
 
     useEffect(() => {
         setSelectedAsset(assets[selectedAssetIndex] || {})
@@ -131,7 +133,11 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     const { isLoading: ensAvatarLoading, data: ensAvatar } = ensAvatarDataResponse
 
     const submitDisabled = useMemo(() => {
-        return !amount || isConfirming || !(ethers.utils.isAddress(address) || showSelectedEnsInfo)
+        if (selectedAsset.network != "Solana") {
+            return !amount || isConfirming || !(ethers.utils.isAddress(address) || showSelectedEnsInfo)
+        } else {
+            return !amount || isConfirming || !address || showSelectedEnsInfo
+        }
     }, [amount, address, isConfirming, showSelectedEnsInfo])
 
     const showPreview = useMemo(() => {
@@ -170,50 +176,50 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
 
     const onSubmit = async () => {
         setIsConfirming(true);
-        if (Number(chainId) !== Number(selectedAsset.chain)) {
-            await switchChain(Number(selectedAsset.chain)).catch(() => {
-                return setIsConfirming(false)
-            });
+        if (selectedAsset.network === "Solana") {
+            if (Number(amount) > 0) {
+                const signature = await transferSolToken(address, selectedAsset.address, Number(amount), selectedAsset.decimals)
+                setHash(signature)
+                setTxModalOpen(true)
+                setValue("amount", "")
+                saveAddress(address)
+                setAddress("")
+                setIsConfirming(false)
+            }
+        } else {
+            if (Number(chainId) !== Number(selectedAsset.chain)) {
+                await switchChain(Number(selectedAsset.chain)).catch(() => {
+                    return setIsConfirming(false)
+                });
+            }
+            const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
+
+            sendTransactionMutate(
+                {
+                    tokenAddress: selectedAsset.address,
+                    sendAddress: _address,
+                    sendAmount: Number(amount),
+                    signer,
+                    gasLimit: gasData.gasLimit,
+                    gasPrice: gasData.gasPrice,
+                },
+                {
+                    onSuccess: (receipt) => {
+                        setIsConfirming(false);
+                        setHash(receipt.transactionHash)
+                        setTxModalOpen(true)
+                        setValue("amount", "")
+                        saveAddress(address)
+                        setAddress("")
+                        console.log('success', receipt);
+                    },
+                    onError: (error: TransactionError) => {
+                        setIsConfirming(false);
+                        console.log(error)
+                    },
+                },
+            );
         }
-        const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
-
-        console.log('chain = ', chainId)
-        console.log('transaction data = ', {
-            tokenAddress: selectedAsset.address,
-            sendAddress: _address,
-            sendAmount: Number(amount),
-            signer,
-            gasLimit: gasData.gasLimit,
-            gasPrice: gasData.gasPrice,
-        })
-
-
-        return
-        sendTransactionMutate(
-            {
-                tokenAddress: selectedAsset.address,
-                sendAddress: _address,
-                sendAmount: Number(amount),
-                signer,
-                gasLimit: gasData.gasLimit,
-                gasPrice: gasData.gasPrice,
-            },
-            {
-                onSuccess: (receipt) => {
-                    setIsConfirming(false);
-                    setHash(receipt.transactionHash)
-                    setTxModalOpen(true)
-                    setValue("amount", "")
-                    saveAddress(address)
-                    setAddress("")
-                    console.log('success', receipt);
-                },
-                onError: (error: TransactionError) => {
-                    setIsConfirming(false);
-                    console.log(error)
-                },
-            },
-        );
     };
 
     const filteredAssets = assets.filter(asset =>
@@ -283,7 +289,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                                         <span className='ml-1 text-sm font-light'>({cropString(selectedAsset.address || "", 4)})</span>}
                                 </div>
                                 <div className="text-sm text-white/60">
-                                    Balance: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
+                                    Balance: {`${formatNumberByFrac(selectedAsset.amount, 5)} ${selectedAsset.symbol}`}
                                 </div>
                             </div>
                             <ChevronDown className="w-4 h-4 text-white/40" />
@@ -317,6 +323,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                                                 onClick={async () => {
                                                     setSelectedAsset(asset)
                                                     setShowAssetSelector(false);
+                                                    setValue("amount", "")
                                                     if (Number(chainId) !== Number(asset.chain)) {
                                                         await switchChain(Number(asset.chain));
                                                     }
@@ -333,7 +340,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                                                                 className='ml-1 text-sm font-light'>({cropString(asset.address, 10)})</span>}
                                                     </div>
                                                     <div className="text-sm text-white/60">
-                                                        {`${formatNumberByFrac(asset.amount)} ${asset.symbol}`}
+                                                        {`${formatNumberByFrac(asset.amount, 5)} ${asset.symbol}`}
                                                     </div>
                                                 </div>
                                             </button>
@@ -383,7 +390,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                         }
                     </div>
                     <div className="mt-1 text-sm text-white/40">
-                        Available: {`${formatNumberByFrac(selectedAsset.amount)} ${selectedAsset.symbol}`}
+                        Available: {`${formatNumberByFrac(selectedAsset.amount, 5)} ${selectedAsset.symbol}`}
                     </div>
                 </div>
 
@@ -483,7 +490,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                                 <div className='ml-3'>
                                     <div className="text-sm text-white/60">You send</div>
                                     <div className="font-medium">
-                                        {`${formatNumberByFrac(Number(amount))} ${selectedAsset.symbol}`}
+                                        {`${formatNumberByFrac(Number(amount), 5)} ${selectedAsset.symbol}`}
                                     </div>
                                 </div>
                             </div>
@@ -537,7 +544,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                                         <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Confirming...
                                         </div>
-                                    ) : isChainSwitching ? (
+                                    ) : (isChainSwitching && selectedAsset.network != "Solana") ? (
                                         <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Switching Chain...
                                         </div>
@@ -554,7 +561,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                             <Wallet className="w-5 h-5 mr-2" /> Connect
                         </button>
                 }
-
             </form>
         </div>
     );
