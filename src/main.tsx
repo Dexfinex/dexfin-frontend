@@ -1,12 +1,13 @@
-import {ChakraProvider} from '@chakra-ui/react';
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
-import {StytchProvider} from '@stytch/react';
-import {StytchUIClient} from "@stytch/vanilla-js";
+import { ChakraProvider } from '@chakra-ui/react';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { StytchProvider } from '@stytch/react';
+import { StytchUIClient } from "@stytch/vanilla-js";
 import App from './App.tsx';
 import './index.css';
 import Web3AuthProvider from './providers/Web3AuthContext';
-import {WalletProvider} from "./providers/WalletProvider";
+import { WalletProvider } from "./providers/WalletProvider";
+import { WebSocketProvider } from './providers/WebSocketProvider.tsx';
 
 const stytch = new StytchUIClient(
     import.meta.env.VITE_STYTCH_PUBLIC_TOKEN || ''
@@ -31,7 +32,9 @@ createRoot(document.getElementById('root')!).render(
             <WalletProvider>
                 <Web3AuthProvider>
                     <ChakraProvider>
-                        <App/>
+                        <WebSocketProvider>
+                            <App />
+                        </WebSocketProvider>
                     </ChakraProvider>
                 </Web3AuthProvider>
             </WalletProvider>

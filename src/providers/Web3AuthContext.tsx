@@ -103,7 +103,7 @@ interface Web3AuthContextType {
     getWalletType: () => WalletType,
     walletType: WalletType
 
-    checkWalletAndUsername: () => Promise<{ exists: boolean, message?: string }>;
+    checkWalletAndUsername: () => Promise<{ exists: boolean, message?: string, userId?: string }>;
 }
 
 
@@ -297,7 +297,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUserDataLoading(false);
         }
     };
-    const checkWalletAndUsername = async (): Promise<{ exists: boolean, message?: string }> => {
+    const checkWalletAndUsername = async (): Promise<{ exists: boolean, message?: string, userId?: string }> => {
         try {
             if (!address) {
                 return {
@@ -332,7 +332,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             return {
                 exists: true,
-                message: `Username exists for this wallet: ${response.username}`
+                message: `Username exists for this wallet: ${response.username}`,
+                userId: response.id
             };
 
 
