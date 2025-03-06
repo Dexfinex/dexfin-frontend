@@ -39,6 +39,8 @@ export const CRYPTONEWS_BASE_URL = `https://${BASE_HOST_DOMAIN}/crypto-news`;
 
 export const OPENAI_BASE_URL = `https://${BASE_HOST_DOMAIN}/openai`;
 
+export const ALERT_BASE_URL = `https://${BASE_HOST_DOMAIN}/alerts`;
+
 export const ENSO_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/enso';
 
 export const CALENDAR_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/calendar';
@@ -49,7 +51,7 @@ export const USERNAMEAUTH_BASE_URL = "https://dexfinv3-backend-production.up.rai
 
 export const TECHNICALANALYSIS_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/technical";
 
-export const WS_CONNECTION_URL = `https://${BASE_HOST_DOMAIN}` || 'localhost:3000';
+export const WS_CONNECTION_URL = `https://${BASE_HOST_DOMAIN}`;
 export const COINGECKO_URL = "https://api.coingecko.com/api/v3";
 
 export const GAME_SYSTEM_BASEURL = "https://dexfinv3-backend-production.up.railway.app/game-system";
