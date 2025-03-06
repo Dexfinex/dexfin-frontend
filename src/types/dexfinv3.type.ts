@@ -130,10 +130,23 @@ export interface EvmProtocol {
   },
   positions: 1
 }
+
 export interface EvmDefiProtocol {
   active_protocols: number;
   total_positions: number;
   total_usd_value: number;
   total_unclaimed_usd_value: number;
   protocols: EvmProtocol[];
+}
+
+export type WalletActivityType = {
+  hash: string;
+  date: string;
+  summary: string;
+  network: {
+    id: string;
+    name: string;
+    icon: string;
+    chainId: number;
+  }
 }
