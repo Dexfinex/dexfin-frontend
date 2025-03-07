@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from "react";
+import React, { useContext } from "react";
 import { Skeleton } from '@chakra-ui/react';
 import { ArrowUp } from 'lucide-react';
 
@@ -6,7 +6,7 @@ import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import useDefiStore, { Position } from '../../store/useDefiStore';
 import { getTypeIcon, getTypeColor } from "../../utils/defi.util";
 import { formatNumberByFrac, formatHealthFactor } from "../../utils/common.util";
-import { TokenIcon } from "../swap/components/TokenIcon";
+import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon";
 import { isEnabledPosition } from "../../constants/mock/defi";
 
 
@@ -124,11 +124,11 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                 >
                                     <div className="flex items-between sm:items-center justify-between flex-col sm:flex-row">
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                                            <img
+                                            <TokenChainIcon
                                                 src={position.logo}
                                                 alt={position.protocol}
-                                                className="w-10 h-10"
-                                            />
+                                                chainId={position.chainId}
+                                                size="lg" />
                                             <div>
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <h3 className="font-medium">{position.protocol}</h3>

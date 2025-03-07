@@ -4,6 +4,7 @@ import useDefiStore from '../../store/useDefiStore';
 
 import { getTypeIcon } from "../../utils/defi.util";
 import { formatNumberByFrac } from "../../utils/common.util";
+import { TokenIcon } from "../swap/components/TokenIcon";
 
 interface ProtocolStatisticProps {
 
@@ -28,7 +29,7 @@ const ProtocolStatistic: React.FC<ProtocolStatisticProps> = () => {
 
                             return (
                                 <div key={protocol} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
-                                    <img
+                                    <TokenIcon
                                         src={protocolPositions[0]?.logo}
                                         alt={protocol}
                                         className="w-8 h-8"
