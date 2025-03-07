@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from "react";
+import {createContext, useEffect, useState} from "react";
 import {
     getSolanaWrappedKeyMetaDataByPkpEthAddress,
     getWrappedKeyMetaDatas,
@@ -10,10 +10,10 @@ import {
 import useAuthenticate from "../hooks/auth/useAuthenticate";
 import useAccounts from "../hooks/auth/useAccounts";
 import useSession from "../hooks/auth/useSession";
-import { AuthMethod, ILitNodeClient, IRelayPKP, SessionSigs } from "@lit-protocol/types";
-import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
-import { ExternalProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers";
-import { Connector, useAccount, useSwitchChain } from "wagmi";
+import {AuthMethod, ILitNodeClient, IRelayPKP, SessionSigs} from "@lit-protocol/types";
+import {PKPEthersWallet} from "@lit-protocol/pkp-ethers";
+import {ExternalProvider, JsonRpcSigner, Web3Provider} from "@ethersproject/providers";
+import {Connector, useAccount, useSwitchChain} from "wagmi";
 import useLocalStorage from "../hooks/useLocalStorage";
 import {
     LOCAL_STORAGE_AUTH_REDIRECT_TYPE,
@@ -22,10 +22,18 @@ import {
     mapPaymasterUrls,
     mapRpcUrls,
 } from "../constants";
-import { SavedWalletInfo, type SolanaWalletInfoType } from "../types/auth";
-import { exportPrivateKey, generatePrivateKey } from "@lit-protocol/wrapped-keys/src/lib/api";
-import { Keypair, VersionedTransaction, Connection, PublicKey, Transaction, sendAndConfirmTransaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { getOrCreateAssociatedTokenAccount, createTransferInstruction } from '@solana/spl-token';
+import {SavedWalletInfo, type SolanaWalletInfoType} from "../types/auth";
+import {exportPrivateKey, generatePrivateKey} from "@lit-protocol/wrapped-keys/src/lib/api";
+import {
+    Keypair,
+    LAMPORTS_PER_SOL,
+    PublicKey,
+    sendAndConfirmTransaction,
+    SystemProgram,
+    Transaction,
+    VersionedTransaction
+} from "@solana/web3.js";
+import {createTransferInstruction, getOrCreateAssociatedTokenAccount} from '@solana/spl-token';
 import {
     createPublicClient,
     createWalletClient,
@@ -34,23 +42,25 @@ import {
     SendTransactionParameters,
     type WalletClient
 } from "viem";
-import { http } from "@wagmi/core";
-import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
-import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
+import {http} from "@wagmi/core";
+import {signerToEcdsaValidator} from "@zerodev/ecdsa-validator";
+import {getEntryPoint, KERNEL_V3_1} from "@zerodev/sdk/constants";
 import {
-    type CreateKernelAccountReturnType,
     createKernelAccount,
     createKernelAccountClient,
+    type CreateKernelAccountReturnType,
     createZeroDevPaymasterClient,
     getUserOperationGasPrice,
     KernelEIP1193Provider
 } from "@zerodev/sdk";
-import { ETHRequestSigningPayload } from "@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types";
-import { ethers } from "ethers";
-import { mapChainId2ViemChain } from "../config/networks.ts";
-import { useStore } from "../store/useStore.ts";
-import { connection as SolanaConnection } from "../config/solana.ts";
+import {ETHRequestSigningPayload} from "@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types";
+import {ethers} from "ethers";
+import {mapChainId2ViemChain} from "../config/networks.ts";
+import {useStore} from "../store/useStore.ts";
+import {connection as SolanaConnection} from "../config/solana.ts";
 import axios from "axios";
+import {getLoginUserId} from "../components/market/Calendar/api/Calendar-api.ts";
+import {usernameService} from "../services/username.service.ts";
 
 export type WalletType = 'EOA' | 'EMBEDDED' | 'UNKNOWN';
 
@@ -179,9 +189,6 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
 export const Web3AuthContext = createContext<Web3AuthContextType>(defaultWeb3AuthContextValue);
 const entryPoint = getEntryPoint("0.7");
 const kernelVersion = KERNEL_V3_1;
-
-import { getLoginUserId } from "../components/market/Calendar/api/Calendar-api.ts";
-import { usernameService } from "../services/username.service.ts";
 
 const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 

@@ -76,18 +76,22 @@ const SwapModal: React.FC<SwapModalProps> = ({isOpen, onClose}) => {
     };
 
     const onFromTokenSelect = (token: TokenType) => {
+/*
         if (toToken && toToken.chainId != token.chainId) {
             setToToken(null)
             setToAmount('')
         }
+*/
         setFromToken(token)
     }
 
     const onToTokenSelect = (token: TokenType) => {
+/*
         if (fromToken && fromToken.chainId != token.chainId) {
             setFromToken(null)
             setFromAmount('')
         }
+*/
         setToToken(token)
     }
 
