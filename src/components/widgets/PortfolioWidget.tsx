@@ -19,7 +19,7 @@ type WalletTab = "assets" | "defi"
 export const PortfolioWidget: React.FC = () => {
   const [activeTab, setActiveTab] = useState<WalletTab>("assets")
   const { chainId, address } = useContext(Web3AuthContext)
-  const { isLoading, data: balanceData } = useWalletBalance({
+  const { isLoading, data: balanceData = [] } = useWalletBalance({
     chainId: chainId,
     address: address,
   })
@@ -28,19 +28,24 @@ export const PortfolioWidget: React.FC = () => {
     walletAddress: address
   })
 
-  const { positions } = useDefiStore()
-  console.log("positions : ", positions)
+  const { positions = [] } = useDefiStore()
 
   // Calculate total portfolio value from balance data
   const portfolioValue = React.useMemo(() => {
-    if (!balanceData) return 0
-    return balanceData.reduce((sum, token) => sum + (token.usdValue || 0), 0)
+    if (!balanceData || !Array.isArray(balanceData)) return 0
+    return balanceData.reduce((sum, token) => {
+      const usdValue = parseFloat(token.usdValue) || 0
+      return sum + usdValue
+    }, 0)
   }, [balanceData])
 
   // Calculate total DeFi positions value
   const defiPositionsValue = React.useMemo(() => {
-    if (!positions) return 0
-    return positions.reduce((sum, position) => sum + position.value, 0)
+    if (!positions || !Array.isArray(positions)) return 0
+    return positions.reduce((sum, position) => {
+      const value = parseFloat(position.value) || 0
+      return sum + value
+    }, 0)
   }, [positions])
 
   // Calculate combined portfolio value
@@ -50,7 +55,7 @@ export const PortfolioWidget: React.FC = () => {
 
   // Calculate allocation percentages based on real balances
   const allocation: AllocationData[] = React.useMemo(() => {
-    if (!balanceData) return []
+    if (!balanceData || !Array.isArray(balanceData)) return []
 
     const total = totalPortfolioValue
 
@@ -65,18 +70,28 @@ export const PortfolioWidget: React.FC = () => {
     }
 
     // Filter positions by type
-    const lendingPositions = positions.filter(position => position.type === 'LENDING')
-    const stakingPositions = positions.filter(position => position.type === 'STAKING')
+    const lendingPositions = Array.isArray(positions) 
+      ? positions.filter(position => position.type === 'LENDING')
+      : []
+    const stakingPositions = Array.isArray(positions) 
+      ? positions.filter(position => position.type === 'STAKING')
+      : []
 
     // Calculate values for each category
-    const lendingValue = lendingPositions.reduce((sum, position) => sum + position.value, 0)
-    const stakingValue = stakingPositions.reduce((sum, position) => sum + position.value, 0)
+    const lendingValue = lendingPositions.reduce((sum, position) => {
+      const value = parseFloat(position.value) || 0
+      return sum + value
+    }, 0)
+    const stakingValue = stakingPositions.reduce((sum, position) => {
+      const value = parseFloat(position.value) || 0
+      return sum + value
+    }, 0)
     const spotValue = portfolioValue
 
-    // Calculate percentages
-    const spotPercentage = Math.round((spotValue / total) * 100)
-    const stakingPercentage = Math.round((stakingValue / total) * 100)
-    const lendingPercentage = Math.round((lendingValue / total) * 100)
+    // Calculate percentages (with safe division)
+    const spotPercentage = total > 0 ? Math.round((spotValue / total) * 100) : 0
+    const stakingPercentage = total > 0 ? Math.round((stakingValue / total) * 100) : 0
+    const lendingPercentage = total > 0 ? Math.round((lendingValue / total) * 100) : 0
 
     return [
       {
@@ -121,6 +136,11 @@ export const PortfolioWidget: React.FC = () => {
   const pieSegments = createPieSegments()
 
   const formatCurrency = (value: number) => {
+    // Handle potential NaN and undefined values
+    if (isNaN(value) || value === undefined) {
+      return "$0.00"
+    }
+    
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
@@ -147,10 +167,6 @@ export const PortfolioWidget: React.FC = () => {
             <div className="text-2xl font-bold mt-1">
               {formatCurrency(totalPortfolioValue)}
             </div>
-            {/* <div className="flex items-center gap-1 mt-1 text-green-400 text-sm">
-              <TrendingUp className="w-4 h-4" />
-              <span>+1.57% TODAY</span>
-            </div> */}
           </div>
 
           {/* Chart Section */}
@@ -221,28 +237,35 @@ export const PortfolioWidget: React.FC = () => {
               <div className="space-y-2">
                 {isLoading ? (
                   <Skeleton startColor="#444" endColor="#1d2837" w={"100%"} h={"4rem"} />
+                ) : !balanceData || balanceData.length === 0 ? (
+                  <div className="text-center py-6 text-sm opacity-60">
+                    No assets found
+                  </div>
                 ) : (
-                  balanceData?.map((token, index) =>
-                  (
+                  balanceData.map((token, index) => (
                     <button
-                      key={token.chain + token.symbol}
+                      key={`${token.chain}-${token.symbol}-${index}`}
                       className="flex w-full items-center justify-between p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <TokenChainIcon src={token.logo} alt={token.name} size="lg" chainId={token?.network?.chainId} />
+                        <TokenChainIcon 
+                          src={token.logo} 
+                          alt={token.name} 
+                          size="lg" 
+                          chainId={token?.network?.chainId} 
+                        />
                         <div className="flex flex-col justify-start items-start">
                           <div className="font-medium">{token.symbol}</div>
                           <div className="text-sm">
-                            {`${formatNumberByFrac(token.balanceDecimal)} ${token.symbol}`}
+                            {`${formatNumberByFrac(token.balanceDecimal || 0)} ${token.symbol}`}
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div>{formatCurrency(token.usdValue)}</div>
+                        <div>{formatCurrency(parseFloat(token.usdValue) || 0)}</div>
                       </div>
                     </button>
-                  )
-                  )
+                  ))
                 )}
               </div>
             ) : (
@@ -250,14 +273,14 @@ export const PortfolioWidget: React.FC = () => {
               <div className="space-y-2">
                 {isLoadingPositions ? (
                   <Skeleton startColor="#444" endColor="#1d2837" w={"100%"} h={"4rem"} />
-                ) : positions.length === 0 ? (
+                ) : !positions || positions.length === 0 ? (
                   <div className="text-center py-6 text-sm opacity-60">
                     No DeFi positions found
                   </div>
                 ) : (
                   positions.map((position, index) => (
                     <div
-                      key={index}
+                      key={`${position.protocol}-${index}`}
                       className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -270,14 +293,14 @@ export const PortfolioWidget: React.FC = () => {
                           <div className="font-medium">{position.protocol}</div>
                           <div className="text-sm">
                             {position.tokens && position.tokens.length > 0 &&
-                              `${formatNumberByFrac(position.tokens[0].amount)} ${position.tokens[0].symbol}`
+                              `${formatNumberByFrac(position.tokens[0]?.amount || 0)} ${position.tokens[0]?.symbol || ''}`
                             }
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div>{formatCurrency(position.value)}</div>
-                        <div className="text-xs text-green-400">{position.apy}% APY</div>
+                        <div>{formatCurrency(parseFloat(position.value) || 0)}</div>
+                        <div className="text-xs text-green-400">{parseFloat(position.apy) || 0}% APY</div>
                       </div>
                     </div>
                   ))
