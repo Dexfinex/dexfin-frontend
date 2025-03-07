@@ -137,6 +137,7 @@ export interface EvmDefiProtocol {
   total_usd_value: number;
   total_unclaimed_usd_value: number;
   protocols: EvmProtocol[];
+  chainId: number;
 }
 
 export type WalletActivityType = {
