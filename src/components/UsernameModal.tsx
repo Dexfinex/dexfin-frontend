@@ -1,5 +1,4 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { X } from 'lucide-react';
 import { authService } from "../services/auth.service";
 import { useUserData } from '../providers/UserProvider';

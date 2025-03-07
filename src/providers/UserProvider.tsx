@@ -37,6 +37,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     currentAccount,
     address: kernelAddress,
     walletType,
+    isConnected,
   } = useContext(Web3AuthContext);
 
   const handleWalletAuth = async (walletType: 'EOA' | 'EMBEDDED' | 'UNKNOWN', evmAddress?: string, solAddress?: string) => {
@@ -86,6 +87,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const initializeAllVariables = () => {
+    setUserData(null);
+    setIsLoading(false);
+    setError(null);
+    setAuthToken(null); // Clear auth tokens from all API instances
+  };
+
   // Handle Wagmi wallet connection
   useEffect(() => {
     if (isWagmiWalletConnected && wagmiAddress) {
@@ -99,6 +107,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handleWalletAuth(walletType, kernelAddress, solanaWalletInfo.publicKey );
     }
   }, [kernelAddress, currentAccount, solanaWalletInfo?.publicKey, walletType]);
+
+  // Reset user state when Web3Auth disconnects
+  useEffect(() => {
+    if (!isConnected) {
+      initializeAllVariables();
+    }
+  }, [isConnected]);
 
   const value = {
     userData,

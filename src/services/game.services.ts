@@ -3,7 +3,11 @@ import {GameSession} from "../components/GamesModal";
 export const GameService = {
     gameHistory:async(accessToken:string, saveGameSession: GameSession)=>{
         try{
+            console.log("-------game session-----")
             console.log(saveGameSession)
+            console.log(accessToken)
+            console.log("-------game session-----")
+
             const {data}= await GameSystemApi.post(`/user-games-history`,saveGameSession, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,

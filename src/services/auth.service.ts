@@ -1,11 +1,11 @@
-import { userAuthApi, usernameAuthApi } from "./api.service.ts";
+import { userAuthApi } from "./api.service.ts";
 
 export const authService = {
     
     login: async (walletAddress: string) => {
         try {
 
-            const response = await usernameAuthApi.post('/login', {
+            const response = await userAuthApi.post('/login', {
                 walletAddress
             });
 
@@ -20,7 +20,7 @@ export const authService = {
     register: async (walletType: string, evmAddress?: string, solAddress?: string, btcAddress?: string) => {
         try {
 
-            const response = await usernameAuthApi.post('/register', {
+            const response = await userAuthApi.post('/register', {
                 evmAddress,
                 solAddress,
                 btcAddress,
@@ -38,7 +38,7 @@ export const authService = {
     registerUsername: async (username: string) => {
         try {
             
-            const { data } = await usernameAuthApi.post(`/registerUserName/`,{username}, {});
+            const { data } = await userAuthApi.post(`/registerUserName/`,{username}, {});
 
             if (data.errors) {
                 throw new Error(data.errors[0].message);

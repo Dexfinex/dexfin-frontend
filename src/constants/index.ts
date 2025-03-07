@@ -22,7 +22,7 @@ export const mapRpcUrls: Record<number, string> = {
 }
 
 const BASE_HOST_DOMAIN = 'http://localhost:3000'
-// const BASE_HOST_DOMAIN = 'dexfinv3-backend-production.up.railway.app'
+// const BASE_HOST_DOMAIN = 'https://dexfinv3-backend-production.up.railway.app'
 
 export const COINGECKO_BASE_URL = `${BASE_HOST_DOMAIN}/coingecko`
 
@@ -46,9 +46,7 @@ export const ENSO_BASE_URL = `${BASE_HOST_DOMAIN}/enso`;
 
 export const CALENDAR_BASE_URL = `${BASE_HOST_DOMAIN}/calendar`;
 
-export const USERAUTH_BASE_URL = `${BASE_HOST_DOMAIN}/graphql`;
-
-export const USERNAMEAUTH_BASE_URL = `${BASE_HOST_DOMAIN}/auth`;
+export const USERAUTH_BASE_URL = `${BASE_HOST_DOMAIN}/auth`;
 
 export const TECHNICALANALYSIS_BASE_URL = `${BASE_HOST_DOMAIN}/technical`;
 

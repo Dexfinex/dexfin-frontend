@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Timer, Trophy, RotateCcw, Gamepad2 } from 'lucide-react';
 import { useBreakpointValue } from '@chakra-ui/react';
-import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
+import { useUserData } from '../../providers/UserProvider';
+
 import { GameSession } from '../GamesModal';
 import { GameService } from '../../services/game.services.ts';
 
@@ -63,7 +64,8 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
 
   const isMobile = useBreakpointValue({base: true, md: false});
   
-  const { userData } = useContext(Web3AuthContext);
+  // Add Web3AuthContext and game session tracking
+  const { userData } = useUserData();
   const gameSessionSaved = useRef(false);
   const [gameData, setGameData] = useState<any[]>([]);
   const [gameId, setGameId] = useState<string>("");

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Trophy, Swords, Brain, Coins, ArrowRight, Search } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { Web3AuthContext } from '../../providers/Web3AuthContext';
+import { useUserData } from '../../providers/UserProvider';
+
 import { GameService } from '../../services/game.services';
 export const GameStats: React.FC = () => {
   const [claimingTokens, setClaimingTokens] = useState(false);
   const { gameStats, updateGameStats, setAllGameStats } = useStore();
-  const { userData } = useContext(Web3AuthContext);
+  const { userData } = useUserData();
   const [isLoading, setIsLoading] = useState(false);
   const canClaim = gameStats.totalTokens >= 5000;
 

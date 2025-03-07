@@ -3,6 +3,7 @@ import { useWebSocketAlert, AlertData } from '../hooks/useWebsocket';
 import { AlertBaseApi } from '../services/api.service';
 import axios from 'axios';
 import { Web3AuthContext } from './Web3AuthContext';
+import { useUserData } from '../providers/UserProvider';
 
 interface WebSocketContextType {
     isConnected: boolean;
@@ -21,7 +22,8 @@ export const WebSocketContext = createContext<WebSocketContextType>({
 });
 
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { userData, isConnected, checkWalletAndUsername } = useContext(Web3AuthContext);
+    const { isConnected } = useContext(Web3AuthContext);
+    const { userData } = useUserData();
     const [userId, setUserId] = useState<string>('');
     const [token, setToken] = useState<string>('');
 
@@ -29,11 +31,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const fetchUserInfo = async () => {
             if (userData?.accessToken) {
                 try {
-                    const userinfo = await checkWalletAndUsername();
-                    if (userinfo) {
-                        setUserId(userinfo?.userId as string);
-                        setToken(userData?.accessToken as string);
-                    }
+                    setUserId(userData?.userId as string);
+                    setToken(userData?.accessToken as string);
                 } catch (error) {
                     console.error("Error fetching user info:", error);
                 }
@@ -41,7 +40,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         };
 
         fetchUserInfo();
-    }, [userData, isConnected, checkWalletAndUsername])
+    }, [userData, isConnected])
 
     const {
         isConnected: wsConnected,

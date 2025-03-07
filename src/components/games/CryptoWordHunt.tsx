@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useContext, useRef } from 'rea
 import { Trophy, Clock, Star, Zap, ArrowLeft, RefreshCw, CheckCircle2, Coins } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { GameSession } from '../GamesModal';
-import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
+import { useUserData } from '../../providers/UserProvider';
+
 import { GameService } from '../../services/game.services.ts';
 
 interface Difficulty {
@@ -152,7 +153,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
   const [showWordList, setShowWordList] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  const { userData } = useContext(Web3AuthContext);
+  const { userData } = useUserData();
 
   // Flag to track if game session has been saved
   const gameSessionSaved = useRef(false);

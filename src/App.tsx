@@ -65,7 +65,6 @@ export default function App() {
         initializeErrors,
         address,
         isConnected,
-        checkWalletAndUsername
     } = useContext(Web3AuthContext);
 
     // show modal if redirect from social login
@@ -86,14 +85,12 @@ export default function App() {
             setIsSigninModalOpen(false)
             setIsSignupModalOpen(false)
 
-            checkWalletAndUsername();
-
             if (!chatUser) {
                 // unlock chat profile
                 unlockProfile()
             }
         }
-    }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen, checkWalletAndUsername]);
+    }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen]);
 
     const unlockProfile = async () => {
         const chatKey = localStorage.getItem(KEY_NAME)
