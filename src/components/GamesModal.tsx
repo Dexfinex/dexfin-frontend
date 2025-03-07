@@ -11,7 +11,8 @@ import { CryptoPexeso } from './games/CryptoPexeso';
 import CryptoWordHunt from './games/CryptoWordHunt';
 import { GameStats } from './games/GameStats';
 import { useStore } from '../store/useStore';
-import { Web3AuthContext } from '../providers/Web3AuthContext';
+import { useUserData } from '../providers/UserProvider';
+
 import { GameService } from "../services/game.services"
 interface GamesModalProps {
   isOpen: boolean;
@@ -78,7 +79,7 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
   const [gamesLoading, setGamesLoading] = useState(true);
 
   const { gameStats, setAllGameStats } = useStore();
-  const { userData } = useContext(Web3AuthContext);
+  const { userData } = useUserData();
   const [games, setGames] = useState<Game[]>([]);
 
   const toggleFullscreen = () => {
@@ -96,7 +97,6 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
 
       try {
           const gameData= await GameService.fetchAllGame();
-          console.log(gameData)
 
           if (Array.isArray(gameData)) {
             const transformedGames = gameData.map((dbGame: any) => {

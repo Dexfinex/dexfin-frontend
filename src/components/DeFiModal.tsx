@@ -35,6 +35,8 @@ interface DeFiModalProps {
 interface ModalState {
   type: string | null;
   position?: Position;
+  apyToken?: string;
+  supportedChains?: number[];
 }
 
 export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
@@ -94,8 +96,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const handleAction = (type: string, position: Position) => {
-    setModalState({ type, position });
+  const handleAction = (type: string, position: Position, apyToken: string, supportedChains: number[]) => {
+    setModalState({ type, position, apyToken, supportedChains });
   };
 
   const depositHandler = async () => {

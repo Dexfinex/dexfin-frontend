@@ -25,6 +25,7 @@ export const TwitterWidget: React.FC = () => {
   // Get data from the hook
   console.log("twitter data....")
   const { data: apiTweets, loading, error: apiError } = useGetTwitterInfo();
+  console.log("twitter apiTweets : ", apiTweets);
 
   // State for the processed tweets
   const [tweets, setTweets] = useState<Tweet[]>([]);
