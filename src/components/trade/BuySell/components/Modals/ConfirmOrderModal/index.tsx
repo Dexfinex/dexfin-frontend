@@ -7,7 +7,7 @@ import {useState} from "react";
 import {formatNumberByFrac, toFixedFloat} from "../../../../../../utils/trade.util";
 import {BrowserProvider} from "ethers-v6";
 import {useTokenApprove} from "../../../../../../hooks/useTokenApprove";
-import {chainId2ChainMap} from "../../../../../../providers/chains";
+import {chainId2ChainMap} from "../../../../../../constants/chains.ts";
 
 
 export interface IToken {

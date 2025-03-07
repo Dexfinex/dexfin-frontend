@@ -1,6 +1,6 @@
 // Helper functions
 import {splitSignature} from "./signature.util.ts";
-import {GaslessQuoteResponse, SignatureType} from "../types/swap.type.ts";
+import {GaslessQuoteResponse, SignatureType, TokenType} from "../types/swap.type.ts";
 import {WalletClient} from "viem";
 
 export async function signTradeObject(walletClient: WalletClient, quote: GaslessQuoteResponse): Promise<any> {
@@ -34,3 +34,12 @@ export async function tradeSplitSigDataToSubmit(object: any, quote: GaslessQuote
         },
     }; // Return trade object with split signature
 }
+
+export const getUSDAmount = (selectedToken: TokenType | undefined, price: number, amount: string): number => {
+    if (selectedToken) {
+        const numAmount = Number(amount)
+        return price * numAmount
+    }
+    return 0
+}
+

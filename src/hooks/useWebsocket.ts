@@ -24,6 +24,7 @@ interface WebSocketAlertHookProps {
     userId: string;
     token?: string;
     autoConnect?: boolean;
+    key?: number;
 }
 
 const ALERT_SOUND_PATH = '/notification.wav';
@@ -31,7 +32,8 @@ const ALERT_SOUND_PATH = '/notification.wav';
 export const useWebSocketAlert = ({
     userId,
     token,
-    autoConnect = true
+    autoConnect = true,
+    key = 0
 }: WebSocketAlertHookProps) => {
     const [isConnected, setIsConnected] = useState<boolean>(false);
     const [alerts, setAlerts] = useState<AlertData[]>([]);
@@ -45,6 +47,18 @@ export const useWebSocketAlert = ({
     const reconnectTimerRef = useRef<any>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const toast = useToast();
+
+    // Reset state when key changes
+    useEffect(() => {
+        setAlerts([]);
+        setUnreadCount(0);
+        processedAlertsRef.current.clear();
+        if (socketRef.current) {
+            socketRef.current.close();
+            socketRef.current = null;
+        }
+        setIsConnected(false);
+    }, [key]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -84,20 +98,26 @@ export const useWebSocketAlert = ({
     }, [toast]);
 
     const triggerAlertEvent = useCallback((data: AlertData) => {
+        // Check if the alert is for the current user
+        if (data.userId && data.userId !== userId) {
+            return;
+        }
+        
         const alertKey = data.data?.id || `${data.type}-${data.timestamp}`;
 
         if (processedAlertsRef.current.has(alertKey)) {
-            console.log(`Alert ${alertKey} already processed, ignoring duplicate`);
             return;
         }
+        
         processedAlertsRef.current.add(alertKey);
 
         const alertWithTimestamp = {
             ...data,
+            userId: data.userId || userId,
             timestamp: data.timestamp || Date.now(),
             read: false
         };
-
+        
         setAlerts(prev => {
             const exists = prev.some(a => {
                 if (data.data?.id && a.data?.id) {
@@ -109,7 +129,6 @@ export const useWebSocketAlert = ({
             });
 
             if (exists) {
-                console.log('Alert already exists in state, not adding duplicate');
                 return prev;
             }
 
@@ -119,24 +138,78 @@ export const useWebSocketAlert = ({
         setUnreadCount(prev => prev + 1);
 
         playAlertSound();
-
         showToastNotification(alertWithTimestamp);
         alertHandlersRef.current.forEach(handler => handler(alertWithTimestamp));
-    }, [playAlertSound, showToastNotification]);
+    }, [userId, playAlertSound, showToastNotification]);
 
-    // Rest of your hook implementation...
     const subscribe = useCallback((id: string) => {
         if (!socketRef.current || !socketRef.current.connected) {
-            console.error('Cannot subscribe, socket not connected');
             return;
         }
 
         socketRef.current.emit('subscribe', id);
     }, []);
 
+    // Define fetchInitialAlerts before connect so it can be used there
+    const fetchInitialAlerts = useCallback(async () => {
+        try {
+            if (!token) {
+                return;
+            }
+            
+            const response = await AlertBaseApi.get('', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = response.data;
+            
+            setAlerts([]);
+            processedAlertsRef.current.clear();
+
+            if (!data || data.length === 0) {
+                return;
+            }
+
+            const normalizedAlerts = data.map((alert: any) => ({
+                userId: alert.userId || userId,
+                status: 'TRIGGERED',
+                type: 'PRICE_ALERT',
+                title: alert.name || 'Price Alert',
+                message: `${alert.token || 'Price'} is now ${alert.condition?.toLowerCase() || ''} ${alert.updatedPrice || ''}`,
+                timestamp: alert.lastTriggered || alert.createdAt || Date.now(),
+                severity: 'warning',
+                read: alert.isRead || false,
+                data: {
+                    id: alert.id,
+                    name: alert.name,
+                    type: 'PRICE_ALERT',
+                    message: `${alert.token || 'Price'} is now ${alert.condition?.toLowerCase() || ''} ${alert.updatedPrice || ''}`,
+                    token: alert.token || alert.value,
+                    currentPrice: parseFloat(alert.updatedPrice) || 0,
+                    thresholdValue: parseFloat(alert.value) || 0,
+                    condition: alert.condition,
+                    isActive: alert.isActive
+                }
+            }));
+
+            setAlerts(normalizedAlerts);
+            setUnreadCount(normalizedAlerts.filter((alert: AlertData) => !alert.read).length);
+            
+            // Add all alert IDs to the processed set to avoid duplicates
+            normalizedAlerts.forEach((alert: AlertData) => {
+                if (alert.data?.id) {
+                    processedAlertsRef.current.add(alert.data.id);
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching initial alerts:', error);
+        }
+    }, [userId, token]);
+
     const connect = useCallback(() => {
         if (!userId) {
-            console.warn('Cannot connect to WebSocket, no userId provided');
             return;
         }
 
@@ -145,9 +218,6 @@ export const useWebSocketAlert = ({
         }
 
         const authToken = token;
-        if (!authToken) {
-            console.warn('No authentication token available for WebSocket connection');
-        }
 
         // Set connection options with auth token
         const socketOptions = {
@@ -169,14 +239,12 @@ export const useWebSocketAlert = ({
 
         socketRef.current.on('connect', () => {
             reconnectAttemptsRef.current = 0;
-            console.log("websocket Connected")
             setIsConnected(true);
             subscribe(userId);
             fetchInitialAlerts();
         });
 
         socketRef.current.on('disconnect', (reason) => {
-            console.log(`WebSocket disconnected: ${reason}`);
             setIsConnected(false);
             if (reconnectAttemptsRef.current < maxReconnectAttempts) {
                 clearTimeout(reconnectTimerRef.current);
@@ -188,12 +256,7 @@ export const useWebSocketAlert = ({
         });
 
         socketRef.current.on('connect_error', (error) => {
-            console.error('WebSocket connection error:', error);
             reconnectAttemptsRef.current++;
-
-            if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-                console.error('Max reconnection attempts reached');
-            }
         });
 
         socketRef.current.on('transactionUpdate', (data: any) => {
@@ -212,9 +275,15 @@ export const useWebSocketAlert = ({
         });
 
         socketRef.current.on('alertTriggered', (data: any) => {
+            // Skip if not for this user and userId is specified
+            if (data.userId && data.userId !== userId) {
+                return;
+            }
+            
             if (data.id && processedAlertsRef.current.has(data.id)) {
                 return;
             }
+            
             if (data.type === 'PRICE_ALERT' || data.name) {
                 triggerAlertEvent({
                     userId: data.userId || userId,
@@ -242,7 +311,6 @@ export const useWebSocketAlert = ({
         });
 
         socketRef.current.on('notification', (data: any) => {
-            console.log('Notification received:', data);
             triggerAlertEvent({
                 userId: data.userId || userId,
                 status: data.status || 'info',
@@ -257,7 +325,6 @@ export const useWebSocketAlert = ({
 
         ['swap', 'deposit', 'reward', 'order', 'loan', 'security'].forEach(eventType => {
             socketRef.current?.on(eventType, (data: any) => {
-                console.log(`${eventType} alert received:`, data);
                 triggerAlertEvent({
                     userId: data.userId || userId,
                     status: data.status || 'info',
@@ -272,54 +339,10 @@ export const useWebSocketAlert = ({
             });
         });
 
-    }, [userId, token, subscribe, triggerAlertEvent]);
-
-    const fetchInitialAlerts = useCallback(async () => {
-        try {
-            const response = await AlertBaseApi.get('', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            // Axios returns data directly in response.data
-            const data = response.data;
-
-            if (data.length === 0) {
-                setAlerts(data);
-                return;
-            }
-
-            const normalizedAlerts = data.map((alert: any) => ({
-                userId: alert.userId || userId,
-                status: 'TRIGGERED',
-                type: 'PRICE_ALERT',
-                title: alert.name || 'Price Alert',
-                message: `${alert.token || 'Price'} is now ${alert.condition?.toLowerCase() || ''} ${alert.updatedPrice || ''}`,
-                timestamp: Date.now(),
-                severity: 'warning',
-                data: {
-                    id: alert.id,
-                    name: alert.name,
-                    type: 'PRICE_ALERT',
-                    message: `${alert.token || 'Price'} is now ${alert.condition?.toLowerCase() || ''} ${alert.updatedPrice || ''}`,
-                    token: alert.token || alert.value,
-                    currentPrice: parseFloat(alert.updatedPrice) || 0,
-                    thresholdValue: parseFloat(alert.value) || 0,
-                    condition: alert.condition,
-                }
-            }));
-
-            setAlerts(normalizedAlerts);
-            setUnreadCount(normalizedAlerts.length);
-        } catch (error) {
-            console.error('Error fetching initial alerts:', error);
-        }
-    }, [userId, token]);
+    }, [userId, token, subscribe, triggerAlertEvent, fetchInitialAlerts]);
 
     const unsubscribe = useCallback(() => {
         if (!socketRef.current || !socketRef.current.connected) {
-            console.error('Cannot unsubscribe, socket not connected');
             return;
         }
 
@@ -348,7 +371,7 @@ export const useWebSocketAlert = ({
         return () => {
             disconnect();
         };
-    }, [connect, disconnect, autoConnect, userId, token]);
+    }, [connect, disconnect, autoConnect, userId, token, key]);
 
     const markAllAsRead = useCallback(() => {
         setAlerts(prev => prev.map(alert => ({ ...alert, read: true })));
@@ -388,7 +411,8 @@ export const useWebSocketAlert = ({
         disconnect,
         markAllAsRead,
         markAsRead,
-        triggerAlertEvent
+        triggerAlertEvent,
+        fetchInitialAlerts
     };
 };
 

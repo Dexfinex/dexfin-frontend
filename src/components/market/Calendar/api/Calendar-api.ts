@@ -1,11 +1,6 @@
 import { calendarService } from "../../../../services/calendar.service";
 import { DayEvent } from "../MarketCalendar";
 
-export const getLoginUserId = async (walletAddress: string) => {
-    const data = await calendarService.loginUserId(walletAddress);
-    return data;
-}
-
 export const getLoadEvents = async (userId: string) => {
     const data = await calendarService.loadEvents(userId);
     return data;

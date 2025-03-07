@@ -249,7 +249,7 @@ export const rpcUrls = {
     }
 };
 
-export const rpcsMap = Object.entries(rpcUrls).reduce((acc, [chainId, rpcs]) => {
+export const rpcsMap: Record<number, any> = Object.entries(rpcUrls).reduce((acc, [chainId, rpcs]) => {
     const normalizedRpcs = Object.values(rpcs).reduce(
         (innerAcc, rpc, i) => ({...innerAcc, [i === 0 ? 'default' : i]: rpc}),
         {}

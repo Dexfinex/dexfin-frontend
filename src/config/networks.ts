@@ -74,6 +74,11 @@ export const NETWORKS: NETWORK[] = [
     },
 ] as const;
 
+export const mapChainId2Network: Record<number, NETWORK> = {}
+for(const network of NETWORKS) {
+    mapChainId2Network[network.chainId] = network;
+}
+
 export const mapChainId2NativeAddress: Record<number, string> = {
     1: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Ethereum Mainnet (ETH)
     56: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Binance Smart Chain (BNB)

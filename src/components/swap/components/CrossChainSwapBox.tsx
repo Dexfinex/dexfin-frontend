@@ -1,13 +1,12 @@
 import {useContext, useEffect, useMemo, useState} from 'react';
-import {ArrowDownUp, Info} from 'lucide-react';
+import {ArrowDownUp, ArrowRight, Clock, DollarSign} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
 import {SlippageOption, TokenType} from '../../../types/swap.type';
-import {formatNumberByFrac} from '../../../utils/common.util';
-import {Button, Flex, Skeleton} from '@chakra-ui/react';
-import {ZEROX_AFFILIATE_FEE} from "../../../constants";
+import {formatNumberByFrac, shrinkAddress} from '../../../utils/common.util';
+import {Button, Skeleton} from '@chakra-ui/react';
 import useTokenStore from "../../../store/useTokenStore.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
-import {mapChainId2ExplorerUrl, mapChainId2NativeAddress} from "../../../config/networks.ts";
+import {mapChainId2ExplorerUrl, mapChainId2NativeAddress, mapChainId2Network} from "../../../config/networks.ts";
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
 import useJupiterQuote from "../../../hooks/useJupiterQuote.ts";
 import {useSolanaBalance} from "../../../hooks/useSolanaBalance.tsx";
@@ -16,8 +15,9 @@ import {connection} from "../../../config/solana.ts";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
 import {getUSDAmount} from "../../../utils/swap.util.ts";
+import {DestinationAddressInputModal} from "../modals/DestinationAddressInputModal.tsx";
 
-interface SwapBoxProps {
+interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
     toToken: TokenType | null;
     fromAmount: string;
@@ -30,65 +30,21 @@ interface SwapBoxProps {
     slippage: SlippageOption;
 }
 
-interface PreviewDetailItemProps {
-    title: string;
-    info: string;
-    value: string;
-    valueClassName?: string;
-    isFree?: boolean;
-    isLoading: boolean;
-}
+export function CrossChainSwapBox({
+                                      fromToken,
+                                      toToken,
+                                      fromAmount,
+                                      toAmount,
+                                      onFromTokenSelect,
+                                      onToTokenSelect,
+                                      onFromAmountChange,
+                                      onToAmountChange,
+                                      onSwitch,
+                                      slippage,
+                                  }: CrossChainSwapBoxProps) {
 
-const PreviewDetailItem = ({
-                               title,
-                               info,
-                               value,
-                               valueClassName,
-                               isFree,
-                               isLoading,
-                           }: PreviewDetailItemProps) => {
-    return (
-        <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1">
-                <span className="text-gray-400">{title}</span>
-                <div className="group relative">
-                    <Info className="w-3.5 h-3.5 text-gray-500"/>
-                    <div
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 text-xs text-gray-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        {info}
-                    </div>
-                </div>
-            </div>
-            {
-                isLoading ? (
-                    <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
-                ) : isFree ? (
-                    <Flex gap={2}>
-                        <span className={'text-green-500'}>Free!</span>
-                        <span
-                            className={(valueClassName ? valueClassName : "text-white") + ' line-through'}>{value}</span>
-                    </Flex>
-                ) : (
-                    <span className={valueClassName ? valueClassName : "text-white"}>{value}</span>
-                )
-            }
-        </div>
-    )
-}
-
-export function SolanaSwapBox({
-                                  fromToken,
-                                  toToken,
-                                  fromAmount,
-                                  toAmount,
-                                  onFromTokenSelect,
-                                  onToTokenSelect,
-                                  onFromAmountChange,
-                                  onToAmountChange,
-                                  onSwitch,
-                                  slippage,
-                              }: SwapBoxProps) {
-
+    const [destinationAddress, setDestinationAddress] = useState<string>('');
+    const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [transactionHash, setTransactionHash] = useState<string | undefined>(undefined);
     const [confirmationLoading, setConfirmationLoading] = useState(false);
@@ -152,43 +108,24 @@ export function SolanaSwapBox({
         // nativeTokenPrice,
         fromUsdAmount,
         toUsdAmount,
-        affiliateFeeUsdAmount,
-        priceImpact,
+        fromNetwork,
+        toNetwork,
     } = useMemo(() => {
         const fromTokenPrice = fromToken ? getTokenPrice(fromToken?.address, fromToken?.chainId) : 0
         const toTokenPrice = toToken ? getTokenPrice(toToken?.address, toToken?.chainId) : 0
         const fromUsdAmount = fromToken ? getUSDAmount(fromToken, fromTokenPrice, fromAmount) : 0
         const toUsdAmount = toToken ? getUSDAmount(toToken, toTokenPrice, toAmount) : 0
-        const affiliateFeeUsdAmount = quoteData?.affiliateFee ? quoteData?.affiliateFee * toTokenPrice : 0
-        const priceImpact = fromUsdAmount > 0 ? ((toUsdAmount - fromUsdAmount) / fromUsdAmount) * 100 : 0
+        const fromNetwork = fromToken ? mapChainId2Network[fromToken.chainId] : null
+        const toNetwork = toToken ? mapChainId2Network[toToken.chainId] : null
 
         return {
             fromUsdAmount,
             toUsdAmount,
-            priceImpact,
-            affiliateFeeUsdAmount,
-            nativeTokenPrice: getTokenPrice(nativeTokenAddress, tokenChainId) ?? 0
+            nativeTokenPrice: getTokenPrice(nativeTokenAddress, tokenChainId) ?? 0,
+            toNetwork,
+            fromNetwork,
         }
     }, [fromToken, getTokenPrice, toToken, fromAmount, toAmount, nativeTokenAddress, tokenChainId, quoteData])
-
-    const {
-        buyTaxPercentage,
-        buyTaxUsdAmount,
-        sellTaxPercentage,
-        sellTaxUsdAmount,
-    } = useMemo(() => {
-        const buyTaxPercentage = quoteData?.buyTax ? formatNumberByFrac(quoteData?.buyTax, 2) : 0
-        const buyTaxUsdAmount = quoteData?.buyTax ? formatNumberByFrac(quoteData?.buyTax * toUsdAmount / 100, 2) : 0
-        const sellTaxPercentage = quoteData?.sellTax ? formatNumberByFrac(quoteData?.sellTax, 2) : 0
-        const sellTaxUsdAmount = quoteData?.sellTax ? formatNumberByFrac(quoteData?.sellTax * fromUsdAmount / 100, 2) : 0
-
-        return {
-            buyTaxPercentage,
-            buyTaxUsdAmount,
-            sellTaxPercentage,
-            sellTaxUsdAmount,
-        }
-    }, [quoteData, toUsdAmount, fromUsdAmount])
 
     useEffect(() => {
         if (!txModalOpen) {
@@ -360,6 +297,66 @@ export function SolanaSwapBox({
                 isBalanceLoading={isToBalanceLoading}
             />
 
+            <div
+                className="rounded-xl p-4 mb-4 cursor-pointer border border-white/5 hover:border-blue-500/20 transition-all duration-200 hover:shadow-[0_8px_32px_rgba(59,130,246,0.15)]"
+                onClick={() => setIsAddressModalOpen(true)}
+            >
+                <div className="flex justify-between mb-2">
+                    <span
+                        className="text-blue-400/90 text-[10px] font-semibold tracking-wider uppercase bg-blue-500/10 px-2 py-0.5 rounded-md">Destination Address</span>
+                </div>
+                <div className="flex items-center">
+                    {(destinationAddress && toNetwork) ? (
+                        <>
+                            <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2"/>
+                            <span className="font-medium">
+                                {shrinkAddress(destinationAddress)}
+                            </span>
+                        </>
+                    ) : (
+                        <span className="text-gray-400">Click to enter Address</span>
+                    )}
+                </div>
+            </div>
+
+            {
+                (fromNetwork && toNetwork) && (
+                    <div
+                        className={`rounded-xl p-4 border border-blue-500`}
+                    >
+                        <div className="flex items-center justify-between mb-3">
+                            <div
+                                className="bg-blue-500 text-xs font-medium text-white px-2 py-1 rounded-full inline-block mb-2">
+                                Best Route
+                            </div>
+                            <div className="flex items-center">
+                                <img src={fromNetwork.icon} alt={fromNetwork.name} className="w-5 h-5"/>
+                                <ArrowRight size={14} className="mx-1 text-gray-400"/>
+                                <img src={toNetwork.icon} alt={toNetwork.name}
+                                     className="w-5 h-5"/>
+                                <span className="ml-2 text-sm">{'birdgeName'}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm text-gray-400">You receive: 0.998 USDC</span>
+                        </div>
+
+                        <div className="flex justify-between text-xs text-gray-400">
+                            <div className="flex items-center">
+                                <Clock size={12} className="mr-1"/>
+                                <span>{'estimated time'}</span>
+                            </div>
+                            <div className="flex items-center">
+                                <DollarSign size={12} className="mr-1"/>
+                                <span>Fee: {'fee'}</span>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+
             {fromToken && toToken && fromAmount && Number(fromAmount) > 0 && (
                 <div className="space-y-2.5 mt-4">
                     {/* Exchange Rate */}
@@ -377,71 +374,6 @@ export function SolanaSwapBox({
                                 )
                             }
                         </div>
-
-                        {/* Price Impact */}
-                        <PreviewDetailItem
-                            title={'Price Impact'}
-                            info={'The difference between market price and estimated price due to trade size'}
-                            value={`${formatNumberByFrac(priceImpact, 2)}%`}
-                            valueClassName={`${
-                                priceImpact < -5
-                                    ? 'text-red-500'
-                                    : priceImpact < -3
-                                        ? 'text-yellow-500'
-                                        : 'text-green-500'
-                            }`}
-                            isLoading={isQuoteLoading}
-                        />
-
-                        {/* Affiliate Fee */}
-                        {
-                            quoteData?.affiliateFee && (
-                                <PreviewDetailItem
-                                    title={`Affiliate Fee (${ZEROX_AFFILIATE_FEE / 100}%)`}
-                                    info={'A small percentage of the transaction fee shared with affiliates who bring users to the platform'}
-                                    value={`$${formatNumberByFrac(affiliateFeeUsdAmount, 2)}`}
-                                    isLoading={isQuoteLoading}
-                                />
-                            )
-                        }
-                        {/* Sell Tax */}
-                        {
-                            quoteData?.sellTax && (
-                                <PreviewDetailItem
-                                    title={`Sell Fee (${sellTaxPercentage}%)`}
-                                    info={`${fromToken?.symbol} charges a ${sellTaxPercentage}% fee when bought. Swapping it may result in a loss of funds. Dexfin does not receive any of these fees.`}
-                                    value={`$${sellTaxUsdAmount}`}
-                                    isLoading={isQuoteLoading}
-                                />
-                            )
-                        }
-                        {/* Buy Tax */}
-                        {
-                            quoteData?.buyTax && (
-                                <PreviewDetailItem
-                                    title={`Buy Fee (${buyTaxPercentage}%)`}
-                                    info={`${toToken?.symbol} charges a ${buyTaxPercentage}% fee when bought. Swapping it may result in a loss of funds. Dexfin does not receive any of these fees.`}
-                                    value={`$${buyTaxUsdAmount}`}
-                                    isLoading={isQuoteLoading}
-                                />
-                            )
-                        }
-
-                        {/* Network Fee */}
-                        <PreviewDetailItem
-                            title={'Network Fee'}
-                            info={'Estimated network fees for processing the transaction'}
-                            value={`0.00000 SOL`}
-                            isLoading={false}
-                        />
-
-                        {/* slippage */}
-                        <PreviewDetailItem
-                            title={'Max. slippage'}
-                            info={'Allowable difference between the expected and executed prices of a trade. Your transaction will revert if price changes unfavorably by more than this percentage'}
-                            value={`${slippage}%`}
-                            isLoading={false}
-                        />
                     </div>
                 </div>
             )}
@@ -477,7 +409,6 @@ export function SolanaSwapBox({
                         >
                             Insufficient Balance
                         </Button>
-
                     ) : (
                         <Button
                             isLoading={confirmationLoading || isQuoteLoading}
@@ -493,9 +424,18 @@ export function SolanaSwapBox({
                 )
             }
             {
-                <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                                  link={`${mapChainId2ExplorerUrl[SOLANA_CHAIN_ID]}/tx/${transactionHash}`}/>
+                (toNetwork && isAddressModalOpen) && (
+                    <DestinationAddressInputModal
+                        open={isAddressModalOpen}
+                        setOpen={setIsAddressModalOpen}
+                        destinationNetwork={toNetwork}
+                        address={destinationAddress}
+                        setAddress={setDestinationAddress}
+                    />
+                )
             }
+            <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
+                              link={`${mapChainId2ExplorerUrl[SOLANA_CHAIN_ID]}/tx/${transactionHash}`}/>
         </div>
     )
         ;
