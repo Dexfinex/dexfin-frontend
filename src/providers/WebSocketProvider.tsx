@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useWebSocketAlert, AlertData } from '../hooks/useWebsocket';
 import { AlertBaseApi } from '../services/api.service';
-import axios from 'axios';
 import { Web3AuthContext } from './Web3AuthContext';
 import { useUserData } from '../providers/UserProvider';
 
@@ -11,6 +10,7 @@ interface WebSocketContextType {
     unreadCount: number;
     markAlertAsRead: (alertId: string | number) => Promise<void>;
     markAllAlertsAsRead: () => Promise<void>;
+    refreshAlerts: () => void;
 }
 
 export const WebSocketContext = createContext<WebSocketContextType>({
@@ -19,6 +19,7 @@ export const WebSocketContext = createContext<WebSocketContextType>({
     unreadCount: 0,
     markAlertAsRead: async () => { },
     markAllAlertsAsRead: async () => { },
+    refreshAlerts: () => { },
 });
 
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -26,6 +27,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const { userData } = useUserData();
     const [userId, setUserId] = useState<string>('');
     const [token, setToken] = useState<string>('');
+    const [refreshKey, setRefreshKey] = useState<number>(0);
+    const [isReady, setIsReady] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchUserInfo = async () => {
@@ -35,7 +38,10 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                     setToken(userData?.accessToken as string);
                 } catch (error) {
                     console.error("Error fetching user info:", error);
+                    setIsReady(false);
                 }
+            } else {
+                setIsReady(false);
             }
         };
 
@@ -48,11 +54,49 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         unreadCount,
         markAsRead,
         markAllAsRead,
+        connect,
+        fetchInitialAlerts
     } = useWebSocketAlert({
-        userId: userId || '',
+        userId: userId,
         token: token,
-        autoConnect: true,
+        autoConnect: false, 
+        key: refreshKey
     });
+
+    useEffect(() => {
+        if (isReady && userId && token) {
+            connect();
+            fetchInitialAlerts();
+        }
+    }, [isReady, userId, token, connect, fetchInitialAlerts]);
+
+    useEffect(() => {
+        if (!wsConnected || !userId || !token) return;
+        
+        const intervalId = setInterval(() => {
+            fetchInitialAlerts();
+        }, 5 * 60 * 1000);
+        
+        return () => clearInterval(intervalId);
+    }, [wsConnected, userId, token, fetchInitialAlerts]);
+
+    useEffect(() => {
+        if (!isReady || !userId || !token) return;
+        
+        if (!wsConnected) {
+            const timeoutId = setTimeout(() => {
+                connect();
+            }, 5000);
+            
+            return () => clearTimeout(timeoutId);
+        }
+    }, [wsConnected, isReady, userId, token, connect]);
+
+    const refreshAlerts = useCallback(() => {
+        if (userId && token) {
+            fetchInitialAlerts();
+        }
+    }, [userId, token, fetchInitialAlerts]);
 
     const markAlertAsRead = async (alertId: string | number) => {
         try {
@@ -93,6 +137,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 unreadCount,
                 markAlertAsRead,
                 markAllAlertsAsRead,
+                refreshAlerts
             }}
         >
             {children}
