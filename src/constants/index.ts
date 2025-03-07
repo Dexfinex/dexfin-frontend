@@ -39,7 +39,8 @@ export const CRYPTONEWS_BASE_URL = `https://${BASE_HOST_DOMAIN}/crypto-news`;
 
 export const OPENAI_BASE_URL = `https://${BASE_HOST_DOMAIN}/openai`;
 
-export const ALERT_BASE_URL = `https://${BASE_HOST_DOMAIN}/alerts`;
+// export const ALERT_BASE_URL = `https://${BASE_HOST_DOMAIN}/alerts`;
+export const ALERT_BASE_URL = `http://localhost:3000/alerts`;
 
 export const ENSO_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/enso';
 

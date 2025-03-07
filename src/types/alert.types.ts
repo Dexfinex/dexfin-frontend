@@ -11,11 +11,11 @@ export interface Alert {
     name: string;
     type: string;
     condition: 'above' | 'below';
-    value: number;
+    value: string;
     createdAt: string;
     lastTriggered: string | null;
     isActive: boolean;
-    customData?: Record<string, any>;
+    config?: Record<string, any>;
     userId?: string;
     isRead?: boolean;
 }
@@ -25,8 +25,8 @@ export interface CreateAlertDto {
     name: string;
     type: string;
     condition: 'above' | 'below';
-    value: number;
-    customData: Record<string, any>;
+    value: string;
+    config: Record<string, any>;
     isActive?: boolean;
 }
 
@@ -35,8 +35,8 @@ export interface UpdateAlertDto {
     name?: string;
     type?: string;
     condition?: 'above' | 'below';
-    value?: number;
-    customData?: Record<string, any>;
+    value?: string;
+    config?: Record<string, any>;
     isActive?: boolean;
 }
 
@@ -298,11 +298,11 @@ export enum AlertStatus {
 export type AlertCondition = 'above' | 'below';
 
 // Alert Type IDs for type safety
-export type AlertTypeId =
-    | 'price'
-    | 'volume'
-    | 'tvl'
-    | 'social'
-    | 'marketcap'
-    | 'trend'
+export type AlertTypeId = 
+    | 'price' 
+    | 'volume' 
+    | 'tvl' 
+    | 'social' 
+    | 'marketcap' 
+    | 'trend' 
     | 'whale';

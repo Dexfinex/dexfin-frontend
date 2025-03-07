@@ -17,8 +17,7 @@ export const alertApiService = {
     getAllAlerts: async (): Promise<Alert[]> => {
         try {
             const { data } = await AlertBaseApi.get('/all');
-            console.log(data);
-            return data.data;
+            return data;
         } catch (error) {
             console.error('Error fetching alerts:', error);
             throw error;
@@ -37,8 +36,8 @@ export const alertApiService = {
 
     createAlert: async (alertData: CreateAlertDto): Promise<Alert> => {
         try {
-            const { data } = await AlertBaseApi.post('', alertData);
-            return data.data;
+            const { data } = await AlertBaseApi.post('/', alertData);
+            return data;
         } catch (error) {
             console.error('Error creating alert:', error);
             throw error;
@@ -48,7 +47,7 @@ export const alertApiService = {
     updateAlert: async (id: string, alertData: UpdateAlertDto): Promise<Alert> => {
         try {
             const { data } = await AlertBaseApi.put(`/${id}`, alertData);
-            return data.data;
+            return data;
         } catch (error) {
             console.error(`Error updating alert ${id}:`, error);
             throw error;
@@ -102,7 +101,7 @@ export const alertApiService = {
             name: backendAlert.name,
             type: backendAlert.type,
             condition: backendAlert.condition,
-            value: parseFloat(backendAlert.value),
+            value: backendAlert.value,
             createdAt: new Date(backendAlert.createdAt).toLocaleString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -120,7 +119,7 @@ export const alertApiService = {
                 }) : null,
             isActive: backendAlert.isActive,
             isRead: backendAlert.isRead,
-            customData: backendAlert.customData || {},
+            config: backendAlert.config || {},
         };
     }
 };

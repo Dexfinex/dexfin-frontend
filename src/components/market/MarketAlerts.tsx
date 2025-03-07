@@ -1,63 +1,69 @@
 // File: src/components/MarketAlerts.tsx
 import React, { useState, useEffect, useContext } from 'react';
 import {
-    Bell, Settings, Plus, Trash2, RefreshCw,
-    DollarSign, LineChart, BarChart2, Users,
-    Wallet, TrendingUp, Ship, Send, MessageSquare,
-    Volume2, Search, ChevronDown, Info
+    Bell, Plus, Trash2, RefreshCw, Edit
 } from 'lucide-react';
 import { alertApiService, configureAlertApiAuth } from '../../services/alert.service';
 import { Alert, CreateAlertDto, UpdateAlertDto, alertTypes } from '../../types/alert.types';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
+import { useWebSocket } from '../../providers/WebSocketProvider';
+type AlertTypeId =
+    'PRICE_ALERT' |
+    'VOLUME_ALERT' |
+    'TVL_ALERT' |
+    'SOCIAL_ALERT' |
+    'MARKET_CAP_ALERT' |
+    'TREND_ALERT' |
+    'WHALE_ALERT';
 
-interface NotificationSettings {
-    email: {
-        enabled: boolean;
-        address: string;
-    };
-    desktop: {
-        enabled: boolean;
-    };
-    telegram: {
-        enabled: boolean;
-    };
-    discord: {
-        enabled: boolean;
-    };
-    emailPreference: 'instant' | 'hourly' | 'daily';
-    sound: boolean;
-}
+const TYPE_MAPPING: Record<string, AlertTypeId> = {
+    'price': 'PRICE_ALERT',
+    'volume': 'VOLUME_ALERT',
+    'tvl': 'TVL_ALERT',
+    'social': 'SOCIAL_ALERT',
+    'marketcap': 'MARKET_CAP_ALERT',
+    'trend': 'TREND_ALERT',
+    'whale': 'WHALE_ALERT'
+};
+
+// Reverse mapping for edit functionality
+const REVERSE_TYPE_MAPPING: Record<string, string> = {
+    'PRICE_ALERT': 'price',
+    'VOLUME_ALERT': 'volume',
+    'TVL_ALERT': 'tvl',
+    'SOCIAL_ALERT': 'social',
+    'MARKET_CAP_ALERT': 'marketcap',
+    'TREND_ALERT': 'trend',
+    'WHALE_ALERT': 'whale'
+};
 
 export const MarketAlerts: React.FC = () => {
     // Access Web3Auth context
-    const { userData, isConnected, checkWalletAndUsername } = useContext(Web3AuthContext);
-
+    const { userData, isConnected } = useContext(Web3AuthContext);
+    const { refreshAlerts } = useWebSocket();
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [showCreateAlert, setShowCreateAlert] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
+    const [showEditAlert, setShowEditAlert] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
-
-    const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
-        email: {
-            enabled: true,
-            address: ''
-        },
-        desktop: {
-            enabled: true
-        },
-        telegram: {
-            enabled: false
-        },
-        discord: {
-            enabled: false
-        },
-        emailPreference: 'instant',
-        sound: true
-    });
+    const [editingAlertId, setEditingAlertId] = useState<string | null>(null);
 
     const [newAlert, setNewAlert] = useState<{
+        type: string;
+        name: string;
+        condition: 'above' | 'below';
+        value: string;
+        customData: Record<string, any>;
+    }>({
+        type: '',
+        name: '',
+        condition: 'above',
+        value: '',
+        customData: {}
+    });
+
+    const [editAlert, setEditAlert] = useState<{
         type: string;
         name: string;
         condition: 'above' | 'below';
@@ -86,6 +92,11 @@ export const MarketAlerts: React.FC = () => {
         }
     }, [isConnected]);
 
+    // Initialize alerts as an empty array
+    useEffect(() => {
+        setAlerts([]);
+    }, []);
+
     // Fetch alerts from API
     const fetchAlerts = async () => {
         if (!isConnected) {
@@ -97,6 +108,7 @@ export const MarketAlerts: React.FC = () => {
             setLoading(true);
             setError(null);
             const data = await alertApiService.getAllAlerts();
+            console.log(data);
             setAlerts(data);
         } catch (err) {
             setError('Failed to load alerts. Please try again later.');
@@ -112,17 +124,9 @@ export const MarketAlerts: React.FC = () => {
             setRefreshing(true);
             await fetchAlerts();
         } catch (err) {
-            
+            // Error handling
         } finally {
             setRefreshing(false);
-        }
-    };
-
-    const handleConnectWallet = async () => {
-        try {
-            await checkWalletAndUsername();
-        } catch (err) {
-            console.error('Failed to connect wallet:', err);
         }
     };
 
@@ -138,15 +142,14 @@ export const MarketAlerts: React.FC = () => {
         try {
             const alertData: CreateAlertDto = {
                 name: newAlert.name,
-                type: newAlert.type,
+                type: TYPE_MAPPING[newAlert.type] || newAlert.type,
                 condition: newAlert.condition,
-                value: parseFloat(newAlert.value),
-                customData: newAlert.customData,
-                isActive: true
+                value: newAlert.value,
+                config: newAlert.customData,
             };
 
             const createdAlert = await alertApiService.createAlert(alertData);
-
+            console.log(createdAlert)
             // Add the new alert to the list
             setAlerts(prev => [...prev, createdAlert]);
 
@@ -157,6 +160,58 @@ export const MarketAlerts: React.FC = () => {
         } catch (err) {
             console.error('Error creating alert:', err);
         }
+    };
+
+    // Edit alert function
+    const handleEditAlert = async () => {
+        if (!isConnected || !editingAlertId) {
+            return;
+        }
+
+        if (!editAlert.name || !editAlert.value) {
+            return;
+        }
+
+        try {
+            const alertData: UpdateAlertDto = {
+                name: editAlert.name,
+                type: TYPE_MAPPING[editAlert.type] || editAlert.type,
+                condition: editAlert.condition,
+                value: editAlert.value,
+                config: editAlert.customData,
+            };
+
+            const updatedAlert = await alertApiService.updateAlert(editingAlertId, alertData);
+
+            // Update the alert in the list
+            setAlerts(prev => prev.map(alert =>
+                alert.id === editingAlertId ? updatedAlert : alert
+            ));
+
+            // Reset form and close modal
+            setShowEditAlert(false);
+            setEditingAlertId(null);
+            setEditAlert({ type: '', name: '', condition: 'above', value: '', customData: {} });
+
+        } catch (err) {
+            console.error('Error updating alert:', err);
+        }
+    };
+
+    // Start editing an alert
+    const startEditAlert = (alert: Alert) => {
+        // Convert the API alert type to the UI type
+        const uiType = REVERSE_TYPE_MAPPING[alert.type] || '';
+
+        setEditingAlertId(alert.id);
+        setEditAlert({
+            type: uiType,
+            name: alert.name,
+            condition: alert.condition as 'above' | 'below',
+            value: alert.value.toString(),
+            customData: alert.config || {}
+        });
+        setShowEditAlert(true);
     };
 
     // Toggle alert status
@@ -186,6 +241,7 @@ export const MarketAlerts: React.FC = () => {
 
         try {
             await alertApiService.deleteAlert(id);
+            refreshAlerts();
 
             // Remove the alert from the list
             setAlerts(prev => prev.filter(alert => alert.id !== id));
@@ -197,7 +253,9 @@ export const MarketAlerts: React.FC = () => {
 
     // Get alert type configuration
     const getTypeConfig = (type: string) => {
-        return alertTypes.find(t => t.id === type);
+        // Map from uppercase to lowercase for finding in alertTypes
+        const lowercaseType = type.toLowerCase().replace('_alert', '');
+        return alertTypes.find(t => t.id === lowercaseType);
     };
 
     // Get alert type label with styling
@@ -210,7 +268,7 @@ export const MarketAlerts: React.FC = () => {
         ) : null;
     };
 
-    // Handle custom field changes
+    // Handle custom field changes for new alert
     const handleCustomFieldChange = (fieldName: string, value: string) => {
         setNewAlert(prev => ({
             ...prev,
@@ -221,9 +279,20 @@ export const MarketAlerts: React.FC = () => {
         }));
     };
 
-    // Render custom fields based on selected alert type
-    const renderCustomFields = () => {
-        const selectedType = alertTypes.find(type => type.id === newAlert.type);
+    // Handle custom field changes for edit alert
+    const handleEditCustomFieldChange = (fieldName: string, value: string) => {
+        setEditAlert(prev => ({
+            ...prev,
+            customData: {
+                ...prev.customData,
+                [fieldName]: value
+            }
+        }));
+    };
+
+    // Render custom fields based on selected alert type for new alert
+    const renderCustomFields = (alert: typeof newAlert, changeHandler: (fieldName: string, value: string) => void) => {
+        const selectedType = alertTypes.find(type => type.id === alert.type);
         if (!selectedType?.customFields) return null;
 
         return (
@@ -233,8 +302,8 @@ export const MarketAlerts: React.FC = () => {
                         <label className="block text-sm text-white/60 mb-2">{field.label}</label>
                         {field.type === 'select' ? (
                             <select
-                                value={(newAlert.customData as any)[field.name] || ''}
-                                onChange={e => handleCustomFieldChange(field.name, e.target.value)}
+                                value={(alert.customData as any)[field.name] || ''}
+                                onChange={e => changeHandler(field.name, e.target.value)}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 outline-none focus:border-white/20"
                             >
                                 <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>
@@ -247,8 +316,8 @@ export const MarketAlerts: React.FC = () => {
                         ) : (
                             <input
                                 type={field.type}
-                                value={(newAlert.customData as any)[field.name] || ''}
-                                onChange={e => handleCustomFieldChange(field.name, e.target.value)}
+                                value={(alert.customData as any)[field.name] || ''}
+                                onChange={e => changeHandler(field.name, e.target.value)}
                                 placeholder={field.placeholder}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 outline-none focus:border-white/20"
                             />
@@ -259,56 +328,35 @@ export const MarketAlerts: React.FC = () => {
         );
     };
 
-    // Save notification settings
-    const saveNotificationSettings = () => {
-        setShowSettings(false);
-    };
-
     return (
         <div className="p-6">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                     <h2 className="text-xl font-semibold">Alerts</h2>
-                    {isConnected && (
+                    {isConnected && alerts && Array.isArray(alerts) && alerts.length > 0 && (
                         <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-sm">
-                            {alerts.filter(a => a.isActive).length} Active
+                            {alerts.filter(a => a && a.isActive).length} Active
                         </span>
                     )}
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {isConnected ? (
-                        <>
-                            <button
-                                onClick={handleRefresh}
-                                className={`p-2 hover:bg-white/10 rounded-lg transition-colors ${refreshing ? 'animate-spin' : ''}`}
-                                disabled={refreshing}
-                            >
-                                <RefreshCw className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={() => setShowSettings(true)}
-                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                            >
-                                <Settings className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={() => setShowCreateAlert(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>Create Alert</span>
-                            </button>
-                        </>
-                    ) : (
+                    <>
                         <button
-                            onClick={handleConnectWallet}
+                            onClick={handleRefresh}
+                            className={`p-2 hover:bg-white/10 rounded-lg transition-colors ${refreshing ? 'animate-spin' : ''}`}
+                            disabled={refreshing}
+                        >
+                            <RefreshCw className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={() => setShowCreateAlert(true)}
                             className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
                         >
-                            <Wallet className="w-4 h-4" />
-                            <span>Connect Wallet</span>
+                            <Plus className="w-4 h-4" />
+                            <span>Create Alert</span>
                         </button>
-                    )}
+                    </>
                 </div>
             </div>
 
@@ -316,23 +364,6 @@ export const MarketAlerts: React.FC = () => {
             {error && (
                 <div className="bg-red-500/20 text-red-400 p-4 rounded-lg mb-4">
                     {error}
-                </div>
-            )}
-
-            {/* Not connected state */}
-            {!isConnected && !loading && (
-                <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-xl">
-                    <Wallet className="w-16 h-16 text-white/20 mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Connect Your Wallet</h3>
-                    <p className="text-white/60 mb-4 text-center max-w-md">
-                        Connect your wallet to view and manage your market alerts
-                    </p>
-                    <button
-                        onClick={handleConnectWallet}
-                        className="px-6 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
-                    >
-                        Connect Now
-                    </button>
                 </div>
             )}
 
@@ -346,7 +377,7 @@ export const MarketAlerts: React.FC = () => {
             {/* Alerts table (only show when connected and not loading) */}
             {isConnected && !loading && (
                 <div className="bg-white/5 rounded-xl overflow-hidden">
-                    {alerts.length === 0 ? (
+                    {!alerts || alerts.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <Bell className="w-12 h-12 text-white/20 mb-4" />
                             <p className="text-white/60">No alerts found</p>
@@ -371,7 +402,7 @@ export const MarketAlerts: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {alerts.map(alert => (
+                                {Array.isArray(alerts) && alerts.map(alert => alert && (
                                     <tr key={alert.id} className="border-b border-white/5 last:border-0">
                                         <td className="py-3 px-4">
                                             {getTypeLabel(alert.type)}
@@ -398,12 +429,20 @@ export const MarketAlerts: React.FC = () => {
                                             </button>
                                         </td>
                                         <td className="py-3 px-4">
-                                            <button
-                                                onClick={() => deleteAlert(alert.id)}
-                                                className="p-1 hover:bg-white/10 rounded-lg transition-colors text-white/60 hover:text-red-400"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex items-center space-x-2">
+                                                <button
+                                                    onClick={() => startEditAlert(alert)}
+                                                    className="p-1 hover:bg-white/10 rounded-lg transition-colors text-white/60 hover:text-blue-400"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteAlert(alert.id)}
+                                                    className="p-1 hover:bg-white/10 rounded-lg transition-colors text-white/60 hover:text-red-400"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -464,7 +503,7 @@ export const MarketAlerts: React.FC = () => {
                                         />
                                     </div>
 
-                                    {renderCustomFields()}
+                                    {renderCustomFields(newAlert, handleCustomFieldChange)}
 
                                     <div>
                                         <label className="block text-sm text-white/60 mb-2">Condition</label>
@@ -504,8 +543,8 @@ export const MarketAlerts: React.FC = () => {
                                 <button
                                     onClick={handleCreateAlert}
                                     className={`px-4 py-2 rounded-lg transition-colors ${!newAlert.type || !newAlert.name || !newAlert.value
-                                            ? 'bg-blue-500/50 cursor-not-allowed'
-                                            : 'bg-blue-500 hover:bg-blue-600'
+                                        ? 'bg-blue-500/50 cursor-not-allowed'
+                                        : 'bg-blue-500 hover:bg-blue-600'
                                         }`}
                                     disabled={!newAlert.type || !newAlert.name || !newAlert.value}
                                 >
@@ -517,212 +556,82 @@ export const MarketAlerts: React.FC = () => {
                 </div>
             )}
 
-            {/* Settings Modal */}
-            {showSettings && (
+            {/* Edit Alert Modal */}
+            {showEditAlert && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowSettings(false)} />
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowEditAlert(false)} />
                     <div className="relative glass border border-white/10 rounded-xl p-6 w-[500px]">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-semibold">Notification Settings</h3>
+                            <div>
+                                <h3 className="text-xl font-semibold mb-3">Edit Alert</h3>
+                                {editAlert.type && (
+                                    <div className="mt-1">
+                                        {getTypeLabel(TYPE_MAPPING[editAlert.type] || editAlert.type)}
+                                    </div>
+                                )}
+                            </div>
                             <button
-                                onClick={() => setShowSettings(false)}
+                                onClick={() => setShowEditAlert(false)}
                                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                             >
                                 <Plus className="w-4 h-4 rotate-45" />
                             </button>
                         </div>
 
-                        <div className="space-y-6">
-                            {/* Notification Channels */}
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <Send className="w-5 h-5" />
-                                        <div>
-                                            <div className="font-medium">Email Alerts</div>
-                                            <div className="text-sm text-white/60">Receive alerts via email</div>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => setNotificationSettings(prev => ({
-                                            ...prev,
-                                            email: { ...prev.email, enabled: !prev.email.enabled }
-                                        }))}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notificationSettings.email.enabled ? 'bg-green-500' : 'bg-white/10'
-                                            }`}
-                                    >
-                                        <span
-                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notificationSettings.email.enabled ? 'translate-x-6' : 'translate-x-1'
-                                                }`}
-                                        />
-                                    </button>
-                                </div>
-
-                                {notificationSettings.email.enabled && (
-                                    <input
-                                        type="email"
-                                        value={notificationSettings.email.address}
-                                        onChange={e => setNotificationSettings(prev => ({
-                                            ...prev,
-                                            email: { ...prev.email, address: e.target.value }
-                                        }))}
-                                        placeholder="Enter your email"
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 outline-none focus:border-white/20"
-                                    />
-                                )}
-
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <Bell className="w-5 h-5" />
-                                        <div>
-                                            <div className="font-medium">Desktop Notifications</div>
-                                            <div className="text-sm text-white/60">Get browser notifications</div>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => setNotificationSettings(prev => ({
-                                            ...prev,
-                                            desktop: { enabled: !prev.desktop.enabled }
-                                        }))}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notificationSettings.desktop.enabled ? 'bg-green-500' : 'bg-white/10'
-                                            }`}
-                                    >
-                                        <span
-                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notificationSettings.desktop.enabled ? 'translate-x-6' : 'translate-x-1'
-                                                }`}
-                                        />
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <MessageSquare className="w-5 h-5" />
-                                        <div>
-                                            <div className="font-medium">Telegram Alerts</div>
-                                            <div className="text-sm text-white/60">Get alerts on Telegram</div>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => setNotificationSettings(prev => ({
-                                            ...prev,
-                                            telegram: { enabled: !prev.telegram.enabled }
-                                        }))}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notificationSettings.telegram.enabled ? 'bg-green-500' : 'bg-white/10'
-                                            }`}
-                                    >
-                                        <span
-                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notificationSettings.telegram.enabled ? 'translate-x-6' : 'translate-x-1'
-                                                }`}
-                                        />
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <MessageSquare className="w-5 h-5" />
-                                        <div>
-                                            <div className="font-medium">Discord Alerts</div>
-                                            <div className="text-sm text-white/60">Get alerts on Discord</div>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => setNotificationSettings(prev => ({
-                                            ...prev,
-                                            discord: { enabled: !prev.discord.enabled }
-                                        }))}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notificationSettings.discord.enabled ? 'bg-green-500' : 'bg-white/10'
-                                            }`}
-                                    >
-                                        <span
-                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notificationSettings.discord.enabled ? 'translate-x-6' : 'translate-x-1'
-                                                }`}
-                                        />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Email Preferences */}
-                            {notificationSettings.email.enabled && (
-                                <div>
-                                    <h4 className="text-lg font-medium mb-4">Email Preferences</h4>
-                                    <div className="space-y-3">
-                                        <label className="flex items-center gap-3">
-                                            <input
-                                                type="radio"
-                                                checked={notificationSettings.emailPreference === 'instant'}
-                                                onChange={() => setNotificationSettings(prev => ({
-                                                    ...prev,
-                                                    emailPreference: 'instant'
-                                                }))}
-                                                className="form-radio text-blue-500"
-                                            />
-                                            <span>Send instantly</span>
-                                        </label>
-                                        <label className="flex items-center gap-3">
-                                            <input
-                                                type="radio"
-                                                checked={notificationSettings.emailPreference === 'hourly'}
-                                                onChange={() => setNotificationSettings(prev => ({
-                                                    ...prev,
-                                                    emailPreference: 'hourly'
-                                                }))}
-                                                className="form-radio text-blue-500"
-                                            />
-                                            <span>Hourly digest</span>
-                                        </label>
-                                        <label className="flex items-center gap-3">
-                                            <input
-                                                type="radio"
-                                                checked={notificationSettings.emailPreference === 'daily'}
-                                                onChange={() => setNotificationSettings(prev => ({
-                                                    ...prev,
-                                                    emailPreference: 'daily'
-                                                }))}
-                                                className="form-radio text-blue-500"
-                                            />
-                                            <span>Daily digest</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Sound & Display */}
+                        <div className="space-y-4">
                             <div>
-                                <h4 className="text-lg font-medium mb-4">Sound & Display</h4>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <Volume2 className="w-5 h-5" />
-                                        <div>
-                                            <div className="font-medium">Alert Sounds</div>
-                                            <div className="text-sm text-white/60">Play sound for new alerts</div>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => setNotificationSettings(prev => ({
-                                            ...prev,
-                                            sound: !prev.sound
-                                        }))}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notificationSettings.sound ? 'bg-green-500' : 'bg-white/10'
-                                            }`}
+                                <label className="block text-sm text-white/60 mb-2">Alert Name</label>
+                                <input
+                                    type="text"
+                                    value={editAlert.name}
+                                    onChange={e => setEditAlert(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="Enter alert name"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 outline-none focus:border-white/20"
+                                />
+                            </div>
+
+                            {editAlert.type && renderCustomFields(editAlert, handleEditCustomFieldChange)}
+
+                            <div>
+                                <label className="block text-sm text-white/60 mb-2">Condition</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <select
+                                        value={editAlert.condition}
+                                        onChange={e => setEditAlert(prev => ({ ...prev, condition: e.target.value as 'above' | 'below' }))}
+                                        className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 outline-none focus:border-white/20"
                                     >
-                                        <span
-                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notificationSettings.sound ? 'translate-x-6' : 'translate-x-1'
-                                                }`}
-                                        />
-                                    </button>
+                                        <option value="above">Above</option>
+                                        <option value="below">Below</option>
+                                    </select>
+                                    <input
+                                        type="text"
+                                        value={editAlert.value}
+                                        onChange={e => setEditAlert(prev => ({ ...prev, value: e.target.value }))}
+                                        placeholder="Enter value"
+                                        className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 outline-none focus:border-white/20"
+                                    />
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-3">
+                            <div className="flex items-center gap-2 text-sm text-white/60">
+                                <Bell className="w-4 h-4" />
+                                <span>You'll receive notifications when your conditions are met</span>
+                            </div>
+
+                            <div className="flex justify-end gap-3 mt-6">
                                 <button
-                                    onClick={() => setShowSettings(false)}
+                                    onClick={() => setShowEditAlert(false)}
                                     className="px-4 py-2 hover:bg-white/10 rounded-lg transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={saveNotificationSettings}
-                                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                                    onClick={handleEditAlert}
+                                    className={`px-4 py-2 rounded-lg transition-colors ${!editAlert.name || !editAlert.value
+                                        ? 'bg-blue-500/50 cursor-not-allowed'
+                                        : 'bg-blue-500 hover:bg-blue-600'
+                                        }`}
+                                    disabled={!editAlert.name || !editAlert.value}
                                 >
                                     Save Changes
                                 </button>
