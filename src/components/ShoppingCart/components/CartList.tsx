@@ -158,9 +158,9 @@ const CartList: React.FC<ExtendedCartListProps> = React.memo(({
                     </button>
                 </div>
                 <div className="flex flex-col items-center glass justify-center flex-1 text-center p-8">
-                    <ShoppingCart className="w-12 h-12 text-black/40 dark:text-white/40 mb-4" />
+                    <ShoppingCart className="w-12 h-12  mb-4" />
                     <p className="text-lg font-medium mb-2">Your cart is empty</p>
-                    <p className="text-black/60 dark:text-white/60">Add some coins to get started</p>
+                    <p className="">Add some coins to get started</p>
                 </div>
             </div>
         )
