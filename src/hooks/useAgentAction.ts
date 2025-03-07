@@ -49,31 +49,52 @@ export const useAgentMutation = () => {
           console.error("Wallet signer not found");
           return;
         }
-        
-        const actionBundle = await enSoService.getRouter({
+
+        const actionApprove = await enSoService.getApprove({
           fromAddress: data.fromAddress,
           chainId: 1,
-          receiver: data.fromAddress,
-          tokenIn: ["0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"],
-          amountIn: [(data.amount * 1000000).toString()],
-          tokenOut: [data.transaction.address.toString()]
+          tokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          amount: (data.amount * 1000000).toString(),
         })
-        console.log(actionBundle);
-        const tmp: any = {
-          data: actionBundle.tx.data,
-          from: actionBundle.tx.from,
-          to: actionBundle.tx.to,
-          value: actionBundle.tx.value,
+
+        const approve: any = {
+          data: actionApprove.tx.data,
+          from: actionApprove.tx.from,
+          to: actionApprove.tx.to,
           chainId: 1,
-          gasLimit: actionBundle.gas,
+          gasLimit: actionApprove.gas,
         }
+
+        const approveTx = await signer?.sendTransaction({ ...approve });
         
-        let scan = '';
-        const tx = await signer?.sendTransaction({...tmp});
-        const receipt = await tx.wait();
-        console.log("Transaction successful:", receipt);
-        scan = `${mapChainId2ViemChain[1].blockExplorers?.default.url}/tx/${receipt.transactionHash}`;
-        return scan;
+        const approveReceipt = await approveTx.wait();
+        console.log("Token approved:", approveReceipt);
+        if (approveReceipt) {
+          const actionBundle = await enSoService.getRouter({
+            fromAddress: data.fromAddress,
+            chainId: 1,
+            receiver: data.fromAddress,
+            tokenIn: ["0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"],
+            amountIn: [(data.amount * 1000000).toString()],
+            tokenOut: [data.transaction.address.toString()]
+          })
+
+          const tmp: any = {
+            data: actionBundle.tx.data,
+            from: actionBundle.tx.from,
+            to: actionBundle.tx.to,
+            value: actionBundle.tx.value,
+            chainId: 1,
+            gasLimit: actionBundle.gas,
+          }
+
+          let scan = '';
+          const tx = await signer?.sendTransaction({ ...tmp });
+          const receipt = await tx.wait();
+          console.log("Transaction successful:", receipt);
+          scan = `${mapChainId2ViemChain[1].blockExplorers?.default.url}/tx/${receipt.transactionHash}`;
+          return scan;
+        }
       } else {
         if (!walletClient) {
           console.error("Wallet client not found");
