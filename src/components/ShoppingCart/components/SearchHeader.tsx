@@ -16,9 +16,9 @@ const categories = ['All', 'meme', 'ethereum', 'base', 'avalanche', 'bsc', 'opti
 // Sort option display names
 const sortDisplayNames: Record<SortOption, string> = {
     'marketCap': 'Market cap',
-    'priceChange24h': 'priceChange24h',
-    'price': 'price',
-    'marketCapRank': 'marketCapRank'
+    'priceChange24h': 'Price Change 24',
+    'price': 'Price',
+    'marketCapRank': 'Market Cap Rank'
 };
 
 interface SearchHeaderWithSortProps extends SearchHeaderProps {
