@@ -1,1 +1,801 @@
-export const tokenList = [{"symbol":"DOGE","name":"Dogecoin","address":"dogecoin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/5/large/dogecoin.png?1696501409","category":"token"},{"symbol":"SHIB","name":"Shiba Inu","address":"shiba-inu","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/11939/large/shiba.png?1696511800","category":"token"},{"symbol":"TRUMP","name":"Official Trump","address":"official-trump","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/53746/large/trump.png?1737171561","category":"token"},{"symbol":"PEPE","name":"Pepe","address":"pepe","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/29850/large/pepe-token.jpeg?1696528776","category":"token"},{"symbol":"BONK","name":"Bonk","address":"bonk","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/28600/large/bonk.jpg?1696527587","category":"token"},{"symbol":"FARTCOIN","name":"Fartcoin","address":"fartcoin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/50891/large/fart.jpg?1729503972","category":"token"},{"symbol":"PENGU","name":"Pudgy Penguins","address":"pudgy-penguins","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52622/large/PUDGY_PENGUINS_PENGU_PFP.png?1733809110","category":"token"},{"symbol":"WIF","name":"dogwifhat","address":"dogwifcoin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/33566/large/dogwifhat.jpg?1702499428","category":"token"},{"symbol":"FLOKI","name":"FLOKI","address":"floki","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/16746/large/PNG_image.png?1696516318","category":"token"},{"symbol":"SPX","name":"SPX6900","address":"spx6900","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/31401/large/centeredcoin_%281%29.png?1737048493","category":"token"},{"symbol":"AI16Z","name":"ai16z","address":"ai16z","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51090/large/AI16Z.jpg?1730027175","category":"token"},{"symbol":"BRETT","name":"Brett","address":"based-brett","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/35529/large/1000050750.png?1709031995","category":"token"},{"symbol":"DOGE","name":"Binance-Peg Dogecoin","address":"binance-peg-dogecoin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/15768/large/dogecoin.png?1696515392","category":"token"},{"symbol":"GIGA","name":"Gigachad","address":"gigachad-2","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/34755/large/IMG_0015.png?1705957165","category":"token"},{"symbol":"MELANIA","name":"Melania Meme","address":"melania-meme","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/53775/large/melania-meme.png?1737329885","category":"token"},{"symbol":"MEOW","name":"MEOW","address":"meow","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/38796/large/MEOW.png?1718897555","category":"token"},{"symbol":"MOG","name":"Mog Coin","address":"mog-coin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/31059/large/MOG_LOGO_200x200.png?1696529893","category":"token"},{"symbol":"AIXBT","name":"aixbt by Virtuals","address":"aixbt","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51784/large/3.png?1731981138","category":"token"},{"symbol":"NOT","name":"Notcoin","address":"notcoin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/33453/large/rFmThDiD_400x400.jpg?1701876350","category":"token"},{"symbol":"DOG","name":"Dog (Bitcoin)","address":"dog-go-to-the-moon-rune","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/37352/large/DOGGOTOTHEMOON.png?1714096969","category":"token"},{"symbol":"TURBO","name":"Turbo","address":"turbo","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/30117/large/TurboMark-QL_200.png?1708079597","category":"token"},{"symbol":"MEW","name":"cat in a dogs world","address":"cat-in-a-dogs-world","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/36440/large/MEW.png?1711442286","category":"token"},{"symbol":"POPCAT","name":"Popcat","address":"popcat","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/33760/large/image.jpg?1702964227","category":"token"},{"symbol":"SNEK","name":"Snek","address":"snek","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/30496/large/snek_icon_200.png?1703346174","category":"token"},{"symbol":"ARC","name":"AI Rig Complex","address":"ai-rig-complex","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52701/large/u312bPNA_400x400.jpg?1734044765","category":"token"},{"symbol":"FAI","name":"Freysa AI","address":"freysa-ai","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52315/large/FAI.png?1733076295","category":"token"},{"symbol":"PNUT","name":"Peanut the Squirrel","address":"peanut-the-squirrel","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51301/large/Peanut_the_Squirrel.png?1734941241","category":"token"},{"symbol":"AGENTFUN","name":"AgentFun.AI","address":"agentfun-ai","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52133/large/AIFUN_%282%29.png?1732639482","category":"token"},{"symbol":"BABYDOGE","name":"Baby Doge Coin","address":"baby-doge-coin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/16125/large/babydoge.jpg?1696515731","category":"token"},{"symbol":"UFD","name":"Unicorn Fart Dust","address":"unicorn-fart-dust","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52931/large/untitled.png?1734708671","category":"token"},{"symbol":"MEME","name":"Memecoin","address":"memecoin-2","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/32528/large/memecoin_%282%29.png?1698912168","category":"token"},{"symbol":"WOULD","name":"would","address":"would","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52316/large/QmXJR6Q2zkqpotTY2nMP6k76LykKW7z4tgfQfH1ZUo57Dt.jpeg?1733076468","category":"token"},{"symbol":"BOME","name":"BOOK OF MEME","address":"book-of-meme","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/36071/large/bome.png?1710407255","category":"token"},{"symbol":"GOAT","name":"Goatseus Maximus","address":"goatseus-maximus","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/50717/large/GOAT_LOGO_NEW.jpg?1731292759","category":"token"},{"symbol":"AKUMA","name":"Akuma Inu","address":"akuma-inu","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52182/large/IMG_8186.png?1735828700","category":"token"},{"symbol":"NEIRO","name":"Neiro","address":"neiro-3","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/39488/large/neiro.jpg?1731449567","category":"token"},{"symbol":"CORGIAI","name":"CorgiAI","address":"corgiai","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/30933/large/Token.png?1696529775","category":"token"},{"symbol":"NPC","name":"Non-Playable Coin","address":"non-playable-coin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/31193/large/NPC_200x200.png?1696530021","category":"token"},{"symbol":"FWOG","name":"Fwog","address":"fwog","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/39453/large/fwog.png?1722318442","category":"token"},{"symbol":"DOGS","name":"Dogs","address":"dogs-2","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/39699/large/dogs_logo_200x200.png?1723687163","category":"token"},{"symbol":"PEPECOIN","name":"PepeCoin","address":"pepecoin-2","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/30219/large/pepecoin-icon_200x200.png?1735790725","category":"token"},{"symbol":"ACT","name":"Act I The AI Prophecy","address":"act-i-the-ai-prophecy","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/50984/large/ai_prophecy.jpg?1729653897","category":"token"},{"symbol":"CHEEMS","name":"Cheems Token","address":"cheems-token","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/30376/large/Hg4_Lhbg_400x400.jpg?1696529270","category":"token"},{"symbol":"PEOPLE","name":"ConstitutionDAO","address":"constitutiondao","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/20612/large/GN_UVm3d_400x400.jpg?1696520017","category":"token"},{"symbol":"AVA","name":"Ava AI","address":"ava-ai","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51935/large/7VZQ0qhB_400x400_%282%29.jpg?1732206907","category":"token"},{"symbol":"APU","name":"Apu Apustaja","address":"apu-s-club","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/35986/large/200x200.png?1710308147","category":"token"},{"symbol":"BITCOIN","name":"HarryPotterObamaSonic10Inu (ETH)","address":"harrypotterobamasonic10in","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/30323/large/hpos10i_logo_casino_night-dexview.png?1696529224","category":"token"},{"symbol":"SWARMS","name":"Swarms","address":"swarms","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52988/large/swarms.jpg?1734921510","category":"token"},{"symbol":"SKI","name":"Ski Mask Dog","address":"ski-mask-dog","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/37195/large/32992128-F52F-4346-84CA-8E0C48F43606.jpeg?1713676521","category":"token"},{"symbol":"DOGE","name":"Department Of Government Efficiency","address":"department-of-government-efficiency","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/39841/large/IMG_9775.PNG?1729771739","category":"token"},{"symbol":"AIC","name":"AI Companions","address":"ai-companions","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/40130/large/AI_Companions.png?1725942702","category":"token"},{"symbol":"MOODENG","name":"Moo Deng","address":"moo-deng","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/50264/large/MOODENG.jpg?1726726975","category":"token"},{"symbol":"TOSHI","name":"Toshi","address":"toshi","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/31126/large/Toshi_Logo_-_Circular.png?1721677476","category":"token"},{"symbol":"ZEREBRO","name":"Zerebro","address":"zerebro","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51289/large/zerebro_2.png?1730588883","category":"token"},{"symbol":"PURR","name":"Purr","address":"purr-2","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/37125/large/PURR_CG.png?1713368828","category":"token"},{"symbol":"DEGEN","name":"Degen (Base)","address":"degen-base","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/34515/large/android-chrome-512x512.png?1706198225","category":"token"},{"symbol":"ELON","name":"Dogelon Mars","address":"dogelon-mars","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/14962/large/6GxcPRo3_400x400.jpg?1696514622","category":"token"},{"symbol":"CAT","name":"Simon's Cat","address":"simon-s-cat","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/39765/large/Simon's_Cat_Logo.png?1724017505","category":"token"},{"symbol":"ANDY","name":"ANDY ETH","address":"andy-the-wisguy","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/35910/large/IMG_20240309_044840_797.jpg?1710179397","category":"token"},{"symbol":"PONKE","name":"PONKE","address":"ponke","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/33929/large/BLANK_BLACK.png?1736939988","category":"token"},{"symbol":"CULT","name":"Milady Cult Coin","address":"milady-cult-coin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52583/large/cult.jpg?1733712273","category":"token"},{"symbol":"WOLF","name":"LandWolf","address":"landwolf-0x67","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/37403/large/wolf_200x200.png?1715222165","category":"token"},{"symbol":"PEPE","name":"Based Pepe","address":"based-pepe","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/39763/large/based_pepe_transparent.png?1724010222","category":"token"},{"symbol":"PIPPIN","name":"pippin","address":"pippin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51589/large/pippin_logo.png?1731570163","category":"token"},{"symbol":"MOBY","name":"Moby AI","address":"moby-ai","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/53613/large/PFP_V3.png?1736888476","category":"token"},{"symbol":"PUFF","name":"Puff The Dragon","address":"puff-the-dragon","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/35950/large/photo_2024-03-11_10.18.27.jpeg?1710240090","category":"token"},{"symbol":"GME","name":"GME (Ethereum)","address":"game-stop","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/37895/large/_GME_New_Logo.png?1733640757","category":"token"},{"symbol":"BINK","name":"Big Dog Fink","address":"big-dog-fink","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51674/large/IMG_6585.png?1731774784","category":"token"},{"symbol":"OSAK","name":"Osaka Protocol","address":"osaka-protocol","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/30911/large/OSAK_LOGO_200x200.png?1723662197","category":"token"},{"symbol":"M3M3","name":"M3M3","address":"m3m3","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52501/large/m3m3.jpg?1733471063","category":"token"},{"symbol":"PUPS","name":"Pups (Bitcoin)","address":"rune-pups","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/37159/large/token_logo.png?1732383184","category":"token"},{"symbol":"BONE","name":"Bone ShibaSwap","address":"bone-shibaswap","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/16916/large/bone_icon.png?1696516487","category":"token"},{"symbol":"GRIFT","name":"ORBIT","address":"orbit-3","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52598/large/4.png?1733741120","category":"token"},{"symbol":"SHISHA","name":"Shisha Coin [OLD]","address":"shisha-coin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/39843/large/logo-shisha.png?1733992642","category":"token"},{"symbol":"WZRD","name":"Bitcoin Wizards","address":"bitcoin-wizards","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/33425/large/78e454a7f80334c3e2ac89a314e79e0.jpg?1701769164","category":"token"},{"symbol":"REKT","name":"Rekt","address":"rekt-4","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51727/large/rektcion_trans_200px.png?1731910587","category":"token"},{"symbol":"PEPU","name":"Pepe Unchained","address":"pepe-unchained","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52681/large/wn6wNj1C_400x400.jpg?1734021973","category":"token"},{"symbol":"CHILLGUY","name":"Just a chill guy","address":"chill-guy","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51746/large/Scherm%C2%ADafbeelding_2024-11-15_om_20.57.58.png?1731926037","category":"token"},{"symbol":"RETARDIO","name":"RETARDIO","address":"retardio","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/35759/large/RETARDIO_LOGO.png?1728587088","category":"token"},{"symbol":"STNK","name":"Stonks","address":"stonks-4","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52124/large/hehe.0fe13131.png?1732609017","category":"token"},{"symbol":"SLERF","name":"Slerf","address":"slerf","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/36178/large/slerf.jpeg?1710753228","category":"token"},{"symbol":"VADER","name":"VaderAI by Virtuals","address":"vaderai-by-virtuals","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51910/large/kare_pepe.png?1733345833","category":"token"},{"symbol":"BEAR","name":"TEDDY BEAR","address":"teddy-bear","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/32028/large/TEDDYBEAR-COINMARKETCAP-LOGO-200X200.png?1705513787","category":"token"},{"symbol":"BAN","name":"Comedian","address":"comedian","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51100/large/ban.jpg?1730085215","category":"token"},{"symbol":"MCDULL","name":"McDull (Meme)","address":"mcdull","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51176/large/LNPFe2mY_400x400.jpg?1730297902","category":"token"},{"symbol":"MAX","name":"MAX","address":"max-2","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52378/large/btc.png?1733257730","category":"token"},{"symbol":"SHIRO","name":"Shiro Neko","address":"shiro-neko-2","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52406/large/Shiro_Neko.png?1733453572","category":"token"},{"symbol":"ALCH","name":"Alchemist AI","address":"alchemist-ai","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52302/large/small-logo.png?1733053544","category":"token"},{"symbol":"ARMY","name":"XRP ARMY","address":"army-3","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/53227/large/-5967456750116390278_99.jpg?1735765085","category":"token"},{"symbol":"HIPPO","name":"sudeng","address":"sudeng","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/50450/large/IMG_20250110_123959_730.jpg?1736511660","category":"token"},{"symbol":"ELIZA","name":"Eliza","address":"eliza","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51825/large/eliza.jpg?1732037151","category":"token"},{"symbol":"USA","name":"American Coin","address":"american-coin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/37000/large/american-removebg-preview.png?1713149642","category":"token"},{"symbol":"LOFI","name":"LOFI","address":"lofi-2","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52058/large/LOFI.png?1732454544","category":"token"},{"symbol":"SUNDOG","name":"Sundog","address":"sundog","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/39752/large/sundog.png?1723794864","category":"token"},{"symbol":"MONKY","name":"Wise Monkey","address":"wise-monkey","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/52663/large/MONKY_Logo-1_%281%29.png?1734006848","category":"token"},{"symbol":"MLG","name":"360noscope420blazeit","address":"360noscope420blazeit","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/51079/large/MLGTICKERIMAGE2_%283%29.png?1732899940","category":"token"},{"symbol":"COQ","name":"Coq Inu","address":"coq-inu","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/33511/large/Coin_CoqInu_1200px.png?1702041053","category":"token"},{"symbol":"PEP","name":"Pepecoin","address":"pepecoin-network","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/36520/large/Pepecoin_onWhite_IconOnly-RGB__Converted_200x200.png?1732384918","category":"token"},{"symbol":"LADYS","name":"Milady Meme Coin","address":"milady-meme-coin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/30194/large/LADYS_Clean.png?1725897475","category":"token"},{"symbol":"COCO","name":"COCO COIN","address":"coco-coin","chainId":1,"decimals":18,"logoURI":"https://coin-images.coingecko.com/coins/images/39989/large/200x200.png?1725028188","category":"token"}]
+export const tokenList = [{
+    "symbol": "DOGE",
+    "name": "Dogecoin",
+    "address": "dogecoin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/5/large/dogecoin.png?1696501409",
+    "category": "token"
+}, {
+    "symbol": "SHIB",
+    "name": "Shiba Inu",
+    "address": "shiba-inu",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/11939/large/shiba.png?1696511800",
+    "category": "token"
+}, {
+    "symbol": "TRUMP",
+    "name": "Official Trump",
+    "address": "official-trump",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/53746/large/trump.png?1737171561",
+    "category": "token"
+}, {
+    "symbol": "PEPE",
+    "name": "Pepe",
+    "address": "pepe",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/29850/large/pepe-token.jpeg?1696528776",
+    "category": "token"
+}, {
+    "symbol": "BONK",
+    "name": "Bonk",
+    "address": "bonk",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/28600/large/bonk.jpg?1696527587",
+    "category": "token"
+}, {
+    "symbol": "FARTCOIN",
+    "name": "Fartcoin",
+    "address": "fartcoin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/50891/large/fart.jpg?1729503972",
+    "category": "token"
+}, {
+    "symbol": "PENGU",
+    "name": "Pudgy Penguins",
+    "address": "pudgy-penguins",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52622/large/PUDGY_PENGUINS_PENGU_PFP.png?1733809110",
+    "category": "token"
+}, {
+    "symbol": "WIF",
+    "name": "dogwifhat",
+    "address": "dogwifcoin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/33566/large/dogwifhat.jpg?1702499428",
+    "category": "token"
+}, {
+    "symbol": "FLOKI",
+    "name": "FLOKI",
+    "address": "floki",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/16746/large/PNG_image.png?1696516318",
+    "category": "token"
+}, {
+    "symbol": "SPX",
+    "name": "SPX6900",
+    "address": "spx6900",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/31401/large/centeredcoin_%281%29.png?1737048493",
+    "category": "token"
+}, {
+    "symbol": "AI16Z",
+    "name": "ai16z",
+    "address": "ai16z",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51090/large/AI16Z.jpg?1730027175",
+    "category": "token"
+}, {
+    "symbol": "BRETT",
+    "name": "Brett",
+    "address": "based-brett",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/35529/large/1000050750.png?1709031995",
+    "category": "token"
+}, {
+    "symbol": "DOGE",
+    "name": "Binance-Peg Dogecoin",
+    "address": "binance-peg-dogecoin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/15768/large/dogecoin.png?1696515392",
+    "category": "token"
+}, {
+    "symbol": "GIGA",
+    "name": "Gigachad",
+    "address": "gigachad-2",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/34755/large/IMG_0015.png?1705957165",
+    "category": "token"
+}, {
+    "symbol": "MELANIA",
+    "name": "Melania Meme",
+    "address": "melania-meme",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/53775/large/melania-meme.png?1737329885",
+    "category": "token"
+}, {
+    "symbol": "MEOW",
+    "name": "MEOW",
+    "address": "meow",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/38796/large/MEOW.png?1718897555",
+    "category": "token"
+}, {
+    "symbol": "MOG",
+    "name": "Mog Coin",
+    "address": "mog-coin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/31059/large/MOG_LOGO_200x200.png?1696529893",
+    "category": "token"
+}, {
+    "symbol": "AIXBT",
+    "name": "aixbt by Virtuals",
+    "address": "aixbt",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51784/large/3.png?1731981138",
+    "category": "token"
+}, {
+    "symbol": "NOT",
+    "name": "Notcoin",
+    "address": "notcoin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/33453/large/rFmThDiD_400x400.jpg?1701876350",
+    "category": "token"
+}, {
+    "symbol": "DOG",
+    "name": "Dog (Bitcoin)",
+    "address": "dog-go-to-the-moon-rune",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/37352/large/DOGGOTOTHEMOON.png?1714096969",
+    "category": "token"
+}, {
+    "symbol": "TURBO",
+    "name": "Turbo",
+    "address": "turbo",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/30117/large/TurboMark-QL_200.png?1708079597",
+    "category": "token"
+}, {
+    "symbol": "MEW",
+    "name": "cat in a dogs world",
+    "address": "cat-in-a-dogs-world",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/36440/large/MEW.png?1711442286",
+    "category": "token"
+}, {
+    "symbol": "POPCAT",
+    "name": "Popcat",
+    "address": "popcat",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/33760/large/image.jpg?1702964227",
+    "category": "token"
+}, {
+    "symbol": "SNEK",
+    "name": "Snek",
+    "address": "snek",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/30496/large/snek_icon_200.png?1703346174",
+    "category": "token"
+}, {
+    "symbol": "ARC",
+    "name": "AI Rig Complex",
+    "address": "ai-rig-complex",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52701/large/u312bPNA_400x400.jpg?1734044765",
+    "category": "token"
+}, {
+    "symbol": "FAI",
+    "name": "Freysa AI",
+    "address": "freysa-ai",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52315/large/FAI.png?1733076295",
+    "category": "token"
+}, {
+    "symbol": "PNUT",
+    "name": "Peanut the Squirrel",
+    "address": "peanut-the-squirrel",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51301/large/Peanut_the_Squirrel.png?1734941241",
+    "category": "token"
+}, {
+    "symbol": "AGENTFUN",
+    "name": "AgentFun.AI",
+    "address": "agentfun-ai",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52133/large/AIFUN_%282%29.png?1732639482",
+    "category": "token"
+}, {
+    "symbol": "BABYDOGE",
+    "name": "Baby Doge Coin",
+    "address": "baby-doge-coin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/16125/large/babydoge.jpg?1696515731",
+    "category": "token"
+}, {
+    "symbol": "UFD",
+    "name": "Unicorn Fart Dust",
+    "address": "unicorn-fart-dust",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52931/large/untitled.png?1734708671",
+    "category": "token"
+}, {
+    "symbol": "MEME",
+    "name": "Memecoin",
+    "address": "memecoin-2",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/32528/large/memecoin_%282%29.png?1698912168",
+    "category": "token"
+}, {
+    "symbol": "WOULD",
+    "name": "would",
+    "address": "would",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52316/large/QmXJR6Q2zkqpotTY2nMP6k76LykKW7z4tgfQfH1ZUo57Dt.jpeg?1733076468",
+    "category": "token"
+}, {
+    "symbol": "BOME",
+    "name": "BOOK OF MEME",
+    "address": "book-of-meme",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/36071/large/bome.png?1710407255",
+    "category": "token"
+}, {
+    "symbol": "GOAT",
+    "name": "Goatseus Maximus",
+    "address": "goatseus-maximus",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/50717/large/GOAT_LOGO_NEW.jpg?1731292759",
+    "category": "token"
+}, {
+    "symbol": "AKUMA",
+    "name": "Akuma Inu",
+    "address": "akuma-inu",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52182/large/IMG_8186.png?1735828700",
+    "category": "token"
+}, {
+    "symbol": "NEIRO",
+    "name": "Neiro",
+    "address": "neiro-3",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39488/large/neiro.jpg?1731449567",
+    "category": "token"
+}, {
+    "symbol": "CORGIAI",
+    "name": "CorgiAI",
+    "address": "corgiai",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/30933/large/Token.png?1696529775",
+    "category": "token"
+}, {
+    "symbol": "NPC",
+    "name": "Non-Playable Coin",
+    "address": "non-playable-coin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/31193/large/NPC_200x200.png?1696530021",
+    "category": "token"
+}, {
+    "symbol": "FWOG",
+    "name": "Fwog",
+    "address": "fwog",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39453/large/fwog.png?1722318442",
+    "category": "token"
+}, {
+    "symbol": "DOGS",
+    "name": "Dogs",
+    "address": "dogs-2",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39699/large/dogs_logo_200x200.png?1723687163",
+    "category": "token"
+}, {
+    "symbol": "PEPECOIN",
+    "name": "PepeCoin",
+    "address": "pepecoin-2",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/30219/large/pepecoin-icon_200x200.png?1735790725",
+    "category": "token"
+}, {
+    "symbol": "ACT",
+    "name": "Act I The AI Prophecy",
+    "address": "act-i-the-ai-prophecy",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/50984/large/ai_prophecy.jpg?1729653897",
+    "category": "token"
+}, {
+    "symbol": "CHEEMS",
+    "name": "Cheems Token",
+    "address": "cheems-token",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/30376/large/Hg4_Lhbg_400x400.jpg?1696529270",
+    "category": "token"
+}, {
+    "symbol": "PEOPLE",
+    "name": "ConstitutionDAO",
+    "address": "constitutiondao",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/20612/large/GN_UVm3d_400x400.jpg?1696520017",
+    "category": "token"
+}, {
+    "symbol": "AVA",
+    "name": "Ava AI",
+    "address": "ava-ai",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51935/large/7VZQ0qhB_400x400_%282%29.jpg?1732206907",
+    "category": "token"
+}, {
+    "symbol": "APU",
+    "name": "Apu Apustaja",
+    "address": "apu-s-club",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/35986/large/200x200.png?1710308147",
+    "category": "token"
+}, {
+    "symbol": "BITCOIN",
+    "name": "HarryPotterObamaSonic10Inu (ETH)",
+    "address": "harrypotterobamasonic10in",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/30323/large/hpos10i_logo_casino_night-dexview.png?1696529224",
+    "category": "token"
+}, {
+    "symbol": "SWARMS",
+    "name": "Swarms",
+    "address": "swarms",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52988/large/swarms.jpg?1734921510",
+    "category": "token"
+}, {
+    "symbol": "SKI",
+    "name": "Ski Mask Dog",
+    "address": "ski-mask-dog",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/37195/large/32992128-F52F-4346-84CA-8E0C48F43606.jpeg?1713676521",
+    "category": "token"
+}, {
+    "symbol": "DOGE",
+    "name": "Department Of Government Efficiency",
+    "address": "department-of-government-efficiency",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39841/large/IMG_9775.PNG?1729771739",
+    "category": "token"
+}, {
+    "symbol": "AIC",
+    "name": "AI Companions",
+    "address": "ai-companions",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/40130/large/AI_Companions.png?1725942702",
+    "category": "token"
+}, {
+    "symbol": "MOODENG",
+    "name": "Moo Deng",
+    "address": "moo-deng",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/50264/large/MOODENG.jpg?1726726975",
+    "category": "token"
+}, {
+    "symbol": "TOSHI",
+    "name": "Toshi",
+    "address": "toshi",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/31126/large/Toshi_Logo_-_Circular.png?1721677476",
+    "category": "token"
+}, {
+    "symbol": "ZEREBRO",
+    "name": "Zerebro",
+    "address": "zerebro",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51289/large/zerebro_2.png?1730588883",
+    "category": "token"
+}, {
+    "symbol": "PURR",
+    "name": "Purr",
+    "address": "purr-2",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/37125/large/PURR_CG.png?1713368828",
+    "category": "token"
+}, {
+    "symbol": "DEGEN",
+    "name": "Degen (Base)",
+    "address": "degen-base",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/34515/large/android-chrome-512x512.png?1706198225",
+    "category": "token"
+}, {
+    "symbol": "ELON",
+    "name": "Dogelon Mars",
+    "address": "dogelon-mars",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/14962/large/6GxcPRo3_400x400.jpg?1696514622",
+    "category": "token"
+}, {
+    "symbol": "CAT",
+    "name": "Simon's Cat",
+    "address": "simon-s-cat",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39765/large/Simon's_Cat_Logo.png?1724017505",
+    "category": "token"
+}, {
+    "symbol": "ANDY",
+    "name": "ANDY ETH",
+    "address": "andy-the-wisguy",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/35910/large/IMG_20240309_044840_797.jpg?1710179397",
+    "category": "token"
+}, {
+    "symbol": "PONKE",
+    "name": "PONKE",
+    "address": "ponke",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/33929/large/BLANK_BLACK.png?1736939988",
+    "category": "token"
+}, {
+    "symbol": "CULT",
+    "name": "Milady Cult Coin",
+    "address": "milady-cult-coin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52583/large/cult.jpg?1733712273",
+    "category": "token"
+}, {
+    "symbol": "WOLF",
+    "name": "LandWolf",
+    "address": "landwolf-0x67",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/37403/large/wolf_200x200.png?1715222165",
+    "category": "token"
+}, {
+    "symbol": "PEPE",
+    "name": "Based Pepe",
+    "address": "based-pepe",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39763/large/based_pepe_transparent.png?1724010222",
+    "category": "token"
+}, {
+    "symbol": "PIPPIN",
+    "name": "pippin",
+    "address": "pippin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51589/large/pippin_logo.png?1731570163",
+    "category": "token"
+}, {
+    "symbol": "MOBY",
+    "name": "Moby AI",
+    "address": "moby-ai",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/53613/large/PFP_V3.png?1736888476",
+    "category": "token"
+}, {
+    "symbol": "PUFF",
+    "name": "Puff The Dragon",
+    "address": "puff-the-dragon",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/35950/large/photo_2024-03-11_10.18.27.jpeg?1710240090",
+    "category": "token"
+}, {
+    "symbol": "GME",
+    "name": "GME (Ethereum)",
+    "address": "game-stop",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/37895/large/_GME_New_Logo.png?1733640757",
+    "category": "token"
+}, {
+    "symbol": "BINK",
+    "name": "Big Dog Fink",
+    "address": "big-dog-fink",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51674/large/IMG_6585.png?1731774784",
+    "category": "token"
+}, {
+    "symbol": "OSAK",
+    "name": "Osaka Protocol",
+    "address": "osaka-protocol",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/30911/large/OSAK_LOGO_200x200.png?1723662197",
+    "category": "token"
+}, {
+    "symbol": "M3M3",
+    "name": "M3M3",
+    "address": "m3m3",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52501/large/m3m3.jpg?1733471063",
+    "category": "token"
+}, {
+    "symbol": "PUPS",
+    "name": "Pups (Bitcoin)",
+    "address": "rune-pups",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/37159/large/token_logo.png?1732383184",
+    "category": "token"
+}, {
+    "symbol": "BONE",
+    "name": "Bone ShibaSwap",
+    "address": "bone-shibaswap",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/16916/large/bone_icon.png?1696516487",
+    "category": "token"
+}, {
+    "symbol": "GRIFT",
+    "name": "ORBIT",
+    "address": "orbit-3",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52598/large/4.png?1733741120",
+    "category": "token"
+}, {
+    "symbol": "SHISHA",
+    "name": "Shisha Coin [OLD]",
+    "address": "shisha-coin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39843/large/logo-shisha.png?1733992642",
+    "category": "token"
+}, {
+    "symbol": "WZRD",
+    "name": "Bitcoin Wizards",
+    "address": "bitcoin-wizards",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/33425/large/78e454a7f80334c3e2ac89a314e79e0.jpg?1701769164",
+    "category": "token"
+}, {
+    "symbol": "REKT",
+    "name": "Rekt",
+    "address": "rekt-4",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51727/large/rektcion_trans_200px.png?1731910587",
+    "category": "token"
+}, {
+    "symbol": "PEPU",
+    "name": "Pepe Unchained",
+    "address": "pepe-unchained",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52681/large/wn6wNj1C_400x400.jpg?1734021973",
+    "category": "token"
+}, {
+    "symbol": "CHILLGUY",
+    "name": "Just a chill guy",
+    "address": "chill-guy",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51746/large/Scherm%C2%ADafbeelding_2024-11-15_om_20.57.58.png?1731926037",
+    "category": "token"
+}, {
+    "symbol": "RETARDIO",
+    "name": "RETARDIO",
+    "address": "retardio",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/35759/large/RETARDIO_LOGO.png?1728587088",
+    "category": "token"
+}, {
+    "symbol": "STNK",
+    "name": "Stonks",
+    "address": "stonks-4",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52124/large/hehe.0fe13131.png?1732609017",
+    "category": "token"
+}, {
+    "symbol": "SLERF",
+    "name": "Slerf",
+    "address": "slerf",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/36178/large/slerf.jpeg?1710753228",
+    "category": "token"
+}, {
+    "symbol": "VADER",
+    "name": "VaderAI by Virtuals",
+    "address": "vaderai-by-virtuals",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51910/large/kare_pepe.png?1733345833",
+    "category": "token"
+}, {
+    "symbol": "BEAR",
+    "name": "TEDDY BEAR",
+    "address": "teddy-bear",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/32028/large/TEDDYBEAR-COINMARKETCAP-LOGO-200X200.png?1705513787",
+    "category": "token"
+}, {
+    "symbol": "BAN",
+    "name": "Comedian",
+    "address": "comedian",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51100/large/ban.jpg?1730085215",
+    "category": "token"
+}, {
+    "symbol": "MCDULL",
+    "name": "McDull (Meme)",
+    "address": "mcdull",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51176/large/LNPFe2mY_400x400.jpg?1730297902",
+    "category": "token"
+}, {
+    "symbol": "MAX",
+    "name": "MAX",
+    "address": "max-2",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52378/large/btc.png?1733257730",
+    "category": "token"
+}, {
+    "symbol": "SHIRO",
+    "name": "Shiro Neko",
+    "address": "shiro-neko-2",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52406/large/Shiro_Neko.png?1733453572",
+    "category": "token"
+}, {
+    "symbol": "ALCH",
+    "name": "Alchemist AI",
+    "address": "alchemist-ai",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52302/large/small-logo.png?1733053544",
+    "category": "token"
+}, {
+    "symbol": "ARMY",
+    "name": "XRP ARMY",
+    "address": "army-3",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/53227/large/-5967456750116390278_99.jpg?1735765085",
+    "category": "token"
+}, {
+    "symbol": "HIPPO",
+    "name": "sudeng",
+    "address": "sudeng",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/50450/large/IMG_20250110_123959_730.jpg?1736511660",
+    "category": "token"
+}, {
+    "symbol": "ELIZA",
+    "name": "Eliza",
+    "address": "eliza",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51825/large/eliza.jpg?1732037151",
+    "category": "token"
+}, {
+    "symbol": "USA",
+    "name": "American Coin",
+    "address": "american-coin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/37000/large/american-removebg-preview.png?1713149642",
+    "category": "token"
+}, {
+    "symbol": "LOFI",
+    "name": "LOFI",
+    "address": "lofi-2",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52058/large/LOFI.png?1732454544",
+    "category": "token"
+}, {
+    "symbol": "SUNDOG",
+    "name": "Sundog",
+    "address": "sundog",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39752/large/sundog.png?1723794864",
+    "category": "token"
+}, {
+    "symbol": "MONKY",
+    "name": "Wise Monkey",
+    "address": "wise-monkey",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52663/large/MONKY_Logo-1_%281%29.png?1734006848",
+    "category": "token"
+}, {
+    "symbol": "MLG",
+    "name": "360noscope420blazeit",
+    "address": "360noscope420blazeit",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51079/large/MLGTICKERIMAGE2_%283%29.png?1732899940",
+    "category": "token"
+}, {
+    "symbol": "COQ",
+    "name": "Coq Inu",
+    "address": "coq-inu",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/33511/large/Coin_CoqInu_1200px.png?1702041053",
+    "category": "token"
+}, {
+    "symbol": "PEP",
+    "name": "Pepecoin",
+    "address": "pepecoin-network",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/36520/large/Pepecoin_onWhite_IconOnly-RGB__Converted_200x200.png?1732384918",
+    "category": "token"
+}, {
+    "symbol": "LADYS",
+    "name": "Milady Meme Coin",
+    "address": "milady-meme-coin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/30194/large/LADYS_Clean.png?1725897475",
+    "category": "token"
+}, {
+    "symbol": "COCO",
+    "name": "COCO COIN",
+    "address": "coco-coin",
+    "chainId": 1,
+    "decimals": 18,
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39989/large/200x200.png?1725028188",
+    "category": "token"
+}]

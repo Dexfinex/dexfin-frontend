@@ -1,11 +1,18 @@
 import moment from 'moment/moment';
 import { ethers } from 'ethers';
 import { mapChainId2NativeAddress } from "../config/networks.ts";
+import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
 import { formatDistanceToNow } from 'date-fns';
 
 const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
+const solanaAddressRegex = /^[1-9A-HJ-NP-Za-km-zZ]{32,44}$/;
+const bitcoinAddressRegex = /^(1[a-km-zA-HJ-NP-Z1-9]{25,33}|3[a-km-zA-HJ-NP-Z1-9]{25,33}|bc1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{8,87})$/;
 
-export const isValidWalletAddress = (address: string): boolean => {
+export const isValidAddress = (address: string, chainId: number): boolean => {
+    if (chainId === 0)
+        return bitcoinAddressRegex.test(address);
+    else if (chainId === SOLANA_CHAIN_ID)
+        return solanaAddressRegex.test(address);
     return ethAddressRegex.test(address);
 };
 

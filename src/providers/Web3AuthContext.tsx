@@ -38,7 +38,6 @@ import { http } from "@wagmi/core";
 import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
 import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import {
-    type CreateKernelAccountReturnType,
     createKernelAccount,
     createKernelAccountClient,
     createZeroDevPaymasterClient,
@@ -185,10 +184,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [storedWalletInfo, setStoredWalletInfo] = useLocalStorage<SavedWalletInfo | null>(LOCAL_STORAGE_WALLET_INFO, null)
     const [isLoadingStoredWallet, setIsLoadingStoredWallet] = useState<boolean>(false)
     const [solanaWalletInfo, setSolanaWalletInfo] = useState<SolanaWalletInfoType | undefined>()
-    const [kernelAccount, setKernelAccount] = useState<CreateKernelAccountReturnType | null>(null)
 
     const [userData, setUserData] = useState<UserData | null>(null);
-    const [userDataLoading, setUserDataLoading] = useState<boolean>(false);
     const [walletType, setWalletType] = useState<WalletType>('UNKNOWN');
 
     // const [chain, setChain] = useState(null);
@@ -321,7 +318,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 kernelVersion,
                 entryPoint,
             })
-            setKernelAccount(account)
             setAddress(account.address)
 
 
@@ -593,7 +589,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     return signature;
                 } else {
                     console.log(`1 - Getting Source Token Account`);
-                    let sourceAccount = await getOrCreateAssociatedTokenAccount(
+                    const sourceAccount = await getOrCreateAssociatedTokenAccount(
                         SolanaConnection,
                         keypair,
                         new PublicKey(tokenMintAddress),
@@ -602,7 +598,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     console.log(`    Source Account: ${sourceAccount.address.toString()}`);
 
                     console.log(`2 - Getting Destination Token Account`);
-                    let destinationAccount = await getOrCreateAssociatedTokenAccount(
+                    const destinationAccount = await getOrCreateAssociatedTokenAccount(
                         SolanaConnection,
                         keypair,
                         new PublicKey(tokenMintAddress),
