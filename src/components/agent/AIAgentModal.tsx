@@ -386,7 +386,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             
             if(chainId != data.fromToken.chainId){
               await switchChain(data.fromToken.chainId);
-            } 
+            }
 
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
