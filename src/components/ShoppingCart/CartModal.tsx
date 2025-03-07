@@ -8,7 +8,7 @@ import { useStore } from '../../store/useStore';
 import useTokenStore from '../../store/useTokenStore';
 import { X, ShoppingCart, Minimize2, Maximize2 } from 'lucide-react';
 import Spinner from './components/Spinner';
-import SearchHeader from './components/SearchHeader';
+import SearchHeader, { SortConfig, SortOption } from './components/SearchHeader';
 import CoinGrid from './components/CoinGrid';
 import CartList from './components/CartList';
 import CheckoutSection from './components/CheckoutSection';
@@ -18,6 +18,10 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    option: 'marketCap',
+    direction: 'desc'
+  });
   const [txModalOpen, setTxModalOpen] = useState(false);
   const [transactionHashes, setTransactionHashes] = useState<string[]>([]);
   const [buyError, setBuyError] = useState<string | null>(null);
@@ -141,6 +145,10 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     setSearchQuery(query);
   }, []);
 
+  const handleSortChange = useCallback((newSortConfig: SortConfig) => {
+    setSortConfig(newSortConfig);
+  }, []);
+
   const handleBuyExecution = useCallback(async () => {
     if (!walletAddress || !cartItems.length) return;
 
@@ -199,12 +207,13 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const toggleCart = useCallback(() => {
     setShowCart((prev) => !prev)
   }, [])
+  
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <div className={`relative glass border border-black/10 shadow-lg  rounded-xl overflow-hidden  ${isFullscreen
+      <div className={`relative glass border border-black/10 shadow-lg overflow-hidden ${isFullscreen
         ? 'w-full h-full rounded-none'
         : 'w-[90%] h-[90%] rounded-xl'
         }`}>
@@ -243,19 +252,22 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
           </div>
         ) : (
           <div className="flex flex-col md:flex-row h-[calc(100%-48px)]">
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
+            <div className="flex-1 flex flex-col h-full">
               <SearchHeader
                 selectedCategory={selectedCategory}
                 searchQuery={searchQuery}
                 onCategoryChange={handleCategoryChange}
                 onSearchChange={handleSearchChange}
+                sortConfig={sortConfig}
+                onSortChange={handleSortChange}
               />
-              <div className="flex-1 min-h-0">
+              <div className="flex-1 h-full">
                 <CoinGrid
                   searchQuery={searchQuery}
                   selectedCategory={selectedCategory}
                   onAddToCart={addToCart}
                   walletChainId={walletChainId ?? 8453}
+                  sortConfig={sortConfig}
                 />
               </div>
             </div>
@@ -312,7 +324,6 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
       )}
     </div>
   )
-
 };
 
 export default React.memo(CartModal);

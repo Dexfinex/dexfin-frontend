@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Trophy, Swords, Brain, Coins, ArrowRight, Search } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { Web3AuthContext } from '../../providers/Web3AuthContext';
+import { useUserData } from '../../providers/UserProvider';
+
 import { GameService } from '../../services/game.services';
 export const GameStats: React.FC = () => {
   const [claimingTokens, setClaimingTokens] = useState(false);
   const { gameStats, updateGameStats, setAllGameStats } = useStore();
-  const { userData } = useContext(Web3AuthContext);
+  const { userData } = useUserData();
   const [isLoading, setIsLoading] = useState(false);
   const canClaim = gameStats.totalTokens >= 5000;
 
@@ -289,7 +290,7 @@ export const GameStats: React.FC = () => {
             <div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
               <div
                 className="h-full bg-green-500 transition-all"
-                style={{ width: `${((gameStats?.huntStats?.words || 0)/10)*100}%` }}
+                style={{ width: `${((gameStats?.huntStats?.words || 0)/100)*100}%` }}
               />
             </div>
           </div>

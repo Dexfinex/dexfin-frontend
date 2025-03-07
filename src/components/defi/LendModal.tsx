@@ -1,9 +1,8 @@
-import React, { useContext, useMemo, useEffect } from "react";
-import { X, ArrowLeft, ArrowDown } from 'lucide-react';
+import React, { useContext, useMemo, useEffect, useState } from "react";
+import { X, ArrowLeft, } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
 import { TokenChainIcon } from "../swap/components/TokenIcon";
-import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import { Position } from "../../store/useDefiStore";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
 import { formatNumberByFrac } from "../../utils/common.util";
@@ -12,11 +11,18 @@ import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
+import useDefillamaStore from "../../store/useDefillamaStore.ts";
 import { LENDING_LIST } from "../../constants/mock/defi.ts";
+import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
+import SelectChain from "./SelectChain.tsx";
+
+
 
 interface ModalState {
     type: string | null;
     position?: Position;
+    supportedChains?: number[],
+    apyToken?: string
 }
 
 interface LendModalProps {
@@ -32,7 +38,10 @@ interface LendModalProps {
 
 const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, lendHandler, setTokenAmount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId } = useContext(Web3AuthContext);
+    const { chainId: connectedChainId, switchChain } = useContext(Web3AuthContext)
+    const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
+    const { getOfferingPoolByChainId } = useDefillamaStore();
+    const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
     const lendTokenInfo = LENDING_LIST.find((token) => {
         return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
@@ -76,6 +85,15 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
         }
         return true;
     }, [tokenAmount, tokenInBalance])
+
+    const isCorrectChain = Number(chainId) === Number(connectedChainId);
+
+    const buttonLabel = useMemo(() => {
+        return !isCorrectChain
+            ? "Switch Chain" :
+            confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div>
+                : "Lend"
+    }, [confirming, chainId, connectedChainId])
 
     useEffect(() => {
         if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
@@ -128,12 +146,19 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
                         </div>
                         <div className="ml-auto text-right">
                             <div className={`text-emerald-400`}>
-                                {modalState.position?.apy || 0}% APY
+                                {poolInfo?.apy || 0}% APY
                             </div>
                         </div>
                     </div>
 
                     <>
+                        <SelectChain
+                            chainList={modalState?.supportedChains || []}
+                            selectedChain={Number(chainId)}
+                            setSelectedChain={setChainId}
+
+                        />
+
                         <div className="bg-white/5 rounded-xl p-4">
                             <div className="text-sm text-white/60 mb-2">
                                 Amount
@@ -217,12 +242,14 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
                     <button
                         className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
                         onClick={async () => {
-                            if (tokenAmount) {
+                            if (!isCorrectChain) {
+                                switchChain(Number(chainId));
+                            } else if (tokenAmount) {
                                 lendHandler();
                             }
                         }}
                     >
-                        {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : "Lend"}
+                        {buttonLabel}
                     </button>
                 </div>
             </div>
