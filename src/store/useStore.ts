@@ -428,6 +428,7 @@ const useStore = create<StoreState>((set) => ({
       bestScore: 0,
       perfectStatus: 0
     },
+
     totalTokens: 0
   },
   updateGameStats: (stats) => set((state) => ({
