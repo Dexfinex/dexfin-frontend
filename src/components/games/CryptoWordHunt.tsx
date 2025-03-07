@@ -243,7 +243,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
       console.log(response);
 
       if (gameStats) {
-        updateGameStats({
+        const updatedStats = {
           huntStats: {
             gamesPlayed: gameStats.huntStats.gamesPlayed + 1,
             tokensEarned: gameStats.huntStats.tokensEarned + tokensEarned,
@@ -252,7 +252,11 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
             perfectStatus: gameStats.huntStats.perfectStatus + perfectStatus
           },
           totalTokens: gameStats.totalTokens + tokensEarned
-        });
+        };
+        
+        updateGameStats(updatedStats);
+        
+        setShowSuccessModal(true);
       }
     } catch (error) {
       console.error('Error saving game session:', error);
@@ -260,7 +264,6 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
   };
 
   const generateGrid = (size: number, words: Word[]) => {
-    // Initialize empty grid
     const newGrid = Array(size).fill(null).map(() =>
       Array(size).fill(null).map(() => ({
         letter: '',
@@ -280,10 +283,8 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
       { dx: -1, dy: -1 }   // diagonal up reverse
     ];
 
-    // Sort words by length (longest first)
     const sortedWords = [...words].sort((a, b) => b.text.length - a.text.length);
 
-    // Try to place each word
     for (const word of sortedWords) {
       let placed = false;
       let attempts = 0;
@@ -830,62 +831,74 @@ useEffect(() => {
     );
   };
 
-  const renderSuccessModal = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowSuccessModal(false)} />
-      <div className="relative bg-[#1a237e]/80 backdrop-blur-xl border border-white/10 rounded-xl p-6 md:p-8 w-full max-w-[400px] text-center">
-        <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4 md:mb-6">
-          <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 text-green-400" />
-        </div>
-        <h3 className="text-xl md:text-2xl font-bold mb-1 md:mb-2">Congratulations!</h3>
-        <p className="text-white/60 mb-4 md:mb-6 text-sm md:text-base">
-          You found all {wordsToFind.length} words!
-        </p>
-        <div className="space-y-3 md:space-y-4 mb-6 md:mb-8">
-          <div className="flex items-center justify-between">
-            <span className="text-white/60 text-sm md:text-base">Final Score</span>
-            <span className="text-xl md:text-2xl font-bold">{score}</span>
+  const renderSuccessModal = () => {
+    const tokensEarned = Math.floor(score * 0.1);
+    
+    const totalTokens = gameStats ? gameStats.totalTokens + tokensEarned : tokensEarned;
+    
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowSuccessModal(false)} />
+        <div className="relative bg-[#1a237e]/80 backdrop-blur-xl border border-white/10 rounded-xl p-6 md:p-8 w-full max-w-[400px] text-center">
+          <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4 md:mb-6">
+            <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 text-green-400" />
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-white/60 text-sm md:text-base">Time Remaining</span>
-            <span className="text-lg md:text-xl">
-            {Math.floor(timeTaken / 60)}:{(timeTaken % 60).toString().padStart(2, '0')}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-white/60 text-sm md:text-base">Tokens Earned</span>
-            <div className="flex items-center gap-2 text-yellow-400">
-              <Coins className="w-4 h-4 md:w-5 md:h-5" />
-              <span className="text-lg md:text-xl font-bold">{Math.floor(score * 0.1)}</span>
+          <h3 className="text-xl md:text-2xl font-bold mb-1 md:mb-2">Congratulations!</h3>
+          <p className="text-white/60 mb-4 md:mb-6 text-sm md:text-base">
+            You found all {wordsToFind.length} words!
+          </p>
+          <div className="space-y-3 md:space-y-4 mb-6 md:mb-8">
+            <div className="flex items-center justify-between">
+              <span className="text-white/60 text-sm md:text-base">Final Score</span>
+              <span className="text-xl md:text-2xl font-bold">{score}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-white/60 text-sm md:text-base">Time Remaining</span>
+              <span className="text-lg md:text-xl">
+                {Math.floor(timeTaken / 60)}:{(timeTaken % 60).toString().padStart(2, '0')}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-white/60 text-sm md:text-base">Tokens Earned</span>
+              <div className="flex items-center gap-2 text-yellow-400">
+                <Coins className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-lg md:text-xl font-bold">{tokensEarned}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-white/60 text-sm md:text-base">Total Tokens</span>
+              <div className="flex items-center gap-2 text-yellow-400">
+                <Coins className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-lg md:text-xl font-bold">{totalTokens}</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex gap-3 md:gap-4">
-          <button
-            onClick={() => {
-              setShowSuccessModal(false);
-              setGameState('menu');
-            }}
-            className="flex-1 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors text-sm md:text-base"
-          >
-            Menu
-          </button>
-          <button
-            onClick={() => {
-              setShowSuccessModal(false);
-              if (selectedDifficulty) {
-                startGame(selectedDifficulty);
-              }
-            }}
-            className="flex-1 px-4 py-2 md:px-6 md:py-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors text-sm md:text-base"
-          >
-            Play Again
-          </button>
+          <div className="flex gap-3 md:gap-4">
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+                setGameState('menu');
+              }}
+              className="flex-1 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors text-sm md:text-base"
+            >
+              Menu
+            </button>
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+                if (selectedDifficulty) {
+                  startGame(selectedDifficulty);
+                }
+              }}
+              className="flex-1 px-4 py-2 md:px-6 md:py-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors text-sm md:text-base"
+            >
+              Play Again
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-
+    );
+  };
  // Also update the mobile navigation bar to show time taken when complete
 {isMobile && !showWordList && (
   <div className="fixed bottom-0 left-0 right-0 bg-[#1a237e]/90 backdrop-blur-md border-t border-[#3949ab]/30 p-2 flex justify-between items-center z-30">
