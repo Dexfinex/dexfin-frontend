@@ -69,7 +69,7 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
   const gameSessionSaved = useRef(false);
   const [gameData, setGameData] = useState<any[]>([]);
   const [gameId, setGameId] = useState<string>("");
-  const { gameStats, updateGameStats } = useStore(); // Add this line
+  const { gameStats, updateGameStats } = useStore();
 
 
   useEffect(() => {
