@@ -2,7 +2,7 @@ import React, { useContext, useMemo, useEffect, useState } from "react";
 import { X, ArrowLeft, } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
-import { TokenChainIcon } from "../swap/components/TokenIcon";
+import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon";
 import { Position } from "../../store/useDefiStore";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
 import { formatNumberByFrac } from "../../utils/common.util";
@@ -15,6 +15,8 @@ import useDefillamaStore from "../../store/useDefillamaStore.ts";
 import { LENDING_LIST } from "../../constants/mock/defi.ts";
 import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 import SelectChain from "./SelectChain.tsx";
+import { getChainIcon } from "../../utils/getChainIcon.tsx";
+import { getChainNameById } from "../../utils/defi.util.ts";
 
 
 
@@ -38,7 +40,7 @@ interface LendModalProps {
 
 const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, lendHandler, setTokenAmount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId: connectedChainId, switchChain } = useContext(Web3AuthContext)
+    const { chainId: connectedChainId, switchChain, isChainSwitching } = useContext(Web3AuthContext)
     const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
     const { getOfferingPoolByChainId } = useDefillamaStore();
     const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
@@ -86,14 +88,20 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
         return true;
     }, [tokenAmount, tokenInBalance])
 
-    const isCorrectChain = Number(chainId) === Number(connectedChainId);
+    const isCorrectChain = useMemo(() => {
+        return Number(chainId) === Number(connectedChainId)
+    }, [chainId, connectedChainId]);
 
     const buttonLabel = useMemo(() => {
+        if (isChainSwitching) return <div className="flex justify-center"><Spinner size="md" className='mr-2' /> Switching network</div>
         return !isCorrectChain
-            ? "Switch Chain" :
+            ? <>
+                Switch Chain
+                <TokenIcon src={getChainIcon(chainId) || ""} alt={getChainNameById(Number(chainId))} size="sm" className="ml-2" />
+            </> :
             confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div>
                 : "Lend"
-    }, [confirming, chainId, connectedChainId])
+    }, [confirming, chainId, connectedChainId, isChainSwitching])
 
     useEffect(() => {
         if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
