@@ -160,7 +160,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
   // State for game data and ID
   const [gameData, setGameData] = useState<any[]>([]);
   const [gameId, setGameId] = useState<string>("");
-
+  const [timeTaken, setTimeTaken] = useState(0);
   // Get game stats and updateGameStats from useStore
   const { gameStats, updateGameStats } = useStore();
 
@@ -363,32 +363,49 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
     setSelectedDifficulty(difficulty);
     setGrid(generateGrid(difficulty.gridSize, selectedWords));
     setTimeLeft(difficulty.timeLimit);
+    setTimeTaken(0);
     setScore(0);
     setWordsToFind(selectedWords);
     setFoundWords([]);
     setGameState('game');
     setShowWordList(false);
   };
-
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (gameState === 'game' && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0 && gameState === 'game') {
-      // Handle game over
-      if (foundWords.length === wordsToFind.length) {
-        setShowSuccessModal(true);
-
-        // Save game session if it hasn't been saved yet
-        if (!gameSessionSaved.current && userData && userData.accessToken && gameId) {
-          saveGameSession();
-        }
+    // Check if game is completed by finding all words
+    if (gameState === 'game' && foundWords.length === wordsToFind.length && foundWords.length > 0) {
+      // Game is completed - stop the timer and show success
+      setShowSuccessModal(true);
+      
+      // Save game session if it hasn't been saved yet
+      if (!gameSessionSaved.current && userData && userData.accessToken && gameId) {
+        saveGameSession();
       }
     }
-    return () => clearInterval(timer);
-  }, [timeLeft, gameState, foundWords, wordsToFind]);
+  }, [foundWords, wordsToFind, gameState, userData, gameId]);
+
+useEffect(() => {
+  let timer: NodeJS.Timeout;
+  
+  // Only run the timer if game is active AND not all words have been found
+  if (gameState === 'game' && timeLeft > 0 && foundWords.length < wordsToFind.length) {
+    timer = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+      setTimeTaken(prev => prev + 1);
+    }, 1000);
+  } else if (timeLeft === 0 && gameState === 'game') {
+    // Handle game over due to timeout
+    if (foundWords.length === wordsToFind.length) {
+      setShowSuccessModal(true);
+      
+      // Save game session if it hasn't been saved yet
+      if (!gameSessionSaved.current && userData && userData.accessToken && gameId) {
+        saveGameSession();
+      }
+    }
+  }
+  
+  return () => clearInterval(timer);
+}, [timeLeft, gameState, foundWords.length, wordsToFind.length]);
 
   const handleCellMouseDown = (row: number, col: number) => {
     setIsSelecting(true);
@@ -454,19 +471,19 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
     if (!isSelecting) return;
     setIsSelecting(false);
     setSelectionStart(null);
-
+  
     const selectedWord = selection.map(pos => grid[pos.row][pos.col].letter).join('');
     const reversedWord = selectedWord.split('').reverse().join('');
-
+  
     const foundWord = wordsToFind.find(w =>
       !foundWords.includes(w.text) && (w.text === selectedWord || w.text === reversedWord)
     );
-
+  
     if (foundWord) {
-      const newFoundWords = [...foundWords, foundWord.text];
+      // Update foundWords - this will trigger the effect that stops the timer
       setFoundWords(prev => [...prev, foundWord.text]);
       setScore(prev => prev + foundWord.points);
-
+  
       setGrid(prev => prev.map((row, i) =>
         row.map((cell, j) => ({
           ...cell,
@@ -474,9 +491,6 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
           isFound: cell.isFound || selection.some(pos => pos.row === i && pos.col === j)
         }))
       ));
-      if (newFoundWords.length === wordsToFind.length) {
-        setShowSuccessModal(true);
-      }
     } else {
       setGrid(prev => prev.map(row =>
         row.map(cell => ({
@@ -486,7 +500,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
         }))
       ));
     }
-
+  
     setSelection([]);
     setCurrentWord('');
   };
@@ -604,6 +618,9 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
 
   const renderGame = () => {
     if (!selectedDifficulty) return null;
+    const showTimeTaken = foundWords.length === wordsToFind.length && foundWords.length > 0;
+    const timeToDisplay = showTimeTaken ? timeTaken : timeLeft;
+    const timeLabel = showTimeTaken ? "Time Taken" : "Time Left";
 
     return (
       <div className="flex flex-col md:flex-row md:gap-8">
@@ -612,8 +629,8 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
           <div className="grid grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-8">
             <div className="bg-white/5 rounded-xl p-2 md:p-4 flex flex-col items-center">
               <Clock className="w-4 h-4 md:w-5 md:h-5 text-blue-400 mb-1 md:mb-2" />
-              <div className="text-base md:text-2xl font-bold">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</div>
-              <div className="text-xs md:text-sm text-white/60">Time Left</div>
+              <div className="text-base md:text-2xl font-bold">{Math.floor(timeToDisplay / 60)}:{(timeToDisplay % 60).toString().padStart(2, '0')}</div>
+              <div className="text-xs md:text-sm text-white/60">{timeLabel}</div>
             </div>
             <div className="bg-white/5 rounded-xl p-2 md:p-4 flex flex-col items-center">
               <Trophy className="w-4 h-4 md:w-5 md:h-5 text-yellow-400 mb-1 md:mb-2" />
@@ -832,7 +849,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
           <div className="flex items-center justify-between">
             <span className="text-white/60 text-sm md:text-base">Time Remaining</span>
             <span className="text-lg md:text-xl">
-              {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+            {Math.floor(timeTaken / 60)}:{(timeTaken % 60).toString().padStart(2, '0')}
             </span>
           </div>
           <div className="flex items-center justify-between">
@@ -869,7 +886,21 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
     </div>
   );
 
- 
+ // Also update the mobile navigation bar to show time taken when complete
+{isMobile && !showWordList && (
+  <div className="fixed bottom-0 left-0 right-0 bg-[#1a237e]/90 backdrop-blur-md border-t border-[#3949ab]/30 p-2 flex justify-between items-center z-30">
+    {/* Other mobile navigation elements */}
+    <div className="flex flex-col items-center p-2">
+      <Clock className="w-5 h-5 text-blue-400 mb-1" />
+      <span className="text-xs">
+        {foundWords.length === wordsToFind.length && foundWords.length > 0
+          ? `${Math.floor(timeTaken / 60)}:${(timeTaken % 60).toString().padStart(2, '0')}`
+          : `${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`
+        }
+      </span>
+    </div>
+  </div>
+)}
 
   return (
     <div className="p-3 md:p-6 h-full">
