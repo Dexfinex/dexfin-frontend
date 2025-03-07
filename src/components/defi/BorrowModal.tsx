@@ -12,6 +12,7 @@ import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
+import useDefillamaStore from "../../store/useDefillamaStore.ts";
 import { BORROWING_LIST } from "../../constants/mock/defi.ts";
 import SelectChain from "./SelectChain.tsx";
 import { TokenIcon } from "../swap/components/TokenIcon";
@@ -42,8 +43,10 @@ interface BorrowModalProps {
 
 const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, setConfirming, borrowHandler, depositHandler, setTokenAmount, setBorrowingTokenAmount, borrowingTokenAmount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
+    const { getOfferingPoolByChainId } = useDefillamaStore();
     const { chainId: connectedChainId, switchChain, isChainSwitching } = useContext(Web3AuthContext)
     const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
+    const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
     const borrowTokenInfo = BORROWING_LIST.find((token) => {
         return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[1].symbol
@@ -136,7 +139,7 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                     ? "Borrow"
                     : "Deposit"
 
-    }, [confirming, chainId, connectedChainId, isChainSwitching])
+    }, [confirming, chainId, connectedChainId, isChainSwitching, showPreview])
 
     useEffect(() => {
         if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
@@ -187,6 +190,11 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                                 <div className="font-medium">{modalState.position?.protocol}</div>
                                 <div className="text-sm text-white/60 flex items-center">
                                     {tokenInInfo?.symbol} <ArrowRight className="mr-1 ml-1 w-3 h-3" /> {tokenOutInfo?.symbol}
+                                </div>
+                            </div>
+                            <div className="ml-auto text-right">
+                                <div className={`text-emerald-400`}>
+                                    {formatNumberByFrac(poolInfo?.apy || 0)}% APY
                                 </div>
                             </div>
                         </div>

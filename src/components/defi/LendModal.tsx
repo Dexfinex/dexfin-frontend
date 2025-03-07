@@ -23,8 +23,8 @@ import { getChainNameById } from "../../utils/defi.util.ts";
 interface ModalState {
     type: string | null;
     position?: Position;
-    supportedChains?: number[],
-    apyToken?: string
+    supportedChains?: number[];
+    apyToken?: string;
 }
 
 interface LendModalProps {
@@ -154,7 +154,7 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
                         </div>
                         <div className="ml-auto text-right">
                             <div className={`text-emerald-400`}>
-                                {poolInfo?.apy || 0}% APY
+                                {formatNumberByFrac(poolInfo?.apy || 0)}% APY
                             </div>
                         </div>
                     </div>

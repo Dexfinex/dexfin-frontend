@@ -7,7 +7,7 @@ import useDefiStore, { Position } from '../../store/useDefiStore';
 import { getTypeIcon, getTypeColor, } from "../../utils/defi.util";
 import { offerings } from "../../constants/mock/defi";
 import { TokenIcon } from "../swap/components/TokenIcon";
-import { useGetDefillamaPoolByOffering, useGetDefillamaPoolByInfo } from "../../hooks/useDefillama";
+import { useGetDefillamaPoolByInfo } from "../../hooks/useDefillama";
 import useDefillamaStore from "../../store/useDefillamaStore";
 import { formatNumberByFrac, formatNumber } from "../../utils/common.util";
 import { mapChainId2ChainName } from "../../config/networks";
@@ -165,8 +165,8 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                         const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol);
                                         let data = (position && offering.protocol_id !== "pendle")
                                             ? { ...position, apy: Number(poolInfo?.apy) }
-                                            : { ...offering, apy: Number(poolInfo?.apy) }
-                                        const supportedChains = position ? [Number(chainId)] : offering.chainId;
+                                            : { ...offering, apy: Number(poolInfo?.apy), id: index + "", chainId: offering.chainId[0] }
+                                        const supportedChains = offering.chainId;
                                         handleAction(
                                             getAddActionName({ type: offering.type }),
                                             data,
