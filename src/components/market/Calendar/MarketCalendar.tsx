@@ -71,9 +71,8 @@ export const MarketCalendar: React.FC = () => {
         console.log("No access token available");
         return;
       }
-      console.log(userData.accessToken);
+      console.log(userData);
       const response = await getLoadEvents(userData.accessToken);
-      console.log(response.userId);
       setEvents(response)
       if (!response.ok) {
         throw new Error('Failed to create event');
