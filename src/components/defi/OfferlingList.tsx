@@ -7,7 +7,7 @@ import useDefiStore, { Position } from '../../store/useDefiStore';
 import { getTypeIcon, getTypeColor, } from "../../utils/defi.util";
 import { offerings } from "../../constants/mock/defi";
 import { TokenIcon } from "../swap/components/TokenIcon";
-import { useGetDefillamaPoolByOffering } from "../../hooks/useDefillama";
+import { useGetDefillamaPoolByOffering, useGetDefillamaPoolByInfo } from "../../hooks/useDefillama";
 import useDefillamaStore from "../../store/useDefillamaStore";
 import { formatNumberByFrac, formatNumber } from "../../utils/common.util";
 import { mapChainId2ChainName } from "../../config/networks";
@@ -26,15 +26,21 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
     const { positions } = useDefiStore();
     const { getOfferingPoolByChainId } = useDefillamaStore();
 
-    const offeringData = offerings.map((item) => {
-        return {
-            "chainId": item.chainId,
-            "protocol": item.protocol_id,
-            "symbol": item.apyToken
+    const offeringLoading = offerings.map((item) => {
+        const result: Record<string, boolean> = {};
+        for (const chainId of item.chainId) {
+            const id = `chain-id-${chainId}-protocol-${item.protocol_id}-symbol-${item.apyToken}`;
+            const { isLoading } = useGetDefillamaPoolByInfo({
+                "chainId": chainId,
+                "protocol": item.protocol_id,
+                "symbol": item.apyToken
+            });
+            result[id] = isLoading;
         }
-    })
+        return result;
+    });
 
-    const { isLoading } = useGetDefillamaPoolByOffering(offeringData);
+    const offeringLoadingList = offeringLoading.reduce((obj, current) => ({ ...obj, ...current }), {});
 
 
     const filteredOfferings = offerings.filter(o => selectedPositionType === 'ALL' || o.type.toLowerCase() === selectedPositionType.toLowerCase());
@@ -123,10 +129,13 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
 
                                     <div className="flex items-center gap-6">
                                         {
-                                            isLoading ?
-                                                <Skeleton startColor="#444" endColor="#1d2837" w={'50%'} h={'2rem'}></Skeleton> :
-                                                poolInfoList.map((poolInfo, index) =>
-                                                    <div key={offering.address + poolInfo.chainId + index} className="flex gap-2">
+                                            poolInfoList.map((poolInfo, index) => {
+                                                const id = `chain-id-${poolInfo.chainId}-protocol-${offering.protocol_id}-symbol-${offering.apyToken}`;
+                                                const isLoading = offeringLoadingList[id];
+
+                                                return isLoading
+                                                    ? <Skeleton startColor="#444" endColor="#1d2837" w={'8rem'} h={'2rem'}></Skeleton>
+                                                    : <div key={offering.address + poolInfo.chainId + index} className="flex gap-2">
                                                         <div>
                                                             <div className="flex text-sm text-white/60">
                                                                 {mapChainId2ChainName[poolInfo.chainId]} APY
@@ -146,7 +155,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                                             </div>
                                                         </div>
                                                     </div>
-                                                )
+                                            })
                                         }
                                     </div>
                                 </div>
