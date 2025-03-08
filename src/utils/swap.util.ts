@@ -43,3 +43,20 @@ export const getUSDAmount = (selectedToken: TokenType | undefined, price: number
     return 0
 }
 
+export const formatEstimatedTimeBySeconds = (seconds: number) => {
+    if (seconds < 60) return `${seconds} s`;
+
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    if (minutes < 60) {
+        return remainingSeconds > 0 ? `${minutes} min, ${remainingSeconds} s` : `${minutes} min`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    return remainingMinutes > 0
+        ? `${hours} hr, ${remainingMinutes} min`
+        : `${hours} hr`;
+}

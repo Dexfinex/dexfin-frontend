@@ -100,7 +100,6 @@ interface Web3AuthContextType {
     userData: UserData | null,
     getWalletType: () => WalletType,
     walletType: WalletType
-
 }
 
 

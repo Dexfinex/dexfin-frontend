@@ -23,7 +23,7 @@ interface Leg {
     fees: Fee[];
 }
 
-interface Warning {
+export interface Warning {
     code: string;
     display: string;
     tooltip: string;
@@ -46,7 +46,7 @@ interface RefundParameters {
     retryDuration: number;
 }
 
-interface ChainflipMeta {
+export interface ChainflipMeta {
     sellAsset: {
         chain: string;
         asset: string;
@@ -79,6 +79,7 @@ interface Route {
     sourceAddress: string;
     destinationAddress: string;
     fees: Fee[];
+    tx: any | undefined;
     estimatedTime: EstimatedTime;
     totalSlippageBps: number;
     legs: Leg[];

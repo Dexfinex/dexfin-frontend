@@ -26,6 +26,8 @@ const BASE_HOST_DOMAIN = 'https://dexfinv3-backend-production.up.railway.app'
 
 export const COINGECKO_BASE_URL = `${BASE_HOST_DOMAIN}/coingecko`
 
+export const SWAPKIT_BASE_URL = `${BASE_HOST_DOMAIN}/crosschain`
+
 export const BIRDEYE_BASE_URL = `${BASE_HOST_DOMAIN}/birdeye`
 
 export const DEFILLAMA_BASE_URL = `${BASE_HOST_DOMAIN}/defillama`;
