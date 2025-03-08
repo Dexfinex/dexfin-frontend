@@ -22,8 +22,8 @@ export const useDefiPositionByWallet = ({ chainId, walletAddress }: { chainId: n
     });
 
     useEffect(() => {
-        if (data) {
-            useDefiStore.getState().setPositions(data);
+        if (data && chainId) {
+            useDefiStore.getState().setPositions(chainId, data);
         }
     }, [data])
 
@@ -44,6 +44,7 @@ export const useDefiProtocolsByWallet = ({ chainId, walletAddress }: { chainId: 
                 total_usd_value: 0,
                 total_unclaimed_usd_value: 0,
                 protocols: [],
+                chainId: 0
             };
         }
         const data = await dexfinv3Service.getEvmDeifProtocolsByWallet(chainId, walletAddress);
@@ -58,8 +59,8 @@ export const useDefiProtocolsByWallet = ({ chainId, walletAddress }: { chainId: 
     });
 
     useEffect(() => {
-        if (data) {
-            useDefiStore.getState().setProtocol(data);
+        if (data && chainId) {
+            useDefiStore.getState().setProtocol(chainId, data);
         }
     }, [data])
 

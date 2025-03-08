@@ -17,7 +17,13 @@ export const TopbarStarredItems: React.FC = () => {
     setTradeOpen,
     setIsRewardsOpen
   } = useStore();
-  const starredItems = menuItems.filter((item) => item.isStarred);
+
+  // Filter out social and rewards items, even if they're starred
+  const starredItems = menuItems.filter((item) =>
+    item.isStarred &&
+    item.id !== 'social' &&
+    item.id !== 'rewards'
+  );
 
   const handleItemClick = (itemId: string) => {
     console.log(itemId)
@@ -35,18 +41,12 @@ export const TopbarStarredItems: React.FC = () => {
       setIsChatOpen(true);
     } else if (itemId === 'cart') {
       setIsCartOpen(true);
-    } else if (itemId === 'social') {
-      setIsSocialFeedOpen(true);
     } else if (itemId === 'games') {
       setIsGamesOpen(true);
     }
     else if (itemId === 'trade') {
       setTradeOpen(true);
     }
-    else if (itemId === 'rewards') {
-      setIsRewardsOpen(true);
-    }
-
   };
 
   if (starredItems.length === 0) return null;

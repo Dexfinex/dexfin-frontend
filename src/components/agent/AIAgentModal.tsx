@@ -383,7 +383,10 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            
+            if(chainId != data.fromToken.chainId){
+              await switchChain(data.fromToken.chainId);
+            }
 
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
@@ -402,7 +405,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'swap') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
             if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
@@ -422,7 +425,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'bridge') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
             if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
@@ -443,7 +446,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'deposit') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
             if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
@@ -463,7 +466,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'withdraw') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setProtocol(data.protocol);
@@ -475,7 +478,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'AAVE Borrow') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setProtocol(data.protocol);
@@ -489,7 +492,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'AAVE Repay') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setProtocol(data.protocol);
@@ -503,7 +506,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
 
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             setFromToken(data.fromToken);
             setDescription(data.description);
             setSteps(data.steps);
@@ -512,7 +515,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'ENS Renewal') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setDescription(data.description);
