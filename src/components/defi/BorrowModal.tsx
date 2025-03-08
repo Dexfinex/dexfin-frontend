@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useEffect } from "react";
+import React, { useContext, useMemo, useEffect, useState } from "react";
 import { X, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
@@ -12,11 +12,18 @@ import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
+import useDefillamaStore from "../../store/useDefillamaStore.ts";
 import { BORROWING_LIST } from "../../constants/mock/defi.ts";
+import SelectChain from "./SelectChain.tsx";
+import { TokenIcon } from "../swap/components/TokenIcon";
+import { getChainIcon, } from "../../utils/getChainIcon.tsx";
+import { getChainNameById } from "../../utils/defi.util.ts";
 
 interface ModalState {
     type: string | null;
     position?: Position;
+    supportedChains?: number[],
+    apyToken?: string
 }
 
 interface BorrowModalProps {
@@ -36,7 +43,10 @@ interface BorrowModalProps {
 
 const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, setConfirming, borrowHandler, depositHandler, setTokenAmount, setBorrowingTokenAmount, borrowingTokenAmount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId } = useContext(Web3AuthContext);
+    const { getOfferingPoolByChainId } = useDefillamaStore();
+    const { chainId: connectedChainId, switchChain, isChainSwitching } = useContext(Web3AuthContext)
+    const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
+    const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
     const borrowTokenInfo = BORROWING_LIST.find((token) => {
         return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[1].symbol
@@ -112,6 +122,25 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
         return true;
     }, [borrowingTokenAmount, tokenAmount])
 
+    const isCorrectChain = useMemo(() => {
+        return Number(chainId) === Number(connectedChainId)
+    }, [chainId, connectedChainId]);
+
+    const buttonLabel = useMemo(() => {
+        if (isChainSwitching) return <div className="flex justify-center"><Spinner size="md" className='mr-2' /> Switching network</div>
+        return !isCorrectChain ?
+            <>
+                Switch Chain
+                <TokenIcon src={getChainIcon(chainId) || ""} alt={getChainNameById(Number(chainId))} size="sm" className="ml-2" />
+            </> :
+            confirming ?
+                <div><Spinner size="md" className='mr-2' /> {confirming}</div>
+                : showPreview
+                    ? "Borrow"
+                    : "Deposit"
+
+    }, [confirming, chainId, connectedChainId, isChainSwitching, showPreview])
+
     useEffect(() => {
         if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
             refetchNativeTokenPrice()
@@ -161,6 +190,11 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                                 <div className="font-medium">{modalState.position?.protocol}</div>
                                 <div className="text-sm text-white/60 flex items-center">
                                     {tokenInInfo?.symbol} <ArrowRight className="mr-1 ml-1 w-3 h-3" /> {tokenOutInfo?.symbol}
+                                </div>
+                            </div>
+                            <div className="ml-auto text-right">
+                                <div className={`text-emerald-400`}>
+                                    {formatNumberByFrac(poolInfo?.apy || 0)}% APY
                                 </div>
                             </div>
                         </div>
@@ -254,6 +288,12 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                             </div>
                             :
                             <>
+                                <SelectChain
+                                    chainList={modalState?.supportedChains || []}
+                                    selectedChain={Number(chainId)}
+                                    setSelectedChain={setChainId}
+
+                                />
                                 <div className="bg-white/5 rounded-xl p-4">
                                     <div className="text-sm text-white/60 mb-2">
                                         Deposit token amount
@@ -334,14 +374,16 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                     <button
                         className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
                         onClick={async () => {
-                            if (showPreview) {
+                            if (!isCorrectChain) {
+                                switchChain(Number(chainId));
+                            } else if (showPreview) {
                                 borrowHandler()
                             } else {
                                 depositHandler();
                             }
                         }}
                     >
-                        {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Borrow" : "Deposit"}
+                        {buttonLabel}
                     </button>
                 </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useEffect } from "react";
+import React, { useContext, useMemo, useEffect, useState } from "react";
 import { X, ArrowLeft, ArrowDown } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
@@ -12,11 +12,17 @@ import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
+import { TokenIcon } from "../swap/components/TokenIcon";
+import SelectChain from "./SelectChain.tsx";
+import { getChainIcon } from "../../utils/getChainIcon.tsx";
+import { getChainNameById } from "../../utils/defi.util.ts";
 import { STAKING_TOKENS } from "../../constants/mock/defi.ts";
 
 interface ModalState {
     type: string | null;
     position?: Position;
+    supportedChains?: number[],
+    apyToken?: string
 }
 
 interface StakeModalProps {
@@ -32,7 +38,8 @@ interface StakeModalProps {
 
 const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, stakeHandler, setTokenAmount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId } = useContext(Web3AuthContext);
+    const { chainId: connectedChainId, switchChain, isChainSwitching } = useContext(Web3AuthContext)
+    const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
     const stakeTokenInfo = STAKING_TOKENS.find((token) => token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[0].symbol);
     const tokenInBalance = stakeTokenInfo?.tokenIn ? getTokenBalance(stakeTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
@@ -52,6 +59,25 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
         tokenAddresses: [tokenInInfo?.contract_address || "", tokenOutInfo?.contract_address || ""],
         chainId: Number(chainId),
     })
+
+    const isCorrectChain = useMemo(() => {
+        return Number(chainId) === Number(connectedChainId)
+    }, [chainId, connectedChainId]);
+
+    const buttonLabel = useMemo(() => {
+        if (isChainSwitching) return <div className="flex justify-center"><Spinner size="md" className='mr-2' /> Switching network</div>
+        return !isCorrectChain ?
+            <>
+                Switch Chain
+                <TokenIcon src={getChainIcon(chainId) || ""} alt={getChainNameById(Number(chainId))} size="sm" className="ml-2" />
+            </> :
+            confirming ?
+                <div><Spinner size="md" className='mr-2' /> {confirming}</div>
+                : showPreview
+                    ? "Stake"
+                    : "Next"
+
+    }, [confirming, chainId, connectedChainId, isChainSwitching, showPreview])
 
     const nativeTokenPrice = useMemo(() => {
         if (chainId && nativeTokenAddress) {
@@ -143,7 +169,7 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                         </div>
                         <div className="ml-auto text-right">
                             <div className={`text-emerald-400`}>
-                                {modalState.position?.apy || 0}% APY
+                                {formatNumberByFrac(modalState.position?.apy || 0)}% APY
                             </div>
                         </div>
                     </div>
@@ -226,6 +252,12 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                             </div>
                             :
                             <>
+                                <SelectChain
+                                    chainList={modalState?.supportedChains || []}
+                                    selectedChain={Number(chainId)}
+                                    setSelectedChain={setChainId}
+
+                                />
                                 <div className="bg-white/5 rounded-xl p-4">
                                     <div className="text-sm text-white/60 mb-2">
                                         Amount
@@ -309,14 +341,16 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                     <button
                         className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
                         onClick={async () => {
-                            if (showPreview) {
+                            if (!isCorrectChain) {
+                                switchChain(Number(chainId));
+                            } else if (showPreview) {
                                 stakeHandler()
                             } else {
                                 setShowPreview(true);
                             }
                         }}
                     >
-                        {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Stake" : "Next"}
+                        {buttonLabel}
                     </button>
                 </div>
             </div>
