@@ -1,5 +1,5 @@
 import { enSoApi } from "./api.service.ts";
-
+import axios, { AxiosInstance } from "axios";
 export interface EnSoResponse {
     createdAt: number;
     tx: {
@@ -38,4 +38,13 @@ export const enSoService = {
             throw error;
         }
     },
+    getApprove: async ({ fromAddress, chainId, tokenAddress, amount }: { fromAddress: string, chainId: number, tokenAddress: string, amount: string }) => {
+        try {
+            const { data } = await enSoApi.get<EnSoResponse>(`/wallet/approve?chainId=${chainId}&fromAddress=${fromAddress}&tokenAddress=${tokenAddress}&amount=${amount}`);
+            return data;
+        } catch (error) {
+            console.error('Failed to fetch news:', error);
+            throw error;
+        }
+    }
 }
