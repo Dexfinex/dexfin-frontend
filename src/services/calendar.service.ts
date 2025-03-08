@@ -36,7 +36,6 @@ export const calendarService = {
     },
     editEvent: async (userId: string, event: DayEvent) => {
         try {
-            console.log("ok")
             console.log(event)
             const { data } = await calendarApi.put(`/${event.id}`, {
                 title: event.title,
@@ -51,7 +50,6 @@ export const calendarService = {
                     'Content-Type': 'application/json'
                 }
             });
-            console.log("no")
 
             if (data.errors) {
                 throw new Error(data.errors[0].message)
