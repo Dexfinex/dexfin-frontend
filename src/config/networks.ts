@@ -526,5 +526,31 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/dai.png',
         },
     ],
+    [SOLANA_CHAIN_ID]: [
+        {
+            address: "11111111111111111111111111111111",
+            chainId: 900,
+            decimals: 9,
+            logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
+            name: "SOL",
+            symbol: "SOL"
+        },
+        {
+            address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            chainId: 900,
+            decimals: 6,
+            logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png",
+            name: "USD Coin",
+            symbol: "USDC"
+        },
+        {
+            address: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+            chainId: 900,
+            decimals: 6,
+            logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg",
+            name: "USDT",
+            symbol: "USDT"
+        },
+    ],
 
 }

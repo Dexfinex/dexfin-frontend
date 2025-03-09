@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useContext, useEffect, useMemo, useState} from 'react';
 import {ArrowDownUp, ArrowRight, Clock, DollarSign} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
 import {SlippageOption, TokenType} from '../../../types/swap.type';
@@ -7,12 +7,13 @@ import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
 import useTokenStore from "../../../store/useTokenStore.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
 import {mapChainId2ExplorerUrl, mapChainId2NativeAddress, mapChainId2Network} from "../../../config/networks.ts";
-import {useSolanaBalance} from "../../../hooks/useSolanaBalance.tsx";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
 import {formatEstimatedTimeBySeconds, getUSDAmount} from "../../../utils/swap.util.ts";
 import {DestinationAddressInputModal} from "../modals/DestinationAddressInputModal.tsx";
 import useSwapkitQuote from "../../../hooks/useSwapkitQuote.ts";
+import {useAllBalance} from "../../../hooks/useAllBalance.tsx";
+import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
 
 interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
@@ -39,6 +40,11 @@ export function CrossChainSwapBox({
                                       onSwitch,
                                       slippage,
                                   }: CrossChainSwapBoxProps) {
+    const {
+        address,
+        chainId,
+        solanaWalletInfo,
+    } = useContext(Web3AuthContext);
 
     const [destinationAddress, setDestinationAddress] = useState<string>('');
     const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
@@ -69,13 +75,13 @@ export function CrossChainSwapBox({
         isLoading: isFromBalanceLoading,
         // refetch: refetchFromBalance,
         data: fromBalance
-    } = useSolanaBalance({mintAddress: fromToken?.address})
+    } = useAllBalance({tokenOrMintAddress: fromToken?.address})
 
     const {
         isLoading: isToBalanceLoading,
         // refetch: refetchToBalance,
         data: toBalance
-    } = useSolanaBalance({mintAddress: toToken?.address})
+    } = useAllBalance({tokenOrMintAddress: toToken?.address})
 
     const insufficientBalance =
         !isNaN(Number(fromBalance?.formatted)) ? Number(fromAmount) > Number(fromBalance?.formatted)
@@ -250,7 +256,7 @@ export function CrossChainSwapBox({
             }
 
             {
-                !solanaWalletInfo ? (
+                (chainId === SOLANA_CHAIN_ID && !solanaWalletInfo) ? (
                     <Button
                         width="full"
                         colorScheme="blue"

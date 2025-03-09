@@ -13,7 +13,7 @@ interface IGetBalance {
 }
 
 
-const getSolanaBalance = async ({ publicKey, mintAddress }: IGetBalance) => {
+export const getSolanaBalance = async ({ publicKey, mintAddress }: IGetBalance) => {
 	const ownerPublicKey = new PublicKey(publicKey);
 	const tokenMintPublicKey = new PublicKey(mintAddress);
 

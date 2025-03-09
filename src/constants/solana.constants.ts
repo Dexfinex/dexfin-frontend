@@ -17,7 +17,6 @@ export const ETHMint = new PublicKey('7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963vo
 export const WSOLMint = new PublicKey('So11111111111111111111111111111111111111112')
 export const SOLMint = PublicKey.default
 
-
 /** Address of the SPL Token 2022 program */
 export const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
 
