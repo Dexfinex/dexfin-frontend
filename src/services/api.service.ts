@@ -26,7 +26,7 @@ export const zeroxApi = axios.create({
 });
 
 export const swapkitApi = axios.create({
-  // baseURL: SWAPKIT_BASE_URL,
+  baseURL: SWAPKIT_BASE_URL,
 });
 
 export const coinGeckoApi = axios.create({

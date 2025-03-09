@@ -526,7 +526,7 @@ export function SwapBox({
 
             {
                 error && (
-                    <Alert status="error" variant="subtle" bg={'#511414'} borderRadius="md">
+                    <Alert status="error" variant="subtle" borderRadius="md">
                         <AlertIcon/>
                         <Text>Error: {(error as BaseError).shortMessage || error.message}</Text>
                     </Alert>

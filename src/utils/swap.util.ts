@@ -2,6 +2,7 @@
 import {splitSignature} from "./signature.util.ts";
 import {GaslessQuoteResponse, SignatureType, TokenType} from "../types/swap.type.ts";
 import {WalletClient} from "viem";
+import {BITCOIN_CHAIN_ID, SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
 
 export async function signTradeObject(walletClient: WalletClient, quote: GaslessQuoteResponse): Promise<any> {
     // Logic to sign trade object
@@ -59,4 +60,13 @@ export const formatEstimatedTimeBySeconds = (seconds: number) => {
     return remainingMinutes > 0
         ? `${hours} hr, ${remainingMinutes} min`
         : `${hours} hr`;
+}
+
+
+export const needDestinationAddress = (fromChainId: number | undefined, toChainId: number | undefined) => {
+    if (fromChainId === undefined || toChainId === undefined)
+        return false
+
+    const exceptionalChainIds = [SOLANA_CHAIN_ID, BITCOIN_CHAIN_ID]
+    return fromChainId !== toChainId && (exceptionalChainIds.indexOf(fromChainId) >= 0 || exceptionalChainIds.indexOf(toChainId) >= 0);
 }

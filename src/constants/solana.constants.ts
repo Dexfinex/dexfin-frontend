@@ -39,6 +39,7 @@ export function programSupportsExtensions(programId: PublicKey): boolean {
 }
 
 export const SOLANA_CHAIN_ID = 900 // predefined id for solana mainnet
+export const BITCOIN_CHAIN_ID = 0 // predefined id for solana mainnet
 
 export const SOL_INFO: SolanaTokenInfo = {
     chainId: 101,

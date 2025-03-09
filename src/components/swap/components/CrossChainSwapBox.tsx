@@ -9,7 +9,7 @@ import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
 import {mapChainId2ExplorerUrl, mapChainId2NativeAddress, mapChainId2Network} from "../../../config/networks.ts";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
-import {formatEstimatedTimeBySeconds, getUSDAmount} from "../../../utils/swap.util.ts";
+import {formatEstimatedTimeBySeconds, getUSDAmount, needDestinationAddress} from "../../../utils/swap.util.ts";
 import {DestinationAddressInputModal} from "../modals/DestinationAddressInputModal.tsx";
 import useSwapkitQuote from "../../../hooks/useSwapkitQuote.ts";
 import {useAllBalance} from "../../../hooks/useAllBalance.tsx";
@@ -247,8 +247,17 @@ export function CrossChainSwapBox({
             }
 
             {
+                (needDestinationAddress(fromToken?.chainId, toToken?.chainId)) && (
+                    <Alert status="info" variant="subtle" borderRadius="md">
+                        <AlertIcon/>
+                        <Text>You Should Input Destination Address</Text>
+                    </Alert>
+                )
+            }
+
+            {
                 quoteResponse.errorMessage && (
-                    <Alert status="error" variant="subtle" bg={'#511414'} borderRadius="md">
+                    <Alert status="error" variant="subtle" borderRadius="md">
                         <AlertIcon/>
                         <Text>Error: {quoteResponse.errorMessage}</Text>
                     </Alert>
@@ -284,7 +293,7 @@ export function CrossChainSwapBox({
                             onClick={handleSwap}
                             isDisabled={!(Number(fromAmount) > 0) || confirmationLoading || isQuoteLoading}
                         >
-                            Swap
+                            Bridge
                         </Button>
                     )
                 )
