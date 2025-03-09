@@ -13,15 +13,14 @@ import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStor
 import { SendDrawer } from "./wallet/SendDrawer";
 import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
-import useTokenTransferStore from '../store/useTokenTransferStore.ts';
-import { useEvmWalletTransfer } from "../hooks/useTransfer";
+import useActivitiesStore from "../store/useActivitiesStore.ts";
 import { dexfinv3Service } from "../services/dexfin.service.ts";
 import { Skeleton, Popover, PopoverTrigger, PopoverContent, theme } from '@chakra-ui/react';
 import { coingeckoService } from "../services/coingecko.service";
 import { birdeyeService } from "../services/birdeye.service";
-import { TransactionType } from "../types/wallet";
 import { mapChainName2ExplorerUrl } from "../config/networks";
 import { WalletActivityType } from "../types/dexfinv3.type.ts";
+import { useActivities } from "../hooks/useActivities.ts";
 
 interface WalletDrawerProps {
     isOpen: boolean,
@@ -395,45 +394,23 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
 
 export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen }) => {
     const { theme } = useStore();
-    const { address, chainId, switchChain, logout, solanaWalletInfo } = useContext(Web3AuthContext);
+    const { address, logout, solanaWalletInfo } = useContext(Web3AuthContext);
     const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
     const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
     const [page, setPage] = useState<PageType>('main');
     const { isLoading: isLoadingBalance } = useWalletBalance();
     const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
+    const { } = useActivities({ evmAddress: address, solanaAddress: solanaWalletInfo?.publicKey || "" })
+    const { activities } = useActivitiesStore();
     // const [showSendDrawer, setShowSendDrawer] = useState(false);
     // const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
     const [showBuyDrawer, setShowBuyDrawer] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<TokenBalance | null>(null);
     const [drawerWidth, setDrawerWidth] = useState("400px");
-    const [activities, setActivities] = useState<Array<WalletActivityType>>([]);
 
     // useEvmWalletTransfer();
     // const { transfers } = useTokenTransferStore();
 
-    const fetchActivities = useCallback(async () => {
-        if (!address) {
-            return []
-        }
-
-        const activities = await dexfinv3Service.getAllActivities(address, solanaWalletInfo?.publicKey || "")
-        return activities
-    }, [address, solanaWalletInfo])
-
-    const { isLoading, refetch, data } = useQuery<any>(
-        {
-            queryKey: ['balance', address, solanaWalletInfo],
-            queryFn: fetchActivities,
-            refetchInterval: 10_000,
-        }
-    )
-
-    useEffect(() => {
-        if (JSON.stringify(activities) != JSON.stringify(data)) {
-            console.log('set activities')
-            setActivities(data)
-        }
-    }, [data])
 
     // Update drawer width based on screen size
     useEffect(() => {
