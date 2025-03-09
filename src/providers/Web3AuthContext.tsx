@@ -53,12 +53,6 @@ import axios from "axios";
 
 export type WalletType = 'EOA' | 'EMBEDDED' | 'UNKNOWN';
 
-interface UserData {
-    accessToken: string;
-    userId?: string;
-    walletType?: WalletType;
-}
-
 interface Web3AuthContextType {
     login: () => void;
     logout: () => void;
@@ -96,8 +90,6 @@ interface Web3AuthContextType {
     solanaWalletInfo: SolanaWalletInfoType | undefined,
     signSolanaTransaction: (solanaTransaction: VersionedTransaction) => Promise<VersionedTransaction | null>,
     transferSolToken: (recipientAddress: string, tokenMintAddress: string, amount: number, decimals: number) => Promise<string>,
-
-    userData: UserData | null,
     getWalletType: () => WalletType,
     walletType: WalletType
 }
@@ -160,7 +152,6 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     transferSolToken: async () => {
         return ""
     },
-    userData: null,
     getWalletType: () => 'UNKNOWN',
     walletType: 'UNKNOWN',
 
@@ -184,7 +175,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isLoadingStoredWallet, setIsLoadingStoredWallet] = useState<boolean>(false)
     const [solanaWalletInfo, setSolanaWalletInfo] = useState<SolanaWalletInfoType | undefined>()
 
-    const [userData, setUserData] = useState<UserData | null>(null);
     const [walletType, setWalletType] = useState<WalletType>('UNKNOWN');
 
     // const [chain, setChain] = useState(null);
@@ -495,7 +485,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setWalletClient(undefined)
         setIsLoadingStoredWallet(false)
 
-        setUserData(null)
         setWalletType('UNKNOWN')
         delete axios.defaults.headers.common['Authorization'];
     }
@@ -709,7 +698,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         walletClient,
         setWalletClient,
 
-        userData,
         getWalletType,
         walletType,
     }

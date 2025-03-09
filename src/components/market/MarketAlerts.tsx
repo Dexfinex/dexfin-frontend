@@ -1,12 +1,11 @@
 // File: src/components/MarketAlerts.tsx
-import React, { useState, useEffect, useContext } from 'react';
-import {
-    Bell, Plus, Trash2, RefreshCw, Edit
-} from 'lucide-react';
-import { alertApiService, configureAlertApiAuth } from '../../services/alert.service';
-import { Alert, CreateAlertDto, UpdateAlertDto, alertTypes } from '../../types/alert.types';
-import { Web3AuthContext } from '../../providers/Web3AuthContext';
-import { useWebSocket } from '../../providers/WebSocketProvider';
+import React, {useContext, useEffect, useState} from 'react';
+import {Bell, Edit, Plus, RefreshCw, Trash2} from 'lucide-react';
+import {alertApiService} from '../../services/alert.service';
+import {Alert, alertTypes, CreateAlertDto, UpdateAlertDto} from '../../types/alert.types';
+import {Web3AuthContext} from '../../providers/Web3AuthContext';
+import {useWebSocket} from '../../providers/WebSocketProvider';
+
 type AlertTypeId =
     'PRICE_ALERT' |
     'VOLUME_ALERT' |
@@ -39,7 +38,7 @@ const REVERSE_TYPE_MAPPING: Record<string, string> = {
 
 export const MarketAlerts: React.FC = () => {
     // Access Web3Auth context
-    const { userData, isConnected } = useContext(Web3AuthContext);
+    const { isConnected } = useContext(Web3AuthContext);
     const { refreshAlerts } = useWebSocket();
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -77,11 +76,6 @@ export const MarketAlerts: React.FC = () => {
         customData: {}
     });
 
-    useEffect(() => {
-        if (userData) {
-            configureAlertApiAuth(userData.accessToken);
-        }
-    }, [userData]);
 
     useEffect(() => {
         if (isConnected) {
