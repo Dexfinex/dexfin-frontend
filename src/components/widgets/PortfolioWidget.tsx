@@ -19,10 +19,7 @@ type WalletTab = "assets" | "defi"
 export const PortfolioWidget: React.FC = () => {
   const [activeTab, setActiveTab] = useState<WalletTab>("assets")
   const { chainId, address } = useContext(Web3AuthContext)
-  const { isLoading, data: balanceData = [] } = useWalletBalance({
-    chainId: Number(chainId),
-    address: address,
-  })
+  const { isLoading, data: balanceData = [] } = useWalletBalance()
   const { isLoading: isLoadingPositions } = useDefiPositionByWallet({
     chainId: chainId,
     walletAddress: address
