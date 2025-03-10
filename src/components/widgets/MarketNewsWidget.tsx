@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { ExternalLink, ChevronLeft, ChevronRight, Clock, AlertCircle } from 'lucide-react';
 
 import { useGetLatestCryptoNews } from '../../hooks/useCryptoNews';
@@ -7,13 +7,13 @@ import { useStore } from '../../store/useStore';
 
 export const MarketNewsWidget: React.FC = () => {
   const [page, setPage] = useState(0);
-  const [tooltipIndex, setTooltipIndex] = useState<number | null>(null);
   const { theme } = useStore();
   const itemsPerPage = 4;
 
   const { data: latestCryptoNews, isLoading: isLoadingLatestCryptoNews, error: errorLatestCryptoNews } = useGetLatestCryptoNews();
 
-  const getImpactColor = (impact: string) => {
+  // Memoize impact color function to prevent recalculation
+  const getImpactColor = useCallback((impact: string) => {
     switch (impact) {
       case 'HIGH':
         return 'text-red-400';
@@ -22,7 +22,23 @@ export const MarketNewsWidget: React.FC = () => {
       default:
         return 'text-green-400';
     }
-  };
+  }, []);
+
+  // Memoize tooltip background and color
+  const tooltipStyles = useMemo(() => ({
+    bg: theme === 'dark' ? 'rgba(16, 16, 18, 0.85)' : '#ffffff',
+    color: theme === "dark" ? "text-white/50" : ""
+  }), [theme]);
+
+  // Memoize pagination handlers
+  const handlePrevPage = useCallback(() => {
+    setPage(p => Math.max(0, p - 1));
+  }, []);
+
+  const handleNextPage = useCallback((totalPages: number) => {
+    setPage(p => Math.min(totalPages - 1, p + 1));
+  }, []);
+
 
   if (errorLatestCryptoNews) {
     return (
@@ -64,7 +80,7 @@ export const MarketNewsWidget: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setPage(p => Math.max(0, p - 1))}
+            onClick={handlePrevPage}
             disabled={page === 0}
             className="p-1 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
           >
@@ -74,7 +90,7 @@ export const MarketNewsWidget: React.FC = () => {
             {page + 1} / {totalPages || 1}
           </span>
           <button
-            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+            onClick={() => handleNextPage(totalPages)}
             disabled={page === totalPages - 1 || totalPages === 0}
             className="p-1 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
           >
@@ -84,47 +100,35 @@ export const MarketNewsWidget: React.FC = () => {
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto ai-chat-scrollbar">
-        {displayedNews.map((item, index) => {
-          console.log("tooltip index", tooltipIndex);
-          console.log("index ", index);
-          console.log("tooltip index &&& ", tooltipIndex === index && item);
-          return (
-            <div key={index} className="relative">
-              <Tooltip bg={theme === 'dark' ? 'rgba(16, 16, 18, 0.85)' : '#ffffff'} color={theme === "dark" ? "text-white/50" : ""} hasArrow label={item.title} placement='top'>
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block p-3 rounded-lg bg-black/20 hover:bg-black/30 transition-colors group relative"
-                  onMouseEnter={() => {
-                    console.log("title-news : ", index)
-                    setTooltipIndex(index)
-
-                  }}
-                  onMouseLeave={() => setTooltipIndex(null)}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-white/90 truncate pr-6 group-hover:text-blue-400 transition-colors">
-                        {item.title}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1 text-sm">
-                        <span className="text-white/60">{item.source}</span>
-                        <span className="text-white/40">•</span>
-                        <span className="text-white/60">{item.time}</span>
-                        <span className="text-white/40">•</span>
-                        <span className={getImpactColor(item.impact)}>
-                          {item.impact} IMPACT
-                        </span>
-                      </div>
+        {displayedNews.map((item, index) =>
+          <div key={index} className="relative">
+            <Tooltip bg={tooltipStyles.bg} color={tooltipStyles.color} hasArrow label={item.title} placement='top'>
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-3 rounded-lg bg-black/20 hover:bg-black/30 transition-colors group relative"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-white/90 truncate pr-6 group-hover:text-blue-400 transition-colors">
+                      {item.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1 text-sm">
+                      <span className="text-white/60">{item.source}</span>
+                      <span className="text-white/40">•</span>
+                      <span className="text-white/60">{item.time}</span>
+                      <span className="text-white/40">•</span>
+                      <span className={getImpactColor(item.impact)}>
+                        {item.impact} IMPACT
+                      </span>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-white/40 group-hover:text-blue-400 transition-colors" />
                   </div>
-                </a>
-              </Tooltip>
-            </div>
-          )
-        }
+                  <ExternalLink className="w-4 h-4 text-white/40 group-hover:text-blue-400 transition-colors" />
+                </div>
+              </a>
+            </Tooltip>
+          </div>
         )}
       </div>
     </div >
