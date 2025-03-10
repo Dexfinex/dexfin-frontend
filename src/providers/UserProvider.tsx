@@ -5,12 +5,13 @@ import { authService } from '../services/auth.service';
 import { Web3AuthContext } from './Web3AuthContext';
 import { useStore } from "../store/useStore.ts";
 import { setAuthToken } from '../services/api.service';
+import {WalletTypeEnum} from "../types/wallet.ts";
 
 interface UserContextType {
   userData: {
     accessToken: string;
     userId?: string;
-    walletType?: 'EOA' | 'EMBEDDED' | 'UNKNOWN';
+    walletType?: WalletTypeEnum;
   } | null;
   isLoading: boolean;
   error: Error | null;
@@ -40,7 +41,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isConnected,
   } = useContext(Web3AuthContext);
 
-  const handleWalletAuth = async (walletType: 'EOA' | 'EMBEDDED' | 'UNKNOWN', evmAddress?: string, solAddress?: string) => {
+  const handleWalletAuth = async (walletType: WalletTypeEnum, evmAddress?: string, solAddress?: string) => {
     try {
       setIsLoading(true);
       setError(null);
