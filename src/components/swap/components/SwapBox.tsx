@@ -20,6 +20,7 @@ import {use0xTokenApprove} from "../../../hooks/use0xTokenApprove.ts";
 import {zeroxService} from "../../../services/0x.service.ts";
 import use0xGaslessSwapStatus from "../../../hooks/use0xGaslessSwapStatus.ts";
 import {signTradeObject, tradeSplitSigDataToSubmit} from "../../../utils/swap.util.ts";
+import {WalletTypeEnum} from "../../../types/wallet.ts";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -108,6 +109,9 @@ export function SwapBox({
     const [gaslessTradeHash, setGaslessTradeHash] = useState<string | undefined>(undefined);
 
     const {
+        walletClient,
+        kernelAccount,
+        walletType,
         signer,
         chainId: walletChainId,
         isConnected,
@@ -348,9 +352,9 @@ export function SwapBox({
     }
 
     const handleGaslessSwap = async () => {
-        if (signer) {
+        if (kernelAccount || walletClient) {
             const gaslessQuote = quoteResponse as GaslessQuoteResponse
-            const tradeSignature = await signTradeObject(signer, gaslessQuote); // Function to sign trade object
+            const tradeSignature = await signTradeObject(walletType === WalletTypeEnum.EMBEDDED ? kernelAccount! : walletClient!, gaslessQuote); // Function to sign trade object
             const tradeDataToSubmit = await tradeSplitSigDataToSubmit(tradeSignature, gaslessQuote);
             zeroxService.submitTrade(walletChainId, tradeDataToSubmit, approvalDataToSubmit).then(tradeHash => setGaslessTradeHash(tradeHash))
         }

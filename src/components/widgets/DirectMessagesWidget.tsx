@@ -754,11 +754,13 @@ export const DirectMessagesWidget: React.FC = () => {
     return true
   }
 
+/*
   useEffect(() => {
     if (walletType === WalletTypeEnum.EMBEDDED) {
       handleUnlock()
     }
   }, [handleUnlock, walletType])
+*/
 
   return (
     <div className="p-2 h-full flex flex-col">

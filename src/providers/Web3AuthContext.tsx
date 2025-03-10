@@ -40,6 +40,7 @@ import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import {
     createKernelAccount,
     createKernelAccountClient,
+    CreateKernelAccountReturnType,
     createZeroDevPaymasterClient,
     getUserOperationGasPrice,
     KernelEIP1193Provider
@@ -86,6 +87,7 @@ interface Web3AuthContextType {
     signer: JsonRpcSigner | undefined,
     address: string,
     walletClient: WalletClient | undefined,
+    kernelAccount: CreateKernelAccountReturnType | null,
     setWalletClient: React.Dispatch<React.SetStateAction<WalletClient | undefined>>,
     isLoadingStoredWallet: boolean,
     solanaWalletInfo: SolanaWalletInfoType | undefined,
@@ -112,6 +114,7 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     setAuthMethod: () => {
     },
     walletClient: undefined,
+    kernelAccount: null,
     setWalletClient: () => {
     },
     authWithEthWallet: async () => {
@@ -169,6 +172,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isChainSwitching, setIsChainSwitching] = useState(false);
     const [chainId, setChainId] = useState<number | undefined>(56);
     const [walletClient, setWalletClient] = useState<WalletClient | undefined>(undefined);
+    const [kernelAccount, setKernelAccount] = useState<CreateKernelAccountReturnType | null>(null)
     const [provider, setProvider] = useState<Web3Provider | undefined>(undefined);
     const [signer, setSigner] = useState<JsonRpcSigner | undefined>(undefined);
     const [address, setAddress] = useState<string>('');
@@ -309,6 +313,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 kernelVersion,
                 entryPoint,
             })
+            setKernelAccount(account)
             setAddress(account.address)
 
 
@@ -699,6 +704,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         walletClient,
         setWalletClient,
+        kernelAccount,
 
         getWalletType,
         walletType,
