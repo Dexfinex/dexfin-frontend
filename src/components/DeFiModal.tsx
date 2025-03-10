@@ -62,7 +62,12 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation()
 
-  const positionHandlerList = Object.keys(mapChainId2NativeAddress).map(chainId => {
+  const positionHandlerList = [
+    1, // Ethereum Mainnet (ETH)
+    56, // Binance Smart Chain (BNB)
+    137, // Polygon Mainnet (MATIC)
+    8453, // Base Mainnet (ETH placeholder)
+  ].map(chainId => {
     const { isLoading, refetch } = useDefiPositionByWallet({ chainId: Number(chainId), walletAddress: address });
     return { isLoading, refetch, chainId: chainId }
   });
@@ -71,7 +76,12 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const isLoadingPosition = positionHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === positionHandlerList.length;
 
-  const protocolHandlerList = Object.keys(mapChainId2NativeAddress).map(chainId => {
+  const protocolHandlerList = [
+    1, // Ethereum Mainnet (ETH)
+    56, // Binance Smart Chain (BNB)
+    137, // Polygon Mainnet (MATIC)
+    8453, // Base Mainnet (ETH placeholder)
+  ].map(chainId => {
     const { isLoading, refetch } = useDefiProtocolsByWallet({ chainId: Number(chainId), walletAddress: address });
     return { isLoading, refetch, chainId: chainId }
   });
