@@ -1,25 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
-import { TokenType, Step, Protocol } from '../../../types/brian.type';
-import { convertCryptoAmount } from '../../../utils/agent.tsx';
-import { formatNumberByFrac } from '../../../utils/common.util';
-import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
+import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
+import { convertCryptoAmount } from '../../../../utils/agent.tsx';
+import { formatNumberByFrac } from '../../../../utils/common.util.ts';
+import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
 
-import { FailedTransaction } from '../modals/FailedTransaction.tsx';
-import { SuccessModal } from '../modals/SuccessModal.tsx';
-
-interface BorrowProcessProps {
+import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
+import { SuccessModal } from '../../modals/SuccessModal.tsx';
+interface SwapProcessProps {
   onClose: () => void;
   fromToken: TokenType;
   toToken: TokenType;
   fromAmount: string;
   receiver: string;
-  toAmount: string;
   steps: Step[];
   protocol: Protocol | undefined;
 }
 
-export const BorrowProcess: React.FC<BorrowProcessProps> = ({ steps,toAmount, toToken, fromToken, protocol={name:'aave-v3'}, onClose }) => {
+export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol, onClose }) => {
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -59,6 +57,7 @@ export const BorrowProcess: React.FC<BorrowProcessProps> = ({ steps,toAmount, to
       setFailedTransaction(true);
     }
   };
+
 
   useEffect(() => {
     if (step === 1) {
@@ -129,9 +128,9 @@ export const BorrowProcess: React.FC<BorrowProcessProps> = ({ steps,toAmount, to
           <Bot className="w-12 h-12 text-blue-500" />
         </div>
       </div>
-      <h3 className="mt-8 text-xl font-medium">Finding Best Borrow Rate</h3>
+      <h3 className="mt-8 text-xl font-medium">Finding Best Rate</h3>
       <p className="mt-2 text-white/60 text-center max-w-md">
-        Scanning protocols for the best {fromToken.symbol} to {toToken.symbol} borrow rate...
+        Scanning DEXs for the best {fromToken.symbol} to {toToken.symbol} swap rate...
       </p>
     </div>
   );
@@ -139,9 +138,14 @@ export const BorrowProcess: React.FC<BorrowProcessProps> = ({ steps,toAmount, to
   const renderStep2 = () => (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 mb-6">
+        {/* <img 
+          src={protocol.logoURI??''}
+          alt={protocol?.name}
+          className="w-12 h-12"
+        /> */}
         <div>
           <h3 className="text-xl font-medium">Best Rate Found</h3>
-          <p className="text-white/60">{'aave-v3'} offers the best rate</p>
+          <p className="text-white/60">{protocol?.name} offers the best rate</p>
         </div>
       </div>
 
@@ -149,41 +153,43 @@ export const BorrowProcess: React.FC<BorrowProcessProps> = ({ steps,toAmount, to
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
-              {fromToken.logoURI &&
-                <img
-                  src={fromToken.logoURI}
-                  alt={fromToken.symbol}
-                  className="w-10 h-10"
-                />
-              }
+              <img
+                src={fromToken.logoURI}
+                alt={fromToken.symbol}
+                className="w-10 h-10"
+              />
               <div>
-                <div className="text-sm text-white/60">You borrow</div>
-                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(toAmount, toToken.decimals))} {fromToken.symbol}</div>
+                <div className="text-sm text-white/60">You pay</div>
+                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
             <div className="flex items-center gap-3">
-              {toToken.logoURI &&
-                <img
-                  src={toToken.logoURI}
-                  alt={toToken.symbol}
-                  className="w-10 h-10"
-                />}
+              <img
+                src={toToken.logoURI}
+                alt={toToken.symbol}
+                className="w-10 h-10"
+              />
               <div>
                 <div className="text-sm text-white/60">You receive</div>
-                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(toAmount, toToken.decimals))} {toToken.symbol}</div>
+                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol}</div>
               </div>
             </div>
           </div>
 
-
+          <div className="p-4 bg-white/5 rounded-lg space-y-3">
+            <div className="flex justify-between">
+              <span className="text-white/60">Rate</span>
+              <span className="font-medium">1 {fromToken.symbol} = {formatNumberByFrac(Number(fromToken.priceUSD)/Number(toToken.priceUSD), 2)} {toToken.symbol} </span>
+            </div>
+          </div>
         </div>
 
         <button
           onClick={() => handleTransaction(steps)}
           className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
         >
-          Confirm Borrow
+          Confirm Swap
         </button>
       </div>
     </div>
@@ -206,27 +212,24 @@ export const BorrowProcess: React.FC<BorrowProcessProps> = ({ steps,toAmount, to
             </div>
           </div>
           <div className="flex items-center gap-4 animate-pulse">
-            {fromToken.logoURI &&
-              <img
-                src={fromToken.logoURI}
-                alt={fromToken.symbol}
-                className="w-12 h-12"
-              />
-            }
+            <img
+              src={fromToken.logoURI}
+              alt={fromToken.symbol}
+              className="w-12 h-12"
+            />
             <ArrowRight className="w-6 h-6 text-white/40" />
-            {toToken.logoURI && <img
+            <img
               src={toToken.logoURI}
               alt={toToken.symbol}
               className="w-12 h-12"
             />
-            }
           </div>
           <p className="mt-4 text-white/60">
-            Borrowing {formatNumberByFrac(convertCryptoAmount(toAmount, toToken.decimals))} {toToken.symbol} via {protocol?.name}
+            Swapping {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} for {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} via {protocol?.name}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully borrowed ${formatNumberByFrac(convertCryptoAmount(toAmount, toToken.decimals))} ${toToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(toAmount, toToken.decimals))} ${toToken.symbol}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol}`} />
       )}
     </div>
   );
@@ -263,7 +266,7 @@ export const BorrowProcess: React.FC<BorrowProcessProps> = ({ steps,toAmount, to
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Borrow ${formatNumberByFrac(convertCryptoAmount(toAmount, toToken.decimals))} ${toToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(toAmount, toToken.decimals))} ${toToken.symbol} via ${protocol?.name}`}
+          description={`Swap ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} via ${protocol?.name}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (

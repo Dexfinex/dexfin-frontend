@@ -14,11 +14,12 @@ import { Message } from '../../types/index.ts';
 import { TrendingCoins } from './components/Analysis/TrendingCoins.tsx';
 import { TopCoins } from './components/Analysis/TopCoins.tsx'
 import { NewsWidget } from '../widgets/NewsWidget.tsx';
-import { YieldProcess } from './components/YieldProcess.tsx';
-import { SwapProcess } from './components/SwapProcess.tsx';
-import { BridgeProcess } from './components/BridgeProcess.tsx';
+import { YieldProcess } from './components/EVM/YieldProcess.tsx';
+import { SwapProcess } from './components/EVM/SwapProcess.tsx';
+import { BridgeProcess } from './components/EVM/BridgeProcess.tsx';
 import { PortfolioProcess } from '../PortfolioProcess.tsx';
-import { SendProcess } from './components/SendProcess.tsx';
+import { SendProcess } from './components/EVM/SendProcess.tsx';
+import { SendSolProcess } from './components/Solana/SendSolProcess.tsx';
 import { StakeProcess } from '../StakeProcess.tsx';
 import { ProjectAnalysisProcess } from '../ProjectAnalysisProcess.tsx';
 import { WalletPanel } from './WalletPanel.tsx';
@@ -27,12 +28,12 @@ import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 import { convertCryptoAmount } from '../../utils/agent.tsx';
-import { DepositProcess } from './components/DepositProcess.tsx';
-import { WithdrawProcess } from './components/WithdrawProcess.tsx';
-import { BorrowProcess } from './components/BorrowProcess.tsx';
-import { RepayProcess } from './components/RepayProcess.tsx';
-import { ENSRegisterProcess } from './components/ENSRegisterProcess.tsx';
-import { ENSRenewProcess } from './components/ENSRenewProcess.tsx';
+import { DepositProcess } from './components/EVM/DepositProcess.tsx';
+import { WithdrawProcess } from './components/EVM/WithdrawProcess.tsx';
+import { BorrowProcess } from './components/EVM/BorrowProcess.tsx';
+import { RepayProcess } from './components/EVM/RepayProcess.tsx';
+import { ENSRegisterProcess } from './components/EVM/ENSRegisterProcess.tsx';
+import { ENSRenewProcess } from './components/EVM/ENSRenewProcess.tsx';
 import { openaiService } from '../../services/openai.services.ts';
 import { PriceCard } from './components/Analysis/PriceCard.tsx';
 import { TechnicalAnalysis } from './components/Analysis/TechnicalAnalysis.tsx';
@@ -40,7 +41,7 @@ import { SentimentAnalysis } from './components/Analysis/SentimentAnalysis.tsx';
 import { PredictionAnalysis } from './components/Analysis/PredictionAnalysis.tsx';
 import { MarketOverview } from './components/Analysis/MarketOverview.tsx';
 import { yields_data } from '../../constants/mock/agent.ts';
-import {Yield} from '../../types/brian.type.ts';
+import { Yield } from '../../types/brian.type.ts';
 interface AIAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -67,7 +68,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [showRepayProcess, setShowRepayProcess] = useState(false);
   const [showENSRegisterProcess, setShowENSRegisterProcess] = useState(false);
   const [showENSRenewProcess, setShowENSRenewProcess] = useState(false);
-  const { address, chainId, switchChain } = useContext(Web3AuthContext);
+  const { address, chainId, switchChain, solanaWalletInfo } = useContext(Web3AuthContext);
   const { tokenBalances } = useTokenBalanceStore();
 
   const [fromToken, setFromToken] = useState<TokenType>();
@@ -82,7 +83,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [yields, setYields] = useState<Yield[]>([]);
   const [description, setDescription] = useState('');
 
-  // Reset all process states
   const resetProcessStates = () => {
     setShowYieldProcess(false);
     setShowSwapProcess(false);
@@ -106,34 +106,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
       return fallbackResponse;
     }
 
-    const lowerCommand = command.toLowerCase().trim();
-
-    if (lowerCommand.includes('latest news') || lowerCommand.includes('show me the news')) {
-      const news = await cryptoNewsService.getLatestNews();
-      return {
-        text: "Here are the latest crypto news updates:",
-        news
-      };
-    }
-
-    if (lowerCommand.includes('trending tokens')) {
-      const trendingCoins = await coingeckoService.getTrendingCoins();
-      return {
-        text: "Here are the currently trending tokens:",
-        trending: trendingCoins
-      };
-    }
-
-    if (lowerCommand.includes('bitcoin price')) {
-      const bitcoinData = await coingeckoService.getCoinPrice('bitcoin');
-      if (bitcoinData) {
-        return {
-          text: `The current Bitcoin price is $${bitcoinData.price.toLocaleString()} (${bitcoinData.priceChange24h.toFixed(2)}% 24h change)`,
-          data: bitcoinData
-        };
-      }
-    }
-
     // If no direct match, use OpenAI with fallback
     try {
       if (address) {
@@ -150,6 +122,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           type: "knowledge",
         }
       }
+
     } catch (e) {
       const error = e as {
         error?: { type?: string; code?: string };
@@ -248,8 +221,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     const normalizedMessage = message.toLowerCase();
     const response = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
     console.log(response);
-    if (response && response.type=="price") {
-      
+    if (response && response.type == "price") {
+
       if (response.data) {
         const { priceData } = response.data;
         return {
@@ -267,17 +240,17 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           }
         };
       }
-    } else if (response && response.type=="cryptonews") {
+    } else if (response && response.type == "cryptonews") {
       return {
         text: 'Here are the latest crypto news updates',
         news: response.data.news_items,
       };
-    } else if (response && response.type=="trending") {
+    } else if (response && response.type == "trending") {
       return {
         text: 'Here are the currently trending tokens:',
         trending: response.data.trending_coins
       };
-    } else if (response && response.type=="top_losers") {
+    } else if (response && response.type == "top_losers") {
       return {
         text: 'Here are the top losers',
         losers: response.data.losers.map((item: any) => ({
@@ -292,7 +265,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           analysis: item.analysis,
         }))
       }
-    } else if (response && response.type=="top_gainers") {
+    } else if (response && response.type == "top_gainers") {
       return {
         text: 'Here are the top gainers',
         gainers: response.data.gainers.map((item: any) => ({
@@ -307,17 +280,17 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           analysis: item.analysis,
         }))
       }
-    } else if (response && response.type=="technical_analysis") {
+    } else if (response && response.type == "technical_analysis") {
       return {
         text: `Here's the ${response.data.coinId} technical analysis:`,
         technicalAnalysis: response.data,
       }
-    } else if (response && response.type=="sentiment") {
+    } else if (response && response.type == "sentiment") {
       const sentimentDate = Object.keys(response.data.socialSentiment)[0];
       const negative_score = response.data.socialSentiment?.[sentimentDate]?.[Object.keys(response.data.socialSentiment[sentimentDate])[0]]?.Negative;
       const positive_score = response.data.socialSentiment?.[sentimentDate]?.[Object.keys(response.data.socialSentiment[sentimentDate])[0]]?.Positive;
       return {
-        text: `Here's the ${response.data.priceData.data.response.name} market sentiment analysis:`,
+        text: `Here's the ${response.data.priceData.data.name} market sentiment analysis:`,
         sentimentAnalysis: {
           social_sentiment: positive_score * 100 / (negative_score + positive_score),
           trading_sentiment: response.data.tradingSentiment.value,
@@ -340,11 +313,15 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         text: `Here's the current market overview:`,
         marketOverview: response,
       }
-    } else if(response && response.type == "best_yields") {
+    } else if (response && response.type == "best_yields") {
       return {
         type: "best_yields",
         yields: response.data,
       }
+    }
+    const sol_response = await openaiService.getOpenAISolanaData(normalizedMessage);
+    if (sol_response && sol_response.type == "transfer_sol" && sol_response.args.networkName == "solana") {
+      return sol_response;
     }
 
     for (const [key, response] of Object.entries(fallbackResponses)) {
@@ -383,8 +360,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
             resetProcessStates();
-            
-            if(chainId != data.fromToken.chainId){
+
+            if (chainId != data.fromToken.chainId) {
               await switchChain(data.fromToken.chainId);
             }
 
@@ -405,7 +382,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'swap') {
             const data = response.brianData.data;
             resetProcessStates();
-            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
             if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
@@ -425,7 +402,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'bridge') {
             const data = response.brianData.data;
             resetProcessStates();
-            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
             if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
@@ -446,7 +423,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'deposit') {
             const data = response.brianData.data;
             resetProcessStates();
-            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
             if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
@@ -466,7 +443,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'withdraw') {
             const data = response.brianData.data;
             resetProcessStates();
-            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setProtocol(data.protocol);
@@ -478,7 +455,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'AAVE Borrow') {
             const data = response.brianData.data;
             resetProcessStates();
-            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setProtocol(data.protocol);
@@ -492,7 +469,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'AAVE Repay') {
             const data = response.brianData.data;
             resetProcessStates();
-            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setProtocol(data.protocol);
@@ -506,7 +483,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
 
             const data = response.brianData.data;
             resetProcessStates();
-            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             setFromToken(data.fromToken);
             setDescription(data.description);
             setSteps(data.steps);
@@ -515,7 +492,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'ENS Renewal') {
             const data = response.brianData.data;
             resetProcessStates();
-            if(chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setDescription(data.description);
@@ -532,6 +509,9 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         } else if (response.type == "best_yields") {
           setYields(response.yields);
           setShowYieldProcess(true);
+        } else if (response.type == "transfer_sol") {
+          console.log(response);
+
         }
 
         if (response) {

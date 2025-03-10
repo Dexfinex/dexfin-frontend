@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
-import { TokenType, Step, Protocol } from '../../../types/brian.type';
-import { convertCryptoAmount } from '../../../utils/agent.tsx';
-import { formatNumberByFrac } from '../../../utils/common.util';
-import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
+import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
+import { convertCryptoAmount } from '../../../../utils/agent.tsx';
+import { formatNumberByFrac } from '../../../../utils/common.util.ts';
+import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
 
-import { FailedTransaction } from '../modals/FailedTransaction.tsx';
-import { SuccessModal } from '../modals/SuccessModal.tsx';
+import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
+import { SuccessModal } from '../../modals/SuccessModal.tsx';
 
-interface WithdrawProcessProps {
+interface RepayProcessProps {
   onClose: () => void;
   fromToken: TokenType;
   toToken: TokenType;
   fromAmount: string;
   receiver: string;
+  toAmount: string;
   steps: Step[];
   protocol: Protocol | undefined;
 }
 
-export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol, onClose }) => {
+export const RepayProcess: React.FC<RepayProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol = { name: 'aave-v3' }, onClose }) => {
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -128,9 +129,9 @@ export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmo
           <Bot className="w-12 h-12 text-blue-500" />
         </div>
       </div>
-      <h3 className="mt-8 text-xl font-medium">Finding Best Pool</h3>
+      <h3 className="mt-8 text-xl font-medium">Finding Best Repay Rate</h3>
       <p className="mt-2 text-white/60 text-center max-w-md">
-        Scanning liquidity pools for the best {fromToken.symbol} to {toToken.symbol} withdraw rate...
+        Scanning protocols for the best {fromToken.symbol} to {toToken.symbol} repay rate...
       </p>
     </div>
   );
@@ -139,8 +140,8 @@ export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmo
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 mb-6">
         <div>
-          <h3 className="text-xl font-medium">Best Pool Found</h3>
-          <p className="text-white/60">{protocol?.name} offers the best rate</p>
+          <h3 className="text-xl font-medium">Best Rate Found</h3>
+          <p className="text-white/60">{'aave-v3'} offers the best rate</p>
         </div>
       </div>
 
@@ -156,7 +157,7 @@ export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmo
                 />
               }
               <div>
-                <div className="text-sm text-white/60">You withdraw</div>
+                <div className="text-sm text-white/60">You repay</div>
                 <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol}</div>
               </div>
             </div>
@@ -182,7 +183,7 @@ export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmo
           onClick={() => handleTransaction(steps)}
           className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
         >
-          Confirm Withdraw
+          Confirm Repay
         </button>
       </div>
     </div>
@@ -221,11 +222,11 @@ export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmo
             }
           </div>
           <p className="mt-4 text-white/60">
-            Withdrawing {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} via {protocol?.name}
+            Repaying {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {toToken.symbol} via {protocol?.name}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully withdrawn ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully repaid ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol}`} />
       )}
     </div>
   );
@@ -262,7 +263,7 @@ export const WithdrawProcess: React.FC<WithdrawProcessProps> = ({ steps, fromAmo
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Withdraw ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol} via ${protocol?.name}`}
+          description={`Repay ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${toToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} via ${protocol?.name}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (
