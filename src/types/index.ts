@@ -456,3 +456,4 @@ export interface Loser {
   usd24hChange: number;
   usd24hVol: number;
 }
+

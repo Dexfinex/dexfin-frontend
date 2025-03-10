@@ -3,7 +3,7 @@ import { TrendingUp, Wallet, Landmark } from "lucide-react"
 import { useWalletBalance } from "../../hooks/useBalance"
 import { Web3AuthContext } from "../../providers/Web3AuthContext"
 import { Skeleton } from "@chakra-ui/react"
-import { TokenChainIcon } from "../swap/components/TokenIcon"
+import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon"
 import { formatNumberByFrac } from "../../utils/common.util"
 import { useDefiPositionByWallet } from "../../hooks/useDefi"
 import useDefiStore from "../../store/useDefiStore"
@@ -288,11 +288,18 @@ export const PortfolioWidget: React.FC = () => {
                         />
                         <div className="flex flex-col justify-start items-start">
                           <div className="font-medium">{position.protocol}</div>
-                          <div className="text-sm">
-                            {position.tokens && position.tokens.length > 0 &&
-                              `${formatNumberByFrac(Number(position.tokens[0]?.balance_formatted) || 0)} ${position.tokens[0]?.symbol || ''}`
-                            }
-                          </div>
+                          {position.tokens && position.tokens.length > 0 &&
+                            <div className="flex gap-1 mt-1">
+                              <div className="flex">
+                                {
+                                  position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" />)
+                                }
+                              </div>
+                              {
+                                position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : `${token?.symbol} `)
+                              }
+                            </div>
+                          }
                         </div>
                       </div>
                       <div className="text-right">
