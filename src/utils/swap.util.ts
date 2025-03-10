@@ -70,3 +70,13 @@ export const needDestinationAddress = (fromChainId: number | undefined, toChainI
     const exceptionalChainIds = [SOLANA_CHAIN_ID, BITCOIN_CHAIN_ID]
     return fromChainId !== toChainId && (exceptionalChainIds.indexOf(fromChainId) >= 0 || exceptionalChainIds.indexOf(toChainId) >= 0);
 }
+
+export const getBridgingSpendTime = (estimatedTime: number) => {
+    const currentTime = Math.floor(Date.now() / 1000)
+    const remainedSeconds = estimatedTime - currentTime
+
+    if (remainedSeconds <= 0)
+        return 'In Progress'
+
+    return `Remained Time: ${formatEstimatedTimeBySeconds(remainedSeconds)}`
+}
