@@ -5,6 +5,7 @@ import {NATIVE_MINT} from "../constants/solana.constants.ts";
 import {connection} from "../config/solana.ts";
 import {useContext} from "react";
 import {Web3AuthContext} from "../providers/Web3AuthContext.tsx";
+import {solToWSol} from "../utils/solana.util.ts";
 
 
 interface IGetBalance {
@@ -13,13 +14,13 @@ interface IGetBalance {
 }
 
 
-const getSolanaBalance = async ({ publicKey, mintAddress }: IGetBalance) => {
+export const getSolanaBalance = async ({ publicKey, mintAddress }: IGetBalance) => {
 	const ownerPublicKey = new PublicKey(publicKey);
 	const tokenMintPublicKey = new PublicKey(mintAddress);
 
 	try {
 
-		if (mintAddress === NATIVE_MINT.toString()) {
+		if (solToWSol(mintAddress) === NATIVE_MINT.toString()) {
 			// Get SOL balance
 			const balance = await connection.getBalance(ownerPublicKey);
 			return {

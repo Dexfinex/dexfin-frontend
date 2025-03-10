@@ -23,7 +23,7 @@ interface Leg {
     fees: Fee[];
 }
 
-interface Warning {
+export interface Warning {
     code: string;
     display: string;
     tooltip: string;
@@ -46,7 +46,7 @@ interface RefundParameters {
     retryDuration: number;
 }
 
-interface ChainflipMeta {
+export interface ChainflipMeta {
     sellAsset: {
         chain: string;
         asset: string;
@@ -79,6 +79,7 @@ interface Route {
     sourceAddress: string;
     destinationAddress: string;
     fees: Fee[];
+    tx: any | undefined;
     estimatedTime: EstimatedTime;
     totalSlippageBps: number;
     legs: Leg[];
@@ -97,9 +98,38 @@ export interface SwapkitQuoteResponse {
     providerErrors: ProviderError[];
 }
 
-
 export interface DepositInfo {
     depositAddress: string;
     channelId: string;
     explorerUrl: string;
+}
+
+export interface SwapkitTrackStatusType {
+    chainId: string;
+    hash: string;
+    block: number;
+    type: string;
+    status: string;
+    trackingStatus: string;
+    fromAsset: string;
+    fromAmount: string;
+    fromAddress: string;
+    toAsset: string;
+    toAmount: string;
+    toAddress: string;
+    finalisedAt: number;
+}
+
+export type SwapkitFinalizedQuoteResponse =  {
+    providerName: string;
+    expectedBuyAmount: string;
+    expectedBuyAmountMaxSlippage: string;
+    feeInUsd: number;
+    formattedFeeInUsd: string;
+    estimatedTime: number;
+    warnings: Warning[];
+    tx: any | null; // You may want to replace `any` with a more specific type for the transaction
+    chainflip: ChainflipMeta | null;
+    errorMessage: string;
+    depositInfo: DepositInfo | null;
 }

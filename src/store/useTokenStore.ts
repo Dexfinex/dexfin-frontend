@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { TokenMetadata } from "../types/wallet";
+import {solToWSol, solToWsolString} from "../utils/solana.util.ts";
 
 // Define the store's state and actions
 interface TokenStoreState {
@@ -25,7 +26,7 @@ const useTokenStore = create<TokenStoreState>((set) => ({
     }), // Update the token prices
   getTokenPrice: (address: string, chainId: number) => {
     const state = useTokenStore.getState() as TokenStoreState;
-    const value = state.tokenPrices[`${chainId}:${address?.toLowerCase()}`];
+    const value = state.tokenPrices[`${chainId}:${solToWSol(address)?.toLowerCase()}`];
     return value ? Number(value) : 0;
   },
   tokenMetadataList: {},
