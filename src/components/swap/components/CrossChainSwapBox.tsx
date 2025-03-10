@@ -14,6 +14,7 @@ import {DestinationAddressInputModal} from "../modals/DestinationAddressInputMod
 import useSwapkitQuote from "../../../hooks/useSwapkitQuote.ts";
 import {useAllBalance} from "../../../hooks/useAllBalance.tsx";
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
+import useSwapkitBridgeStatus from "../../../hooks/useSwapkitBridgeStatus.ts";
 
 interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
@@ -41,15 +42,16 @@ export function CrossChainSwapBox({
                                       slippage,
                                   }: CrossChainSwapBoxProps) {
     const {
-        address,
         chainId,
         solanaWalletInfo,
+        address: evmAddress,
     } = useContext(Web3AuthContext);
 
     const [destinationAddress, setDestinationAddress] = useState<string>('');
     const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [transactionHash, setTransactionHash] = useState<string | undefined>(undefined);
+    const [swapkitTradeHash, setSwapkitTradeHash] = useState<string | undefined>(undefined);
     const [confirmationLoading, setConfirmationLoading] = useState(false);
 
     const {getTokenPrice} = useTokenStore()
@@ -63,38 +65,40 @@ export function CrossChainSwapBox({
         slippage,
         destinationAddress,
     })
+/*
+    const {
+        isLoading: isTracking,
+        trackingStatus,
+    } = useSwapkitBridgeStatus(fromToken?.chainId, swapkitTradeHash)
+*/
 
-    const tokenChainId = fromToken ? fromToken.chainId : toToken!.chainId
-    const nativeTokenAddress = mapChainId2NativeAddress[tokenChainId]
+
     useGetTokenPrices({
-        tokenAddresses: [fromToken?.address ?? null, toToken?.address ?? null, nativeTokenAddress],
-        chainId: tokenChainId,
+        tokenAddresses: [fromToken?.address ?? null],
+        chainId: fromToken?.chainId,
+    })
+    useGetTokenPrices({
+        tokenAddresses: [toToken?.address ?? null],
+        chainId: toToken?.chainId,
     })
 
     const {
         isLoading: isFromBalanceLoading,
         // refetch: refetchFromBalance,
         data: fromBalance
-    } = useAllBalance({tokenOrMintAddress: fromToken?.address})
+    } = useAllBalance({tokenOrMintAddress: fromToken?.address, chainId: fromToken?.chainId})
 
     const {
         isLoading: isToBalanceLoading,
         // refetch: refetchToBalance,
         data: toBalance
-    } = useAllBalance({tokenOrMintAddress: toToken?.address})
+    } = useAllBalance({tokenOrMintAddress: toToken?.address, chainId: toToken?.chainId})
+
+    console.log("fromBalance", fromBalance)
 
     const insufficientBalance =
         !isNaN(Number(fromBalance?.formatted)) ? Number(fromAmount) > Number(fromBalance?.formatted)
             : false;
-
-    /*
-        const insufficientNativeBalance =
-            !isNaN(Number(fromBalance?.formatted)) ?  Number(fromAmount) > Number(fromBalance?.formatted)
-                : false;
-    */
-
-
-    // console.log("gasData", mapPrices, gasData, isGasEstimationLoading)
 
     // Update toAmount when calculation changes
     useEffect(() => {
@@ -103,8 +107,17 @@ export function CrossChainSwapBox({
         }
     }, [quoteResponse, onToAmountChange, toToken]);
 
+    useEffect(() => {
+        if (toToken) {
+            if (toToken.chainId === SOLANA_CHAIN_ID && solanaWalletInfo) {
+                setDestinationAddress(solanaWalletInfo.publicKey)
+            } else {
+                setDestinationAddress(evmAddress)
+            }
+        }
+    }, [toToken, solanaWalletInfo, evmAddress]);
+
     const {
-        // nativeTokenPrice,
         fromUsdAmount,
         toUsdAmount,
         fromNetwork,
@@ -120,11 +133,10 @@ export function CrossChainSwapBox({
         return {
             fromUsdAmount,
             toUsdAmount,
-            nativeTokenPrice: getTokenPrice(nativeTokenAddress, tokenChainId) ?? 0,
             toNetwork,
             fromNetwork,
         }
-    }, [fromToken, getTokenPrice, toToken, fromAmount, toAmount, nativeTokenAddress, tokenChainId])
+    }, [fromToken, getTokenPrice, toToken, fromAmount, toAmount])
 
     useEffect(() => {
         if (!txModalOpen) {
@@ -236,7 +248,7 @@ export function CrossChainSwapBox({
                                         </div>
                                         <div className="flex items-center">
                                             <DollarSign size={12} className="mr-1"/>
-                                            <span>Fee: {quoteResponse.feeInUsd}</span>
+                                            <span>Fee: {quoteResponse.formattedFeeInUsd}</span>
                                         </div>
                                     </div>
                                 </>
@@ -247,7 +259,7 @@ export function CrossChainSwapBox({
             }
 
             {
-                (needDestinationAddress(fromToken?.chainId, toToken?.chainId)) && (
+                (needDestinationAddress(fromToken?.chainId, toToken?.chainId)) && !destinationAddress && (
                     <Alert status="info" variant="subtle" borderRadius="md">
                         <AlertIcon/>
                         <Text>You Should Input Destination Address</Text>

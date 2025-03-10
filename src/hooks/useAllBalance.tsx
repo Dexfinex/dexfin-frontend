@@ -28,12 +28,14 @@ const getAllBalance = async (
 }
 
 export const useAllBalance = ({
+                                  chainId,
                                   tokenOrMintAddress
                               }: {
+    chainId: number | undefined,
     tokenOrMintAddress: string | undefined,
 }): UseQueryResult<any> => {
 
-    const {isConnected, chainId, address, solanaWalletInfo} = useContext(Web3AuthContext);
+    const {isConnected, address, solanaWalletInfo} = useContext(Web3AuthContext);
     const nativeTokenAddress = [ethers.constants.AddressZero, nativeAddress.toLowerCase()].includes(tokenOrMintAddress ? tokenOrMintAddress?.toLowerCase() : '')
         ? undefined
         : (tokenOrMintAddress as `0x${string}`);

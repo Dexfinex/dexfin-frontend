@@ -50,6 +50,8 @@ import { mapChainId2ViemChain } from "../config/networks.ts";
 import { useStore } from "../store/useStore.ts";
 import { connection as SolanaConnection } from "../config/solana.ts";
 import axios from "axios";
+import {NATIVE_MINT} from "../constants/solana.constants.ts";
+import {solToWSol} from "../utils/solana.util.ts";
 
 export type WalletType = 'EOA' | 'EMBEDDED' | 'UNKNOWN';
 
@@ -561,7 +563,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                 const keypair = Keypair.fromSecretKey(Buffer.from(privateKey.decryptedPrivateKey, "hex"));
 
-                if (tokenMintAddress === "So11111111111111111111111111111111111111112") {
+                if (solToWSol(tokenMintAddress) === NATIVE_MINT.toString()) {
                     console.log('transfer native sol')
                     const transaction = new Transaction().add(
                         SystemProgram.transfer({

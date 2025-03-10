@@ -248,7 +248,6 @@ export function SwapBox({
         }
     }, [quoteData, toUsdAmount, fromUsdAmount])
 
-
     const {
         data: hash,
         isPending,
