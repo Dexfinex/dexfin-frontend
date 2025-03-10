@@ -62,23 +62,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation()
 
-  const positionHandlerList = Object.keys(mapChainId2NativeAddress).map(chainId => {
-    const { isLoading, refetch } = useDefiPositionByWallet({ chainId: Number(chainId), walletAddress: address });
-    return { isLoading, refetch, chainId: chainId }
-  });
-
-  const refetchDefiPositionByWallet = positionHandlerList.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
-
-  const isLoadingPosition = positionHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === positionHandlerList.length;
-
-  const protocolHandlerList = Object.keys(mapChainId2NativeAddress).map(chainId => {
-    const { isLoading, refetch } = useDefiProtocolsByWallet({ chainId: Number(chainId), walletAddress: address });
-    return { isLoading, refetch, chainId: chainId }
-  });
-
-  const isLoadingProtocol = protocolHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === protocolHandlerList.length;;
-
-  const refetchDefiProtocolByWallet = protocolHandlerList.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
+  const { isLoading: isLoadingPosition, refetch: refetchDefiPositionByWallet } = useDefiPositionByWallet({ chainId: chainId, walletAddress: address });
+  const { isLoading: isLoadingProtocol, refetch: refetchDefiProtocolByWallet } = useDefiProtocolsByWallet({ chainId, walletAddress: address });
 
   const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
 

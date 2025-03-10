@@ -1,10 +1,15 @@
-import React, {useState} from 'react';
+import React, { useState, useContext } from 'react';
 import * as Icons from 'lucide-react';
-import {useStore} from '../store/useStore';
+import { useStore } from '../store/useStore';
+import { Web3AuthContext } from '../providers/Web3AuthContext';
 
 export const StarMenu: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const {menuItems, toggleStarMenuItem, isTopbarBottom} = useStore();
+    const { menuItems, toggleStarMenuItem, isTopbarBottom } = useStore();
+    const { isConnected } = useContext(Web3AuthContext);
+
+    // Only show starred items if user is logged in
+    if (!isConnected) return null;
     const starredItems = menuItems.filter((item) => item.isStarred);
 
     return (
@@ -13,12 +18,12 @@ export const StarMenu: React.FC = () => {
                 onClick={() => setIsOpen(!isOpen)}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors relative"
             >
-                <Icons.Star className={`w-4 h-4 ${starredItems.length > 0 ? 'text-yellow-400' : ''}`}/>
+                <Icons.Star className={`w-4 h-4 ${starredItems.length > 0 ? 'text-yellow-400' : ''}`} />
                 {starredItems.length > 0 && (
                     <span
                         className="absolute -top-1 -right-1 bg-blue-500 text-xs w-4 h-4 flex items-center justify-center rounded-full">
-            {starredItems.length}
-          </span>
+                        {starredItems.length}
+                    </span>
                 )}
             </button>
 
@@ -41,14 +46,13 @@ export const StarMenu: React.FC = () => {
                                     >
                                         {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
                                         {/*@ts-expect-error*/}
-                                        <IconComponent className="w-4 h-4"/>
+                                        <IconComponent className="w-4 h-4" />
                                         <span className="flex-1 text-left">{item.label}</span>
                                         <Icons.Star
-                                            className={`w-4 h-4 transition-colors ${
-                                                item.isStarred
-                                                    ? 'text-yellow-400'
-                                                    : 'text-white/40  group-hover:opacity-100'
-                                            }`}
+                                            className={`w-4 h-4 transition-colors ${item.isStarred
+                                                ? 'text-yellow-400'
+                                                : 'text-white/40  group-hover:opacity-100'
+                                                }`}
                                         />
                                     </button>
                                 );

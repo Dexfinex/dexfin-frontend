@@ -20,6 +20,7 @@ export const Header: React.FC = () => {
   const isTopbarBottom = useStore((state) => state.isTopbarBottom);
   const toggleTopbarVisibility = useStore((state) => state.toggleTopbarVisibility);
   const toggleTopbarPosition = useStore((state) => state.toggleTopbarPosition);
+  const loadStarredItems = useStore((state) => state.loadStarredItems);
   const { theme, toggleTheme } = useStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -29,6 +30,13 @@ export const Header: React.FC = () => {
   const toast = useToast();
 
   const { unreadCount } = useWebSocket();
+
+  // Load starred items from localStorage when the component mounts
+  useEffect(() => {
+    if (isConnected) {
+      loadStarredItems();
+    }
+  }, [isConnected, loadStarredItems]);
 
   useEffect(() => {
     const checkScreenSize = () => {
