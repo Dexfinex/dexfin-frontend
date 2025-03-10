@@ -1,24 +1,23 @@
 import React, { useContext, useState, useEffect } from "react";
-import { Web3AuthContext } from "../providers/Web3AuthContext";
-import { motion } from "framer-motion";
-import { useStore } from "../store/useStore";
-import { TokenChainIcon } from "./swap/components/TokenIcon";
 import { Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard } from "lucide-react";
+import { motion } from "framer-motion";
+
+import { useStore } from "../store/useStore";
+import { Web3AuthContext } from "../providers/Web3AuthContext";
 import { mockDeFiPositions, formatUsdValue, } from '../lib/wallet';
-import { shrinkAddress, formatNumberByFrac, getTimeAgo, formatHealthFactor } from "../utils/common.util";
 import { useWalletBalance } from "../hooks/useBalance";
 import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStore";
 import { SendDrawer } from "./wallet/SendDrawer";
 import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
-import useActivitiesStore from "../store/useActivitiesStore.ts";
 import { Skeleton } from '@chakra-ui/react';
-import { mapChainName2ExplorerUrl } from "../config/networks";
 import { useActivities } from "../hooks/useActivities.ts";
-import useDefiStore from "../store/useDefiStore";
-import { PositionList } from "./wallet/PositionList.tsx";
 import Accounts from "./wallet/Accounts.tsx";
 import AssetInfo from "./wallet/AssetInfo.tsx";
+import RenderActivity from "./wallet/RenderActivity.tsx";
+import RenderDefi from "./wallet/RenderDeFi.tsx";
+import RenderTokens from "./wallet/RenderTokens.tsx";
+import CloseButton from "./wallet/CloseButton.tsx";
 
 interface WalletDrawerProps {
     isOpen: boolean,
@@ -32,10 +31,6 @@ export type PageType = 'main' | 'asset' | 'send' | 'receive'
 export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen }) => {
     const { theme } = useStore();
 
-    const { protocol, netAPY, healthFactor, } = useDefiStore();
-    const total_usd_value = protocol.reduce((sum, p) => sum + Number(p.total_usd_value) || 0, 0);
-    const total_unclaimed_usd_value = protocol.reduce((sum, p) => sum + Number(p.total_unclaimed_usd_value) || 0, 0);
-    const isHealthy = formatHealthFactor(healthFactor) === "∞";
 
     const { address, logout, solanaWalletInfo } = useContext(Web3AuthContext);
     const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
@@ -44,15 +39,9 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     const { isLoading: isLoadingBalance } = useWalletBalance();
     const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
     const { } = useActivities({ evmAddress: address, solanaAddress: solanaWalletInfo?.publicKey || "" })
-    const { activities } = useActivitiesStore();
-    // const [showSendDrawer, setShowSendDrawer] = useState(false);
-    // const [showReceiveDrawer, setShowReceiveDrawer] = useState(false);
     const [showBuyDrawer, setShowBuyDrawer] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<TokenBalance | null>(null);
     const [drawerWidth, setDrawerWidth] = useState("400px");
-
-    // useEvmWalletTransfer();
-    // const { transfers } = useTokenTransferStore();
 
 
     // Update drawer width based on screen size
@@ -91,98 +80,6 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
         setPage('receive')
     }
 
-    const renderActivity = () => (
-        <div className="space-y-3 flex-1 mt-4 sm:mt-5 mx-4 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-290px)]">
-            {
-                activities.length === 0 && <div className='w-full h-full flex justify-center items-center align-center mt-20'><h2 className='text-white/60 italic'>No activities yet</h2></div>
-            }
-            {
-                activities.length > 0 && activities.map((activity, index) => (
-                    <a key={activity.hash + index} className={`p-3 flex items-center justify-between ${theme === "dark" ? "bg-white/5 hover:bg-white/10" : "bg-black/5 hover:bg-black/10"} rounded-lg gap-2`}
-                        href={`${mapChainName2ExplorerUrl[activity.network.id]}/tx/${activity.hash}`}
-                        target="_blank">
-                        <div className="flex items-center gap-2">
-                            <img src={activity.network.icon} className="w-6 h-6 rounded-full" />
-                            <div>
-                                <div className={`text-sm ${theme === "dark" ? "text-white/70" : "text-black/70"}`}>{activity.summary}</div>
-                                <div className={`text-xs ${theme === "dark" ? "text-white/70" : "text-black/70"}`}>{shrinkAddress(activity.hash)}</div>
-                            </div>
-                        </div>
-                        <span className={`text-sm ${theme === "dark" ? "text-white/70" : "text-black/70"} `}>{getTimeAgo(activity.date)}</span>
-                    </a>
-                ))
-            }
-        </div>
-    )
-
-    const renderTokens = () => (
-        <div className="flex-1 space-y-2 mt-4 sm:mt-5 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-290px)] mx-4">
-            {
-                isLoadingBalance ?
-                    <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
-                    : tokenBalances.map((token, index) => (
-                        <button
-                            key={token.chain + token.symbol + index}
-                            className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                            onClick={() => handleAsset(token)}
-                        >
-                            <div className="flex items-center gap-3">
-                                <TokenChainIcon src={token.logo} alt={token.name} size={"lg"} chainId={Number(token.chain)} />
-                                <div className='flex flex-col justify-start items-start'>
-                                    <div className="font-medium text-sm sm:text-md">{token.symbol}</div>
-                                    <div className="text-xs sm:text-sm text-white/60">
-                                        {`${formatNumberByFrac(token.balance, 5)} ${token.symbol}`}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="text-right text-sm md:text-md">
-                                <span>{formatUsdValue(token.usdValue)}</span>
-                                {/* <div className="text-sm text-green-400">
-                        {formatApy(0)} APY
-                        </div> */}
-                            </div>
-                        </button>
-                    ))
-            }
-        </div>
-    )
-
-    const renderDeFi = () => (
-        <div className="space-y-6 mt-4 sm:mt-5 mx-4 flex-1 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-290px)]">
-            {/* DeFi Overview */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-xs sm:text-sm text-white/60">Total Value Locked</div>
-                    <div className="text-xl sm:text-2xl font-bold mt-1">
-                        {`$${formatNumberByFrac(total_usd_value)}`}
-                    </div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-xs sm:text-sm text-white/60">Net APY</div>
-                    <div className="text-xl sm:text-2xl font-bold mt-1">
-                        {`${formatNumberByFrac(netAPY)}%`}
-                    </div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-xs sm:text-sm text-white/60">Total Rewards</div>
-                    <div className="text-xl sm:text-2xl font-bold mt-1">
-                        {`$ ${total_unclaimed_usd_value}`}
-                    </div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-xs sm:text-sm text-white/60">Health Status</div>
-                    <div className={`text-xl sm:text-2xl font-bold mt-1 ${isHealthy ? "text-green-400" : "text-red-400"}`}>
-                        {isHealthy ? "Healthy" : "Risk"}
-                    </div>
-                </div>
-            </div>
-
-            {/* DeFi Positions */}
-            <div className="space-y-3">
-                <PositionList isLoading={isLoadingBalance} />
-            </div>
-        </div>
-    )
 
     return (
         <>
@@ -195,13 +92,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                 style={{ width: drawerWidth }}
             >
                 {/* Close Button */}
-                {isOpen && <div onClick={() => setIsOpen(false)} className="absolute top-0 bottom-0 left-[-40px] w-[40px] pt-4 cursor-pointer flex justify-evenly h-[98%] m-auto rounded-2xl
-                        hover:bg-white/10 hover:text-gray-500 hover:h-[94%] transition-all duration-300 ease-in-out">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="13 17 18 12 13 7"></polyline>
-                        <polyline points="6 17 11 12 6 7"></polyline>
-                    </svg>
-                </div>}
+                {isOpen && <CloseButton setIsOpen={setIsOpen} />}
 
                 {/* TopBar */}
                 <div className="flex items-center justify-between mx-4">
@@ -288,9 +179,9 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                             </button>
                         </div>
 
-                        {selectedTab === "tokens" && renderTokens()}
-                        {selectedTab === "defi" && renderDeFi()}
-                        {selectedTab === "activity" && renderActivity()}
+                        {selectedTab === "tokens" && <RenderTokens handleAsset={handleAsset} />}
+                        {selectedTab === "defi" && <RenderDefi />}
+                        {selectedTab === "activity" && <RenderActivity />}
                     </div>
                 }
 
