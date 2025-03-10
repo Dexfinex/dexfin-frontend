@@ -39,23 +39,28 @@ export const PositionList: React.FC<PositionListProps> = ({ isLoading }) => {
                                                 size="lg"
                                                 className="w-8 h-8"
                                             />
-                                            <div className="text-sm sm:text-md font-medium">{position.protocol}</div>
-                                            <div className={`text-xs sm:text-sm ${getTypeColor(position.type)} text-white/60`}>{position.type}</div>
+                                            <div className="items-center justify-between ">
+                                                <div className="flex items-center justify-between mb-1 gap-2">
+                                                    <div className="text-sm sm:text-md font-medium">{position.protocol}</div>
+                                                    <div className={`text-xs sm:text-sm ${getTypeColor(position.type)} text-white/60`}>{position.type}</div>
+                                                </div>
+                                                <div className="flex text-right gap-1 ml-3">
+                                                    <div className="flex text-md sm:text-lg font-medium">
+                                                        {
+                                                            position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" />)
+                                                        }
+                                                    </div>
+                                                    <div className="text-xs sm:text-sm text-green-400">
+                                                        {
+                                                            position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : `${token?.symbol} `)
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
 
                                         </div>
-                                        <div className="flex text-right gap-1">
-                                            <div className="flex text-md sm:text-lg font-medium">
-                                                {
-                                                    position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" />)
-                                                }
-                                            </div>
-                                            <div className="text-xs sm:text-sm text-green-400">
-                                                {
-                                                    position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : `${token?.symbol} `)
-                                                }
-                                            </div>
-                                        </div>
                                     </div>
+
 
 
                                     <div className="flex items-center gap-4 text-xs sm:text-sm">

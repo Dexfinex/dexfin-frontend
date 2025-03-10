@@ -13,7 +13,7 @@ import { mockDeFiPositions, formatUsdValue } from '../../lib/wallet.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 import { useWalletBalance } from '../../hooks/useBalance.tsx';
 import { TokenChainIcon } from './../swap/components/TokenIcon.tsx';
-
+import { PositionList } from '../wallet/PositionList.tsx';
 import { formatNumberByFrac } from '../../utils/common.util.ts';
 
 interface WalletPanelProps {
@@ -114,28 +114,7 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                   </div>
                 ) : (
                   // DeFi Tab
-                  defiPositions.map((position) => (
-                    <div
-                      key={position.id}
-                      className="flex items-center justify-between p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <img src={position.protocolLogo} alt={position.protocol} className="w-6 h-6" />
-                        <div>
-                          <div className="font-medium text-sm">{position.protocol}</div>
-                          <div className="text-xs text-white/60">
-                            {position.amount.toLocaleString()} {position.token.symbol}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm">${position.value.toLocaleString()}</div>
-                        <div className="text-xs text-green-400">
-                          {position.apy}% APY
-                        </div>
-                      </div>
-                    </div>
-                  ))
+                  <PositionList isLoading={false} />
                 )}
               </div>
             </div>
