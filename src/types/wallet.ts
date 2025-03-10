@@ -1,3 +1,9 @@
+export enum WalletTypeEnum {
+  EOA = 'EOA',
+  EMBEDDED = 'EMBEDDED',
+  UNKNOWN = 'UNKNOWN'
+}
+
 export interface TokenMetadata {
   address: string;
   name: string;

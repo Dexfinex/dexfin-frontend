@@ -1,9 +1,24 @@
 // Helper functions
 import {splitSignature} from "./signature.util.ts";
 import {GaslessQuoteResponse, SignatureType, TokenType} from "../types/swap.type.ts";
-import {WalletClient} from "viem";
+import {JsonRpcSigner} from "@ethersproject/providers";
 import {BITCOIN_CHAIN_ID, SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
 
+export async function signTradeObject(signer: JsonRpcSigner, quote: GaslessQuoteResponse): Promise<any> {
+    // Logic to sign trade object
+    if (quote.trade) {
+        return await signer._signTypedData(
+            quote.trade.eip712.domain,
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            quote.trade.eip712.types,
+            quote.trade.eip712.message
+        );
+    }
+    
+    return ""
+}
+/*
 export async function signTradeObject(walletClient: WalletClient, quote: GaslessQuoteResponse): Promise<any> {
     // Logic to sign trade object
     const tradeSignature = await walletClient.signTypedData({
@@ -21,6 +36,7 @@ export async function signTradeObject(walletClient: WalletClient, quote: Gasless
     console.log("🖊️ tradeSignature: ", tradeSignature);
     return tradeSignature;
 }
+*/
 
 export async function tradeSplitSigDataToSubmit(object: any, quote: GaslessQuoteResponse): Promise<any> {
     // split trade signature and package data to submit

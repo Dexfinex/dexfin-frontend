@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from "react";
+import {createContext, useCallback, useEffect, useState} from "react";
 import {
     getSolanaWrappedKeyMetaDataByPkpEthAddress,
     getWrappedKeyMetaDatas,
@@ -52,8 +52,7 @@ import { connection as SolanaConnection } from "../config/solana.ts";
 import axios from "axios";
 import {NATIVE_MINT} from "../constants/solana.constants.ts";
 import {solToWSol} from "../utils/solana.util.ts";
-
-export type WalletType = 'EOA' | 'EMBEDDED' | 'UNKNOWN';
+import {WalletTypeEnum} from "../types/wallet.ts";
 
 interface Web3AuthContextType {
     login: () => void;
@@ -92,8 +91,8 @@ interface Web3AuthContextType {
     solanaWalletInfo: SolanaWalletInfoType | undefined,
     signSolanaTransaction: (solanaTransaction: VersionedTransaction) => Promise<VersionedTransaction | null>,
     transferSolToken: (recipientAddress: string, tokenMintAddress: string, amount: number, decimals: number) => Promise<string>,
-    getWalletType: () => WalletType,
-    walletType: WalletType
+    getWalletType: () => WalletTypeEnum,
+    walletType: WalletTypeEnum
 }
 
 
@@ -154,8 +153,8 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     transferSolToken: async () => {
         return ""
     },
-    getWalletType: () => 'UNKNOWN',
-    walletType: 'UNKNOWN',
+    getWalletType: () => WalletTypeEnum.UNKNOWN,
+    walletType: WalletTypeEnum.UNKNOWN,
 
 };
 
@@ -177,7 +176,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isLoadingStoredWallet, setIsLoadingStoredWallet] = useState<boolean>(false)
     const [solanaWalletInfo, setSolanaWalletInfo] = useState<SolanaWalletInfoType | undefined>()
 
-    const [walletType, setWalletType] = useState<WalletType>('UNKNOWN');
+    const [walletType, setWalletType] = useState<WalletTypeEnum>(WalletTypeEnum.UNKNOWN);
 
     // const [chain, setChain] = useState(null);
 
@@ -226,16 +225,17 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } = useSession();
 
     // console.log("authMethod", authMethod)
-    const detectWalletType = (): WalletType => {
+    const detectWalletType = useCallback((): WalletTypeEnum => {
         if (isWagmiWalletConnected) {
-            return 'EOA';
+            return WalletTypeEnum.EOA;
         }
         if (isConnected && !isWagmiWalletConnected) {
-            return 'EMBEDDED';
+            return WalletTypeEnum.EMBEDDED;
         }
-        return 'UNKNOWN';
-    }
-    const getWalletType = (): WalletType => {
+        return WalletTypeEnum.UNKNOWN;
+    }, [isConnected, isWagmiWalletConnected])
+    
+    const getWalletType = (): WalletTypeEnum => {
         return detectWalletType();
     }
 
@@ -380,7 +380,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const currentWalletType = detectWalletType();
         setWalletType(currentWalletType);
-    }, [isWagmiWalletConnected, isConnected]);
+    }, [isWagmiWalletConnected, isConnected, detectWalletType]);
     // wagmi walet
     useEffect(() => {
         if (isWagmiWalletConnected) {
@@ -487,7 +487,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setWalletClient(undefined)
         setIsLoadingStoredWallet(false)
 
-        setWalletType('UNKNOWN')
+        setWalletType(WalletTypeEnum.UNKNOWN)
         delete axios.defaults.headers.common['Authorization'];
     }
 
