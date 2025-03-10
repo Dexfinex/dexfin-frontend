@@ -6,7 +6,6 @@ import {
 import { alertApiService, configureAlertApiAuth } from '../../services/alert.service';
 import { Alert, CreateAlertDto, UpdateAlertDto, alertTypes } from '../../types/alert.types';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
-import { useWebSocket } from '../../providers/WebSocketProvider';
 type AlertTypeId =
     'PRICE_ALERT' |
     'VOLUME_ALERT' |
@@ -40,7 +39,6 @@ const REVERSE_TYPE_MAPPING: Record<string, string> = {
 export const MarketAlerts: React.FC = () => {
     // Access Web3Auth context
     const { userData, isConnected } = useContext(Web3AuthContext);
-    const { refreshAlerts } = useWebSocket();
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -241,7 +239,7 @@ export const MarketAlerts: React.FC = () => {
 
         try {
             await alertApiService.deleteAlert(id);
-            refreshAlerts();
+            // refreshAlerts();
 
             // Remove the alert from the list
             setAlerts(prev => prev.filter(alert => alert.id !== id));

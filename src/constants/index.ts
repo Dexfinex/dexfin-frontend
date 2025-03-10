@@ -52,7 +52,11 @@ export const USERAUTH_BASE_URL = `${BASE_HOST_DOMAIN}/auth`;
 
 export const TECHNICALANALYSIS_BASE_URL = `${BASE_HOST_DOMAIN}/technical`;
 
-export const WS_CONNECTION_URL = `${BASE_HOST_DOMAIN}`;
+// export const NOTIFICATION_BASE_URL = `${BASE_HOST_DOMAIN}/notifications`;
+export const NOTIFICATION_BASE_URL = `http://localhost:3000/notifications`;
+
+// export const WS_CONNECTION_URL = `${BASE_HOST_DOMAIN}`;
+export const WS_CONNECTION_URL = `http://127.0.0.1:3000`;
 
 export const GAME_SYSTEM_BASEURL = `${BASE_HOST_DOMAIN}/game-system`;
 

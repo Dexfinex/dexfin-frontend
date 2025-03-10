@@ -18,7 +18,8 @@ import {
   GAME_SYSTEM_BASEURL,
   WS_CONNECTION_URL,
   ALERT_BASE_URL,
-  SWAPKIT_BASE_URL
+  SWAPKIT_BASE_URL,
+  NOTIFICATION_BASE_URL
 } from "../constants";
 
 export const zeroxApi = axios.create({
@@ -91,6 +92,10 @@ export const GameSystemApi = axios.create({
 
 export const AlertBaseApi = axios.create({
   baseURL: ALERT_BASE_URL
+})
+
+export const NotificationApi = axios.create({
+  baseURL: NOTIFICATION_BASE_URL
 })
 
 // List of API instances that need authorization
