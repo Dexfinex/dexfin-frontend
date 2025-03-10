@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from "react";
+import {createContext, useCallback, useEffect, useState} from "react";
 import {
     getSolanaWrappedKeyMetaDataByPkpEthAddress,
     getWrappedKeyMetaDatas,
@@ -40,6 +40,7 @@ import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import {
     createKernelAccount,
     createKernelAccountClient,
+    CreateKernelAccountReturnType,
     createZeroDevPaymasterClient,
     getUserOperationGasPrice,
     KernelEIP1193Provider
@@ -50,14 +51,9 @@ import { mapChainId2ViemChain } from "../config/networks.ts";
 import { useStore } from "../store/useStore.ts";
 import { connection as SolanaConnection } from "../config/solana.ts";
 import axios from "axios";
-
-export type WalletType = 'EOA' | 'EMBEDDED' | 'UNKNOWN';
-
-interface UserData {
-    accessToken: string;
-    userId?: string;
-    walletType?: WalletType;
-}
+import {NATIVE_MINT} from "../constants/solana.constants.ts";
+import {solToWSol} from "../utils/solana.util.ts";
+import {WalletTypeEnum} from "../types/wallet.ts";
 
 interface Web3AuthContextType {
     login: () => void;
@@ -91,16 +87,14 @@ interface Web3AuthContextType {
     signer: JsonRpcSigner | undefined,
     address: string,
     walletClient: WalletClient | undefined,
+    kernelAccount: CreateKernelAccountReturnType | null,
     setWalletClient: React.Dispatch<React.SetStateAction<WalletClient | undefined>>,
     isLoadingStoredWallet: boolean,
     solanaWalletInfo: SolanaWalletInfoType | undefined,
     signSolanaTransaction: (solanaTransaction: VersionedTransaction) => Promise<VersionedTransaction | null>,
     transferSolToken: (recipientAddress: string, tokenMintAddress: string, amount: number, decimals: number) => Promise<string>,
-
-    userData: UserData | null,
-    getWalletType: () => WalletType,
-    walletType: WalletType
-
+    getWalletType: () => WalletTypeEnum,
+    walletType: WalletTypeEnum
 }
 
 
@@ -120,6 +114,7 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     setAuthMethod: () => {
     },
     walletClient: undefined,
+    kernelAccount: null,
     setWalletClient: () => {
     },
     authWithEthWallet: async () => {
@@ -161,9 +156,8 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     transferSolToken: async () => {
         return ""
     },
-    userData: null,
-    getWalletType: () => 'UNKNOWN',
-    walletType: 'UNKNOWN',
+    getWalletType: () => WalletTypeEnum.UNKNOWN,
+    walletType: WalletTypeEnum.UNKNOWN,
 
 };
 
@@ -178,6 +172,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isChainSwitching, setIsChainSwitching] = useState(false);
     const [chainId, setChainId] = useState<number | undefined>(56);
     const [walletClient, setWalletClient] = useState<WalletClient | undefined>(undefined);
+    const [kernelAccount, setKernelAccount] = useState<CreateKernelAccountReturnType | null>(null)
     const [provider, setProvider] = useState<Web3Provider | undefined>(undefined);
     const [signer, setSigner] = useState<JsonRpcSigner | undefined>(undefined);
     const [address, setAddress] = useState<string>('');
@@ -185,8 +180,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isLoadingStoredWallet, setIsLoadingStoredWallet] = useState<boolean>(false)
     const [solanaWalletInfo, setSolanaWalletInfo] = useState<SolanaWalletInfoType | undefined>()
 
-    const [userData, setUserData] = useState<UserData | null>(null);
-    const [walletType, setWalletType] = useState<WalletType>('UNKNOWN');
+    const [walletType, setWalletType] = useState<WalletTypeEnum>(WalletTypeEnum.UNKNOWN);
 
     // const [chain, setChain] = useState(null);
 
@@ -235,16 +229,17 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } = useSession();
 
     // console.log("authMethod", authMethod)
-    const detectWalletType = (): WalletType => {
+    const detectWalletType = useCallback((): WalletTypeEnum => {
         if (isWagmiWalletConnected) {
-            return 'EOA';
+            return WalletTypeEnum.EOA;
         }
         if (isConnected && !isWagmiWalletConnected) {
-            return 'EMBEDDED';
+            return WalletTypeEnum.EMBEDDED;
         }
-        return 'UNKNOWN';
-    }
-    const getWalletType = (): WalletType => {
+        return WalletTypeEnum.UNKNOWN;
+    }, [isConnected, isWagmiWalletConnected])
+    
+    const getWalletType = (): WalletTypeEnum => {
         return detectWalletType();
     }
 
@@ -318,6 +313,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 kernelVersion,
                 entryPoint,
             })
+            setKernelAccount(account)
             setAddress(account.address)
 
 
@@ -389,7 +385,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const currentWalletType = detectWalletType();
         setWalletType(currentWalletType);
-    }, [isWagmiWalletConnected, isConnected]);
+    }, [isWagmiWalletConnected, isConnected, detectWalletType]);
     // wagmi walet
     useEffect(() => {
         if (isWagmiWalletConnected) {
@@ -496,8 +492,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setWalletClient(undefined)
         setIsLoadingStoredWallet(false)
 
-        setUserData(null)
-        setWalletType('UNKNOWN')
+        setWalletType(WalletTypeEnum.UNKNOWN)
         delete axios.defaults.headers.common['Authorization'];
     }
 
@@ -573,7 +568,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                 const keypair = Keypair.fromSecretKey(Buffer.from(privateKey.decryptedPrivateKey, "hex"));
 
-                if (tokenMintAddress === "So11111111111111111111111111111111111111112") {
+                if (solToWSol(tokenMintAddress) === NATIVE_MINT.toString()) {
                     console.log('transfer native sol')
                     const transaction = new Transaction().add(
                         SystemProgram.transfer({
@@ -709,8 +704,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         walletClient,
         setWalletClient,
+        kernelAccount,
 
-        userData,
         getWalletType,
         walletType,
     }

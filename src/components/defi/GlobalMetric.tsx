@@ -66,7 +66,7 @@ const GlobalMetric: React.FC<GlobalMetricProps> = ({ isLoading, }) => {
                         :
                         <>
                             <div className="text-2xl font-bold mb-1">
-                                {`+$ ${total_unclaimed_usd_value}`}
+                                {`$ ${total_unclaimed_usd_value}`}
                             </div>
                             <div className="text-sm text-white/60">
                                 Unclaimed rewards

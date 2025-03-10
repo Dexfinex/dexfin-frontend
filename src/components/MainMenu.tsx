@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
@@ -8,6 +8,7 @@ export const MainMenu: React.FC = () => {
   const {
     menuItems,
     toggleStarMenuItem,
+    setDefaultStarredItems,
     setIsAIAgentOpen,
     setIsSwapOpen,
     setIsDefiOpen,
@@ -23,6 +24,13 @@ export const MainMenu: React.FC = () => {
   } = useStore();
 
   const { isConnected, login } = useContext(Web3AuthContext);
+
+  // Set default starred items when the user logs in
+  useEffect(() => {
+    if (isConnected) {
+      setDefaultStarredItems();
+    }
+  }, [isConnected, setDefaultStarredItems]);
 
   const handleMenuItemClick = (itemId: string) => {
     switch (itemId) {
@@ -45,7 +53,7 @@ export const MainMenu: React.FC = () => {
         if (isConnected) {
           setIsChatOpen(true);
         } else {
-          login()
+          login();
         }
         break;
       case 'cart':
@@ -65,6 +73,11 @@ export const MainMenu: React.FC = () => {
         break;
     }
   };
+
+  // // Filter out items that are not ready yet
+  // const availableMenuItems = menuItems.filter(item => 
+  //   item.id !== 'social' && item.id !== 'rewards'
+  // );
 
   return (
     <div className="relative">

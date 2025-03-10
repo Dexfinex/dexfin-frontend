@@ -1,18 +1,6 @@
 import { Alert, CreateAlertDto, UpdateAlertDto, AlertTypeConfig } from '../types/alert.types';
 import { AlertBaseApi } from './api.service';
 
-export const configureAlertApiAuth = (token?: string) => {
-    AlertBaseApi.interceptors.request.clear();
-
-    // Add auth interceptor using userData from context
-    AlertBaseApi.interceptors.request.use((config) => {
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    });
-};
-
 export const alertApiService = {
     getAllAlerts: async (): Promise<Alert[]> => {
         try {

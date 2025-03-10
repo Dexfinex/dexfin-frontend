@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import * as Icons from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { Web3AuthContext } from '../providers/Web3AuthContext';
 
 export const TopbarStarredItems: React.FC = () => {
   const {
@@ -18,6 +19,11 @@ export const TopbarStarredItems: React.FC = () => {
     setIsRewardsOpen
   } = useStore();
 
+  const { isConnected } = useContext(Web3AuthContext);
+
+  // If user is not connected, don't show any starred items
+  if (!isConnected) return null;
+
   // Filter out social and rewards items, even if they're starred
   const starredItems = menuItems.filter((item) =>
     item.isStarred &&
@@ -26,26 +32,34 @@ export const TopbarStarredItems: React.FC = () => {
   );
 
   const handleItemClick = (itemId: string) => {
-    console.log(itemId)
-    if (itemId === 'ai') {
-      setIsAIAgentOpen(true);
-    } else if (itemId === 'swap') {
-      setIsSwapOpen(true);
-    } else if (itemId === 'defi') {
-      setIsDefiOpen(true);
-    } else if (itemId === 'dashboard') {
-      setIsDashboardOpen(true);
-    } else if (itemId === 'market-data') {
-      setIsMarketDataOpen(true);
-    } else if (itemId === 'chat') {
-      setIsChatOpen(true);
-    } else if (itemId === 'cart') {
-      setIsCartOpen(true);
-    } else if (itemId === 'games') {
-      setIsGamesOpen(true);
-    }
-    else if (itemId === 'trade') {
-      setTradeOpen(true);
+    switch (itemId) {
+      case 'ai':
+        setIsAIAgentOpen(true);
+        break;
+      case 'swap':
+        setIsSwapOpen(true);
+        break;
+      case 'defi':
+        setIsDefiOpen(true);
+        break;
+      case 'dashboard':
+        setIsDashboardOpen(true);
+        break;
+      case 'market-data':
+        setIsMarketDataOpen(true);
+        break;
+      case 'chat':
+        setIsChatOpen(true);
+        break;
+      case 'cart':
+        setIsCartOpen(true);
+        break;
+      case 'games':
+        setIsGamesOpen(true);
+        break;
+      case 'trade':
+        setTradeOpen(true);
+        break;
     }
   };
 

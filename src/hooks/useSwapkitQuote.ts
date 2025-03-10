@@ -1,80 +1,126 @@
 import {useQuery} from '@tanstack/react-query';
-import {ethers} from 'ethers';
 import {useCallback, useContext} from 'react';
 import {Web3AuthContext} from "../providers/Web3AuthContext.tsx";
-import {GaslessQuoteResponse, QuoteDataType, QuoteResponse, TokenType} from "../types/swap.type.ts";
-import {zeroxService} from "../services/0x.service.ts";
-import {formatUnits} from "ethers/lib/utils";
-import {isNativeTokenAddress} from "../utils/common.util.ts";
+import {SlippageOption, TokenType} from "../types/swap.type.ts";
+import {swapkitService} from "../services/swapkit.service.ts";
+import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
+import {ChainflipMeta, DepositInfo, SwapkitFinalizedQuoteResponse, Warning} from "../types/bridge.type.ts";
+import {formatNumberByFrac} from "../utils/common.util.ts";
+import {AxiosError} from "axios";
 
 interface quoteParam {
     sellToken: TokenType | null,
     buyToken: TokenType | null,
     sellAmount: string | undefined,
-    toAddress: string | undefined,
-
+    destinationAddress: string | undefined,
+    slippage: SlippageOption
 }
 
+const defaultQuoteResponse = {
+    providerName: '',
+    expectedBuyAmount: '0',
+    expectedBuyAmountMaxSlippage: '0',
+    feeInUsd: 0,
+    formattedFeeInUsd: '0',
+    estimatedTime: 0,
+    warnings: [] as Warning[],
+    tx: null,
+    chainflip: null as (ChainflipMeta | null),
+    errorMessage: '',
+    depositInfo: null as (null | DepositInfo)
+}
+
+
 const useSwapkitQuote = ({
-                        sellToken,
-                        buyToken,
-                        sellAmount,
-                    }: quoteParam
+                             sellToken,
+                             buyToken,
+                             sellAmount,
+                             destinationAddress,
+                             slippage,
+                         }: quoteParam
 ) => {
-    const {chainId, address, provider} = useContext(Web3AuthContext);
+    const {solanaWalletInfo, address} = useContext(Web3AuthContext);
     const enabled =
-        !!sellToken && !!buyToken && !!address && !!provider && !!sellAmount && Number(sellAmount) > 0;
-    const isGasLess = !isNativeTokenAddress(chainId!, sellToken?.address ?? '')
+        !!sellToken && !!buyToken && !!address && !!sellAmount && !!destinationAddress && Number(sellAmount) > 0;
 
-    const formatTax = (taxBps: string) => (parseFloat(taxBps) / 100).toFixed(2)
+    const fetchSwapkitQuote = useCallback(async () => {
+        const quoteResponse = {
+            ...defaultQuoteResponse
+        }
 
-    const fetch0xQuote = useCallback(async () => {
-        return await zeroxService.getQuote({
-            chainId: sellToken!.chainId,
-            sellTokenAddress: sellToken!.address,
-            buyTokenAddress: buyToken!.address,
-            sellTokenAmount: ethers.utils.parseUnits(sellAmount!, sellToken!.decimals).toString(),
-            takerAddress: address,
-            isGasLess
-        })
-    }, [sellToken, buyToken, sellAmount, address, isGasLess]);
+        try {
+            const data = await swapkitService.getQuote({
+                sellChainId: sellToken!.chainId,
+                sellTokenAddress: sellToken!.address,
+                buyChainId: buyToken!.chainId,
+                buyTokenAddress: buyToken!.address,
+                sellAmount: sellAmount!,
+                sourceAddress: sellToken!.chainId === SOLANA_CHAIN_ID ? solanaWalletInfo!.publicKey : address,
+                destinationAddress: destinationAddress!,
+                slippage,
+                includeTx: true,
+            })
 
-    const {isLoading, refetch, data} = useQuery<QuoteResponse | GaslessQuoteResponse>({
-        queryKey: ['get-0x-quote', address, sellToken, buyToken, sellAmount],
-        queryFn: fetch0xQuote,
+            if (data) {
+                if (data.routes.length > 0) {
+                    const bestRoute = data.routes[0]
+
+                    // set provider name: CHAINFLIP / MAYACHAIN
+                    quoteResponse.providerName = bestRoute.providers?.[0]
+
+                    quoteResponse.tx = bestRoute.tx ?? null
+
+                    quoteResponse.expectedBuyAmount = bestRoute.expectedBuyAmount
+                    quoteResponse.expectedBuyAmountMaxSlippage = bestRoute.expectedBuyAmountMaxSlippage
+                    quoteResponse.estimatedTime = bestRoute.estimatedTime.total
+                    quoteResponse.warnings = bestRoute.warnings
+                    quoteResponse.chainflip = bestRoute.meta.chainflip ?? null
+
+                    // calculate fee
+                    const mapAssetToPrice: Record<string, number> = {}
+                    for(const asset of bestRoute.meta.assets) {
+                        mapAssetToPrice[asset.asset] = asset.price
+                    }
+
+                    quoteResponse.feeInUsd = bestRoute.fees.reduce((sum, feeItem) => {
+                        sum += (mapAssetToPrice[feeItem.asset] ?? 0) * Number(feeItem.amount)
+                        return sum
+                    }, 0)
+                    quoteResponse.formattedFeeInUsd = formatNumberByFrac(quoteResponse.feeInUsd, 5)
+
+
+                    try {
+                        if (quoteResponse.providerName === "CHAINFLIP" && quoteResponse.chainflip) {
+                            quoteResponse.depositInfo = await swapkitService.getBrokerChannel(quoteResponse.chainflip)
+                        }
+                    } catch (e) {
+                        //
+                    }
+
+                } else if (data.providerErrors.length > 0) {
+                    quoteResponse.errorMessage = data.providerErrors[0].errorCode
+                }
+            }
+        } catch(error) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            quoteResponse.errorMessage = (error as AxiosError)?.response?.data?.message
+        }
+
+        return quoteResponse
+    }, [sellToken, buyToken, sellAmount, solanaWalletInfo, address, destinationAddress, slippage]);
+
+    const {isLoading, refetch, data} = useQuery<SwapkitFinalizedQuoteResponse | null>({
+        queryKey: ['get-swapkit-quote', address, sellToken, solanaWalletInfo, destinationAddress, buyToken, sellAmount, slippage],
+        queryFn: fetchSwapkitQuote,
         enabled,
-        refetchInterval: 30_000,
+        refetchInterval: 60_000,
     });
-
-    const buyAmount = (data && data.buyAmount) ? Number(formatUnits(data.buyAmount, buyToken!.decimals)) : 0
 
     return {
         isLoading,
-        isGasLess,
         refetch,
-        quoteResponse: data as (QuoteResponse | GaslessQuoteResponse),
-        data:(data ? {
-            buyAmount,
-            exchangeRate: Number(sellAmount) > 0 ? buyAmount / Number(sellAmount) : 0,
-            affiliateFee: data.fees && data.fees.integratorFee && data.fees.integratorFee.amount
-                ? Number(
-                    formatUnits(
-                        BigInt(data.fees.integratorFee.amount),
-                        buyToken!.decimals
-                    )
-                ) : null,
-            buyTax: data.tokenMetadata?.buyToken?.buyTaxBps && data.tokenMetadata?.buyToken?.buyTaxBps !== "0"
-                ? formatTax(
-                    data.tokenMetadata?.buyToken?.buyTaxBps
-                ) : null,
-            sellTax: data.tokenMetadata?.sellToken?.sellTaxBps && data.tokenMetadata?.sellToken?.sellTaxBps !== "0"
-                ? formatTax(
-                    data.tokenMetadata?.sellToken?.sellTaxBps
-                ) : null,
-            tokenApprovalRequired: data.issues?.allowance != null,
-            gaslessApprovalAvailable :  (data as GaslessQuoteResponse)?.approval != null,
-            spenderAddress: data.issues?.allowance?.spender ?? '',
-        } as QuoteDataType : null),
+        quoteResponse: data ?? defaultQuoteResponse,
     };
 };
 export default useSwapkitQuote;

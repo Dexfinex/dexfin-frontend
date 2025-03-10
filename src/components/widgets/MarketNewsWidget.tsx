@@ -1,11 +1,14 @@
-import React, { useState, } from 'react';
+import React, { useState } from 'react';
 import { ExternalLink, ChevronLeft, ChevronRight, Clock, AlertCircle } from 'lucide-react';
 
 import { useGetLatestCryptoNews } from '../../hooks/useCryptoNews';
+import { Tooltip } from "@chakra-ui/react";
+import { useStore } from '../../store/useStore';
 
 export const MarketNewsWidget: React.FC = () => {
-
   const [page, setPage] = useState(0);
+  const [tooltipIndex, setTooltipIndex] = useState<number | null>(null);
+  const { theme } = useStore();
   const itemsPerPage = 4;
 
   const { data: latestCryptoNews, isLoading: isLoadingLatestCryptoNews, error: errorLatestCryptoNews } = useGetLatestCryptoNews();
@@ -81,34 +84,49 @@ export const MarketNewsWidget: React.FC = () => {
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto ai-chat-scrollbar">
-        {displayedNews.map((item, index) => (
-          <a
-            key={index}
-            href={item.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block p-3 rounded-lg bg-black/20 hover:bg-black/30 transition-colors group relative"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-white/90 truncate pr-6 group-hover:text-blue-400 transition-colors">
-                  {item.title}
-                </h3>
-                <div className="flex items-center gap-2 mt-1 text-sm">
-                  <span className="text-white/60">{item.source}</span>
-                  <span className="text-white/40">•</span>
-                  <span className="text-white/60">{item.time}</span>
-                  <span className="text-white/40">•</span>
-                  <span className={getImpactColor(item.impact)}>
-                    {item.impact} IMPACT
-                  </span>
-                </div>
-              </div>
-              <ExternalLink className="w-4 h-4 text-white/40 group-hover:text-blue-400 transition-colors" />
+        {displayedNews.map((item, index) => {
+          console.log("tooltip index", tooltipIndex);
+          console.log("index ", index);
+          console.log("tooltip index &&& ", tooltipIndex === index && item);
+          return (
+            <div key={index} className="relative">
+              <Tooltip bg={theme === 'dark' ? 'rgba(16, 16, 18, 0.85)' : '#ffffff'} color={theme === "dark" ? "text-white/50" : ""} hasArrow label={item.title} placement='top'>
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block p-3 rounded-lg bg-black/20 hover:bg-black/30 transition-colors group relative"
+                  onMouseEnter={() => {
+                    console.log("title-news : ", index)
+                    setTooltipIndex(index)
+
+                  }}
+                  onMouseLeave={() => setTooltipIndex(null)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-white/90 truncate pr-6 group-hover:text-blue-400 transition-colors">
+                        {item.title}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1 text-sm">
+                        <span className="text-white/60">{item.source}</span>
+                        <span className="text-white/40">•</span>
+                        <span className="text-white/60">{item.time}</span>
+                        <span className="text-white/40">•</span>
+                        <span className={getImpactColor(item.impact)}>
+                          {item.impact} IMPACT
+                        </span>
+                      </div>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-white/40 group-hover:text-blue-400 transition-colors" />
+                  </div>
+                </a>
+              </Tooltip>
             </div>
-          </a>
-        ))}
+          )
+        }
+        )}
       </div>
-    </div>
+    </div >
   );
 };

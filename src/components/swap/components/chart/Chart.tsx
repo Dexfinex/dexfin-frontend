@@ -11,6 +11,7 @@ import {mapTimeRangeToSeconds, mapTimeRangeToSecondsForBirdEye} from "../../../.
 import {ColorType, createChart, CrosshairMode, IChartApi, ISeriesApi, SeriesType} from "lightweight-charts";
 import {useStore} from "../../../../store/useStore.ts";
 import {useBreakpointValue} from "@chakra-ui/react";
+import {solToWSol} from "../../../../utils/solana.util.ts";
 
 export interface ChartProps {
     type: ChartType;
@@ -55,7 +56,7 @@ export function Chart({type, onTypeChange, token, isMaximized}: ChartProps) {
         if (token) {
             if (token.chainId === SOLANA_CHAIN_ID) {
                 const timeFrom = currentTime - mapTimeRangeToSecondsForBirdEye[timeRange]
-                _chartData = await birdeyeService.getOHLCV(token.address, timeRange, timeFrom, currentTime)
+                _chartData = await birdeyeService.getOHLCV(solToWSol(token.address)!, timeRange, timeFrom, currentTime)
             } else if (token.address.startsWith('0x')) {
                 const timeFrom = currentTime - mapTimeRangeToSeconds[timeRange]
                 const symbol = await coingeckoService.getCoinGeckoIdFrom(token.address, token.chainId)
