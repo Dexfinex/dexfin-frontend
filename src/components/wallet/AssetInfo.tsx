@@ -49,17 +49,6 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
     const [chartData, setChartData] = useState<Array<ChartPriceType> | null>(null);
     const [info, setInfo] = useState<any>(null);
 
-    useEffect(() => {
-        getChartData()
-    }, [selectedRange]);
-
-    useEffect(() => {
-        if (tokenBalance.tokenId) {
-            getTokenInfo(tokenBalance)
-            getChartData()
-        }
-    }, [tokenBalance])
-
     const getTokenInfo = async (token: TokenBalance) => {
         const info = await coingeckoService.getInfo(token.tokenId)
         setInfo(info)
@@ -105,6 +94,18 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
             }
         }
     }
+
+    useEffect(() => {
+        getChartData()
+    }, [selectedRange]);
+
+    useEffect(() => {
+        if (tokenBalance.tokenId) {
+            getTokenInfo(tokenBalance)
+            getChartData()
+        }
+    }, [tokenBalance])
+
 
     const handleBack = () => {
         setTokenBalance(null)
@@ -226,9 +227,9 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
                 </div>
 
                 <div className="mt-4">
-                    <p className={`${theme === "dark" ? "text-white/70 font-bold" : "text-black/70 font-bold"}`}>About</p>
+                    <p className={`${theme === "dark" ? "text-white/70 font-bold" : "text-black/70 font-bold"}`}>Description</p>
                     {
-                        info?.description?.en ?
+                        info?.description ?
                             <ShowMoreLess text={info.description.en} maxLength={150} /> :
                             <Skeleton className="w-full h-24" />
                     }

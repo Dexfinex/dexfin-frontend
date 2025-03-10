@@ -56,7 +56,7 @@ export const WS_CONNECTION_URL = `${BASE_HOST_DOMAIN}`;
 
 export const GAME_SYSTEM_BASEURL = `${BASE_HOST_DOMAIN}/game-system`;
 
-export const COINGECKO_URL = "api.coingecko.com/api/v3";
+export const COINGECKO_URL = "https://api.coingecko.com/api/v3";
 
 export const ZEROX_BASE_URL = `${BASE_HOST_DOMAIN}/0x`;
 
