@@ -1,26 +1,24 @@
-import React, { useContext, useState, useEffect, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useContext, useState, useEffect } from "react";
 import { Web3AuthContext } from "../providers/Web3AuthContext";
-import { motion, time } from "framer-motion";
+import { motion } from "framer-motion";
 import { useStore } from "../store/useStore";
 import { TokenChainIcon } from "./swap/components/TokenIcon";
-import { CheckCircle, Copy, Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, ArrowLeft, ExternalLink, Clock } from "lucide-react";
-import { mockDeFiPositions, mockDeFiStats, formatUsdValue, formatApy, getHealthFactorColor, } from '../lib/wallet';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { shrinkAddress, formatNumberByFrac, formatNumber, getHourAndMinute, getMonthDayHour, getMonthDayYear, getTimeAgo } from "../utils/common.util";
+import { Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard } from "lucide-react";
+import { mockDeFiPositions, formatUsdValue, } from '../lib/wallet';
+import { shrinkAddress, formatNumberByFrac, getTimeAgo, formatHealthFactor } from "../utils/common.util";
 import { useWalletBalance } from "../hooks/useBalance";
 import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStore";
 import { SendDrawer } from "./wallet/SendDrawer";
 import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
 import useActivitiesStore from "../store/useActivitiesStore.ts";
-import { dexfinv3Service } from "../services/dexfin.service.ts";
-import { Skeleton, Popover, PopoverTrigger, PopoverContent, theme } from '@chakra-ui/react';
-import { coingeckoService } from "../services/coingecko.service";
-import { birdeyeService } from "../services/birdeye.service";
+import { Skeleton } from '@chakra-ui/react';
 import { mapChainName2ExplorerUrl } from "../config/networks";
-import { WalletActivityType } from "../types/dexfinv3.type.ts";
 import { useActivities } from "../hooks/useActivities.ts";
+import useDefiStore from "../store/useDefiStore";
+import { PositionList } from "./wallet/PositionList.tsx";
+import Accounts from "./wallet/Accounts.tsx";
+import AssetInfo from "./wallet/AssetInfo.tsx";
 
 interface WalletDrawerProps {
     isOpen: boolean,
@@ -29,371 +27,16 @@ interface WalletDrawerProps {
 
 export type PageType = 'main' | 'asset' | 'send' | 'receive'
 
-interface AssetInfoProps {
-    tokenBalance: TokenBalance;
-    setTokenBalance: (token: TokenBalance | null) => void;
-    setPage: (type: PageType) => void;
-}
 
-type ChartPriceType = {
-    time: string,
-    price: number
-}
-
-type ChartTimeType = "1D" | "1W" | "1M" | "3M"
-
-type TimeRangeType = {
-    mseconds: number,
-    interval: string,
-    solInterval: string
-}
-
-const customMapTimeRange: Record<string, TimeRangeType> = {
-    "1D": { mseconds: 86400, solInterval: "15m", interval: "1H" },
-    "1W": { mseconds: 604800, solInterval: "1H", interval: "1D" },
-    "1M": { mseconds: 2592000, solInterval: "4H", interval: "1W" },
-    "3M": { mseconds: 7776000, solInterval: "1D", interval: "1Y" },
-};
-
-const CustomTooltip: React.FC<{ active?: boolean; payload?: any[]; }> = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-        return <div className="text-green-500 text-sm font-bold flex flex-col items-center">
-            <span>{payload[0]?.payload.time}</span>
-            <span>${payload[0].value}</span>
-        </div>
-    }
-    return null;
-}
-
-const ShowMoreLess: React.FC<{ text: string, maxLength: number }> = ({ text, maxLength = 100 }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const { theme } = useStore();
-
-    const toggleExpand = () => setIsExpanded(!isExpanded);
-
-    return (
-        <div className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>
-            <p className="text-sm sm:text-md">
-                {isExpanded ? text : text.slice(0, maxLength) + (text.length > maxLength ? "..." : "")}
-            </p>
-            {text.length > maxLength && (
-                <button
-                    onClick={toggleExpand}
-                    className="text-blue-500 hover:text-blue-600 mt-1 text-sm sm:text-md"
-                >
-                    {isExpanded ? "Show Less" : "Show More"}
-                </button>
-            )}
-        </div>
-    );
-}
-
-const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAddress, solAddress }) => {
-    const [evmCopied, setEvmCopied] = useState(false);
-    const [solCopied, setSolCopied] = useState(false);
-    const { theme } = useStore();
-
-    const handleEvmCopy = () => {
-        navigator.clipboard.writeText(evmAddress);
-        setEvmCopied(true);
-        setTimeout(() => setEvmCopied(false), 1000);
-    }
-
-    const handleSolCopy = () => {
-        navigator.clipboard.writeText(solAddress);
-        setSolCopied(true);
-        setTimeout(() => setSolCopied(false), 1000);
-    }
-
-    return (
-        <Popover>
-            <PopoverTrigger>
-                <div className="flex items-center text-white/90 hover:text-white/70 gap-1 cursor-pointer">
-                    <span>Account</span>
-                    <Copy className="w-3 h-3" />
-                </div>
-            </PopoverTrigger>
-            <PopoverContent className={`!w-[236px] !border-1 !border-transparent ${theme === "dark" ? "!bg-black" : "!bg-white"} !p-2`}>
-                <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70 cursor-pointer" onClick={handleEvmCopy}>
-                    <span className="flex items-center gap-1">
-                        <img src="https://cdn.moralis.io/eth/0x.png" className="w-4 h-4 mr-1" />
-                        <span>Ethereum</span>
-                    </span>
-                    {evmCopied ? <CheckCircle className="w-3 h-3 text-green-500" /> : <span>{shrinkAddress(evmAddress)}</span>}
-                </div>
-                {solAddress && <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70 cursor-pointer" onClick={handleSolCopy}>
-                    <span className="flex items-center gap-1">
-                        <img src="https://assets.coingecko.com/coins/images/4128/small/solana.png" className="w-4 h-4 mr-1" />
-                        <span>Solana</span>
-                    </span>
-                    {solCopied ? <CheckCircle className="w-3 h-3 text-green-500" /> : <span>{shrinkAddress(solAddress)}</span>}
-                </div>}
-            </PopoverContent>
-        </Popover>
-    )
-}
-
-export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, setPage }) => {
-    const { theme } = useStore();
-    const [selectedRange, setSelectedRange] = useState<ChartTimeType>("1D");
-    const [chartData, setChartData] = useState<Array<ChartPriceType> | null>(null);
-    const [info, setInfo] = useState<any>(null);
-
-    useEffect(() => {
-        getChartData()
-    }, [selectedRange]);
-
-    useEffect(() => {
-        if (tokenBalance.tokenId) {
-            getTokenInfo(tokenBalance)
-            getChartData()
-        }
-    }, [tokenBalance])
-
-    const getTokenInfo = async (token: TokenBalance) => {
-        const info = await coingeckoService.getInfo(token.tokenId)
-        setInfo(info)
-    }
-
-    const formatChartData = (data: any) => {
-        return data.map((e: { time: number, close: number }) => {
-            let readableTime = ""
-
-            if (selectedRange === "1D") {
-                readableTime = getHourAndMinute(e.time * 1000)
-            } else if (selectedRange === "1W") {
-                readableTime = getMonthDayHour(e.time * 1000)
-            } else if (selectedRange === "1M") {
-                readableTime = getMonthDayHour(e.time * 1000)
-            } else if (selectedRange === "3M") {
-                readableTime = getMonthDayYear(e.time * 1000)
-            }
-
-            return {
-                time: readableTime,
-                price: Number(formatNumberByFrac(e.close))
-            }
-        })
-    }
-
-    const getChartData = async () => {
-        const currentTime = Math.round(Date.now() / 1000) - 60
-
-        if (tokenBalance.network?.id === "solana") {
-            const timeFrom = currentTime - customMapTimeRange[selectedRange].mseconds
-            const data = await birdeyeService.getOHLCV(tokenBalance.address, customMapTimeRange[selectedRange].solInterval, timeFrom, currentTime)
-            if (data.length > 0) {
-                const cData = formatChartData(data)
-                setChartData([...cData])
-            }
-        } else { // will add 0x
-            const timeFrom = currentTime - customMapTimeRange[selectedRange].mseconds
-            const data = await coingeckoService.getOHLCV(tokenBalance.tokenId, customMapTimeRange[selectedRange].interval, timeFrom, currentTime)
-            if (data.length > 0) {
-                const cData = formatChartData(data)
-                setChartData([...cData])
-            }
-        }
-    }
-
-    const handleBack = () => {
-        setTokenBalance(null)
-        setPage('main')
-    }
-
-    const renderSocialBtns = (links: any) => {
-        let discordUrl = ""
-
-        if (links.chat_url.length > 0) {
-            discordUrl = links.chat_url.find((url: string) => url.includes("discord"))
-        }
-
-        return <div className="flex gap-2">
-            {links.homepage[0] && <a
-                className={`${theme === "dark" ? "text-white/90 bg-white/20 hover:bg-white/10" : "text-black/90 bg-black/20 hover:bg-black/10"}  text-xs sm:text-sm rounded-2xl px-3 py-1`}
-                target="_blank"
-                href={links.homepage[0]}
-            >
-                Websites
-            </a>}
-
-            {links.twitter_screen_name && <a
-                className={`${theme === "dark" ? "text-white/90 bg-white/20 hover:bg-white/10" : "text-black/90 bg-black/20 hover:bg-black/10"}  text-xs sm:text-sm rounded-2xl px-3 py-1`}
-                target="_blank"
-                href={`https://x.com/${links.twitter_screen_name}`}
-            >
-                X
-            </a>}
-
-            {links.telegram_channel_identifier && <a
-                className={`${theme === "dark" ? "text-white/90 bg-white/20 hover:bg-white/10" : "text-black/90 bg-black/20 hover:bg-black/10"}  text-xs sm:text-sm rounded-2xl px-3 py-1`}
-                target="_blank"
-                href={`https://t.me/${links.telegram_channel_identifier}`}
-            >
-                Telegram
-            </a>}
-
-
-            {discordUrl && <a
-                className={`${theme === "dark" ? "text-white/90 bg-white/20 hover:bg-white/10" : "text-black/90 bg-black/20 hover:bg-black/10"}  text-xs sm:text-sm rounded-2xl px-3 py-1`}
-                target="_blank"
-                href={discordUrl}
-            >
-                Discord
-            </a>}
-        </div>
-    }
-
-    return (
-        <div className="mt-4 mx-4">
-            <button className={`rounded-full ${theme === "dark" ? "text-white/70 hover:bg-white/10" : "text-black/70 hover:bg-black/10"}  p-2`} onClick={handleBack}>
-                <ArrowLeft className="w-5 h-5" />
-            </button>
-
-            <div className="overflow-y-auto ai-chat-scrollbar max-h-[calc(100vh-132px)]">
-                {
-                    info?.name ?
-                        <p className="text-center text-xl text-white">{info.name}</p> :
-                        <div className="w-full flex justify-center">
-                            <Skeleton className="w-24 h-7" />
-                        </div>
-                }
-
-                {
-                    info?.market_data?.current_price?.usd ?
-                        <p className="text-center text-2xl text-green-500 font-bold">${info.market_data.current_price.usd}</p> :
-                        <div className="w-full flex justify-center">
-                            <Skeleton className="w-24 h-7 mt-1" />
-                        </div>
-                }
-
-                {
-                    chartData ?
-                        <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={chartData}>
-                                <Tooltip content={<CustomTooltip />} />
-                                <Line type="monotone" dataKey="price" stroke="#22c55e" strokeWidth={1} dot={false} />
-                            </LineChart>
-                        </ResponsiveContainer> :
-                        <Skeleton className="w-full h-[280px] my-4" />
-                }
-
-                {/* Buttons for time range selection */}
-                <div className="flex justify-evenly space-x-1 sm:space-x-2 mb-4">
-                    {["1D", "1W", "1M", "3M"].map((range: any) => (
-                        <button
-                            key={range}
-                            onClick={() => setSelectedRange(range)}
-                            className={`text-white/90 ${theme === "dark" ? "bg-white/20 hover:bg-white/10" : "bg-black/20 hover:bg-black/10"} w-14 sm:w-16 py-1 rounded-md text-xs sm:text-sm 
-                                        ${selectedRange === range && theme === "dark" ? 'bg-white/40' : ''} ${selectedRange === range && theme === "light" ? 'bg-black/40' : ''}`}
-                        >
-                            {range}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="mt-4">
-                    <p className={`${theme === "dark" ? "text-white/70" : "text-black/70"} font-bold text-sm sm:text-base`}>Your Balance</p>
-                    {
-                        info?.market_data?.current_price?.usd ?
-                            <div className="mt-1 px-2 py-3 bg-white/5 rounded-xl flex gap-2">
-                                <div className="flex items-center">
-                                    <img src={tokenBalance.logo} className="w-8 sm:w-10 h-8 sm:h-10 rounded-full" />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between text-sm sm:text-base">
-                                        <span>{tokenBalance.symbol}</span>
-                                        <span>${info.market_data.current_price.usd}</span>
-                                    </div>
-                                    <div className={`flex justify-between ${theme === "dark" ? "text-white/70" : "text-black/70"} text-sm`}>
-                                        <span>{formatNumberByFrac(tokenBalance.balance, 5)} {tokenBalance.symbol}</span>
-                                        <span>{formatUsdValue(info.market_data.current_price.usd * tokenBalance.balance)}</span>
-                                    </div>
-                                </div>
-                            </div> :
-                            <Skeleton className="mt-2 w-full h-14" />
-                    }
-                </div>
-
-                <div className="mt-4">
-                    <p className={`${theme === "dark" ? "text-white/70 font-bold" : "text-black/70 font-bold"}`}>About</p>
-                    {
-                        info?.description?.en ?
-                            <ShowMoreLess text={info.description.en} maxLength={150} /> :
-                            <Skeleton className="w-full h-24" />
-                    }
-
-                </div>
-
-                <div className="mt-4">
-                    <p className={`${theme === "dark" ? "text-white/70 font-bold" : "text-black/70 font-bold"} text-sm sm:text-base`}>About</p>
-                    {
-                        info?.links ? renderSocialBtns(info?.links) : <Skeleton className="w-full h-24" />
-                    }
-                </div>
-
-                <div className="mt-4">
-                    <p className={`${theme === "dark" ? "text-white/70 font-bold" : "text-black/70 font-bold"} text-sm sm:text-base`}>Info</p>
-                    <div className="bg-white/5 rounded-xl text-xs sm:text-sm">
-                        <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Symbol</span>
-                            <span>{tokenBalance.symbol}</span>
-                        </div>
-                        <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Network</span>
-                            <span>{tokenBalance.network?.name || ""}</span>
-                        </div>
-                        <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Market Cap</span>
-                            {
-                                info?.market_data?.market_cap?.usd ?
-                                    <span className="">${formatNumber(info?.market_data?.market_cap?.usd)}</span> :
-                                    <Skeleton className="w-16 h-6" />
-                            }
-                        </div>
-                        <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Total Supply</span>
-                            {
-                                info?.market_data?.total_supply ?
-                                    <span className="">${formatNumber(info?.market_data?.total_supply)}</span> :
-                                    <Skeleton className="w-16 h-6" />
-                            }
-                        </div>
-                        <div className="flex justify-between py-2 px-3">
-                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Circulating Supply</span>
-                            {
-                                info?.market_data?.circulating_supply ?
-                                    <span className="">${formatNumber(info?.market_data?.circulating_supply)}</span> :
-                                    <Skeleton className="w-16 h-6" />
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                {/* <div className="mt-4 mb-4">
-                    <p className="text-white/70 font-bold text-sm sm:text-base">24h Performance</p>
-                    <div className="bg-white/5 rounded-xl text-xs sm:text-sm">
-                        <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className="text-white/70">Volume</span>
-                            <span>$962.45M</span>
-                        </div>
-                        <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className="text-white/70">Trades</span>
-                            <span>$962.45M</span>
-                        </div>
-                        <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className="text-white/70">Traders</span>
-                            <span>47772</span>
-                        </div>
-                    </div>
-                </div> */}
-            </div>
-        </div>
-    )
-}
 
 export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen }) => {
     const { theme } = useStore();
+
+    const { protocol, netAPY, healthFactor, } = useDefiStore();
+    const total_usd_value = protocol.reduce((sum, p) => sum + Number(p.total_usd_value) || 0, 0);
+    const total_unclaimed_usd_value = protocol.reduce((sum, p) => sum + Number(p.total_unclaimed_usd_value) || 0, 0);
+    const isHealthy = formatHealthFactor(healthFactor) === "∞";
+
     const { address, logout, solanaWalletInfo } = useContext(Web3AuthContext);
     const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
     const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
@@ -505,95 +148,38 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     )
 
     const renderDeFi = () => (
-        <div className="space-y-6 mt-4 sm:mt-5 mx-4 flex-1">
+        <div className="space-y-6 mt-4 sm:mt-5 mx-4 flex-1 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-290px)]">
             {/* DeFi Overview */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/5 rounded-xl p-4">
                     <div className="text-xs sm:text-sm text-white/60">Total Value Locked</div>
                     <div className="text-xl sm:text-2xl font-bold mt-1">
-                        {formatUsdValue(mockDeFiStats.totalValueLocked)}
-                    </div>
-                    <div className="text-xs sm:text-sm text-white/60 mt-1">
-                        {mockDeFiStats.distribution.lending}% Lending
+                        {`$${formatNumberByFrac(total_usd_value)}`}
                     </div>
                 </div>
                 <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-xs sm:text-sm text-white/60">Daily Yield</div>
+                    <div className="text-xs sm:text-sm text-white/60">Net APY</div>
                     <div className="text-xl sm:text-2xl font-bold mt-1">
-                        {formatUsdValue(mockDeFiStats.dailyYield)}
-                    </div>
-                    <div className="text-xs sm:text-sm text-green-400 mt-1">
-                        {formatApy(mockDeFiStats.averageApy)} APY
+                        {`${formatNumberByFrac(netAPY)}%`}
                     </div>
                 </div>
                 <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-xs sm:text-sm text-white/60">Risk Level</div>
+                    <div className="text-xs sm:text-sm text-white/60">Total Rewards</div>
                     <div className="text-xl sm:text-2xl font-bold mt-1">
-                        {mockDeFiStats.riskLevel}
+                        {`$ ${total_unclaimed_usd_value}`}
                     </div>
-                    <div className="text-xs sm:text-sm text-white/60 mt-1">
-                        {mockDeFiStats.distribution.borrowing}% Borrowed
+                </div>
+                <div className="bg-white/5 rounded-xl p-4">
+                    <div className="text-xs sm:text-sm text-white/60">Health Status</div>
+                    <div className={`text-xl sm:text-2xl font-bold mt-1 ${isHealthy ? "text-green-400" : "text-red-400"}`}>
+                        {isHealthy ? "Healthy" : "Risk"}
                     </div>
                 </div>
             </div>
 
             {/* DeFi Positions */}
             <div className="space-y-3">
-                {sortedMockDeFiPositions.map((position) => (
-                    <div
-                        key={position.id}
-                        className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
-                    >
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                                <img
-                                    src={position.protocolLogo}
-                                    alt={position.protocol}
-                                    className="w-8 h-8"
-                                />
-                                <div>
-                                    <div className="text-sm sm:text-md font-medium">{position.protocol}</div>
-                                    <div className="text-xs sm:text-sm text-white/60">{position.type}</div>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-md sm:text-lg font-medium">
-                                    {formatUsdValue(position.value)}
-                                </div>
-                                <div className="text-xs sm:text-sm text-green-400">
-                                    {formatApy(position.apy)} APY
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 text-xs sm:text-sm">
-                            <div>
-                                <span className="text-white/60">Amount:</span>{' '}
-                                {`${formatNumberByFrac(position.amount, 5)} ${position.token.symbol}`}
-                            </div>
-                            {position.rewards && (
-                                <div>
-                                    <span className="text-white/60">Rewards:</span>{' '}
-                                    {formatUsdValue(position.rewards.value)}
-                                </div>
-                            )}
-                            {position.healthFactor && (
-                                <div>
-                                    <span className="text-white/60">Health:</span>{' '}
-                                    <span className={getHealthFactorColor(position.healthFactor)}>
-                                        {position.healthFactor.toFixed(2)}
-                                    </span>
-                                </div>
-                            )}
-                            <div className="flex items-center gap-1 ml-auto text-white/60">
-                                <Clock className="w-4 h-4" />
-                                <span>
-                                    {Math.floor((Date.now() - position.startDate.getTime()) / (1000 * 60 * 60 * 24))}d
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                ))}
+                <PositionList isLoading={isLoadingBalance} />
             </div>
         </div>
     )
