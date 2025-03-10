@@ -22,7 +22,9 @@ export const getSolanaBalance = async ({ publicKey, mintAddress }: IGetBalance) 
 
 		if (solToWSol(mintAddress) === NATIVE_MINT.toString()) {
 			// Get SOL balance
-			const balance = await connection.getBalance(ownerPublicKey);
+			let balance = await connection.getBalance(ownerPublicKey);
+			// remove 0.01 sol for safe transfer
+			balance = Math.max(balance - 1e7, 0)
 			return {
 				value: balance,
 				decimals: 9,

@@ -104,6 +104,23 @@ export interface DepositInfo {
     explorerUrl: string;
 }
 
+interface SwapkitLegType {
+    chainId: string;
+    hash: string;
+    block: number;
+    type: string;
+    status: string;
+    trackingStatus: string;
+    fromAsset: string;
+    fromAmount: string;
+    fromAddress: string;
+    toAsset: string;
+    toAmount: string;
+    toAddress: string;
+    finalisedAt: number;
+    payload: Record<string, unknown>;
+}
+
 export interface SwapkitTrackStatusType {
     chainId: string;
     hash: string;
@@ -118,6 +135,7 @@ export interface SwapkitTrackStatusType {
     toAmount: string;
     toAddress: string;
     finalisedAt: number;
+    legs: SwapkitLegType[]
 }
 
 export type SwapkitFinalizedQuoteResponse =  {

@@ -4,14 +4,8 @@ import {DepositInfo, SwapkitQuoteResponse, SwapkitTrackStatusType} from "../type
 
 export const swapkitService = {
     getQuote: async (quote: SwapkitQuoteRequestType): Promise<SwapkitQuoteResponse | null> => {
-        try {
-            const {data} = await swapkitApi.post<SwapkitQuoteResponse>('quote', quote);
-            return data
-        } catch (error) {
-            console.log('Failed to fetch swapkit quote:', error);
-        }
-
-        return null
+        const {data} = await swapkitApi.post<SwapkitQuoteResponse>('quote', quote);
+        return data
     },
     getBrokerChannel: async (request: any): Promise<DepositInfo | null> => {
         try {
@@ -23,10 +17,10 @@ export const swapkitService = {
 
         return null
     },
-    getTrackHash: async (chainId: number, hash: string): Promise<SwapkitTrackStatusType | null> => {
+    getTrackHash: async (chainId: string, hash: string): Promise<SwapkitTrackStatusType | null> => {
         try {
             const {data} = await swapkitApi.post<SwapkitTrackStatusType>('track', {
-                chainId: chainId.toString(),
+                chainId: chainId,
                 hash,
             });
             return data

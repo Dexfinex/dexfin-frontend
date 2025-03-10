@@ -6,15 +6,23 @@ import {formatNumberByFrac, shrinkAddress} from '../../../utils/common.util';
 import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
 import useTokenStore from "../../../store/useTokenStore.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
-import {mapChainId2ExplorerUrl, mapChainId2NativeAddress, mapChainId2Network} from "../../../config/networks.ts";
+import {mapChainId2ExplorerUrl, mapChainId2Network} from "../../../config/networks.ts";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
-import {formatEstimatedTimeBySeconds, getUSDAmount, needDestinationAddress} from "../../../utils/swap.util.ts";
+import {
+    formatEstimatedTimeBySeconds,
+    getBridgingSpendTime,
+    getUSDAmount,
+    needDestinationAddress
+} from "../../../utils/swap.util.ts";
 import {DestinationAddressInputModal} from "../modals/DestinationAddressInputModal.tsx";
 import useSwapkitQuote from "../../../hooks/useSwapkitQuote.ts";
 import {useAllBalance} from "../../../hooks/useAllBalance.tsx";
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
 import useSwapkitBridgeStatus from "../../../hooks/useSwapkitBridgeStatus.ts";
+import {useTokenApprove} from "../../../hooks/useTokenApprove.ts";
+import BigNumber from "bignumber.js";
+import {toFixedFloat} from "../../../utils/trade.util.ts";
 
 interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
@@ -45,14 +53,15 @@ export function CrossChainSwapBox({
         chainId,
         solanaWalletInfo,
         address: evmAddress,
+        transferSolToken,
     } = useContext(Web3AuthContext);
 
     const [destinationAddress, setDestinationAddress] = useState<string>('');
+    const [estimatedCompletionTime, setEstimatedCompletionTime] = useState<number>(0);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
     const [txModalOpen, setTxModalOpen] = useState(false);
-    const [transactionHash, setTransactionHash] = useState<string | undefined>(undefined);
+    const [isPreparing, setIsPreparing] = useState(false);
     const [swapkitTradeHash, setSwapkitTradeHash] = useState<string | undefined>(undefined);
-    const [confirmationLoading, setConfirmationLoading] = useState(false);
 
     const {getTokenPrice} = useTokenStore()
     const {
@@ -65,12 +74,11 @@ export function CrossChainSwapBox({
         slippage,
         destinationAddress,
     })
-/*
     const {
         isLoading: isTracking,
         trackingStatus,
+        completionHash,
     } = useSwapkitBridgeStatus(fromToken?.chainId, swapkitTradeHash)
-*/
 
 
     useGetTokenPrices({
@@ -94,8 +102,6 @@ export function CrossChainSwapBox({
         data: toBalance
     } = useAllBalance({tokenOrMintAddress: toToken?.address, chainId: toToken?.chainId})
 
-    console.log("fromBalance", fromBalance)
-
     const insufficientBalance =
         !isNaN(Number(fromBalance?.formatted)) ? Number(fromAmount) > Number(fromBalance?.formatted)
             : false;
@@ -116,6 +122,12 @@ export function CrossChainSwapBox({
             }
         }
     }, [toToken, solanaWalletInfo, evmAddress]);
+
+    useEffect(() => {
+        if (trackingStatus === 'completed') {
+            setTxModalOpen(true)
+        }
+    }, [trackingStatus])
 
     const {
         fromUsdAmount,
@@ -140,13 +152,51 @@ export function CrossChainSwapBox({
 
     useEffect(() => {
         if (!txModalOpen) {
-            setTransactionHash(undefined)
+            setSwapkitTradeHash(undefined)
+            setEstimatedCompletionTime(0)
             onFromAmountChange?.('')
             onToAmountChange?.('')
         }
     }, [onFromAmountChange, onToAmountChange, txModalOpen])
 
+    const {
+        isApproved: isEvmApproved,
+        isLoading: isApproving,
+        approve
+    } = useTokenApprove({
+        token: fromToken?.address as `0x${string}`,
+        spender: (quoteResponse?.depositInfo?.depositAddress ?? (quoteResponse?.tx?.to ?? '')) as `0x${string}`,
+        amount: new BigNumber(toFixedFloat(fromAmount, 4))
+            .times(new BigNumber(10)
+                .pow(fromToken?.decimals ?? 1))
+            .toFixed(0),
+        chainId: fromToken?.chainId ?? 1
+    });
+
+    const isApproved = fromToken?.chainId === SOLANA_CHAIN_ID ? true : isEvmApproved
+
     const handleSwap = async () => {
+        if (!isApproved) {
+            approve?.()
+            return
+        }
+
+        // set estimated completion time in unixtimestamp
+        setEstimatedCompletionTime(Math.floor(Date.now() / 1000) + quoteResponse.estimatedTime)
+
+        if (fromToken?.chainId === SOLANA_CHAIN_ID && quoteResponse.depositInfo) { // solana transaction
+
+            const signature = await transferSolToken(
+                quoteResponse.depositInfo.depositAddress,
+                fromToken.address,
+                Number(fromAmount),
+                fromToken.decimals
+            )
+            setSwapkitTradeHash(signature)
+
+        } else if (quoteResponse.tx) {
+            //
+        }
     }
 
     return (
@@ -238,7 +288,7 @@ export function CrossChainSwapBox({
 
                                     <div className="flex items-center justify-between mb-3">
                                     <span
-                                        className="text-sm text-gray-400">You receive: {formatNumberByFrac(Number(quoteResponse.expectedBuyAmount))} {toToken?.symbol}</span>
+                                        className="text-sm text-gray-400">You receive: {formatNumberByFrac(Number(quoteResponse.expectedBuyAmount), 5)} {toToken?.symbol}</span>
                                     </div>
 
                                     <div className="flex justify-between text-xs text-gray-400">
@@ -247,8 +297,8 @@ export function CrossChainSwapBox({
                                             <span>{`estimated time: ${formatEstimatedTimeBySeconds(quoteResponse.estimatedTime)}`}</span>
                                         </div>
                                         <div className="flex items-center">
-                                            <DollarSign size={12} className="mr-1"/>
                                             <span>Fee: {quoteResponse.formattedFeeInUsd}</span>
+                                            <DollarSign size={12} className="mr-1"/>
                                         </div>
                                     </div>
                                 </>
@@ -262,7 +312,7 @@ export function CrossChainSwapBox({
                 (needDestinationAddress(fromToken?.chainId, toToken?.chainId)) && !destinationAddress && (
                     <Alert status="info" variant="subtle" borderRadius="md">
                         <AlertIcon/>
-                        <Text>You Should Input Destination Address</Text>
+                        <Text width={'calc(100% - 20px)'}>You Should Input Destination Address</Text>
                     </Alert>
                 )
             }
@@ -271,7 +321,7 @@ export function CrossChainSwapBox({
                 quoteResponse.errorMessage && (
                     <Alert status="error" variant="subtle" borderRadius="md">
                         <AlertIcon/>
-                        <Text>Error: {quoteResponse.errorMessage}</Text>
+                        <Text width={'calc(100% - 20px)'}>Error: {quoteResponse.errorMessage}</Text>
                     </Alert>
                 )
             }
@@ -288,25 +338,38 @@ export function CrossChainSwapBox({
                         Please Use Embedded Wallet
                     </Button>
                 ) : (
-                    insufficientBalance ? (
+                    swapkitTradeHash ? (
                         <Button
-                            width="full"
-                            colorScheme="blue"
-                            isDisabled={true}
-                        >
-                            Insufficient Balance
-                        </Button>
-                    ) : (
-                        <Button
-                            isLoading={confirmationLoading || isQuoteLoading}
-                            loadingText={confirmationLoading ? 'Confirming...' : 'Computing...'}
+                            isLoading={isTracking}
+                            loadingText={getBridgingSpendTime(estimatedCompletionTime)}
                             width="full"
                             colorScheme="blue"
                             onClick={handleSwap}
-                            isDisabled={!(Number(fromAmount) > 0) || confirmationLoading || isQuoteLoading}
+                            isDisabled={true}
                         >
-                            Bridge
+                            {trackingStatus}
                         </Button>
+                    ) : (
+                        insufficientBalance ? (
+                            <Button
+                                width="full"
+                                colorScheme="blue"
+                                isDisabled={true}
+                            >
+                                Insufficient Balance
+                            </Button>
+                        ) : (
+                            <Button
+                                isLoading={isQuoteLoading || isApproving}
+                                loadingText={(isApproving ? 'Approving...' : 'Computing...')}
+                                width="full"
+                                colorScheme="blue"
+                                onClick={handleSwap}
+                                isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !isApproved || !!quoteResponse.errorMessage}
+                            >
+                                {isApproved ? 'Bridge' : 'Approve'}
+                            </Button>
+                        )
                     )
                 )
             }
@@ -322,7 +385,7 @@ export function CrossChainSwapBox({
                 )
             }
             <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                              link={`${mapChainId2ExplorerUrl[SOLANA_CHAIN_ID]}/tx/${transactionHash}`}/>
+                              link={`${mapChainId2ExplorerUrl[toToken!.chainId]}/tx/${completionHash}`}/>
         </div>
     )
         ;
