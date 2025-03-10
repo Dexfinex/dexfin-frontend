@@ -20,10 +20,19 @@ const useSwapkitBridgeStatus = (chainId: number | undefined, tradeHash: string |
         refetchInterval: 4000,
     });
 
-    const trackingStatus = (data as SwapkitTrackStatusType)?.trackingStatus ?? ''
+    let trackingStatus = ''
+    let completionHash = ''
+
+    if (data) {
+        const statusData = data as SwapkitTrackStatusType
+        trackingStatus = statusData.trackingStatus
+        const latestLeg = statusData.legs[statusData.legs.length - 1]
+        completionHash = latestLeg?.hash ?? ''
+    }
 
     return {
         isLoading: isLoading || (!!trackingStatus && trackingStatus !== 'completed'),
+        completionHash,
         refetch,
         trackingStatus,
     };

@@ -6,7 +6,7 @@ import {formatNumberByFrac, shrinkAddress} from '../../../utils/common.util';
 import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
 import useTokenStore from "../../../store/useTokenStore.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
-import {mapChainId2Network} from "../../../config/networks.ts";
+import {mapChainId2ExplorerUrl, mapChainId2Network} from "../../../config/networks.ts";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
 import {
@@ -60,6 +60,7 @@ export function CrossChainSwapBox({
     const [estimatedCompletionTime, setEstimatedCompletionTime] = useState<number>(0);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
     const [txModalOpen, setTxModalOpen] = useState(false);
+    const [isPreparing, setIsPreparing] = useState(false);
     const [swapkitTradeHash, setSwapkitTradeHash] = useState<string | undefined>(undefined);
 
     const {getTokenPrice} = useTokenStore()
@@ -76,6 +77,7 @@ export function CrossChainSwapBox({
     const {
         isLoading: isTracking,
         trackingStatus,
+        completionHash,
     } = useSwapkitBridgeStatus(fromToken?.chainId, swapkitTradeHash)
 
 
@@ -336,25 +338,25 @@ export function CrossChainSwapBox({
                         Please Use Embedded Wallet
                     </Button>
                 ) : (
-                    insufficientBalance ? (
+                    swapkitTradeHash ? (
                         <Button
+                            isLoading={isTracking}
+                            loadingText={getBridgingSpendTime(estimatedCompletionTime)}
                             width="full"
                             colorScheme="blue"
+                            onClick={handleSwap}
                             isDisabled={true}
                         >
-                            Insufficient Balance
+                            {trackingStatus}
                         </Button>
                     ) : (
-                        swapkitTradeHash ? (
+                        insufficientBalance ? (
                             <Button
-                                isLoading={isTracking}
-                                loadingText={getBridgingSpendTime(estimatedCompletionTime)}
                                 width="full"
                                 colorScheme="blue"
-                                onClick={handleSwap}
                                 isDisabled={true}
                             >
-                                {trackingStatus}
+                                Insufficient Balance
                             </Button>
                         ) : (
                             <Button
@@ -383,7 +385,7 @@ export function CrossChainSwapBox({
                 )
             }
             <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                              link={`${fromToken?.chainId}/tx/${swapkitTradeHash}`}/>
+                              link={`${mapChainId2ExplorerUrl[toToken!.chainId]}/tx/${completionHash}`}/>
         </div>
     )
         ;
