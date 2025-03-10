@@ -2,6 +2,7 @@
 import {splitSignature} from "./signature.util.ts";
 import {GaslessQuoteResponse, SignatureType, TokenType} from "../types/swap.type.ts";
 import {WalletClient} from "viem";
+import {BITCOIN_CHAIN_ID, SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
 
 export async function signTradeObject(walletClient: WalletClient, quote: GaslessQuoteResponse): Promise<any> {
     // Logic to sign trade object
@@ -43,3 +44,39 @@ export const getUSDAmount = (selectedToken: TokenType | undefined, price: number
     return 0
 }
 
+export const formatEstimatedTimeBySeconds = (seconds: number) => {
+    if (seconds < 60) return `${seconds} s`;
+
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    if (minutes < 60) {
+        return remainingSeconds > 0 ? `${minutes} min, ${remainingSeconds} s` : `${minutes} min`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    return remainingMinutes > 0
+        ? `${hours} hr, ${remainingMinutes} min`
+        : `${hours} hr`;
+}
+
+
+export const needDestinationAddress = (fromChainId: number | undefined, toChainId: number | undefined) => {
+    if (fromChainId === undefined || toChainId === undefined)
+        return false
+
+    const exceptionalChainIds = [SOLANA_CHAIN_ID, BITCOIN_CHAIN_ID]
+    return fromChainId !== toChainId && (exceptionalChainIds.indexOf(fromChainId) >= 0 || exceptionalChainIds.indexOf(toChainId) >= 0);
+}
+
+export const getBridgingSpendTime = (estimatedTime: number) => {
+    const currentTime = Math.floor(Date.now() / 1000)
+    const remainedSeconds = estimatedTime - currentTime
+
+    if (remainedSeconds <= 0)
+        return 'In Progress'
+
+    return `Remained Time: ${formatEstimatedTimeBySeconds(remainedSeconds)}`
+}

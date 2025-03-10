@@ -50,14 +50,10 @@ import { mapChainId2ViemChain } from "../config/networks.ts";
 import { useStore } from "../store/useStore.ts";
 import { connection as SolanaConnection } from "../config/solana.ts";
 import axios from "axios";
+import {NATIVE_MINT} from "../constants/solana.constants.ts";
+import {solToWSol} from "../utils/solana.util.ts";
 
 export type WalletType = 'EOA' | 'EMBEDDED' | 'UNKNOWN';
-
-interface UserData {
-    accessToken: string;
-    userId?: string;
-    walletType?: WalletType;
-}
 
 interface Web3AuthContextType {
     login: () => void;
@@ -96,11 +92,8 @@ interface Web3AuthContextType {
     solanaWalletInfo: SolanaWalletInfoType | undefined,
     signSolanaTransaction: (solanaTransaction: VersionedTransaction) => Promise<VersionedTransaction | null>,
     transferSolToken: (recipientAddress: string, tokenMintAddress: string, amount: number, decimals: number) => Promise<string>,
-
-    userData: UserData | null,
     getWalletType: () => WalletType,
     walletType: WalletType
-
 }
 
 
@@ -161,7 +154,6 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     transferSolToken: async () => {
         return ""
     },
-    userData: null,
     getWalletType: () => 'UNKNOWN',
     walletType: 'UNKNOWN',
 
@@ -185,7 +177,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isLoadingStoredWallet, setIsLoadingStoredWallet] = useState<boolean>(false)
     const [solanaWalletInfo, setSolanaWalletInfo] = useState<SolanaWalletInfoType | undefined>()
 
-    const [userData, setUserData] = useState<UserData | null>(null);
     const [walletType, setWalletType] = useState<WalletType>('UNKNOWN');
 
     // const [chain, setChain] = useState(null);
@@ -496,7 +487,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setWalletClient(undefined)
         setIsLoadingStoredWallet(false)
 
-        setUserData(null)
         setWalletType('UNKNOWN')
         delete axios.defaults.headers.common['Authorization'];
     }
@@ -573,7 +563,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                 const keypair = Keypair.fromSecretKey(Buffer.from(privateKey.decryptedPrivateKey, "hex"));
 
-                if (tokenMintAddress === "So11111111111111111111111111111111111111112") {
+                if (solToWSol(tokenMintAddress) === NATIVE_MINT.toString()) {
                     console.log('transfer native sol')
                     const transaction = new Transaction().add(
                         SystemProgram.transfer({
@@ -710,7 +700,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         walletClient,
         setWalletClient,
 
-        userData,
         getWalletType,
         walletType,
     }

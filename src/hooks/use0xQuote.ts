@@ -19,9 +19,9 @@ const use0xQuote = ({
                         sellAmount,
                     }: quoteParam
 ) => {
-    const {chainId, address, provider} = useContext(Web3AuthContext);
+    const {chainId, address} = useContext(Web3AuthContext);
     const enabled =
-        !!sellToken && !!buyToken && !!address && !!provider && !!sellAmount && Number(sellAmount) > 0;
+        !!sellToken && !!buyToken && !!address && !!sellAmount && Number(sellAmount) > 0;
     const isGasLess = !isNativeTokenAddress(chainId!, sellToken?.address ?? '')
 
     const formatTax = (taxBps: string) => (parseFloat(taxBps) / 100).toFixed(2)
