@@ -1,26 +1,25 @@
-import React, { useContext, useState, useEffect, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useContext, useState, useEffect } from "react";
 import { Web3AuthContext } from "../providers/Web3AuthContext";
-import { motion, time } from "framer-motion";
+import { motion } from "framer-motion";
 import { useStore } from "../store/useStore";
 import { TokenChainIcon } from "./swap/components/TokenIcon";
-import { CheckCircle, Copy, Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, ArrowLeft, ExternalLink, Clock } from "lucide-react";
-import { mockDeFiPositions, mockDeFiStats, formatUsdValue, formatApy, getHealthFactorColor, } from '../lib/wallet';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { shrinkAddress, formatNumberByFrac, formatNumber, getHourAndMinute, getMonthDayHour, getMonthDayYear, getTimeAgo } from "../utils/common.util";
+import { CheckCircle, Copy, Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, ArrowLeft } from "lucide-react";
+import { mockDeFiPositions, formatUsdValue, } from '../lib/wallet';
+import { LineChart, Line, Tooltip, ResponsiveContainer } from "recharts";
+import { shrinkAddress, formatNumberByFrac, formatNumber, getHourAndMinute, getMonthDayHour, getMonthDayYear, getTimeAgo, formatHealthFactor } from "../utils/common.util";
 import { useWalletBalance } from "../hooks/useBalance";
 import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStore";
 import { SendDrawer } from "./wallet/SendDrawer";
 import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
 import useActivitiesStore from "../store/useActivitiesStore.ts";
-import { dexfinv3Service } from "../services/dexfin.service.ts";
-import { Skeleton, Popover, PopoverTrigger, PopoverContent, theme } from '@chakra-ui/react';
+import { Skeleton, Popover, PopoverTrigger, PopoverContent, } from '@chakra-ui/react';
 import { coingeckoService } from "../services/coingecko.service";
 import { birdeyeService } from "../services/birdeye.service";
 import { mapChainName2ExplorerUrl } from "../config/networks";
-import { WalletActivityType } from "../types/dexfinv3.type.ts";
 import { useActivities } from "../hooks/useActivities.ts";
+import useDefiStore from "../store/useDefiStore";
+import { PositionList } from "./wallet/PositionList.tsx";
 
 interface WalletDrawerProps {
     isOpen: boolean,
@@ -394,6 +393,12 @@ export const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBala
 
 export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen }) => {
     const { theme } = useStore();
+
+    const { protocol, netAPY, healthFactor, } = useDefiStore();
+    const total_usd_value = protocol.reduce((sum, p) => sum + Number(p.total_usd_value) || 0, 0);
+    const total_unclaimed_usd_value = protocol.reduce((sum, p) => sum + Number(p.total_unclaimed_usd_value) || 0, 0);
+    const isHealthy = formatHealthFactor(healthFactor) === "∞";
+
     const { address, logout, solanaWalletInfo } = useContext(Web3AuthContext);
     const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
     const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
@@ -505,95 +510,38 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     )
 
     const renderDeFi = () => (
-        <div className="space-y-6 mt-4 sm:mt-5 mx-4 flex-1">
+        <div className="space-y-6 mt-4 sm:mt-5 mx-4 flex-1 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-290px)]">
             {/* DeFi Overview */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/5 rounded-xl p-4">
                     <div className="text-xs sm:text-sm text-white/60">Total Value Locked</div>
                     <div className="text-xl sm:text-2xl font-bold mt-1">
-                        {formatUsdValue(mockDeFiStats.totalValueLocked)}
-                    </div>
-                    <div className="text-xs sm:text-sm text-white/60 mt-1">
-                        {mockDeFiStats.distribution.lending}% Lending
+                        {`$${formatNumberByFrac(total_usd_value)}`}
                     </div>
                 </div>
                 <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-xs sm:text-sm text-white/60">Daily Yield</div>
+                    <div className="text-xs sm:text-sm text-white/60">Net APY</div>
                     <div className="text-xl sm:text-2xl font-bold mt-1">
-                        {formatUsdValue(mockDeFiStats.dailyYield)}
-                    </div>
-                    <div className="text-xs sm:text-sm text-green-400 mt-1">
-                        {formatApy(mockDeFiStats.averageApy)} APY
+                        {`${formatNumberByFrac(netAPY)}%`}
                     </div>
                 </div>
                 <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-xs sm:text-sm text-white/60">Risk Level</div>
+                    <div className="text-xs sm:text-sm text-white/60">Total Rewards</div>
                     <div className="text-xl sm:text-2xl font-bold mt-1">
-                        {mockDeFiStats.riskLevel}
+                        {`$ ${total_unclaimed_usd_value}`}
                     </div>
-                    <div className="text-xs sm:text-sm text-white/60 mt-1">
-                        {mockDeFiStats.distribution.borrowing}% Borrowed
+                </div>
+                <div className="bg-white/5 rounded-xl p-4">
+                    <div className="text-xs sm:text-sm text-white/60">Health Status</div>
+                    <div className={`text-xl sm:text-2xl font-bold mt-1 ${isHealthy ? "text-green-400" : "text-red-400"}`}>
+                        {isHealthy ? "Healthy" : "Risk"}
                     </div>
                 </div>
             </div>
 
             {/* DeFi Positions */}
             <div className="space-y-3">
-                {sortedMockDeFiPositions.map((position) => (
-                    <div
-                        key={position.id}
-                        className="p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
-                    >
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                                <img
-                                    src={position.protocolLogo}
-                                    alt={position.protocol}
-                                    className="w-8 h-8"
-                                />
-                                <div>
-                                    <div className="text-sm sm:text-md font-medium">{position.protocol}</div>
-                                    <div className="text-xs sm:text-sm text-white/60">{position.type}</div>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-md sm:text-lg font-medium">
-                                    {formatUsdValue(position.value)}
-                                </div>
-                                <div className="text-xs sm:text-sm text-green-400">
-                                    {formatApy(position.apy)} APY
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 text-xs sm:text-sm">
-                            <div>
-                                <span className="text-white/60">Amount:</span>{' '}
-                                {`${formatNumberByFrac(position.amount, 5)} ${position.token.symbol}`}
-                            </div>
-                            {position.rewards && (
-                                <div>
-                                    <span className="text-white/60">Rewards:</span>{' '}
-                                    {formatUsdValue(position.rewards.value)}
-                                </div>
-                            )}
-                            {position.healthFactor && (
-                                <div>
-                                    <span className="text-white/60">Health:</span>{' '}
-                                    <span className={getHealthFactorColor(position.healthFactor)}>
-                                        {position.healthFactor.toFixed(2)}
-                                    </span>
-                                </div>
-                            )}
-                            <div className="flex items-center gap-1 ml-auto text-white/60">
-                                <Clock className="w-4 h-4" />
-                                <span>
-                                    {Math.floor((Date.now() - position.startDate.getTime()) / (1000 * 60 * 60 * 24))}d
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                ))}
+                <PositionList isLoading={isLoadingBalance} />
             </div>
         </div>
     )
