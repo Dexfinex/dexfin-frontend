@@ -558,18 +558,23 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           env: CONSTANTS.ENV.PROD,
         });
 
-        const encryption = await user.encryption.info()
+        setChatUser(user)
+        initStream(user)
 
-        if (encryption?.decryptedPgpPrivateKey) {
-          const pk = {
-            account: user.account,
-            decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
-          }
-          localStorage.setItem(KEY_NAME, JSON.stringify(pk))
+        /*
+                const encryption = await user.encryption.info()
 
-          setChatUser(user)
-          initStream(user)
-        }
+                if (encryption?.decryptedPgpPrivateKey) {
+                  const pk = {
+                    account: user.account,
+                    decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+                  }
+                  localStorage.setItem(KEY_NAME, JSON.stringify(pk))
+
+                  setChatUser(user)
+                  initStream(user)
+                }
+        */
       } catch (err) {
         console.log('initialize err: ', err)
         toast({

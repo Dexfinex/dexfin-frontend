@@ -654,18 +654,23 @@ export const DirectMessagesWidget: React.FC = () => {
           env: CONSTANTS.ENV.PROD,
         });
 
-        const encryption = await user.encryption.info()
+        setChatUser(user)
+        initStream(user)
 
-        if (encryption?.decryptedPgpPrivateKey) {
-          const pk = {
-            account: user.account,
-            decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
-          }
-          localStorage.setItem("PgpPK", JSON.stringify(pk))
+        /*
+                const encryption = await user.encryption.info()
 
-          setChatUser(user)
-          initStream(user)
-        }
+                if (encryption?.decryptedPgpPrivateKey) {
+                  const pk = {
+                    account: user.account,
+                    decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+                  }
+                  localStorage.setItem("PgpPK", JSON.stringify(pk))
+
+                  setChatUser(user)
+                  initStream(user)
+                }
+        */
       } catch (err) {
         console.log('initialize err: ', err)
         toast({

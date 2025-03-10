@@ -6,6 +6,7 @@ import {GaslessQuoteResponse, QuoteDataType, QuoteResponse, TokenType} from "../
 import {zeroxService} from "../services/0x.service.ts";
 import {formatUnits} from "ethers/lib/utils";
 import {isNativeTokenAddress} from "../utils/common.util.ts";
+import {WalletTypeEnum} from "../types/wallet.ts";
 
 interface quoteParam {
     sellToken: TokenType | null,
@@ -19,10 +20,10 @@ const use0xQuote = ({
                         sellAmount,
                     }: quoteParam
 ) => {
-    const {chainId, address} = useContext(Web3AuthContext);
+    const {chainId, address, walletType} = useContext(Web3AuthContext);
     const enabled =
         !!sellToken && !!buyToken && !!address && !!sellAmount && Number(sellAmount) > 0;
-    const isGasLess = !isNativeTokenAddress(chainId!, sellToken?.address ?? '')
+    const isGasLess = walletType === WalletTypeEnum.EOA && !isNativeTokenAddress(chainId!, sellToken?.address ?? '')
 
     const formatTax = (taxBps: string) => (parseFloat(taxBps) / 100).toFixed(2)
 

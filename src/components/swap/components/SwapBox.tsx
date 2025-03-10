@@ -13,7 +13,6 @@ import {mapChainId2ChainName, mapChainId2ExplorerUrl, mapChainId2NativeAddress} 
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
 import {useBalance} from "../../../hooks/useBalance.tsx";
 import {ethers} from "ethers";
-import {useSignTypedData} from "wagmi";
 import {concat, Hex, numberToHex, size} from "viem";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {use0xTokenApprove} from "../../../hooks/use0xTokenApprove.ts";
@@ -276,7 +275,6 @@ export function SwapBox({
         }
     }, [onFromAmountChange, onToAmountChange, txModalOpen])
 
-    const {signTypedDataAsync} = useSignTypedData();
     const isConfirmed = isSuccessNormalSwapAction || gaslessTransactionStatus === 'confirmed'
 
     useEffect(() => {
@@ -301,7 +299,13 @@ export function SwapBox({
         if (normalSwapQuoteResponse.permit2?.eip712) {
             let signature: Hex | undefined;
             try {
-                signature = await signTypedDataAsync(normalSwapQuoteResponse.permit2.eip712);
+                if (walletType === WalletTypeEnum.EMBEDDED) {
+                    signature = await kernelAccount!.signTypedData(normalSwapQuoteResponse.permit2.eip712);
+                } else {
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-expect-error
+                    signature = await walletClient!.signTypedData(normalSwapQuoteResponse.permit2.eip712);
+                }
                 console.log("Signed permit2 message from quote response");
             } catch (error) {
                 console.error("Error signing permit2 coupon:", error);
@@ -476,7 +480,7 @@ export function SwapBox({
                             info={'Estimated network fees for processing the transaction'}
                             value={`$${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}
                             isLoading={isGasEstimationLoading}
-                            isFree={isGasLessSwap}
+                            isFree={isGasLessSwap || walletType === WalletTypeEnum.EMBEDDED}
                         />
 
                         {/* slippage */}
@@ -517,7 +521,7 @@ export function SwapBox({
                 </div>
             )}
 
-{/*
+            {/*
             {
                 error && (
                     <Alert status="error" variant="subtle" borderRadius="md">
@@ -609,7 +613,10 @@ export function SwapBox({
             }
             {
                 isConfirmed && (
-                    <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
+                    <TransactionModal open={txModalOpen} setOpen={(value: boolean) => {
+                        setIsSuccessNormalSwapAction(false)
+                        setTxModalOpen(value)
+                    }}
                                       link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${transactionHash}`}/>
                 )
             }
