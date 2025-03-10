@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { IUser } from '../types/chat.type';
 
@@ -113,6 +114,9 @@ interface StoreState {
   // Menu Items
   menuItems: MenuItem[];
   toggleStarMenuItem: (id: string) => void;
+  setDefaultStarredItems: () => void;
+  saveStarredItems: () => void;
+  loadStarredItems: () => void;
 
   // Modal States
   isSignupModalOpen: boolean;
@@ -146,8 +150,6 @@ interface StoreState {
 
   isUsernameModalOpen: boolean;
   setIsUsernameModalOpen: (isOpen: boolean) => void;
-
-
 
   // Market Data View
   marketDataView: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed';
@@ -190,9 +192,6 @@ interface StoreState {
       bestScore: number;
       perfectStatus: number;
     };
-    // hundStts:{
-
-    // };
     totalTokens: number;
   };
   user: {
@@ -232,10 +231,8 @@ interface StoreState {
   setSelectedUserInChatModal: (user: IUser) => void;
 }
 
-
-const useStore = create<StoreState>((set) => ({
+const useStore = create<StoreState>((set, get) => ({
   user: null,
-  setUser: (user: any) => set({ user }),
   // Menu Items
   menuItems: [
     { id: 'ai', label: 'AI Agent', icon: 'Bot', isStarred: false },
@@ -250,11 +247,71 @@ const useStore = create<StoreState>((set) => ({
     { id: 'games', label: 'Games', icon: 'Gamepad2', isStarred: false },
     { id: 'rewards', label: 'Rewards', icon: 'Trophy', isStarred: false },
   ],
-  toggleStarMenuItem: (id) => set((state) => ({
-    menuItems: state.menuItems.map((item) =>
+
+  toggleStarMenuItem: (id) => set((state) => {
+    const newMenuItems = state.menuItems.map((item) =>
       item.id === id ? { ...item, isStarred: !item.isStarred } : item
-    ),
-  })),
+    );
+
+    // Save to localStorage after toggling
+    localStorage.setItem('starredMenuItems', JSON.stringify(
+      newMenuItems.filter(item => item.isStarred).map(item => item.id)
+    ));
+
+    return { menuItems: newMenuItems };
+  }),
+
+  // Set default starred items when user logs in
+  setDefaultStarredItems: () => {
+    // First try to load from localStorage
+    const savedStarredItems = localStorage.getItem('starredMenuItems');
+
+    if (savedStarredItems) {
+      // If we have saved preferences, use those
+      const starredIds = JSON.parse(savedStarredItems);
+
+      set((state) => ({
+        menuItems: state.menuItems.map((item) => ({
+          ...item,
+          isStarred: starredIds.includes(item.id)
+        }))
+      }));
+    } else {
+      // Otherwise set defaults 
+      set((state) => ({
+        menuItems: state.menuItems.map((item) => ({
+          ...item,
+          isStarred: ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat'].includes(item.id)
+        }))
+      }));
+
+      // Save default starred items
+      const defaultItems = ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat'];
+      localStorage.setItem('starredMenuItems', JSON.stringify(defaultItems));
+    }
+  },
+
+  // Save starred items to localStorage
+  saveStarredItems: () => {
+    const { menuItems } = get();
+    const starredIds = menuItems.filter(item => item.isStarred).map(item => item.id);
+    localStorage.setItem('starredMenuItems', JSON.stringify(starredIds));
+  },
+
+  // Load starred items from localStorage
+  loadStarredItems: () => {
+    const savedStarredItems = localStorage.getItem('starredMenuItems');
+    if (savedStarredItems) {
+      const starredIds = JSON.parse(savedStarredItems);
+
+      set((state) => ({
+        menuItems: state.menuItems.map((item) => ({
+          ...item,
+          isStarred: starredIds.includes(item.id)
+        }))
+      }));
+    }
+  },
 
   // Modal States
   isSignupModalOpen: false,
@@ -287,6 +344,7 @@ const useStore = create<StoreState>((set) => ({
   setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
   isrewardsOpen: false,
   setIsRewardsOpen: (isOpen) => set({ isrewardsOpen: isOpen }),
+
   // Market Data View
   marketDataView: 'overview',
   setMarketDataView: (view) => set({ marketDataView: view }),
@@ -317,7 +375,6 @@ const useStore = create<StoreState>((set) => ({
       position: { x: 380, y: 390 },
       size: { width: 360, height: 400 }
     },
-
     {
       id: 'direct-messages',
       type: 'Direct Messages',
@@ -342,7 +399,6 @@ const useStore = create<StoreState>((set) => ({
       position: { x: 1120, y: 530 },
       size: { width: 360, height: 280 }
     },
-
     {
       id: 'quick-swap',
       type: 'Quick Swap',
@@ -448,7 +504,6 @@ const useStore = create<StoreState>((set) => ({
       };
     }
 
-
     return {
       gameStats: {
         ...state.gameStats,
@@ -456,8 +511,6 @@ const useStore = create<StoreState>((set) => ({
       }
     };
   }),
-
-
 
   // Appearance
   currentWallpaper: wallpapersList[0],
