@@ -19,4 +19,13 @@ export const openaiService = {
 			throw error;
 		}
 	},
+	getOpenAIWidgetData: async (command: string): Promise<any> => {
+		try {
+			const { data } = await openaiApi.get<any>(`/widget?command=${command}`);
+			return data;
+		} catch (error) {
+			console.error('Failed to fetch OpenAI Widget data:', error);
+			throw error;
+		}
+	},
 }
