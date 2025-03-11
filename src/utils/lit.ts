@@ -56,13 +56,14 @@ export function isSocialLoginSupported(provider: string): boolean {
  */
 export async function signInWithGoogle(redirectUri: string): Promise<void> {
     const googleProvider = new GoogleProvider({relay: litRelay, litNodeClient, redirectUri});
-    
-    // Use the callback approach exactly as specified in the requirements
-    await googleProvider.signIn((loginUrl) => {
-      const customLoginUrl = loginUrl.replace('https://login.litgateway.com', 'http://localhost:3300');
-      window.location.href = customLoginUrl;
-    });
-  }
+    /*
+      const googleProvider = litAuthClient.initProvider<GoogleProvider>(
+        PROVIDER_TYPE.Google,
+        { redirectUri }
+      );
+    */
+    await googleProvider.signIn();
+}
 
 /**
  * Get auth method object from redirect
