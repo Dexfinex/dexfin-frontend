@@ -125,6 +125,8 @@ interface StoreState {
   setIsSigninModalOpen: (isOpen: boolean) => void;
   isAIAgentOpen: boolean;
   setIsAIAgentOpen: (isOpen: boolean) => void;
+  widgetCommand: string;
+  setWidgetCommand: (command: string) => void;
   isSwapOpen: boolean;
   setIsSwapOpen: (isOpen: boolean) => void;
   isDefiOpen: boolean;
@@ -348,6 +350,11 @@ const useStore = create<StoreState>((set, get) => ({
   // Market Data View
   marketDataView: 'overview',
   setMarketDataView: (view) => set({ marketDataView: view }),
+
+  widgetCommand: '',
+  setWidgetCommand(command) {
+    set({ widgetCommand: command });
+  },
 
   // Widgets
   widgets: [

@@ -57,7 +57,9 @@ export default function App() {
         isrewardsOpen,
         setIsRewardsOpen,
 
-        isUsernameModalOpen
+        isUsernameModalOpen,
+        widgetCommand,
+        setWidgetCommand
     } = useStore();
 
     const {
@@ -172,6 +174,7 @@ export default function App() {
 
             <AIAgentModal
                 isOpen={isAIAgentOpen}
+                widgetCommand = {widgetCommand}
                 onClose={() => setIsAIAgentOpen(false)}
             />
             <SwapModal
