@@ -37,7 +37,7 @@ export function Chart({type, onTypeChange, token, isMaximized}: ChartProps) {
     const {getTokenPrice} = useTokenStore()
 
     const price = token ? getTokenPrice(token?.address, token?.chainId) : 0
-    const change = Math.abs(((chartData[chartData.length - 1]?.close ?? 0) - (chartData[0]?.close ?? 0)) / (chartData[0]?.close ?? 1) * 100)
+    const change = ((chartData[chartData.length - 1]?.close ?? 0) - (chartData[0]?.close ?? 0)) / (chartData[0]?.close ?? 1) * 100
 
     const handleTimeRangeChange = (range: TimeRange) => {
         setTimeRange(range);
