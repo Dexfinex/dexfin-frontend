@@ -19,7 +19,7 @@ import { SwapProcess } from './components/EVM/SwapProcess.tsx';
 import { BridgeProcess } from './components/EVM/BridgeProcess.tsx';
 import { PortfolioProcess } from '../PortfolioProcess.tsx';
 import { SendProcess } from './components/EVM/SendProcess.tsx';
-import { SendSolProcess } from './components/Solana/SendSolProcess.tsx';
+import { SolSendProcess } from './components/Solana/SolSendProcess.tsx';
 import { StakeProcess } from '../StakeProcess.tsx';
 import { ProjectAnalysisProcess } from '../ProjectAnalysisProcess.tsx';
 import { WalletPanel } from './WalletPanel.tsx';
@@ -27,7 +27,7 @@ import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { convertCryptoAmount } from '../../utils/agent.tsx';
+import { convertCryptoAmount, isValidSolanaAddress } from '../../utils/agent.tsx';
 import { DepositProcess } from './components/EVM/DepositProcess.tsx';
 import { WithdrawProcess } from './components/EVM/WithdrawProcess.tsx';
 import { BorrowProcess } from './components/EVM/BorrowProcess.tsx';
@@ -59,6 +59,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [showBridgeProcess, setShowBridgeProcess] = useState(false);
   const [showPortfolioProcess, setShowPortfolioProcess] = useState(false);
   const [showSendProcess, setShowSendProcess] = useState(false);
+  const [showSolSendProcess, setShowSolSendProcess] = useState(false);
   const [showStakeProcess, setShowStakeProcess] = useState(false);
   const [showProjectAnalysis, setShowProjectAnalysis] = useState(false);
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
@@ -97,6 +98,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowRepayProcess(false);
     setShowENSRegisterProcess(false);
     setShowENSRenewProcess(false);
+
+    setShowSolSendProcess(false);
   };
 
   const processCommandCase = async (command: string, address: string, chainId: number | undefined) => {
@@ -319,7 +322,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         yields: response.data,
       }
     }
-    const sol_response = await openaiService.getOpenAISolanaData(normalizedMessage);
+    console.log(message);
+    const sol_response = await openaiService.getOpenAISolanaData(message);
     if (sol_response && sol_response.type == "transfer_sol" && sol_response.args.networkName == "solana") {
       return sol_response;
     }
@@ -345,7 +349,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     try {
 
       setIsProcessing(true);
-      const normalizedText = text.toLowerCase().trim();
+      const normalizedText = text.trim();
       let response: any = null;
 
       // Process chained commands
@@ -511,7 +515,32 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           setShowYieldProcess(true);
         } else if (response.type == "transfer_sol") {
           console.log(response);
+          console.log(tokenBalances);
+          
+          let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
 
+          if (token && token.balance > response.args.amount) {
+            if (isValidSolanaAddress(response.args.outputMint)) {
+              setFromToken({
+                symbol: token.symbol,
+                name: token.name,
+                address: token.address,
+                chainId: token.chain,
+                decimals: token.decimals,
+                logoURI: token.logo,
+                priceUSD: token.usdPrice
+              });
+              setFromAmount(response.args.amount);
+              setReceiver(response.args.outputMint);
+              setShowSolSendProcess(true);
+            } else {
+              response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.'}
+            }
+
+          }
+          else {
+            response = { text: `transfer ${response.args.amount} ${response.args.inputSymbol} to ${response.args.outputMint} on solana`, insufficient: 'Insufficient balance to perform the transaction.' };
+          }
         }
 
         if (response) {
@@ -721,147 +750,153 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setShowENSRenewProcess(false);
             setMessages([]);
           }} />
-        ) : (
-          <div className="flex flex-col h-full">
-            {/* Header */}
-            <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} setInput={setInput} />
-            <div className="flex h-full overflow-auto">
-              {/* Main Content */}
-              <div className="flex-1 flex flex-col relative overflow-auto">
-                {/* Messages Area */}
-                <div ref={chatContainerRef} className="flex-1 overflow-y-auto ai-chat-scrollbar">
-                  <div className="p-6 space-y-6">
-                    {messages.length === 0 ? (
-                      <InitializeCommands processCommand={processCommand} address={address} chainId={chainId} setInput={setInput} />
-                    ) : (
-                      messages.map((message, index) => (
-                        <div
-                          key={index}
-                          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
-                            }`}
-                        >
+        ) : showSolSendProcess && fromToken ? (
+          <SolSendProcess receiver={receiver} fromAmount={fromAmount} fromToken={fromToken}
+            onClose={() => {
+              setShowSolSendProcess(false);
+              setMessages([]);
+            }} />)
+          : (
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} setInput={setInput} />
+              <div className="flex h-full overflow-auto">
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col relative overflow-auto">
+                  {/* Messages Area */}
+                  <div ref={chatContainerRef} className="flex-1 overflow-y-auto ai-chat-scrollbar">
+                    <div className="p-6 space-y-6">
+                      {messages.length === 0 ? (
+                        <InitializeCommands processCommand={processCommand} address={address} chainId={chainId} setInput={setInput} />
+                      ) : (
+                        messages.map((message, index) => (
                           <div
-                            className={`max-w-[90%] p-4 rounded-xl ${message.role === 'user'
-                              ? 'bg-blue-500/20 ml-auto'
-                              : 'glass border border-white/10'
+                            key={index}
+                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
                               }`}
                           >
-                            <p className="whitespace-pre-wrap">{message.content}</p>
-                            <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
-                            {message.link && (
-                              <a href={message.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 float-right">
-                                Open link
-                              </a>
-                            )}
-                            {message.priceData && (
-                              <div className="mt-4 w-full">
-                                <PriceCard data={message.priceData} isLoading={false}></PriceCard>
-                              </div>
-                            )}
-                            {message.technicalAnalysis && (
-                              <div className="mt-4 w-full">
-                                <TechnicalAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.technicalAnalysis}></TechnicalAnalysis>
-                              </div>
-                            )}
-                            {message.sentimentAnalysis && (
-                              <div className="mt-4 w-full">
-                                <SentimentAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.sentimentAnalysis}></SentimentAnalysis>
-                              </div>
-                            )}
-                            {message.predictionAnalysis && (
-                              <div className="mt-4 w-full">
-                                <PredictionAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></PredictionAnalysis>
-                              </div>
-                            )}
-                            {message.marketOverview && (
-                              <div className="mt-4 w-full">
-                                <MarketOverview isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></MarketOverview>
-                              </div>
-                            )}
-                            {message.trending && <TrendingCoins coins={message.trending} />}
-                            {message.losers && <TopCoins type="loser" coins={message.losers} />}
-                            {message.gainers && <TopCoins type="gainer" coins={message.gainers} />}
-                            {message.news && <NewsWidget />}
+                            <div
+                              className={`max-w-[90%] p-4 rounded-xl ${message.role === 'user'
+                                ? 'bg-blue-500/20 ml-auto'
+                                : 'glass border border-white/10'
+                                }`}
+                            >
+                              <p className="whitespace-pre-wrap">{message.content}</p>
+                              <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
+                              {message.link && (
+                                <a href={message.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 float-right">
+                                  Open link
+                                </a>
+                              )}
+                              {message.priceData && (
+                                <div className="mt-4 w-full">
+                                  <PriceCard data={message.priceData} isLoading={false}></PriceCard>
+                                </div>
+                              )}
+                              {message.technicalAnalysis && (
+                                <div className="mt-4 w-full">
+                                  <TechnicalAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.technicalAnalysis}></TechnicalAnalysis>
+                                </div>
+                              )}
+                              {message.sentimentAnalysis && (
+                                <div className="mt-4 w-full">
+                                  <SentimentAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.sentimentAnalysis}></SentimentAnalysis>
+                                </div>
+                              )}
+                              {message.predictionAnalysis && (
+                                <div className="mt-4 w-full">
+                                  <PredictionAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></PredictionAnalysis>
+                                </div>
+                              )}
+                              {message.marketOverview && (
+                                <div className="mt-4 w-full">
+                                  <MarketOverview isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></MarketOverview>
+                                </div>
+                              )}
+                              {message.trending && <TrendingCoins coins={message.trending} />}
+                              {message.losers && <TopCoins type="loser" coins={message.losers} />}
+                              {message.gainers && <TopCoins type="gainer" coins={message.gainers} />}
+                              {message.news && <NewsWidget />}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      {isProcessing && (
+                        <div className="flex justify-start">
+                          <div className="bg-white/10 p-3 rounded-lg flex gap-2">
+                            <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
+                            <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.2s]" />
+                            <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.4s]" />
                           </div>
                         </div>
-                      ))
-                    )}
-                    {isProcessing && (
-                      <div className="flex justify-start">
-                        <div className="bg-white/10 p-3 rounded-lg flex gap-2">
-                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.2s]" />
-                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.4s]" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Input Area */}
-                <div className="p-4 border-t border-white/10 bg-black/20 backdrop-blur-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder='Try "What is the Bitcoin price?"'
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-white/20"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            if (input.trim()) {
-                              processCommand(input, address, chainId);
-                              setInput('');
-                            }
-                          }
-                        }}
-                      />
-                      {messages.length > 0 && (
-                        <button
-                          onClick={clearMessages}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg transition-colors text-red-400 hover:text-red-300"
-                          title="Clear conversation"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
                       )}
                     </div>
-                    <button
-                      className={`p-2 rounded-lg transition-colors ${isListening ? 'bg-red-500/50' : 'hover:bg-white/10'
-                        } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-                        isListening ? stopListening() : startListening();
-                      }}
-                      disabled={isProcessing}
-                    >
-                      <Mic className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (input.trim() && !isProcessing) {
-                          processCommand(input, address, chainId);
-                          setInput('');
-                        }
-                      }}
-                      disabled={isProcessing || !input.trim()}
-                      className={`p-2 rounded-lg transition-colors ${input.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
-                        }`}
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
+                  </div>
+
+                  {/* Input Area */}
+                  <div className="p-4 border-t border-white/10 bg-black/20 backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          placeholder='Try "What is the Bitcoin price?"'
+                          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-white/20"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              if (input.trim()) {
+                                processCommand(input, address, chainId);
+                                setInput('');
+                              }
+                            }
+                          }}
+                        />
+                        {messages.length > 0 && (
+                          <button
+                            onClick={clearMessages}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg transition-colors text-red-400 hover:text-red-300"
+                            title="Clear conversation"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        className={`p-2 rounded-lg transition-colors ${isListening ? 'bg-red-500/50' : 'hover:bg-white/10'
+                          } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+                          isListening ? stopListening() : startListening();
+                        }}
+                        disabled={isProcessing}
+                      >
+                        <Mic className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (input.trim() && !isProcessing) {
+                            processCommand(input, address, chainId);
+                            setInput('');
+                          }
+                        }}
+                        disabled={isProcessing || !input.trim()}
+                        className={`p-2 rounded-lg transition-colors ${input.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
+                          }`}
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Wallet Panel */}
-              {<WalletPanel isWalletPanelOpen={isWalletPanelOpen} setIsWalletPanelOpen={setIsWalletPanelOpen} />}
+                {/* Wallet Panel */}
+                {<WalletPanel isWalletPanelOpen={isWalletPanelOpen} setIsWalletPanelOpen={setIsWalletPanelOpen} />}
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
 
       <VoiceModal

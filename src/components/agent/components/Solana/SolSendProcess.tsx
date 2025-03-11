@@ -1,48 +1,57 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { ArrowRight, Wallet, X } from 'lucide-react';
 
 import { TokenType, Step } from '../../../../types/brian.type.ts';
 import { convertCryptoAmount } from '../../../../utils/agent.tsx';
 import { shrinkAddress } from '../../../../utils/common.util.ts';
 import { mapChainId2ViemChain } from '../../../../config/networks.ts';
-import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
+import { useSolanaAgentActionMutation } from '../../../../hooks/useSolanaAgentAction.ts';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
-
+import { Web3AuthContext } from "../../../../providers/Web3AuthContext.tsx";
+import { mapChainId2ExplorerUrl } from '../../../../config/networks.ts';
 interface SendProcessProps {
   onClose: () => void;
   fromToken: TokenType;
-  toToken: TokenType;
   fromAmount: string;
   receiver: string;
-  steps: Step[];
 }
 
-export const SendSolProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromAmount, fromToken, onClose }) => {
+export const SolSendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmount, fromToken, onClose }) => {
   const [step/*, setStep*/] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [failedTransaction, setFailedTransaction] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
   const [scan, setScan] = useState<string>('https://etherscan.io/');
-  const { mutate: sendTransactionMutate } = useBrianTransactionMutation();
+  const { mutate: sendTransactionMutate } = useSolanaAgentActionMutation();
 
-  const handleTransaction = async (data: any) => {
+  const handleTransaction = async () => {
     try {
-
-      if (steps.length === 0) {
-        console.error("No transaction details available");
-        return;
-      }
+      console.log(receiver);
       setShowConfirmation(true);
+
       sendTransactionMutate(
-        { transactions: data, duration: 0 },
+        {
+          transactions: {
+            receiver: receiver,
+            fromAddress: fromToken.address,
+            fromAmount: Number(fromAmount),
+            fromDecimals: fromToken.decimals
+          }
+        },
         {
           onSuccess: (receipt) => {
-            setTransactionProgress(100);
-            setTransactionStatus('Transaction confirmed!');
-            setScan(receipt ?? '');
+            if(receipt) {
+              setTransactionProgress(100);
+              setTransactionStatus('Transaction confirmed!');
+              setScan(receipt ?? ''); 
+            } else {
+              setShowConfirmation(false);
+              setFailedTransaction(true);  
+            }
+            
           },
           onError: (error) => {
             console.log(error);
@@ -51,7 +60,6 @@ export const SendSolProcess: React.FC<SendProcessProps> = ({ steps, receiver, fr
           },
         },
       );
-
 
     } catch (error) {
       console.error("Error executing transactions:", error);
@@ -107,7 +115,7 @@ export const SendSolProcess: React.FC<SendProcessProps> = ({ steps, receiver, fr
               />
               <div>
                 <div className="text-sm text-white/60">Amount</div>
-                <div className="text-xl font-medium">{fromToken ? formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals)) : ''} {fromToken?.symbol}</div>
+                <div className="text-xl font-medium">{fromToken ? formatNumberByFrac(convertCryptoAmount(fromAmount, 0)) : ''} {fromToken?.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40 hidden md:block" />
@@ -127,17 +135,17 @@ export const SendSolProcess: React.FC<SendProcessProps> = ({ steps, receiver, fr
           <div className="p-4 bg-white/5 rounded-lg space-y-3">
             <div className="flex justify-between">
               <span className="text-white/60">Network</span>
-              <span className="font-medium">{mapChainId2ViemChain[fromToken.chainId].name}</span>
+              <span className="font-medium">{'Solana'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-white/60">Amount</span>
-              <span className="font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken?.symbol}</span>
+              <span className="font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken?.symbol}</span>
             </div>
           </div>
         </div>
 
         <button
-          onClick={() => handleTransaction(steps)}
+          onClick={() => handleTransaction()}
           className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
         >
           Confirm Send
@@ -176,11 +184,11 @@ export const SendSolProcess: React.FC<SendProcessProps> = ({ steps, receiver, fr
             />
           </div>
           <p className="mt-4 text-white/60">
-            Sending {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken?.symbol} to {shrinkAddress(receiver)}
+            Sending {formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken?.symbol} to {shrinkAddress(receiver)}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`Successfully sent ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`Successfully sent ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
       )}
     </div>
   );
@@ -204,7 +212,7 @@ export const SendSolProcess: React.FC<SendProcessProps> = ({ steps, receiver, fr
         </button>
       </div>
       {failedTransaction &&
-        <FailedTransaction onClose={onClose} description={`Send ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
+        <FailedTransaction onClose={onClose} description={`Send ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
       }
       {showConfirmation && !failedTransaction ? renderConfirmation() : (
         <div className="h-[calc(100%-60px)]">
