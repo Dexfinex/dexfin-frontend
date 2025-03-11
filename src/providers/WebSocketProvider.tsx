@@ -11,8 +11,8 @@ export interface Notification {
     id: string;
     userId: string;
     sourceId: string;
-    type: 'ALERT' | 'TRANSACTION' | 'SECURITY' | 'REWARD' | 'SYSTEM';
-    status: 'SUCCESS' | 'ERROR' | 'WARNING' | 'INFO';
+    type: 'ALERT' | 'TRANSACTION' | 'SECURITY' | 'REWARD' | 'SYSTEM' | 'SWAP' | 'DEPOSIT' | 'WITHDRAWAL' | 'ORDER' | 'LOAN' | 'ACHIEVEMENT' | 'PAYMENT';
+    status: 'SUCCESS' | 'ERROR' | 'WARNING' | 'INFO' | 'PENDING';
     message: string;
     isRead: boolean;
     metadata?: any;
@@ -26,7 +26,7 @@ interface WebSocketContextType {
     unreadCount: number;
     markAsRead: (notificationIds: string[]) => Promise<void>;
     fetchNotifications: (limit?: number) => Promise<void>;
-    fetchAllNotifications: (page?: number, limit?: number) => Promise<any>;
+    fetchAllNotifications: () => Promise<void>;
 }
 
 // Audio notification settings
@@ -39,7 +39,7 @@ export const WebSocketContext = createContext<WebSocketContextType>({
     unreadCount: 0,
     markAsRead: async () => { },
     fetchNotifications: async () => { },
-    fetchAllNotifications: async () => ({}),
+    fetchAllNotifications: async () => { },
 });
 
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -101,6 +101,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 status = 'warning';
                 break;
             case 'INFO':
+            case 'PENDING':
             default:
                 status = 'info';
         }
@@ -122,12 +123,26 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 return 'Price Alert';
             case 'TRANSACTION':
                 return 'Transaction Update';
+            case 'SWAP':
+                return 'Swap Completed';
+            case 'DEPOSIT':
+                return 'Deposit Update';
+            case 'WITHDRAWAL':
+                return 'Withdrawal Update';
             case 'SECURITY':
                 return 'Security Alert';
             case 'REWARD':
                 return 'Reward';
             case 'SYSTEM':
                 return 'System Notification';
+            case 'ORDER':
+                return 'Order Update';
+            case 'LOAN':
+                return 'Loan Update';
+            case 'ACHIEVEMENT':
+                return 'Achievement Unlocked';
+            case 'PAYMENT':
+                return 'Payment Update';
             default:
                 return 'Notification';
         }
@@ -241,7 +256,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
     }, []);
 
-    const fetchNotifications = useCallback(async () => {
+    const fetchNotifications = useCallback(async (limit = 50) => {
         if (!userData?.accessToken) {
             console.warn('Missing access token for fetching notifications');
             return;
@@ -250,48 +265,62 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         try {
             setLoading(true);
 
-            const response = await NotificationApi.get(`/all`, {
+            const response = await NotificationApi.get(`/all?limit=${limit}`, {
                 headers: {
                     'Authorization': `Bearer ${userData.accessToken}`
                 }
             });
 
-            const latestNotifications = response.data.notifications;
-
-            setNotifications(latestNotifications);
-            setUnreadCount(latestNotifications.filter((n: Notification) => !n.isRead).length);
+            if (response.data && response.data.notifications) {
+                const latestNotifications = response.data.notifications;
+                setNotifications(latestNotifications);
+                const unreadCount = latestNotifications.filter((n: Notification) => !n.isRead).length;
+                setUnreadCount(unreadCount);
+            } else {
+                console.warn('Invalid notification response format:', response.data);
+                setNotifications([]);
+                setUnreadCount(0);
+            }
 
         } catch (error) {
             console.error('Error fetching notifications:', error);
+            setNotifications([]);
+            setUnreadCount(0);
         } finally {
             setLoading(false);
         }
     }, [userData?.accessToken]);
 
-    const fetchAllNotifications = useCallback(async (page = 1, limit = 10) => {
+    const fetchAllNotifications = useCallback(async () => {
         if (!userData?.accessToken) {
-            return { notifications: [], total: 0, page, limit, totalPages: 0 };
+            console.warn('Missing access token for fetching all notifications');
+            return;
         }
 
         try {
             setLoading(true);
 
-            const response = await NotificationApi.get(`/all`, {
+            const response = await NotificationApi.get(`/all?limit=100`, {
                 headers: {
                     'Authorization': `Bearer ${userData.accessToken}`
                 }
             });
 
-            const result = response.data.notifications;
-
-            const unreadNotifications = result.notifications.filter((n: Notification) => !n.isRead);
-            setUnreadCount(unreadNotifications.length);
-
-            return result;
+            if (response.data && response.data.notifications) {
+                const allNotifications = response.data.notifications;
+                setNotifications(allNotifications);
+                const unreadCount = allNotifications.filter((n: Notification) => !n.isRead).length;
+                setUnreadCount(unreadCount);
+            } else {
+                console.warn('Invalid notification response format:', response.data);
+                setNotifications([]);
+                setUnreadCount(0);
+            }
 
         } catch (error) {
             console.error('Error fetching all notifications:', error);
-            return { notifications: [], total: 0, page, limit, totalPages: 0 };
+            setNotifications([]);
+            setUnreadCount(0);
         } finally {
             setLoading(false);
         }
