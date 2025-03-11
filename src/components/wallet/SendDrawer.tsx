@@ -1,29 +1,29 @@
-import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {Skeleton, SkeletonCircle, Spinner} from '@chakra-ui/react';
-import {ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle} from 'lucide-react';
-import {FieldValues, useForm} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { Skeleton, SkeletonCircle, Spinner } from '@chakra-ui/react';
+import { ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle } from 'lucide-react';
+import { FieldValues, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {useEnsAddress, useEnsAvatar} from 'wagmi';
-import {normalize} from 'viem/ens';
-import {ethers} from 'ethers';
+import { useEnsAddress, useEnsAvatar } from 'wagmi';
+import { normalize } from 'viem/ens';
+import { ethers } from 'ethers';
 
-import {TransactionModal} from '../swap/modals/TransactionModal.tsx';
+import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
-import {compareWalletAddresses, formatNumberByFrac, shrinkAddress} from '../../utils/common.util';
-import {Web3AuthContext} from "../../providers/Web3AuthContext.tsx";
-import {mapChainId2ExplorerUrl, mapChainId2NativeAddress} from "../../config/networks.ts";
-import {useSendTransactionMutation} from '../../hooks/useSendTransactionMutation.ts';
-import {TransactionError} from '../../types';
-import {TokenChainIcon, TokenIcon} from '../swap/components/TokenIcon.tsx';
-import {cropString} from '../../utils/index.ts';
-import {useStore} from '../../store/useStore.ts';
-import {PageType} from '../WalletDrawer.tsx';
+import { compareWalletAddresses, formatNumberByFrac, shrinkAddress } from '../../utils/common.util';
+import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
+import { mapChainId2ExplorerUrl, mapChainId2NativeAddress } from "../../config/networks.ts";
+import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
+import { TransactionError } from '../../types';
+import { TokenChainIcon, TokenIcon } from '../swap/components/TokenIcon.tsx';
+import { cropString } from '../../utils/index.ts';
+import { useStore } from '../../store/useStore.ts';
+import { PageType } from '../WalletDrawer.tsx';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 import makeBlockie from 'ethereum-blockies-base64';
-import {SOLANA_CHAIN_ID} from "../../constants/solana.constants.ts";
+import { SOLANA_CHAIN_ID } from "../../constants/solana.constants.ts";
 
 interface SendDrawerProps {
     // isOpen: boolean;
@@ -65,7 +65,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
 
     useEffect(() => {
         setSelectedAsset(assets[selectedAssetIndex] || {})
-    }, [assets, selectedAssetIndex])
+    }, [selectedAssetIndex])
 
     useEffect(() => {
         if (assets.length > 0 && Object.keys(selectedAsset).length === 0) {
@@ -119,7 +119,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
         setShowEnsList(true)
         setShowSelectedEnsInfo(false)
     }, [address])
-    
+
     useEffect(() => {
         if (selectedAsset) {
             const targetChainId = Number(selectedAsset.chain)
