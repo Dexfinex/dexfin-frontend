@@ -566,8 +566,10 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                 const keypair = Keypair.fromSecretKey(Buffer.from(privateKey.decryptedPrivateKey, "hex"));
 
+
                 if (solToWSol(tokenMintAddress) === NATIVE_MINT.toString()) {
                     console.log('transfer native sol')
+          
                     const transaction = new Transaction().add(
                         SystemProgram.transfer({
                             fromPubkey: keypair.publicKey,
