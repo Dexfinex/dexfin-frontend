@@ -18,6 +18,7 @@ import RenderActivity from "./wallet/RenderActivity.tsx";
 import RenderDefi from "./wallet/RenderDeFi.tsx";
 import RenderTokens from "./wallet/RenderTokens.tsx";
 import CloseButton from "./wallet/CloseButton.tsx";
+import useDefiStore from "../store/useDefiStore.ts";
 
 interface WalletDrawerProps {
     isOpen: boolean,
@@ -33,12 +34,16 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
 
 
     const { address, logout, solanaWalletInfo } = useContext(Web3AuthContext);
+
+    useActivities({ evmAddress: address, solanaAddress: solanaWalletInfo?.publicKey || "" })
+
     const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
     const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
     const [page, setPage] = useState<PageType>('main');
     const { isLoading: isLoadingBalance } = useWalletBalance();
     const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
-    const { } = useActivities({ evmAddress: address, solanaAddress: solanaWalletInfo?.publicKey || "" })
+    const { totalLockedValue } = useDefiStore();
+
     const [showBuyDrawer, setShowBuyDrawer] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<TokenBalance | null>(null);
     const [drawerWidth, setDrawerWidth] = useState("400px");
@@ -114,7 +119,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                             <div className="text-xs sm:text-sm text-white/60">Total Balance</div>
                             <div className="text-xl sm:text-3xl font-bold mt-1">
                                 {
-                                    isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)
+                                    isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue + totalLockedValue)
                                 }
                             </div>
                             {
