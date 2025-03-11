@@ -42,6 +42,7 @@ export const CRYPTONEWS_BASE_URL = `${BASE_HOST_DOMAIN}/crypto-news`;
 
 export const OPENAI_BASE_URL = `${BASE_HOST_DOMAIN}/openai`;
 
+// export const ALERT_BASE_URL = `http://localhost:3000/alerts`;
 export const ALERT_BASE_URL = `${BASE_HOST_DOMAIN}/alerts`;
 
 export const ENSO_BASE_URL = `${BASE_HOST_DOMAIN}/enso`;
@@ -52,7 +53,11 @@ export const USERAUTH_BASE_URL = `${BASE_HOST_DOMAIN}/auth`;
 
 export const TECHNICALANALYSIS_BASE_URL = `${BASE_HOST_DOMAIN}/technical`;
 
+export const NOTIFICATION_BASE_URL = `${BASE_HOST_DOMAIN}/notifications`;
+// export const NOTIFICATION_BASE_URL = `http://localhost:3000/notifications`;
+
 export const WS_CONNECTION_URL = `${BASE_HOST_DOMAIN}`;
+// export const WS_CONNECTION_URL = `http://127.0.0.1:3000`;
 
 export const GAME_SYSTEM_BASEURL = `${BASE_HOST_DOMAIN}/game-system`;
 
