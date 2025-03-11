@@ -10,4 +10,13 @@ export const openaiService = {
 			throw error;
 		}
 	},
+	getOpenAISolanaData: async (command: string): Promise<any> => {
+		try {
+			const { data } = await openaiApi.get<any>(`/solana?command=${command}`);
+			return data;
+		} catch (error) {
+			console.error('Failed to fetch OpenAI Solana data:', error);
+			throw error;
+		}
+	},
 }
