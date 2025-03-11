@@ -44,10 +44,11 @@ import { yields_data } from '../../constants/mock/agent.ts';
 import { Yield } from '../../types/brian.type.ts';
 interface AIAgentModalProps {
   isOpen: boolean;
+  widgetCommand: string;
   onClose: () => void;
 }
 
-export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
+export default function AIAgentModal({ isOpen, widgetCommand,  onClose }: AIAgentModalProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -322,7 +323,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         yields: response.data,
       }
     }
-    console.log(message);
+
     const sol_response = await openaiService.getOpenAISolanaData(message);
     if (sol_response && sol_response.type == "transfer_sol" && sol_response.args.networkName == "solana") {
       return sol_response;
@@ -651,6 +652,12 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
       resetProcessStates();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (widgetCommand) {
+      setInput(widgetCommand);
+    }
+  }, [widgetCommand]);
 
   const chatContainerRef = useRef<any>(null);
 
