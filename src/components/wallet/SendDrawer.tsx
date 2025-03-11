@@ -341,9 +341,9 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                                                 <div className="flex-1 text-left">
                                                     <div className="font-medium">
                                                         {asset.name}
-                                                        {!compareWalletAddresses(asset.address, mapChainId2NativeAddress[Number(asset.chain)]) &&
+                                                        {/* {!compareWalletAddresses(asset.address, mapChainId2NativeAddress[Number(asset.chain)]) &&
                                                             <span
-                                                                className='ml-1 text-sm font-light'>({cropString(asset.address, 10)})</span>}
+                                                                className='ml-1 text-sm font-light'>({cropString(asset.address, 10)})</span>} */}
                                                     </div>
                                                     <div className="text-sm text-white/60">
                                                         {`${formatNumberByFrac(asset.amount, 5)} ${asset.symbol}`}
