@@ -16,7 +16,7 @@ interface WidgetPosition {
 
 interface WidgetSize {
   width: number;
-  height: number;
+  height: number | string;
 }
 
 interface Widget {
@@ -403,7 +403,7 @@ const useStore = create<StoreState>((set, get) => ({
       id: 'quick-swap',
       type: 'Quick Swap',
       position: { x: 1490, y: 20 },
-      size: { width: 400, height: 750 }
+      size: { width: 400, height: 'fit-content' }
     },
   ],
   updateWidget: (id, updates) => set((state) => ({
