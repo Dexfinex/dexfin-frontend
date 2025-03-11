@@ -15,6 +15,7 @@ import {VersionedTransaction} from "@solana/web3.js";
 import {connection} from "../../../config/solana.ts";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
+import {getUSDAmount} from "../../../utils/swap.util.ts";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -36,14 +37,6 @@ interface PreviewDetailItemProps {
     valueClassName?: string;
     isFree?: boolean;
     isLoading: boolean;
-}
-
-const getUSDAmount = (selectedToken: TokenType | undefined, price: number, amount: string): number => {
-    if (selectedToken) {
-        const numAmount = Number(amount)
-        return price * numAmount
-    }
-    return 0
 }
 
 const PreviewDetailItem = ({

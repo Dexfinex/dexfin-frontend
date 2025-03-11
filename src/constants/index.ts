@@ -21,48 +21,53 @@ export const mapRpcUrls: Record<number, string> = {
     [avalanche.id]: 'https://avalanche-mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',
 }
 
-const BASE_HOST_DOMAIN = 'dexfinv3-backend-production.up.railway.app'
+// const BASE_HOST_DOMAIN = 'http://localhost:3000'
+const BASE_HOST_DOMAIN = 'https://dexfinv3-backend-production.up.railway.app'
 
-export const COINGECKO_BASE_URL = `https://${BASE_HOST_DOMAIN}/coingecko`
+export const COINGECKO_BASE_URL = `${BASE_HOST_DOMAIN}/coingecko`
 
-export const BIRDEYE_BASE_URL = `https://${BASE_HOST_DOMAIN}/birdeye`
+export const SWAPKIT_BASE_URL = `${BASE_HOST_DOMAIN}/crosschain`
 
-export const DEFILLAMA_BASE_URL = `https://${BASE_HOST_DOMAIN}/defillama`;
+export const BIRDEYE_BASE_URL = `${BASE_HOST_DOMAIN}/birdeye`
 
-export const FEARGREED_BASE_URL = `https://${BASE_HOST_DOMAIN}/fear-greed`;
+export const DEFILLAMA_BASE_URL = `${BASE_HOST_DOMAIN}/defillama`;
 
-export const GECKOTERMINAL_BASE_URL = `https://${BASE_HOST_DOMAIN}/gecko-terminal`;
+export const FEARGREED_BASE_URL = `${BASE_HOST_DOMAIN}/fear-greed`;
 
-export const BRIAN_BASE_URL = `https://${BASE_HOST_DOMAIN}/brian`;
+export const GECKOTERMINAL_BASE_URL = `${BASE_HOST_DOMAIN}/gecko-terminal`;
 
-export const CRYPTONEWS_BASE_URL = `https://${BASE_HOST_DOMAIN}/crypto-news`;
+export const BRIAN_BASE_URL = `${BASE_HOST_DOMAIN}/brian`;
 
-export const OPENAI_BASE_URL = `https://${BASE_HOST_DOMAIN}/openai`;
+export const CRYPTONEWS_BASE_URL = `${BASE_HOST_DOMAIN}/crypto-news`;
 
-export const ALERT_BASE_URL = `https://${BASE_HOST_DOMAIN}/alerts`;
+export const OPENAI_BASE_URL = `${BASE_HOST_DOMAIN}/openai`;
 
-export const ENSO_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/enso';
+export const ALERT_BASE_URL = `${BASE_HOST_DOMAIN}/alerts`;
 
-export const CALENDAR_BASE_URL = 'https://dexfinv3-backend-production.up.railway.app/calendar';
+export const ENSO_BASE_URL = `${BASE_HOST_DOMAIN}/enso`;
 
-export const USERAUTH_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/graphql";
+export const CALENDAR_BASE_URL = `${BASE_HOST_DOMAIN}/calendar`;
 
-export const USERNAMEAUTH_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/auth";
+export const USERAUTH_BASE_URL = `${BASE_HOST_DOMAIN}/auth`;
 
-export const TECHNICALANALYSIS_BASE_URL = "https://dexfinv3-backend-production.up.railway.app/technical";
+export const TECHNICALANALYSIS_BASE_URL = `${BASE_HOST_DOMAIN}/technical`;
 
-export const WS_CONNECTION_URL = `https://${BASE_HOST_DOMAIN}`;
+export const WS_CONNECTION_URL = `${BASE_HOST_DOMAIN}`;
+
+export const GAME_SYSTEM_BASEURL = `${BASE_HOST_DOMAIN}/game-system`;
+
 export const COINGECKO_URL = "https://api.coingecko.com/api/v3";
 
-export const GAME_SYSTEM_BASEURL = "https://dexfinv3-backend-production.up.railway.app/game-system";
+export const ZEROX_BASE_URL = `${BASE_HOST_DOMAIN}/0x`;
 
-export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
+export const DEXFIN_BACKEND_BASE_URL = `${BASE_HOST_DOMAIN}`;
 
-export const ZEROX_BASE_URL = `https://${BASE_HOST_DOMAIN}/0x`;
-// export const ZEROX_BASE_URL = 'http://localhost:3000/0x';
-export const DEXFIN_BACKEND_BASE_URL = `https://${BASE_HOST_DOMAIN}`;
 export const ZEROX_AFFILIATE_FEE = 50; // 0.5% affiliate fee. Denoted in Bps.
 
 export const defaultMaxPriorityFee = ethers.utils.parseUnits('1.5', 'gwei');
+
 export const defaultGasLimit = 210000n;
+
 export const NULL_ADDRESS = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+
+export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();

@@ -1,5 +1,5 @@
 import { DayEvent } from "../components/market/Calendar/MarketCalendar.tsx";
-import { calendarApi, userAuthApi } from "./api.service.ts";
+import { calendarApi } from "./api.service.ts";
 
 const LOGIN_MUTATION = `
   mutation login($data: LoginInput!) {
@@ -10,41 +10,9 @@ const LOGIN_MUTATION = `
 `;
 
 export const calendarService = {
-    loginUserId: async (walletAddress: string) => {
-        try {
-            const variables = {
-                data: {
-                    walletAddress,
-                }
-            };
-            const { data } = await userAuthApi.post('', {
-                query: LOGIN_MUTATION,
-                variables
-            });
-            if (data.errors) {
-                throw new Error(data.errors[0].message);
-            }
-            return data.data.login;
-        } catch (error) {
-            console.error('Error during login:', {
-                error: error instanceof Error ? {
-                    name: error.name,
-                    message: error.message,
-                    stack: error.stack
-                } : error
-            });
-            throw error;
-        }
-    },
-
     deleteEvent: async (userId: string, eventId: any) => {
         try {
-            const { data } = await calendarApi.delete(`/${eventId}`, {
-                headers: {
-                    'Authorization': `Bearer ${userId}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const { data } = await calendarApi.delete(`/${eventId}`);
             if (data.errors) {
                 throw new Error(data.errors[0].message);
             }
@@ -63,7 +31,6 @@ export const calendarService = {
     },
     editEvent: async (userId: string, event: DayEvent) => {
         try {
-            console.log("ok")
             console.log(event)
             const { data } = await calendarApi.put(`/${event.id}`, {
                 title: event.title,
@@ -72,13 +39,7 @@ export const calendarService = {
                 type: event.type,
                 project: event.project,
                 location: event.location
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${userId}`,
-                    'Content-Type': 'application/json'
-                }
             });
-            console.log("no")
 
             if (data.errors) {
                 throw new Error(data.errors[0].message)
@@ -99,12 +60,7 @@ export const calendarService = {
 
     addEvent: async (userId: string, Data: DayEvent) => {
         try {
-            const { data } = await calendarApi.post('', Data, {
-                headers: {
-                    'Authorization': `Bearer ${userId}`,
-                    'Content-Type': 'application/json'
-                }
-            })
+            const { data } = await calendarApi.post('', Data)
 
             return data.data
         } catch (error) {
@@ -133,12 +89,7 @@ export const calendarService = {
             }
         );
         try {
-            const { data } = await calendarApi.get(``, {
-                headers: {
-                    'Authorization': `Bearer ${userId}`,
-                    'Content-Type': 'application/json',
-                }
-            });
+            const { data } = await calendarApi.get(``);
             return data;
         } catch (error) {
             console.error('Error fetching calendar events:', {

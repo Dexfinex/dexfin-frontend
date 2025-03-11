@@ -22,9 +22,10 @@ interface Tweet {
 }
 
 export const TwitterWidget: React.FC = () => {
-  // Get data from the hook
-  console.log("twitter data....")
-  const { data: apiTweets, loading, error: apiError } = useGetTwitterInfo();
+  // Get data from the hook with a refresh trigger
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { data: apiTweets, loading, error: apiError, refetch } = useGetTwitterInfo(refreshTrigger);
+  console.log("twitter apiTweets : ", apiTweets);
 
   // State for the processed tweets
   const [tweets, setTweets] = useState<Tweet[]>([]);
@@ -72,7 +73,6 @@ export const TwitterWidget: React.FC = () => {
             createdAt: new Date().toISOString(),
             stats: { replies: 0, retweets: 0, likes: 0 }
           });
-          console.log("result : ", result)
           return;
         }
 
@@ -165,8 +165,12 @@ export const TwitterWidget: React.FC = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setError(null);
+      if (refetch) {
+        await refetch();
+      } else {
+        // Fallback if refetch function is not available
+        setRefreshTrigger(prev => prev + 1);
+      }
     } catch (error) {
       setError('Failed to refresh tweets');
       console.error('Refresh error:', error);

@@ -6,6 +6,7 @@ import { coingeckoService } from '../../../services/coingecko.service';
 import { TokenTypeB, CoinGridProps } from '../../../types/cart.type';
 import debounce from 'lodash/debounce';
 import Spinner from './Spinner';
+import { SortConfig } from './SearchHeader';
 
 const chartOptions = {
     responsive: true,
@@ -51,16 +52,30 @@ const nonEvmTokenSymbols = [
     'ton', 'miota', 'klay', 'xtz', 'cosmos', 'atom', 'trx', 'eos', 'xec', 'zec', 'xem', 'dcr'
 ];
 
-const CoinGrid: React.FC<CoinGridProps> = React.memo(({
+interface CoinGridWithSortProps extends CoinGridProps {
+    sortConfig: SortConfig;
+}
+
+const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     searchQuery,
     selectedCategory,
     onAddToCart,
-    walletChainId
+    walletChainId,
+    sortConfig
 }) => {
+    const [isScrolling, setIsScrolling] = useState(false);
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [loading, setLoading] = useState(false);
     const [coins, setCoins] = useState<TokenTypeB[]>([]);
+    const [visibleCoins, setVisibleCoins] = useState<TokenTypeB[]>([]);
+    const [hasMore, setHasMore] = useState(true);
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 6; // Show 6 coins per page (3x2 grid)
+    const observer = useRef<IntersectionObserver | null>(null);
+    const lastCoinElementRef = useRef<HTMLDivElement | null>(null);
     const coinsRef = useRef<TokenTypeB[]>([]);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const getContractAddress = useCallback((platforms: any, chainId: number, selectedcategory: string): string => {
         if (!platforms) return 'null';
@@ -95,6 +110,16 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
 
         return true;
     }, []);
+
+    useEffect(() => {
+        setPage(1);
+        setHasMore(true);
+        setVisibleCoins([]);
+        
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0;
+        }
+    }, [searchQuery, selectedCategory, sortConfig]);
 
     // Fetch coins with abort controller
     useEffect(() => {
@@ -134,7 +159,9 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
     // Memoized and optimized filtering
     const filteredCoins = useMemo(() => {
         const searchLower = searchQuery.toLowerCase().trim();
-        return coins.filter(coin => {
+        
+        // First filter the coins
+        const filtered = coins.filter(coin => {
             if (!coin) return false;
 
             // Search matching
@@ -153,7 +180,96 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
             const platformKey = networkToplatform[selectedCategory.toLowerCase()];
             return platformKey ? coin.platforms?.[platformKey] : false;
         });
-    }, [coins, selectedCategory, searchQuery]);
+        
+        // Then sort the filtered coins
+        return [...filtered].sort((a, b) => {
+            const { option, direction } = sortConfig;
+            const multiplier = direction === 'asc' ? 1 : -1;
+            
+            switch (option) {
+                case 'marketCap':
+                    return multiplier * ((a.marketCap || 0) - (b.marketCap || 0));
+                case 'price':
+                    return multiplier * ((a.price || 0) - (b.price || 0));
+                case 'priceChange24h':
+                    return multiplier * ((a.priceChange24h || 0) - (b.priceChange24h || 0));
+                case 'marketCapRank': {
+                    // For rank, lower is better regardless of direction
+                    const aRank = a.marketCapRank || 9999;
+                    const bRank = b.marketCapRank || 9999;
+                    return direction === 'asc' ? aRank - bRank : bRank - aRank;
+                }
+                default:
+                    return multiplier * ((a.marketCap || 0) - (b.marketCap || 0));
+            }
+        });
+    }, [coins, selectedCategory, searchQuery, sortConfig]);
+
+    // Load more coins when page changes
+    useEffect(() => {
+        if (page === 1) {
+            setVisibleCoins(filteredCoins.slice(0, itemsPerPage));
+        } else {
+            const nextCoins = filteredCoins.slice(0, page * itemsPerPage);
+            setVisibleCoins(nextCoins);
+        }
+        
+        setHasMore(page * itemsPerPage < filteredCoins.length);
+    }, [filteredCoins, page, itemsPerPage]);
+
+    // Setup intersection observer for infinite scroll
+    useEffect(() => {
+        if (loading) return;
+
+        // Disconnect previous observer
+        if (observer.current) {
+            observer.current.disconnect();
+        }
+
+        // Create new observer
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasMore) {
+                // User has scrolled to the last item, load more
+                setPage(prevPage => prevPage + 1);
+            }
+        }, { threshold: 0.5 });
+
+        // Observe the last coin element
+        if (lastCoinElementRef.current) {
+            observer.current.observe(lastCoinElementRef.current);
+        }
+
+        return () => {
+            if (observer.current) {
+                observer.current.disconnect();
+            }
+        };
+    }, [hasMore, loading, visibleCoins]);
+
+    // Handle scroll events to show/hide scrollbar
+    const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+        // Show scrollbar
+        setIsScrolling(true);
+        
+        // Clear existing timeout
+        if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+        }
+        
+        // Set timeout to hide scrollbar after scrolling stops
+        scrollTimeoutRef.current = setTimeout(() => {
+            setIsScrolling(false);
+        }, 1000); // Hide after 1 second of inactivity
+    }, []);
+    
+    // Clean up timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // Memoized chart data generation
     const generateChartData = useCallback((sparklineData: number[] = []) => ({
@@ -176,7 +292,7 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
         [onAddToCart]
     );
 
-    if (loading) {
+    if (loading && visibleCoins.length === 0) {
         return (
             <div className="flex items-center justify-center h-full">
                 <div className="text-lg"><Spinner /> Loading coins...</div>
@@ -195,19 +311,31 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
     }
 
     return (
-        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        <div 
+            ref={scrollContainerRef}
+            className={`h-full overflow-y-auto transition-all duration-300 ${
+                isScrolling 
+                    ? "scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent" 
+                    : "scrollbar-none"
+            }`}
+            onScroll={handleScroll}
+        >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
-                {filteredCoins.map((coin, index) => {
-                    const contractAddress = getContractAddress(coin.platforms, walletChainId, selectedCategory)
+                {visibleCoins.map((coin, index) => {
+                    const contractAddress = getContractAddress(coin.platforms, walletChainId, selectedCategory);
                     // Skip coins without contract addresses
                     if (contractAddress === 'null' && selectedCategory !== 'All' &&
                         selectedCategory !== 'token' && selectedCategory !== 'meme') {
                         return null;
                     }
 
+                    // Set ref for the last element to detect when it's visible
+                    const isLastElement = index === visibleCoins.length - 1;
+
                     return (
                         <div
-                            key={index}
+                            key={`${coin.id}-${index}`}
+                            ref={isLastElement ? lastCoinElementRef : null}
                             className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all hover:scale-[1.02]"
                         >
                             <div className="flex items-center justify-between mb-3">
@@ -218,7 +346,7 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
                                         className="w-8 h-8"
                                         loading="lazy"
                                         onError={(e) => {
-                                            ; (e.target as HTMLImageElement).src = "/placeholder.png"
+                                            (e.target as HTMLImageElement).src = "/placeholder.png"
                                         }}
                                     />
                                     <div>
@@ -271,9 +399,15 @@ const CoinGrid: React.FC<CoinGridProps> = React.memo(({
                     )
                 }).filter(Boolean)}
             </div>
+            
+            {/* Loading indicator at the bottom */}
+            {hasMore && (
+                <div className="flex justify-center p-4">
+                    <Spinner />
+                </div>
+            )}
         </div>
-    )
-
+    );
 });
 
 CoinGrid.displayName = 'CoinGrid';

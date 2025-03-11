@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Timer, Trophy, RotateCcw, Gamepad2 } from 'lucide-react';
 import { useBreakpointValue } from '@chakra-ui/react';
-import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
+import { useUserData } from '../../providers/UserProvider';
+
 import { GameSession } from '../GamesModal';
 import { GameService } from '../../services/game.services.ts';
-
+import { useStore } from '../../store/useStore';
 interface CryptoPexesoProps {
   gameType?: string;
 }
@@ -63,10 +64,12 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
 
   const isMobile = useBreakpointValue({base: true, md: false});
   
-  const { userData } = useContext(Web3AuthContext);
+  // Add Web3AuthContext and game session tracking
+  const { userData } = useUserData();
   const gameSessionSaved = useRef(false);
   const [gameData, setGameData] = useState<any[]>([]);
   const [gameId, setGameId] = useState<string>("");
+  const { gameStats, updateGameStats } = useStore();
 
 
   useEffect(() => {
@@ -159,6 +162,15 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
       if (gameSession && userData && userData.accessToken) {
         const response = await GameService.gameHistory(userData.accessToken, gameSession);
         console.log(response);
+        
+        if (gameStats) {
+          const tokensEarned = gameSession.tokensEarned || 0;
+          
+          updateGameStats({
+
+            totalTokens: gameStats.totalTokens + tokensEarned
+          });
+        }
       }
     } catch (error) {
       console.error('Error saving game session:', error);
@@ -270,7 +282,9 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
     const timeBonus = isVictory ? timeLeft * 2 : 0;
     const streakBonus = bestStreak * 5;
     const totalReward = baseReward + timeBonus + streakBonus;
-    
+
+    const totalTokens = gameStats ? gameStats.totalTokens + totalReward : totalReward;
+
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />

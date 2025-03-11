@@ -14,11 +14,12 @@ import { Message } from '../../types/index.ts';
 import { TrendingCoins } from './components/Analysis/TrendingCoins.tsx';
 import { TopCoins } from './components/Analysis/TopCoins.tsx'
 import { NewsWidget } from '../widgets/NewsWidget.tsx';
-import { YieldProcess } from './components/YieldProcess.tsx';
-import { SwapProcess } from './components/SwapProcess.tsx';
-import { BridgeProcess } from './components/BridgeProcess.tsx';
+import { YieldProcess } from './components/EVM/YieldProcess.tsx';
+import { SwapProcess } from './components/EVM/SwapProcess.tsx';
+import { BridgeProcess } from './components/EVM/BridgeProcess.tsx';
 import { PortfolioProcess } from '../PortfolioProcess.tsx';
-import { SendProcess } from './components/SendProcess.tsx';
+import { SendProcess } from './components/EVM/SendProcess.tsx';
+import { SolSendProcess } from './components/Solana/SolSendProcess.tsx';
 import { StakeProcess } from '../StakeProcess.tsx';
 import { ProjectAnalysisProcess } from '../ProjectAnalysisProcess.tsx';
 import { WalletPanel } from './WalletPanel.tsx';
@@ -26,13 +27,13 @@ import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { convertCryptoAmount } from '../../utils/agent.tsx';
-import { DepositProcess } from './components/DepositProcess.tsx';
-import { WithdrawProcess } from './components/WithdrawProcess.tsx';
-import { BorrowProcess } from './components/BorrowProcess.tsx';
-import { RepayProcess } from './components/RepayProcess.tsx';
-import { ENSRegisterProcess } from './components/ENSRegisterProcess.tsx';
-import { ENSRenewProcess } from './components/ENSRenewProcess.tsx';
+import { convertCryptoAmount, isValidSolanaAddress } from '../../utils/agent.tsx';
+import { DepositProcess } from './components/EVM/DepositProcess.tsx';
+import { WithdrawProcess } from './components/EVM/WithdrawProcess.tsx';
+import { BorrowProcess } from './components/EVM/BorrowProcess.tsx';
+import { RepayProcess } from './components/EVM/RepayProcess.tsx';
+import { ENSRegisterProcess } from './components/EVM/ENSRegisterProcess.tsx';
+import { ENSRenewProcess } from './components/EVM/ENSRenewProcess.tsx';
 import { openaiService } from '../../services/openai.services.ts';
 import { PriceCard } from './components/Analysis/PriceCard.tsx';
 import { TechnicalAnalysis } from './components/Analysis/TechnicalAnalysis.tsx';
@@ -40,7 +41,7 @@ import { SentimentAnalysis } from './components/Analysis/SentimentAnalysis.tsx';
 import { PredictionAnalysis } from './components/Analysis/PredictionAnalysis.tsx';
 import { MarketOverview } from './components/Analysis/MarketOverview.tsx';
 import { yields_data } from '../../constants/mock/agent.ts';
-import {Yield} from '../../types/brian.type.ts';
+import { Yield } from '../../types/brian.type.ts';
 interface AIAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -58,6 +59,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [showBridgeProcess, setShowBridgeProcess] = useState(false);
   const [showPortfolioProcess, setShowPortfolioProcess] = useState(false);
   const [showSendProcess, setShowSendProcess] = useState(false);
+  const [showSolSendProcess, setShowSolSendProcess] = useState(false);
   const [showStakeProcess, setShowStakeProcess] = useState(false);
   const [showProjectAnalysis, setShowProjectAnalysis] = useState(false);
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
@@ -67,7 +69,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [showRepayProcess, setShowRepayProcess] = useState(false);
   const [showENSRegisterProcess, setShowENSRegisterProcess] = useState(false);
   const [showENSRenewProcess, setShowENSRenewProcess] = useState(false);
-  const { address, chainId, switchChain } = useContext(Web3AuthContext);
+  const { address, chainId, switchChain, solanaWalletInfo } = useContext(Web3AuthContext);
   const { tokenBalances } = useTokenBalanceStore();
 
   const [fromToken, setFromToken] = useState<TokenType>();
@@ -82,7 +84,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
   const [yields, setYields] = useState<Yield[]>([]);
   const [description, setDescription] = useState('');
 
-  // Reset all process states
   const resetProcessStates = () => {
     setShowYieldProcess(false);
     setShowSwapProcess(false);
@@ -97,6 +98,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     setShowRepayProcess(false);
     setShowENSRegisterProcess(false);
     setShowENSRenewProcess(false);
+
+    setShowSolSendProcess(false);
   };
 
   const processCommandCase = async (command: string, address: string, chainId: number | undefined) => {
@@ -104,34 +107,6 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     const fallbackResponse = await findFallbackResponse(command);
     if (fallbackResponse) {
       return fallbackResponse;
-    }
-
-    const lowerCommand = command.toLowerCase().trim();
-
-    if (lowerCommand.includes('latest news') || lowerCommand.includes('show me the news')) {
-      const news = await cryptoNewsService.getLatestNews();
-      return {
-        text: "Here are the latest crypto news updates:",
-        news
-      };
-    }
-
-    if (lowerCommand.includes('trending tokens')) {
-      const trendingCoins = await coingeckoService.getTrendingCoins();
-      return {
-        text: "Here are the currently trending tokens:",
-        trending: trendingCoins
-      };
-    }
-
-    if (lowerCommand.includes('bitcoin price')) {
-      const bitcoinData = await coingeckoService.getCoinPrice('bitcoin');
-      if (bitcoinData) {
-        return {
-          text: `The current Bitcoin price is $${bitcoinData.price.toLocaleString()} (${bitcoinData.priceChange24h.toFixed(2)}% 24h change)`,
-          data: bitcoinData
-        };
-      }
     }
 
     // If no direct match, use OpenAI with fallback
@@ -150,6 +125,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           type: "knowledge",
         }
       }
+
     } catch (e) {
       const error = e as {
         error?: { type?: string; code?: string };
@@ -248,8 +224,8 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     const normalizedMessage = message.toLowerCase();
     const response = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
     console.log(response);
-    if (response && response.type=="price") {
-      
+    if (response && response.type == "price") {
+
       if (response.data) {
         const { priceData } = response.data;
         return {
@@ -267,17 +243,17 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           }
         };
       }
-    } else if (response && response.type=="cryptonews") {
+    } else if (response && response.type == "cryptonews") {
       return {
         text: 'Here are the latest crypto news updates',
         news: response.data.news_items,
       };
-    } else if (response && response.type=="trending") {
+    } else if (response && response.type == "trending") {
       return {
         text: 'Here are the currently trending tokens:',
         trending: response.data.trending_coins
       };
-    } else if (response && response.type=="top_losers") {
+    } else if (response && response.type == "top_losers") {
       return {
         text: 'Here are the top losers',
         losers: response.data.losers.map((item: any) => ({
@@ -292,7 +268,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           analysis: item.analysis,
         }))
       }
-    } else if (response && response.type=="top_gainers") {
+    } else if (response && response.type == "top_gainers") {
       return {
         text: 'Here are the top gainers',
         gainers: response.data.gainers.map((item: any) => ({
@@ -307,17 +283,17 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           analysis: item.analysis,
         }))
       }
-    } else if (response && response.type=="technical_analysis") {
+    } else if (response && response.type == "technical_analysis") {
       return {
         text: `Here's the ${response.data.coinId} technical analysis:`,
         technicalAnalysis: response.data,
       }
-    } else if (response && response.type=="sentiment") {
+    } else if (response && response.type == "sentiment") {
       const sentimentDate = Object.keys(response.data.socialSentiment)[0];
       const negative_score = response.data.socialSentiment?.[sentimentDate]?.[Object.keys(response.data.socialSentiment[sentimentDate])[0]]?.Negative;
       const positive_score = response.data.socialSentiment?.[sentimentDate]?.[Object.keys(response.data.socialSentiment[sentimentDate])[0]]?.Positive;
       return {
-        text: `Here's the ${response.data.priceData.data.response.name} market sentiment analysis:`,
+        text: `Here's the ${response.data.priceData.data.name} market sentiment analysis:`,
         sentimentAnalysis: {
           social_sentiment: positive_score * 100 / (negative_score + positive_score),
           trading_sentiment: response.data.tradingSentiment.value,
@@ -340,11 +316,16 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         text: `Here's the current market overview:`,
         marketOverview: response,
       }
-    } else if(response && response.type == "best_yields") {
+    } else if (response && response.type == "best_yields") {
       return {
         type: "best_yields",
         yields: response.data,
       }
+    }
+    console.log(message);
+    const sol_response = await openaiService.getOpenAISolanaData(message);
+    if (sol_response && sol_response.type == "transfer_sol" && sol_response.args.networkName == "solana") {
+      return sol_response;
     }
 
     for (const [key, response] of Object.entries(fallbackResponses)) {
@@ -368,7 +349,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
     try {
 
       setIsProcessing(true);
-      const normalizedText = text.toLowerCase().trim();
+      const normalizedText = text.trim();
       let response: any = null;
 
       // Process chained commands
@@ -383,7 +364,10 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+
+            if (chainId != data.fromToken.chainId) {
+              await switchChain(data.fromToken.chainId);
+            }
 
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
@@ -402,7 +386,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'swap') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
             if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
@@ -422,7 +406,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'bridge') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
             if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
@@ -443,7 +427,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'deposit') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             const amount = convertCryptoAmount(data.fromAmount, data.fromToken.decimals);
             let token = tokenBalances.find(balance => balance.address.toLowerCase() === data.fromToken.address.toLowerCase());
             if (data.fromToken.symbol.toLowerCase() == 'eth') token = tokenBalances.find(balance => balance.symbol.toLowerCase() === data.fromToken.symbol.toLowerCase());
@@ -463,7 +447,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'withdraw') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setProtocol(data.protocol);
@@ -475,7 +459,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'AAVE Borrow') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setProtocol(data.protocol);
@@ -489,7 +473,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'AAVE Repay') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setProtocol(data.protocol);
@@ -503,7 +487,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
 
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
             setFromToken(data.fromToken);
             setDescription(data.description);
             setSteps(data.steps);
@@ -512,7 +496,7 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
           } else if (response.brianData.action == 'ENS Renewal') {
             const data = response.brianData.data;
             resetProcessStates();
-            await switchChain(data.fromToken.chainId);
+            if (chainId != data.fromToken.chainId) await switchChain(data.fromToken.chainId);
 
             setFromToken(data.fromToken);
             setDescription(data.description);
@@ -529,6 +513,34 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
         } else if (response.type == "best_yields") {
           setYields(response.yields);
           setShowYieldProcess(true);
+        } else if (response.type == "transfer_sol") {
+          console.log(response);
+          console.log(tokenBalances);
+          
+          let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
+
+          if (token && token.balance > response.args.amount) {
+            if (isValidSolanaAddress(response.args.outputMint)) {
+              setFromToken({
+                symbol: token.symbol,
+                name: token.name,
+                address: token.address,
+                chainId: token.chain,
+                decimals: token.decimals,
+                logoURI: token.logo,
+                priceUSD: token.usdPrice
+              });
+              setFromAmount(response.args.amount);
+              setReceiver(response.args.outputMint);
+              setShowSolSendProcess(true);
+            } else {
+              response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.'}
+            }
+
+          }
+          else {
+            response = { text: `transfer ${response.args.amount} ${response.args.inputSymbol} to ${response.args.outputMint} on solana`, insufficient: 'Insufficient balance to perform the transaction.' };
+          }
         }
 
         if (response) {
@@ -738,147 +750,153 @@ export default function AIAgentModal({ isOpen, onClose }: AIAgentModalProps) {
             setShowENSRenewProcess(false);
             setMessages([]);
           }} />
-        ) : (
-          <div className="flex flex-col h-full">
-            {/* Header */}
-            <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} setInput={setInput} />
-            <div className="flex h-full overflow-auto">
-              {/* Main Content */}
-              <div className="flex-1 flex flex-col relative overflow-auto">
-                {/* Messages Area */}
-                <div ref={chatContainerRef} className="flex-1 overflow-y-auto ai-chat-scrollbar">
-                  <div className="p-6 space-y-6">
-                    {messages.length === 0 ? (
-                      <InitializeCommands processCommand={processCommand} address={address} chainId={chainId} setInput={setInput} />
-                    ) : (
-                      messages.map((message, index) => (
-                        <div
-                          key={index}
-                          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
-                            }`}
-                        >
+        ) : showSolSendProcess && fromToken ? (
+          <SolSendProcess receiver={receiver} fromAmount={fromAmount} fromToken={fromToken}
+            onClose={() => {
+              setShowSolSendProcess(false);
+              setMessages([]);
+            }} />)
+          : (
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} setInput={setInput} />
+              <div className="flex h-full overflow-auto">
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col relative overflow-auto">
+                  {/* Messages Area */}
+                  <div ref={chatContainerRef} className="flex-1 overflow-y-auto ai-chat-scrollbar">
+                    <div className="p-6 space-y-6">
+                      {messages.length === 0 ? (
+                        <InitializeCommands processCommand={processCommand} address={address} chainId={chainId} setInput={setInput} />
+                      ) : (
+                        messages.map((message, index) => (
                           <div
-                            className={`max-w-[90%] p-4 rounded-xl ${message.role === 'user'
-                              ? 'bg-blue-500/20 ml-auto'
-                              : 'glass border border-white/10'
+                            key={index}
+                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
                               }`}
                           >
-                            <p className="whitespace-pre-wrap">{message.content}</p>
-                            <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
-                            {message.link && (
-                              <a href={message.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 float-right">
-                                Open link
-                              </a>
-                            )}
-                            {message.priceData && (
-                              <div className="mt-4 w-full">
-                                <PriceCard data={message.priceData} isLoading={false}></PriceCard>
-                              </div>
-                            )}
-                            {message.technicalAnalysis && (
-                              <div className="mt-4 w-full">
-                                <TechnicalAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.technicalAnalysis}></TechnicalAnalysis>
-                              </div>
-                            )}
-                            {message.sentimentAnalysis && (
-                              <div className="mt-4 w-full">
-                                <SentimentAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.sentimentAnalysis}></SentimentAnalysis>
-                              </div>
-                            )}
-                            {message.predictionAnalysis && (
-                              <div className="mt-4 w-full">
-                                <PredictionAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></PredictionAnalysis>
-                              </div>
-                            )}
-                            {message.marketOverview && (
-                              <div className="mt-4 w-full">
-                                <MarketOverview isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></MarketOverview>
-                              </div>
-                            )}
-                            {message.trending && <TrendingCoins coins={message.trending} />}
-                            {message.losers && <TopCoins type="loser" coins={message.losers} />}
-                            {message.gainers && <TopCoins type="gainer" coins={message.gainers} />}
-                            {message.news && <NewsWidget />}
+                            <div
+                              className={`max-w-[90%] p-4 rounded-xl ${message.role === 'user'
+                                ? 'bg-blue-500/20 ml-auto'
+                                : 'glass border border-white/10'
+                                }`}
+                            >
+                              <p className="whitespace-pre-wrap">{message.content}</p>
+                              <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
+                              {message.link && (
+                                <a href={message.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 float-right">
+                                  Open link
+                                </a>
+                              )}
+                              {message.priceData && (
+                                <div className="mt-4 w-full">
+                                  <PriceCard data={message.priceData} isLoading={false}></PriceCard>
+                                </div>
+                              )}
+                              {message.technicalAnalysis && (
+                                <div className="mt-4 w-full">
+                                  <TechnicalAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.technicalAnalysis}></TechnicalAnalysis>
+                                </div>
+                              )}
+                              {message.sentimentAnalysis && (
+                                <div className="mt-4 w-full">
+                                  <SentimentAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.sentimentAnalysis}></SentimentAnalysis>
+                                </div>
+                              )}
+                              {message.predictionAnalysis && (
+                                <div className="mt-4 w-full">
+                                  <PredictionAnalysis isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></PredictionAnalysis>
+                                </div>
+                              )}
+                              {message.marketOverview && (
+                                <div className="mt-4 w-full">
+                                  <MarketOverview isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></MarketOverview>
+                                </div>
+                              )}
+                              {message.trending && <TrendingCoins coins={message.trending} />}
+                              {message.losers && <TopCoins type="loser" coins={message.losers} />}
+                              {message.gainers && <TopCoins type="gainer" coins={message.gainers} />}
+                              {message.news && <NewsWidget />}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      {isProcessing && (
+                        <div className="flex justify-start">
+                          <div className="bg-white/10 p-3 rounded-lg flex gap-2">
+                            <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
+                            <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.2s]" />
+                            <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.4s]" />
                           </div>
                         </div>
-                      ))
-                    )}
-                    {isProcessing && (
-                      <div className="flex justify-start">
-                        <div className="bg-white/10 p-3 rounded-lg flex gap-2">
-                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.2s]" />
-                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:0.4s]" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Input Area */}
-                <div className="p-4 border-t border-white/10 bg-black/20 backdrop-blur-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder='Try "What is the Bitcoin price?"'
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-white/20"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            if (input.trim()) {
-                              processCommand(input, address, chainId);
-                              setInput('');
-                            }
-                          }
-                        }}
-                      />
-                      {messages.length > 0 && (
-                        <button
-                          onClick={clearMessages}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg transition-colors text-red-400 hover:text-red-300"
-                          title="Clear conversation"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
                       )}
                     </div>
-                    <button
-                      className={`p-2 rounded-lg transition-colors ${isListening ? 'bg-red-500/50' : 'hover:bg-white/10'
-                        } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-                        isListening ? stopListening() : startListening();
-                      }}
-                      disabled={isProcessing}
-                    >
-                      <Mic className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (input.trim() && !isProcessing) {
-                          processCommand(input, address, chainId);
-                          setInput('');
-                        }
-                      }}
-                      disabled={isProcessing || !input.trim()}
-                      className={`p-2 rounded-lg transition-colors ${input.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
-                        }`}
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
+                  </div>
+
+                  {/* Input Area */}
+                  <div className="p-4 border-t border-white/10 bg-black/20 backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          placeholder='Try "What is the Bitcoin price?"'
+                          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-white/20"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              if (input.trim()) {
+                                processCommand(input, address, chainId);
+                                setInput('');
+                              }
+                            }
+                          }}
+                        />
+                        {messages.length > 0 && (
+                          <button
+                            onClick={clearMessages}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg transition-colors text-red-400 hover:text-red-300"
+                            title="Clear conversation"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        className={`p-2 rounded-lg transition-colors ${isListening ? 'bg-red-500/50' : 'hover:bg-white/10'
+                          } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+                          isListening ? stopListening() : startListening();
+                        }}
+                        disabled={isProcessing}
+                      >
+                        <Mic className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (input.trim() && !isProcessing) {
+                            processCommand(input, address, chainId);
+                            setInput('');
+                          }
+                        }}
+                        disabled={isProcessing || !input.trim()}
+                        className={`p-2 rounded-lg transition-colors ${input.trim() ? 'bg-blue-500 hover:bg-blue-600' : 'bg-white/10 cursor-not-allowed'
+                          }`}
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Wallet Panel */}
-              {<WalletPanel isWalletPanelOpen={isWalletPanelOpen} setIsWalletPanelOpen={setIsWalletPanelOpen} />}
+                {/* Wallet Panel */}
+                {<WalletPanel isWalletPanelOpen={isWalletPanelOpen} setIsWalletPanelOpen={setIsWalletPanelOpen} />}
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
 
       <VoiceModal

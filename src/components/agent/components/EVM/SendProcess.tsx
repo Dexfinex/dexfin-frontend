@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowRight, Wallet, X } from 'lucide-react';
 
-import { TokenType, Step } from '../../../types/brian.type';
-import { convertCryptoAmount } from '../../../utils/agent.tsx';
-import { shrinkAddress } from '../../../utils/common.util';
-import { mapChainId2ViemChain } from '../../../config/networks';
-import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
-import { FailedTransaction } from '../modals/FailedTransaction.tsx';
-import { SuccessModal } from '../modals/SuccessModal.tsx';
-import { formatNumberByFrac } from '../../../utils/common.util';
+import { TokenType, Step } from '../../../../types/brian.type.ts';
+import { convertCryptoAmount } from '../../../../utils/agent.tsx';
+import { shrinkAddress } from '../../../../utils/common.util.ts';
+import { mapChainId2ViemChain } from '../../../../config/networks.ts';
+import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
+import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
+import { SuccessModal } from '../../modals/SuccessModal.tsx';
+import { formatNumberByFrac } from '../../../../utils/common.util.ts';
 
 interface SendProcessProps {
   onClose: () => void;

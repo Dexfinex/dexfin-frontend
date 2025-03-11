@@ -3,7 +3,8 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Tag, Clock, Globe,
 import AddEventModal from './AddEventModal.tsx'
 import { getLoadEvents, deleteEvent, editEvent } from './api/Calendar-api.ts';
 import EventDetailsModal from './EventDetailsModal.tsx';
-import { Web3AuthContext } from '../../../providers/Web3AuthContext.tsx';
+import { useUserData } from '../../../providers/UserProvider';
+
 
 export interface DayEvent {
   id?: string;
@@ -44,7 +45,8 @@ export const MarketCalendar: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { userData, fetchUserData, address, isConnected, walletType } = useContext(Web3AuthContext);
+  const { userData } = useUserData();
+
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -57,34 +59,20 @@ export const MarketCalendar: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isConnected && !userData) {
-      fetchUserData();
-    }
-    
-
     if (userData?.accessToken) {
       loadEvents();
     }
-  }, [userData, isConnected]);
-
-  useEffect(() => {
-    console.log(`Current wallet type: ${walletType}`);
-    if (walletType === 'EOA') {
-      console.log('Using external wallet(MetaMask, etc)');
-    } else if (walletType === 'EMBEDDED') {
-      console.log('Using embedded wallet');
-    }
-  }, [walletType]);
+  }, [userData]);
 
   const loadEvents = async () => {
     try {
+      setEvents([]);
       if (!userData?.accessToken) {
         console.log("No access token available");
         return;
       }
-      console.log(userData.accessToken);
+      console.log(userData);
       const response = await getLoadEvents(userData.accessToken);
-      console.log(response.userId);
       setEvents(response)
       if (!response.ok) {
         throw new Error('Failed to create event');

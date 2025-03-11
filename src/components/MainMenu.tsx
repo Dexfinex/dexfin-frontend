@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
@@ -8,6 +8,7 @@ export const MainMenu: React.FC = () => {
   const {
     menuItems,
     toggleStarMenuItem,
+    setDefaultStarredItems,
     setIsAIAgentOpen,
     setIsSwapOpen,
     setIsDefiOpen,
@@ -24,53 +25,59 @@ export const MainMenu: React.FC = () => {
 
   const { isConnected, login } = useContext(Web3AuthContext);
 
-  const handleMenuItemClick = (itemId: string) => {
-    // Close menu first
-    setIsOpen(false);
+  // Set default starred items when the user logs in
+  useEffect(() => {
+    if (isConnected) {
+      setDefaultStarredItems();
+    }
+  }, [isConnected, setDefaultStarredItems]);
 
-    // Use setTimeout to ensure menu is closed before opening modal
-    setTimeout(() => {
-      switch (itemId) {
-        case 'ai':
-          setIsAIAgentOpen(true);
-          break;
-        case 'swap':
-          setIsSwapOpen(true);
-          break;
-        case 'defi':
-          setIsDefiOpen(true);
-          break;
-        case 'dashboard':
-          setIsDashboardOpen(true);
-          break;
-        case 'market-data':
-          setIsMarketDataOpen(true);
-          break;
-        case 'chat':
-          if (isConnected) {
-            setIsChatOpen(true);
-          } else {
-            login()
-          }
-          break;
-        case 'cart':
-          setIsCartOpen(true);
-          break;
-        case 'social':
-          setIsSocialFeedOpen(true);
-          break;
-        case 'games':
-          setIsGamesOpen(true);
-          break;
-        case 'trade':
-          setTradeOpen(true);
-          break;
-        case 'rewards':
-          setIsRewardsOpen(true);
-          break;
-      }
-    }, 0);
+  const handleMenuItemClick = (itemId: string) => {
+    switch (itemId) {
+      case 'ai':
+        setIsAIAgentOpen(true);
+        break;
+      case 'swap':
+        setIsSwapOpen(true);
+        break;
+      case 'defi':
+        setIsDefiOpen(true);
+        break;
+      case 'dashboard':
+        setIsDashboardOpen(true);
+        break;
+      case 'market-data':
+        setIsMarketDataOpen(true);
+        break;
+      case 'chat':
+        if (isConnected) {
+          setIsChatOpen(true);
+        } else {
+          login();
+        }
+        break;
+      case 'cart':
+        setIsCartOpen(true);
+        break;
+      case 'social':
+        setIsSocialFeedOpen(true);
+        break;
+      case 'games':
+        setIsGamesOpen(true);
+        break;
+      case 'trade':
+        setTradeOpen(true);
+        break;
+      case 'rewards':
+        setIsRewardsOpen(true);
+        break;
+    }
   };
+
+  // // Filter out items that are not ready yet
+  // const availableMenuItems = menuItems.filter(item => 
+  //   item.id !== 'social' && item.id !== 'rewards'
+  // );
 
   return (
     <div className="relative">
@@ -81,6 +88,7 @@ export const MainMenu: React.FC = () => {
         <Icons.AlignLeft className="w-4 h-4" />
       </button>
 
+      {/* Dropdown menu */}
       {isOpen && (
         <>
           <div
@@ -95,7 +103,10 @@ export const MainMenu: React.FC = () => {
                   <div
                     key={item.id}
                     className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 transition-colors group cursor-pointer"
-                    onClick={() => handleMenuItemClick(item.id)}
+                    onClick={() => {
+                      setIsOpen(false);
+                      handleMenuItemClick(item.id);
+                    }}
                   >
                     {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
                     {/* @ts-expect-error */}
@@ -111,7 +122,7 @@ export const MainMenu: React.FC = () => {
                       <Icons.Star
                         className={`w-3.5 h-3.5 transition-colors ${item.isStarred
                           ? 'text-yellow-400'
-                          : 'text-white/40  group-hover:opacity-100'
+                          : 'text-white/40 group-hover:opacity-100'
                           }`}
                       />
                     </div>

@@ -3,7 +3,9 @@ import { X, Trophy, Timer, ArrowLeft, Brain, Check, X as XIcon, Heart, Zap, Shie
 import { GameSession } from '../GamesModal';
 import { useStore } from '../../store/useStore';
 
-import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
+import { useUserData } from '../../providers/UserProvider';
+
+
 import { GameService } from '../../services/game.services.ts';
 
 interface CryptoTriviaProps {
@@ -1424,7 +1426,7 @@ function getRandomQuestions(difficulty: 'Easy' | 'Medium' | 'Hard'): Question[] 
 export const CryptoTrivia: React.FC<CryptoTriviaProps> = ({ gameType = 'TRIVIA' }) => {
 
 
-  const { userData } = useContext(Web3AuthContext);
+  const { userData } = useUserData();
 
   const gameSessionSaved = useRef(false);
 

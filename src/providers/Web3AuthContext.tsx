@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from "react";
+import {createContext, useCallback, useEffect, useRef, useState} from "react";
 import {
     getSolanaWrappedKeyMetaDataByPkpEthAddress,
     getWrappedKeyMetaDatas,
@@ -24,7 +24,7 @@ import {
 } from "../constants";
 import { SavedWalletInfo, type SolanaWalletInfoType } from "../types/auth";
 import { exportPrivateKey, generatePrivateKey } from "@lit-protocol/wrapped-keys/src/lib/api";
-import { Keypair, VersionedTransaction, Connection, PublicKey, Transaction, sendAndConfirmTransaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Keypair, VersionedTransaction, PublicKey, Transaction, sendAndConfirmTransaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { getOrCreateAssociatedTokenAccount, createTransferInstruction } from '@solana/spl-token';
 import {
     createPublicClient,
@@ -38,9 +38,9 @@ import { http } from "@wagmi/core";
 import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
 import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import {
-    type CreateKernelAccountReturnType,
     createKernelAccount,
     createKernelAccountClient,
+    CreateKernelAccountReturnType,
     createZeroDevPaymasterClient,
     getUserOperationGasPrice,
     KernelEIP1193Provider
@@ -51,14 +51,9 @@ import { mapChainId2ViemChain } from "../config/networks.ts";
 import { useStore } from "../store/useStore.ts";
 import { connection as SolanaConnection } from "../config/solana.ts";
 import axios from "axios";
-
-export type WalletType = 'EOA' | 'EMBEDDED' | 'UNKNOWN';
-
-interface UserData {
-    accessToken: string;
-    userId?: string;
-    walletType?: WalletType;
-}
+import {NATIVE_MINT} from "../constants/solana.constants.ts";
+import {solToWSol} from "../utils/solana.util.ts";
+import {WalletTypeEnum} from "../types/wallet.ts";
 
 interface Web3AuthContextType {
     login: () => void;
@@ -92,18 +87,14 @@ interface Web3AuthContextType {
     signer: JsonRpcSigner | undefined,
     address: string,
     walletClient: WalletClient | undefined,
+    kernelAccount: CreateKernelAccountReturnType | null,
     setWalletClient: React.Dispatch<React.SetStateAction<WalletClient | undefined>>,
     isLoadingStoredWallet: boolean,
     solanaWalletInfo: SolanaWalletInfoType | undefined,
     signSolanaTransaction: (solanaTransaction: VersionedTransaction) => Promise<VersionedTransaction | null>,
     transferSolToken: (recipientAddress: string, tokenMintAddress: string, amount: number, decimals: number) => Promise<string>,
-
-    userData: UserData | null,
-    fetchUserData: () => Promise<void>,
-    getWalletType: () => WalletType,
-    walletType: WalletType
-
-    checkWalletAndUsername: () => Promise<{ exists: boolean, message?: string, userId?: string }>;
+    getWalletType: () => WalletTypeEnum,
+    walletType: WalletTypeEnum
 }
 
 
@@ -123,6 +114,7 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     setAuthMethod: () => {
     },
     walletClient: undefined,
+    kernelAccount: null,
     setWalletClient: () => {
     },
     authWithEthWallet: async () => {
@@ -164,24 +156,14 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     transferSolToken: async () => {
         return ""
     },
-    userData: null,
-    fetchUserData: async () => {
-    },
-    getWalletType: () => 'UNKNOWN',
-    walletType: 'UNKNOWN',
-
-    checkWalletAndUsername: async () => {
-        return { exists: false };
-    }
+    getWalletType: () => WalletTypeEnum.UNKNOWN,
+    walletType: WalletTypeEnum.UNKNOWN,
 
 };
 
 export const Web3AuthContext = createContext<Web3AuthContextType>(defaultWeb3AuthContextValue);
 const entryPoint = getEntryPoint("0.7");
 const kernelVersion = KERNEL_V3_1;
-
-import { getLoginUserId } from "../components/market/Calendar/api/Calendar-api.ts";
-import { usernameService } from "../services/username.service.ts";
 
 const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
@@ -190,23 +172,17 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isChainSwitching, setIsChainSwitching] = useState(false);
     const [chainId, setChainId] = useState<number | undefined>(56);
     const [walletClient, setWalletClient] = useState<WalletClient | undefined>(undefined);
+    const [kernelAccount, setKernelAccount] = useState<CreateKernelAccountReturnType | null>(null)
     const [provider, setProvider] = useState<Web3Provider | undefined>(undefined);
     const [signer, setSigner] = useState<JsonRpcSigner | undefined>(undefined);
     const [address, setAddress] = useState<string>('');
     const [storedWalletInfo, setStoredWalletInfo] = useLocalStorage<SavedWalletInfo | null>(LOCAL_STORAGE_WALLET_INFO, null)
     const [isLoadingStoredWallet, setIsLoadingStoredWallet] = useState<boolean>(false)
     const [solanaWalletInfo, setSolanaWalletInfo] = useState<SolanaWalletInfoType | undefined>()
-    const [kernelAccount, setKernelAccount] = useState<CreateKernelAccountReturnType | null>(null)
 
-    const [userData, setUserData] = useState<UserData | null>(null);
-    const [userDataLoading, setUserDataLoading] = useState<boolean>(false);
-    const [walletType, setWalletType] = useState<WalletType>('UNKNOWN');
+    const [walletType, setWalletType] = useState<WalletTypeEnum>(WalletTypeEnum.UNKNOWN);
+    const pkpWalletRef = useRef<PKPEthersWallet | null>(null);
 
-    // const [chain, setChain] = useState(null);
-
-    // console.log("provider", provider, address, chainId, solanaWalletInfo)
-
-    // console.log("provider", provider)
 
     const {
         isConnected: isWagmiWalletConnected,
@@ -249,138 +225,64 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } = useSession();
 
     // console.log("authMethod", authMethod)
-    const detectWalletType = (): WalletType => {
+    const detectWalletType = useCallback((): WalletTypeEnum => {
         if (isWagmiWalletConnected) {
-            return 'EOA';
+            return WalletTypeEnum.EOA;
         }
         if (isConnected && !isWagmiWalletConnected) {
-            return 'EMBEDDED';
+            return WalletTypeEnum.EMBEDDED;
         }
-        return 'UNKNOWN';
-    }
-    const getWalletType = (): WalletType => {
+        return WalletTypeEnum.UNKNOWN;
+    }, [isConnected, isWagmiWalletConnected])
+    
+    const getWalletType = (): WalletTypeEnum => {
         return detectWalletType();
     }
 
-    const fetchUserData = async () => {
-        try {
-            setUserDataLoading(true);
-            const currentAddress = address;
-            if (!currentAddress) {
-                console.error("No wallet address available to fetch user data");
-                setUserDataLoading(false);
-                return;
-            }
-
-            const currentWalletType = detectWalletType();
-            setWalletType(currentWalletType);
-
-            const response = await getLoginUserId(currentAddress);
-
-
-            setUserData({
-                ...response,
-                walletType: currentWalletType
-            });
-
-            if (response && response.accessToken) {
-                axios.defaults.headers.common['Authorization'] = `Bearer ${response.accessToken}`;
-            }
-
-            setUserDataLoading(false);
-        } catch (err) {
-            console.error("Error fetching user data:", err);
-            setUserDataLoading(false);
-        }
-    };
-    const checkWalletAndUsername = async (): Promise<{ exists: boolean, message?: string, userId?: string }> => {
-        try {
-            if (!address) {
-                return {
-                    exists: false,
-                    message: "No wallet is connected. Please connect a wallet first."
-                };
-            }
-
-            if (!userData?.accessToken) {
-                console.log("No access token available, fetching user data first");
-                if (!userData?.accessToken) {
-                    return {
-                        exists: false,
-                        message: "Could not retrieve authentication token. Please try again."
-                    };
-                }
-            }
-            // Get username data from backend
-            const response = await usernameService.checkUsername(userData.accessToken);
-
-            if (!response || !response.username || response.username.trim() === "") {
-                // Open the username registration modal
-                useStore.getState().setIsUsernameModalOpen(true);
-
-                return {
-                    exists: false,
-                    message: "No username found for this wallet. Please register a username."
-                };
-            }
-
-            return {
-                exists: true,
-                message: `Username exists for this wallet: ${response.username}`,
-                userId: response.id
-            };
-
-
-        } catch (error) {
-            console.error("Error checking wallet and username:", error);
-            useStore.getState().setIsUsernameModalOpen(true);
-            return {
-                exists: false,
-                message: "An error occurred while checking wallet and username"
-            };
-        }
-    };
-
-    async function setProviderByPKPWallet(chainId: number) {
+    const setProviderByPKPWallet = useCallback(async (chainId: number) => {
         try {
             setIsChainSwitching(true)
-            await litNodeClient.connect();
+            let pkpWallet = pkpWalletRef.current;
+            if (!pkpWallet) {
+                await litNodeClient.connect();
 
-            const pkpWallet = new PKPEthersWallet({
-                controllerSessionSigs: sessionSigs,
-                pkpPubKey: currentAccount!.publicKey,
-                litNodeClient: litNodeClient,
-            });
-            await pkpWallet.init();
+                pkpWallet = new PKPEthersWallet({
+                    controllerSessionSigs: sessionSigs,
+                    pkpPubKey: currentAccount!.publicKey,
+                    litNodeClient: litNodeClient,
+                });
+                await pkpWallet.init();
 
 
-            // --- begin of some tricky action ---
-            const _savedRequestFunc = pkpWallet.request
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            pkpWallet.request = async (payload: any) => {
-                if (payload?.method === 'eth_accounts') {
-                    return [pkpWallet.address]
-                } else {
-                    return await _savedRequestFunc(payload as ETHRequestSigningPayload)
+                // --- begin of some tricky action ---
+                const _savedRequestFunc = pkpWallet.request.bind(pkpWallet)
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                pkpWallet.request = async (payload: any) => {
+                    if (payload?.method === 'eth_accounts') {
+                        return [pkpWallet!.address]
+                    } else {
+                        return await _savedRequestFunc(payload as ETHRequestSigningPayload)
+                    }
                 }
+
+                const _savedSignMessage = pkpWallet.signMessage.bind(pkpWallet);
+                pkpWallet.signMessage = async (message: string | Uint8Array) => {
+                    const messageStr = message.toString();
+                    const isHash = messageStr.startsWith('0x') && messageStr.length === 66;
+                    if (isHash) {
+                        const sigResponse = await litNodeClient.pkpSign({
+                            pubKey: currentAccount!.publicKey,
+                            toSign: ethers.utils.arrayify(messageStr),
+                            sessionSigs: sessionSigs!
+                        });
+                        return sigResponse.signature;
+                    }
+                    return _savedSignMessage(message);
+                };
+                // --- end of some tricky action ---
+                pkpWalletRef.current = pkpWallet; // Store in ref for reuse
             }
-
-            const _savedSignMessage = pkpWallet.signMessage.bind(pkpWallet);
-            pkpWallet.signMessage = async (message: string | Uint8Array) => {
-                const messageStr = message.toString();
-                const isHash = messageStr.startsWith('0x') && messageStr.length === 66;
-                if (isHash) {
-                    const sigResponse = await litNodeClient.pkpSign({
-                        pubKey: currentAccount!.publicKey,
-                        toSign: ethers.utils.arrayify(messageStr),
-                        sessionSigs: sessionSigs!
-                    });
-                    return sigResponse.signature;
-                }
-                return _savedSignMessage(message);
-            };
-            // --- end of some tricky action ---
 
             const currentChainId = chainId ?? 1
             pkpWallet.setChainId(currentChainId)
@@ -478,18 +380,12 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.error(err);
         }
         setIsChainSwitching(false)
-    }
-useEffect(() => {
-    // Only proceed when we have a valid address
-    if (address && address !== '') {
-        console.log("Address detected, fetching user data:", address);
-        fetchUserData();
-    }
-}, [address]);
+    }, [connectedWalletAddress, currentAccount, sessionSigs])
+
     useEffect(() => {
         const currentWalletType = detectWalletType();
         setWalletType(currentWalletType);
-    }, [isWagmiWalletConnected, isConnected]);
+    }, [isWagmiWalletConnected, isConnected, detectWalletType]);
     // wagmi walet
     useEffect(() => {
         if (isWagmiWalletConnected) {
@@ -512,10 +408,6 @@ useEffect(() => {
                     chain: mapChainId2ViemChain[wagmiChainId as number],
                 }).extend(publicActions); // Extend with public actions
                 setWalletClient(walletClient)
-
-                fetchUserData().then(() => {
-                    checkWalletAndUsername();
-                });
             })
         } else {
             setIsConnected(isWagmiWalletConnected)
@@ -541,7 +433,6 @@ useEffect(() => {
             })
         }
     }, [currentAccount, initSessionUnSafe, sessionSigs, setAuthMethod, setCurrentAccount, storedWalletInfo])
-
 
     useEffect(() => {
         if (currentAccount && sessionSigs && !solanaWalletInfo) {
@@ -581,7 +472,6 @@ useEffect(() => {
                         }
 
                         setSolanaWalletInfo(solanaWalletData)
-                        fetchUserData();
                     } catch (err) {
                         console.log("error during initialize solana address", err)
                     }
@@ -589,7 +479,6 @@ useEffect(() => {
 
         }
     }, [authMethod, chainId, currentAccount, sessionSigs, setProviderByPKPWallet, setStoredWalletInfo, solanaWalletInfo])
-
 
     const initializeAllVariables = () => {
         setStoredWalletInfo(null)
@@ -601,8 +490,7 @@ useEffect(() => {
         setWalletClient(undefined)
         setIsLoadingStoredWallet(false)
 
-        setUserData(null)
-        setWalletType('UNKNOWN')
+        setWalletType(WalletTypeEnum.UNKNOWN)
         delete axios.defaults.headers.common['Authorization'];
     }
 
@@ -678,8 +566,10 @@ useEffect(() => {
 
                 const keypair = Keypair.fromSecretKey(Buffer.from(privateKey.decryptedPrivateKey, "hex"));
 
-                if (tokenMintAddress === "So11111111111111111111111111111111111111112") {
+
+                if (solToWSol(tokenMintAddress) === NATIVE_MINT.toString()) {
                     console.log('transfer native sol')
+          
                     const transaction = new Transaction().add(
                         SystemProgram.transfer({
                             fromPubkey: keypair.publicKey,
@@ -694,7 +584,7 @@ useEffect(() => {
                     return signature;
                 } else {
                     console.log(`1 - Getting Source Token Account`);
-                    let sourceAccount = await getOrCreateAssociatedTokenAccount(
+                    const sourceAccount = await getOrCreateAssociatedTokenAccount(
                         SolanaConnection,
                         keypair,
                         new PublicKey(tokenMintAddress),
@@ -703,7 +593,7 @@ useEffect(() => {
                     console.log(`    Source Account: ${sourceAccount.address.toString()}`);
 
                     console.log(`2 - Getting Destination Token Account`);
-                    let destinationAccount = await getOrCreateAssociatedTokenAccount(
+                    const destinationAccount = await getOrCreateAssociatedTokenAccount(
                         SolanaConnection,
                         keypair,
                         new PublicKey(tokenMintAddress),
@@ -814,12 +704,10 @@ useEffect(() => {
 
         walletClient,
         setWalletClient,
+        kernelAccount,
 
-        userData,
-        fetchUserData,
         getWalletType,
         walletType,
-        checkWalletAndUsername
     }
 
     return (

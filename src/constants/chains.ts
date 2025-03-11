@@ -1,6 +1,6 @@
 import { Chain } from 'viem';
-import { chainIconUrl } from '../utils/chains.util';
-import { rpcsMap as rpcsUrlsMap } from '../providers/rpcs';
+import { chainIconUrl } from '../utils/chains.util.tsx';
+import { rpcsMap as rpcsUrlsMap } from '../config/rpcs.ts';
 
 const okx = {
 	id: 66,
@@ -697,6 +697,6 @@ export const allChains: Array<IChain> = [
 ].map((chain) => ({ ...chain, rpcUrls: { ...chain.rpcUrls, ...(rpcsUrlsMap[chain.id] || {}) } }));
 
 
-export const chainId2ChainMap = {};
+export const chainId2ChainMap: Record<number, IChain> = {};
 
 allChains.forEach(chain => chainId2ChainMap[chain.id] = chain);

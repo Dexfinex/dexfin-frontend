@@ -7,7 +7,7 @@ import useDefiStore, { Position } from '../../store/useDefiStore';
 import { getTypeIcon, getTypeColor, } from "../../utils/defi.util";
 import { offerings } from "../../constants/mock/defi";
 import { TokenIcon } from "../swap/components/TokenIcon";
-import { useGetDefillamaPoolByOffering } from "../../hooks/useDefillama";
+import { useGetDefillamaPoolByInfo } from "../../hooks/useDefillama";
 import useDefillamaStore from "../../store/useDefillamaStore";
 import { formatNumberByFrac, formatNumber } from "../../utils/common.util";
 import { mapChainId2ChainName } from "../../config/networks";
@@ -15,7 +15,7 @@ import { mapChainId2ChainName } from "../../config/networks";
 interface OfferingListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
     selectedPositionType: Position['type'] | 'ALL',
-    handleAction: (type: string, position: Position) => void,
+    handleAction: (type: string, position: Position, apyToken: string, supportedChains: number[],) => void,
 }
 
 export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionType, selectedPositionType, handleAction }) => {
@@ -26,15 +26,21 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
     const { positions } = useDefiStore();
     const { getOfferingPoolByChainId } = useDefillamaStore();
 
-    const offeringData = offerings.map((item) => {
-        return {
-            "chainId": item.chainId,
-            "protocol": item.protocol_id,
-            "symbol": item.apyToken
+    const offeringLoading = offerings.map((item) => {
+        const result: Record<string, boolean> = {};
+        for (const chainId of item.chainId) {
+            const id = `chain-id-${chainId}-protocol-${item.protocol_id}-symbol-${item.apyToken}`;
+            const { isLoading } = useGetDefillamaPoolByInfo({
+                "chainId": chainId,
+                "protocol": item.protocol_id,
+                "symbol": item.apyToken
+            });
+            result[id] = isLoading;
         }
-    })
+        return result;
+    });
 
-    const { isLoading } = useGetDefillamaPoolByOffering(offeringData);
+    const offeringLoadingList = offeringLoading.reduce((obj, current) => ({ ...obj, ...current }), {});
 
 
     const filteredOfferings = offerings.filter(o => selectedPositionType === 'ALL' || o.type.toLowerCase() === selectedPositionType.toLowerCase());
@@ -86,7 +92,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
 
             <div className="space-y-3">
                 {filteredOfferings.map((offering, index) => {
-                    const isEnabled = (isConnected && !offering?.disabled) ? offering.chainId.includes(Number(chainId)) : false;
+                    const isEnabled = isConnected && !offering?.disabled;
                     const poolInfoList = offering.chainId.map(chainId => {
                         return {
                             chainId,
@@ -111,7 +117,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                         <span className="text-white/40 hidden sm:block">•</span>
                                         <div className="flex">
                                             {
-                                                offering.tokens.map((token, index) => ((offering.type === "Borrowed" || offering.type === "Supplied") && index === 0) || ((offering.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" />)
+                                                offering.tokens.map((token, index) => ((offering.type === "Borrowed" || offering.type === "Supplied") && index === 0) || ((offering.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" key={offering.address + index} />)
                                             }
                                             <span className="ml-2 text-sm text-white/60">
                                                 {
@@ -123,10 +129,13 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
 
                                     <div className="flex items-center gap-6">
                                         {
-                                            isLoading ?
-                                                <Skeleton startColor="#444" endColor="#1d2837" w={'50%'} h={'2rem'}></Skeleton> :
-                                                poolInfoList.map((poolInfo, index) =>
-                                                    <div key={index} className="flex gap-2">
+                                            poolInfoList.map((poolInfo, index) => {
+                                                const id = `chain-id-${poolInfo.chainId}-protocol-${offering.protocol_id}-symbol-${offering.apyToken}`;
+                                                const isLoading = offeringLoadingList[id];
+
+                                                return isLoading
+                                                    ? <Skeleton startColor="#444" endColor="#1d2837" w={'8rem'} h={'2rem'}></Skeleton>
+                                                    : <div key={offering.address + poolInfo.chainId + index} className="flex gap-2">
                                                         <div>
                                                             <div className="flex text-sm text-white/60">
                                                                 {mapChainId2ChainName[poolInfo.chainId]} APY
@@ -146,21 +155,24 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                                             </div>
                                                         </div>
                                                     </div>
-                                                )
+                                            })
                                         }
                                     </div>
                                 </div>
 
                                 <button
                                     onClick={async () => {
-                                        if (offering.chainId.includes(Number(chainId))) {
-                                            const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol);
-                                            let data = (position && offering.protocol_id !== "pendle") ? { ...position, apy: Number(poolInfo?.apy) } : { ...offering, apy: Number(poolInfo?.apy) }
-                                            handleAction(
-                                                getAddActionName({ type: offering.type }),
-                                                data
-                                            );
-                                        }
+                                        const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol);
+                                        let data = (position && offering.protocol_id !== "pendle")
+                                            ? { ...position, apy: Number(poolInfo?.apy) }
+                                            : { ...offering, apy: Number(poolInfo?.apy), id: index + "", chainId: offering.chainId[0] }
+                                        const supportedChains = offering.chainId;
+                                        handleAction(
+                                            getAddActionName({ type: offering.type }),
+                                            data,
+                                            offering.apyToken,
+                                            supportedChains,
+                                        );
                                     }}
                                     className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg ${isEnabled ? "" : "opacity-70"}`}
                                     disabled={!isEnabled}

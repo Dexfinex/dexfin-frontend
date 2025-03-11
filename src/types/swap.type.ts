@@ -310,6 +310,19 @@ export interface ZeroxQuoteRequestType {
     isGasLess?: boolean;
 }
 
+export interface SwapkitQuoteRequestType {
+    sellChainId: number;
+    sellTokenAddress: string;
+    buyChainId: number;
+    buyTokenAddress: string;
+    sellAmount: string;
+    sourceAddress: string;
+    destinationAddress: string;
+    slippage: number;
+    includeTx: boolean;
+}
+
+
 export interface QuoteDataType {
     buyAmount: number;
     exchangeRate: number;

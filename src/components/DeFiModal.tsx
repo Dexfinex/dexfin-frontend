@@ -35,6 +35,8 @@ interface DeFiModalProps {
 interface ModalState {
   type: string | null;
   position?: Position;
+  apyToken?: string;
+  supportedChains?: number[];
 }
 
 export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
@@ -60,8 +62,33 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation()
 
-  const { isLoading: isLoadingPosition, refetch: refetchDefiPositionByWallet } = useDefiPositionByWallet({ chainId: chainId, walletAddress: address });
-  const { isLoading: isLoadingProtocol, refetch: refetchDefiProtocolByWallet } = useDefiProtocolsByWallet({ chainId, walletAddress: address });
+  const positionHandlerList = [
+    1, // Ethereum Mainnet (ETH)
+    56, // Binance Smart Chain (BNB)
+    137, // Polygon Mainnet (MATIC)
+    8453, // Base Mainnet (ETH placeholder)
+  ].map(chainId => {
+    const { isLoading, refetch } = useDefiPositionByWallet({ chainId: Number(chainId), walletAddress: address });
+    return { isLoading, refetch, chainId: chainId }
+  });
+
+  const refetchDefiPositionByWallet = positionHandlerList.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
+
+  const isLoadingPosition = positionHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === positionHandlerList.length;
+
+  const protocolHandlerList = [
+    1, // Ethereum Mainnet (ETH)
+    56, // Binance Smart Chain (BNB)
+    137, // Polygon Mainnet (MATIC)
+    8453, // Base Mainnet (ETH placeholder)
+  ].map(chainId => {
+    const { isLoading, refetch } = useDefiProtocolsByWallet({ chainId: Number(chainId), walletAddress: address });
+    return { isLoading, refetch, chainId: chainId }
+  });
+
+  const isLoadingProtocol = protocolHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === protocolHandlerList.length;
+
+  const refetchDefiProtocolByWallet = protocolHandlerList.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
 
   const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
 
@@ -94,8 +121,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const handleAction = (type: string, position: Position) => {
-    setModalState({ type, position });
+  const handleAction = (type: string, position: Position, apyToken: string, supportedChains: number[]) => {
+    setModalState({ type, position, apyToken, supportedChains });
   };
 
   const depositHandler = async () => {

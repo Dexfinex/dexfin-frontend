@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext, useRef } from 'react';
 import { Swords, Shield, Zap, X, Info, Star, Flame, Droplet, Wind } from 'lucide-react';
 import { GameState, Action, StatusEffect } from '../../types/memeArena';
 import { MemeArenaTutorial } from './MemeArenaTutorial';
-import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
+import { useUserData } from '../../providers/UserProvider';
 import { GameSession } from '../GamesModal';
 import { GameService } from '../../services/game.services.ts';
 
@@ -21,7 +21,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({
   gameType = 'ARENA'
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
-  const { userData } = useContext(Web3AuthContext);
+  const { userData } = useUserData();
   const gameSessionSaved = useRef(false);
   const [gameData, setGameData] = useState<any[]>([]);
   const [gameId, setGameId] = useState<string>("");

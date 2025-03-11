@@ -3,9 +3,12 @@ import React from 'react';
 import { AlertCircle, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
 import { useGetFearGreed } from '../../hooks/useFearGreed';
 import { formatTimeAgo } from '../../utils/formatter.util';
+import { useStore } from '../../store/useStore';
 
 export const FearGreedWidget: React.FC = () => {
   const { isLoading, error, refetch, data } = useGetFearGreed();
+  const { theme } = useStore();
+
   console.log("feargreed data : ", data);
   const handleRefresh = async () => {
     await refetch()
@@ -57,13 +60,13 @@ export const FearGreedWidget: React.FC = () => {
       <div className="flex-1 flex items-center justify-center -mt-2">
         <div className="flex items-center gap-8">
           <div className="relative">
-            <svg className="w-32 h-32 -rotate-90">
+            <svg className="w-32 h-32 -rotate-90 ">
               <circle
                 cx="64"
                 cy="64"
                 r="56"
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.1)"
+                stroke={theme === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgb(204 204 204)"}
                 strokeWidth="12"
               />
               <circle
@@ -89,14 +92,14 @@ export const FearGreedWidget: React.FC = () => {
               {isLoading ? 'Loading...' : data?.valueClassification}
             </div>
 
-            <div className="flex items-center gap-1.5 text-sm">
+            {/* <div className="flex items-center gap-1.5 text-sm">
               <span className="text-white/60">24h Change:</span>
               <div className={`flex items-center gap-0.5 ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {change > 0 && <TrendingUp className="w-4 h-4" />}
                 {change < 0 && <TrendingDown className="w-4 h-4" />}
                 <span>{Math.abs(change)}</span>
               </div>
-            </div>
+            </div> */}
 
             {data && (
               <div className="text-xs text-white/40">
