@@ -41,6 +41,7 @@ export interface Position {
 // Define the store's state and actions
 interface DefiStoreState {
     netAPY: number;
+    totalLockedValue: number;
     healthFactor: number;
     positions: Position[];
     protocolTypes: string[];
@@ -52,6 +53,7 @@ interface DefiStoreState {
 // Create the store
 const useDefiStore = create<DefiStoreState>((set, get) => ({
     netAPY: 0,
+    totalLockedValue: 0,
     healthFactor: 0,
     positions: [],
     protocolTypes: [],
@@ -120,7 +122,9 @@ const useDefiStore = create<DefiStoreState>((set, get) => ({
             totalProtocol[index] = { ...protocol, chainId: chainId };
         }
 
-        set({ protocol: totalProtocol });
+        const totalLockedValue = totalProtocol.reduce((sum, p) => sum + Number(p.total_usd_value) || 0, 0);
+
+        set({ protocol: totalProtocol, totalLockedValue });
     },
 }));
 
