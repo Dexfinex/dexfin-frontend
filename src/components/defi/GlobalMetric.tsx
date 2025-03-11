@@ -12,8 +12,8 @@ interface GlobalMetricProps {
 
 const GlobalMetric: React.FC<GlobalMetricProps> = ({ isLoading, }) => {
 
-    const { protocol, netAPY, healthFactor, } = useDefiStore();
-    const total_usd_value = protocol.reduce((sum, p) => sum + Number(p.total_usd_value) || 0, 0);
+    const { protocol, netAPY, healthFactor, totalLockedValue } = useDefiStore();
+    const total_usd_value = totalLockedValue;
     const total_unclaimed_usd_value = protocol.reduce((sum, p) => sum + Number(p.total_unclaimed_usd_value) || 0, 0);
     const isHealthy = formatHealthFactor(healthFactor) === "∞";
 
