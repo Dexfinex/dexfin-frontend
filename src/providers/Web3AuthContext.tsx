@@ -182,12 +182,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const [walletType, setWalletType] = useState<WalletTypeEnum>(WalletTypeEnum.UNKNOWN);
 
-    // const [chain, setChain] = useState(null);
-
-    // console.log("provider", provider, address, chainId, solanaWalletInfo)
-
-    // console.log("provider", provider)
-
     const {
         isConnected: isWagmiWalletConnected,
         address: connectedWalletAddress,
@@ -243,7 +237,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return detectWalletType();
     }
 
-    async function setProviderByPKPWallet(chainId: number) {
+    const setProviderByPKPWallet = useCallback(async (chainId: number) => {
         try {
             setIsChainSwitching(true)
             await litNodeClient.connect();
@@ -380,7 +374,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.error(err);
         }
         setIsChainSwitching(false)
-    }
+    }, [connectedWalletAddress, currentAccount, sessionSigs])
 
     useEffect(() => {
         const currentWalletType = detectWalletType();
@@ -434,9 +428,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [currentAccount, initSessionUnSafe, sessionSigs, setAuthMethod, setCurrentAccount, storedWalletInfo])
 
-
     useEffect(() => {
-        if (currentAccount && sessionSigs && !solanaWalletInfo) {
+        if (currentAccount && sessionSigs) {
             setProviderByPKPWallet(chainId ?? 1)
             setIsConnected(true)
             // store variables to localstorage
@@ -479,8 +472,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 })()
 
         }
-    }, [authMethod, chainId, currentAccount, sessionSigs, setProviderByPKPWallet, setStoredWalletInfo, solanaWalletInfo])
-
+    }, [authMethod, chainId, currentAccount, sessionSigs, setProviderByPKPWallet, setStoredWalletInfo])
 
     const initializeAllVariables = () => {
         setStoredWalletInfo(null)
