@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {ChartControls} from './ChartControls';
 import {ChartDataPoint, ChartType, TimeRange, TokenType} from '../../../../types/swap.type';
 import {TokenIcon} from "../TokenIcon.tsx";
@@ -12,6 +12,7 @@ import {ColorType, createChart, CrosshairMode, IChartApi, ISeriesApi, SeriesType
 import {useStore} from "../../../../store/useStore.ts";
 import {useBreakpointValue} from "@chakra-ui/react";
 import {solToWSol} from "../../../../utils/solana.util.ts";
+import {findClosestClosedValue} from "../../../../utils/swap.util.ts";
 
 export interface ChartProps {
     type: ChartType;
@@ -37,7 +38,11 @@ export function Chart({type, onTypeChange, token, isMaximized}: ChartProps) {
     const {getTokenPrice} = useTokenStore()
 
     const price = token ? getTokenPrice(token?.address, token?.chainId) : 0
-    const change = ((chartData[chartData.length - 1]?.close ?? 0) - (chartData[0]?.close ?? 0)) / (chartData[0]?.close ?? 1) * 100
+    const change = useMemo(() => {
+        const lastValue = chartData[chartData.length - 1]?.close ?? 0
+        const previousValue = findClosestClosedValue(chartData, timeRange)
+        return (lastValue - previousValue) / (previousValue > 0 ? previousValue : 1) * 100
+    }, [chartData, timeRange])
 
     const handleTimeRangeChange = (range: TimeRange) => {
         setTimeRange(range);
