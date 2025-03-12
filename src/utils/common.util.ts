@@ -246,6 +246,7 @@ export const getTimeAgo = (time: string) => {
                     replace("seconds", 's').replace('second', 's').
                     replace("minutes", 'm').replace('minutes', 'm').
                     replace("hours", 'h').replace('hour', 'h').
-                    replace('days', 'd').replace('day', 'd');
+                    replace('days', 'd').replace('day', 'd').
+                    replace('months', 'mo').replace('month', 'mo');
     return result;
 }

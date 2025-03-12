@@ -149,5 +149,6 @@ export type WalletActivityType = {
     name: string;
     icon: string;
     chainId: number;
-  }
+  };
+  tokenLogo: string;
 }
