@@ -12,7 +12,7 @@ import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
-import { compareWalletAddresses, formatNumberByFrac, shrinkAddress } from '../../utils/common.util';
+import { compareWalletAddresses, formatNumberByFrac, shrinkAddress, isValidAddress } from '../../utils/common.util';
 import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 import { mapChainId2ExplorerUrl, mapChainId2NativeAddress } from "../../config/networks.ts";
 import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
@@ -145,12 +145,16 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
         if (selectedAsset.network != "Solana") {
             return !amount || isConfirming || !(ethers.utils.isAddress(address) || showSelectedEnsInfo)
         } else {
-            return !amount || isConfirming || !address || showSelectedEnsInfo
+            return !amount || isConfirming || !isValidAddress(address, SOLANA_CHAIN_ID) || showSelectedEnsInfo
         }
     }, [amount, address, isConfirming, showSelectedEnsInfo])
 
     const showPreview = useMemo(() => {
-        return (amount && address && (ethers.utils.isAddress(address) || showSelectedEnsInfo))
+        if (selectedAsset.network != "Solana") {
+            return (amount && address && (ethers.utils.isAddress(address) || showSelectedEnsInfo))
+        } else {
+            return (amount && address && isValidAddress(address, SOLANA_CHAIN_ID) || showSelectedEnsInfo)
+        }
     }, [amount, address, showSelectedEnsInfo])
 
     const errorAddress = useMemo(() => {
