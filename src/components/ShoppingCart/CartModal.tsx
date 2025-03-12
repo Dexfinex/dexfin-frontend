@@ -156,6 +156,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     setBuyError(null);
 
     try {
+      console.log("cartItems token : ", cartItems)
       const tokenPurchases = cartItems.map(item => ({
         token: {
           address: item.address,
@@ -202,12 +203,14 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     }
   }, [walletAddress, cartItems, executeBatchBuy]);
 
+
+
   const [showCart, setShowCart] = useState(false)
 
   const toggleCart = useCallback(() => {
     setShowCart((prev) => !prev)
   }, [])
-  
+
   if (!isOpen) return null;
 
   return (
