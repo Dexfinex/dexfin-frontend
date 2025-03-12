@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard } from "lucide-react";
+import { Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { useStore } from "../store/useStore";
@@ -40,7 +40,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
     const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
     const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
     const [page, setPage] = useState<PageType>('main');
-    const { isLoading: isLoadingBalance } = useWalletBalance();
+    const { isLoading: isLoadingBalance, refetch: refetchWalletBalance } = useWalletBalance();
     const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
     const { totalLockedValue } = useDefiStore();
 
@@ -85,6 +85,11 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
         setPage('receive')
     }
 
+    const handleRefetch = async () => {
+        await refetchWalletBalance();
+        await refetchWalletBalance();
+    }
+
 
     return (
         <>
@@ -116,7 +121,17 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                     <div className="flex-1">
                         {/* Total Balance */}
                         <div className="bg-white/10 rounded-xl p-3 sm:p-4 mt-4 sm:mt-5 mx-4">
-                            <div className="text-xs sm:text-sm text-white/60">Total Balance</div>
+                            <div className="text-xs sm:text-sm text-white/60 flex items-center justify-between">
+                                Total Balance
+                                <button
+                                    onClick={() => refetchWalletBalance()}
+                                    disabled={isLoadingBalance}
+                                    className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${isLoadingBalance ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
+                                    title="Refresh data"
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${isLoadingBalance ? 'animate-spin' : ''}`} />
+                                </button></div>
                             <div className="text-xl sm:text-3xl font-bold mt-1">
                                 {
                                     isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue + totalLockedValue)
