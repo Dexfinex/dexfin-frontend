@@ -494,7 +494,7 @@ export function SolanaSwapBox({
             }
             {
                 <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                                  link={`${mapChainId2ExplorerUrl[SOLANA_CHAIN_ID]}/tx/${transactionHash}`}/>
+                                  link={`${mapChainId2ExplorerUrl[SOLANA_CHAIN_ID]}/tx/${transactionHash}`} checkBalance={true}/>
             }
         </div>
     )
