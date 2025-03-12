@@ -156,6 +156,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     setBuyError(null);
 
     try {
+      console.log("cartItems token : ", cartItems)
       const tokenPurchases = cartItems.map(item => ({
         token: {
           address: item.address,

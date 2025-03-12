@@ -1,16 +1,17 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useContext } from 'react';
 import { Minus, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { Input } from '@chakra-ui/react';
 import debounce from 'lodash/debounce';
 import { CartListProps, CartItemProps } from '../../../types/cart.type';
+import { Web3AuthContext } from '../../../providers/Web3AuthContext';
 
 interface ExtendedCartItemProps extends CartItemProps {
-  isDarkMode?: boolean;
+    isDarkMode?: boolean;
 }
 
 interface ExtendedCartListProps extends CartListProps {
-  isDarkMode?: boolean;
+    isDarkMode?: boolean;
 }
 
 const CartItem = React.memo(({
@@ -112,7 +113,7 @@ const CartItem = React.memo(({
                             type="number"
                             placeholder="Enter token amount"
                             _placeholder={{ fontSize: 'xs' }}
-                            
+
                             _focus={{ borderColor: 'blue.300', boxShadow: 'none' }}
                             width="24"
                             textAlign="center"
@@ -142,12 +143,80 @@ const CartList: React.FC<ExtendedCartListProps> = React.memo(({
     onClose,
     isDarkMode
 }) => {
+    // Get Web3AuthContext for wallet and chain info
+    const {
+        chainId: currentChainId,
+        switchChain,
+        isChainSwitching,
+        isConnected
+    } = useContext(Web3AuthContext);
+    console.log("cartItems : ", cartItems)
+    // Calculate total price
     const total = useMemo(() => {
         return cartItems.reduce((total, item) => {
             const coinPrice = tokenPrices[`1:${item.id.toLowerCase()}`] || item.price;
             return total + (Number(coinPrice) * item.quantity);
         }, 0);
     }, [cartItems, tokenPrices]);
+
+    // Get the required chain ID for the tokens in cart
+    // For simplicity, we use the chain ID of the first item
+    const requiredChainId = useMemo(() => {
+        if (cartItems.length === 0) return null;
+
+        // Get the chain ID from the first item
+        return cartItems[0]?.chainId || null;
+    }, [cartItems]);
+
+    // Check if we need to switch chains
+    const isRequireSwitchChain = useMemo(() => {
+        return isConnected &&
+            requiredChainId !== null &&
+            requiredChainId !== currentChainId;
+    }, [requiredChainId, currentChainId, isConnected]);
+
+    // Get network name based on chainId
+    const getNetworkName = useCallback((chainId: number): string => {
+        const networkMap: Record<number, string> = {
+            1: 'Ethereum',
+            56: 'BSC',
+            43114: 'Avalanche',
+            8453: 'Base',
+            10: 'Optimism',
+            137: 'Polygon',
+            42161: 'Arbitrum'
+        };
+
+        return networkMap[chainId] || `Network (${chainId})`;
+    }, []);
+
+    // Get the text for the switch chain button
+    const switchChainButtonText = useMemo(() => {
+        if (!requiredChainId) return '';
+        return `Switch to ${getNetworkName(requiredChainId)} network`;
+    }, [requiredChainId, getNetworkName]);
+
+    // Get the network name for the current wallet connection
+    const currentNetworkName = useMemo(() => {
+        return currentChainId ? getNetworkName(currentChainId) : 'Not Connected';
+    }, [currentChainId, getNetworkName]);
+
+    // Get the network name for the cart items
+    const cartNetworkName = useMemo(() => {
+        return requiredChainId ? getNetworkName(requiredChainId) : '';
+    }, [requiredChainId, getNetworkName]);
+
+    // Handle chain switching
+    const handleSwitchChain = useCallback(async () => {
+        if (!requiredChainId) return;
+
+        try {
+            console.log(`Switching from ${currentNetworkName} to ${cartNetworkName}`);
+            await switchChain(requiredChainId);
+        } catch (error) {
+            console.error('Failed to switch network:', error);
+        }
+    }, [requiredChainId, switchChain, currentNetworkName, cartNetworkName]);
 
     if (cartItems.length === 0) {
         return (
@@ -158,12 +227,12 @@ const CartList: React.FC<ExtendedCartListProps> = React.memo(({
                     </button>
                 </div>
                 <div className="flex flex-col items-center glass justify-center flex-1 text-center p-8">
-                    <ShoppingCart className="w-12 h-12  mb-4" />
+                    <ShoppingCart className="w-12 h-12 mb-4" />
                     <p className="text-lg font-medium mb-2">Your cart is empty</p>
                     <p className="">Add some coins to get started</p>
                 </div>
             </div>
-        )
+        );
     }
 
     return (
@@ -188,16 +257,46 @@ const CartList: React.FC<ExtendedCartListProps> = React.memo(({
                 </div>
             </div>
             <div className="p-4 border-t border-black/10 dark:border-white/10 glass">
-                <div className="text-lg font-semibold mb-4">Total: ${formatNumberByFrac(total)}</div>
-                <button
-                    onClick={onCheckout}
-                    className="w-full py-3 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors text-white font-medium"
-                >
-                    Proceed to Checkout
-                </button>
+                <div className="text-lg font-semibold mb-4">
+                    Total: ${formatNumberByFrac(total)}
+                    <div className="text-sm text-gray-400 mt-1">
+                        Network: {currentNetworkName}
+                        {cartNetworkName && currentNetworkName !== cartNetworkName && (
+                            <span className="ml-2 text-yellow-400">
+                                (Required: {cartNetworkName})
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {isRequireSwitchChain ? (
+                    // Show network switch button when needed
+                    <button
+                        onClick={handleSwitchChain}
+                        disabled={isChainSwitching}
+                        className="w-full py-3 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors text-white font-medium flex items-center justify-center"
+                    >
+                        {isChainSwitching ? (
+                            <>
+                                <span className="mr-2 inline-block animate-spin">↻</span>
+                                Changing Network...
+                            </>
+                        ) : (
+                            switchChainButtonText
+                        )}
+                    </button>
+                ) : (
+                    // Show checkout button when on correct network
+                    <button
+                        onClick={onCheckout}
+                        className="w-full py-3 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors text-white font-medium"
+                    >
+                        Proceed to Checkout
+                    </button>
+                )}
             </div>
         </div>
-    )
+    );
 });
 
 CartList.displayName = 'CartList';
