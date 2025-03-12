@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { Skeleton, SkeletonCircle, Spinner } from '@chakra-ui/react';
+import { Skeleton, SkeletonCircle, Spinner, useToast } from '@chakra-ui/react';
 import { ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle } from 'lucide-react';
 import { FieldValues, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,24 +21,11 @@ import { TokenChainIcon, TokenIcon } from '../swap/components/TokenIcon.tsx';
 import { cropString } from '../../utils/index.ts';
 import { useStore } from '../../store/useStore.ts';
 import { PageType } from '../WalletDrawer.tsx';
-import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
+import useTokenBalanceStore, { TokenBalance } from '../../store/useTokenBalanceStore.ts';
 import makeBlockie from 'ethereum-blockies-base64';
 import { SOLANA_CHAIN_ID } from "../../constants/solana.constants.ts";
 
 interface SendDrawerProps {
-    // isOpen: boolean;
-    selectedAssetIndex: number;
-    // onClose: () => void;
-    assets: {
-        name: string;
-        address: string;
-        symbol: string;
-        amount: number;
-        logo: string;
-        chain: number;
-        decimals: number;
-        network: string;
-    }[];
     setPage: (type: PageType) => void;
 }
 
@@ -48,9 +35,10 @@ interface FormValues extends FieldValues {
     searchQuery: string;
 }
 
-export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetIndex = 0, setPage }) => {
+export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
+    const { tokenBalances, setTokenBalances } = useTokenBalanceStore();
     const [showAssetSelector, setShowAssetSelector] = useState(false);
-    const [selectedAsset, setSelectedAsset] = useState(assets[selectedAssetIndex] || {})
+    const [selectedAsset, setSelectedAsset] = useState(tokenBalances[0] || {})
     const [isConfirming, setIsConfirming] = useState(false);
     const [hash, setHash] = useState("")
     const [txModalOpen, setTxModalOpen] = useState(false);
@@ -58,20 +46,16 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     const [address, setAddress] = useState("");
     const [showSelectedEnsInfo, setShowSelectedEnsInfo] = useState(false);
     const { theme } = useStore();
-    const { tokenBalances } = useTokenBalanceStore();
     const [recentAddresses, setRecentAddresses] = useState<string[]>([]);
     const { mutate: sendTransactionMutate } = useSendTransactionMutation();
     const { isChainSwitching, chainId, signer, isConnected, login, switchChain, walletType, transferSolToken } = useContext(Web3AuthContext);
+    const toast = useToast()
 
     useEffect(() => {
-        setSelectedAsset(assets[selectedAssetIndex] || {})
-    }, [selectedAssetIndex])
-
-    useEffect(() => {
-        if (assets.length > 0 && Object.keys(selectedAsset).length === 0) {
-            setSelectedAsset(assets[0])
+        if (tokenBalances.length > 0 && Object.keys(selectedAsset).length === 0) {
+            setSelectedAsset(tokenBalances[0])
         }
-    }, [assets, selectedAsset])
+    }, [tokenBalances, selectedAsset])
 
     useEffect(() => {
         const item = localStorage.getItem("recentSendAddresses")
@@ -85,7 +69,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
         amount: z.number({
             required_error: "Amount is required",
             invalid_type_error: "Incorrect balance"
-        }).gt(0).lte(selectedAsset.amount),
+        }).gt(0).lte(selectedAsset.balance),
         address: z.string(),
     });
 
@@ -142,7 +126,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     const { isLoading: ensAvatarLoading, data: ensAvatar } = ensAvatarDataResponse
 
     const submitDisabled = useMemo(() => {
-        if (selectedAsset.network != "Solana") {
+        if (selectedAsset.network?.name != "Solana") {
             return !amount || isConfirming || !(ethers.utils.isAddress(address) || showSelectedEnsInfo)
         } else {
             return !amount || isConfirming || !isValidAddress(address, SOLANA_CHAIN_ID) || showSelectedEnsInfo
@@ -150,7 +134,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
     }, [amount, address, isConfirming, showSelectedEnsInfo])
 
     const showPreview = useMemo(() => {
-        if (selectedAsset.network != "Solana") {
+        if (selectedAsset.network?.name != "Solana") {
             return (amount && address && (ethers.utils.isAddress(address) || showSelectedEnsInfo))
         } else {
             return (amount && address && isValidAddress(address, SOLANA_CHAIN_ID) || showSelectedEnsInfo)
@@ -187,17 +171,47 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
         }
     }, [tokenChainId, nativeTokenAddress, nativeTokenPrice])
 
+    const updateBalance = () => {
+        const updated = tokenBalances.map(token => {
+            if (token.address == selectedAsset.address) {
+                return {
+                    ...token,
+                    balance: token.balance - Number(amount)
+                } as TokenBalance
+            }
+
+            return token
+        })
+
+        setSelectedAsset(prev => {
+            return {
+                ...prev,
+                balance: prev.balance - Number(amount)
+            }
+        })
+        setTokenBalances([...updated])
+    }
+
     const onSubmit = async () => {
         setIsConfirming(true);
-        if (selectedAsset.network === "Solana") {
+        if (selectedAsset.network?.name === "Solana") {
             if (Number(amount) > 0) {
                 const signature = await transferSolToken(address, selectedAsset.address, Number(amount), selectedAsset.decimals)
-                setHash(signature)
-                setTxModalOpen(true)
-                setValue("amount", "")
-                saveAddress(address)
-                setAddress("")
-                setIsConfirming(false)
+                if (signature) {
+                    updateBalance()
+                    setHash(signature)
+                    setTxModalOpen(true)
+                    setValue("amount", "")
+                    saveAddress(address)
+                    setAddress("")
+                    setIsConfirming(false)
+                } else {
+                    toast({
+                        status: 'error',
+                        description: `Something went wrong. Please check your wallet connection.`,
+                        duration: 4000
+                    })
+                }
             }
         } else {
             if (Number(chainId) !== Number(selectedAsset.chain)) {
@@ -218,6 +232,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                 },
                 {
                     onSuccess: (receipt) => {
+                        updateBalance()
                         setIsConfirming(false);
                         setHash(receipt.transactionHash)
                         setTxModalOpen(true)
@@ -229,23 +244,28 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                     onError: (error: TransactionError) => {
                         setIsConfirming(false);
                         console.log(error)
+                        toast({
+                            status: 'error',
+                            description: `Something went wrong. Please check your wallet connection.`,
+                            duration: 4000
+                        })
                     },
                 },
             );
         }
     };
 
-    const filteredAssets = assets.filter(asset =>
-        asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.address.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredAssets = tokenBalances.filter(token =>
+        token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        token.address.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     // if (!isOpen) return null;
     const renderUsdValue = () => {
         const price = tokenBalances.find(token => token.address === selectedAsset.address)?.usdPrice || 0
         const value = amount ? amount * price : 0
-        return <span className={`${amount !== selectedAsset.amount ? "right-14" : "right-3"} absolute  top-1/2 -translate-y-1/2 text-white/60 text-xs`}>${formatNumberByFrac(value)}</span>
+        return <span className={`${amount !== selectedAsset.balance ? "right-14" : "right-3"} absolute  top-1/2 -translate-y-1/2 text-white/60 text-xs`}>${formatNumberByFrac(value)}</span>
     }
 
     const saveAddress = (address: string) => {
@@ -302,7 +322,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                                         <span className='ml-1 text-sm font-light'>({cropString(selectedAsset.address || "", 4)})</span>}
                                 </div>
                                 <div className="text-sm text-white/60">
-                                    Balance: {`${formatNumberByFrac(selectedAsset.amount, 5)} ${selectedAsset.symbol}`}
+                                    Balance: {`${formatNumberByFrac(selectedAsset.balance, 5)} ${selectedAsset.symbol}`}
                                 </div>
                             </div>
                             <ChevronDown className="w-4 h-4 text-white/40" />
@@ -350,7 +370,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                                                                 className='ml-1 text-sm font-light'>({cropString(asset.address, 10)})</span>} */}
                                                     </div>
                                                     <div className="text-sm text-white/60">
-                                                        {`${formatNumberByFrac(asset.amount, 5)} ${asset.symbol}`}
+                                                        {`${formatNumberByFrac(asset.balance, 5)} ${asset.symbol}`}
                                                     </div>
                                                 </div>
                                             </button>
@@ -385,11 +405,11 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                         }
 
                         {
-                            amount !== selectedAsset.amount &&
+                            amount !== selectedAsset.balance &&
                             < button
                                 type="button"
                                 onClick={() =>
-                                    setValue("amount", selectedAsset.amount, {
+                                    setValue("amount", selectedAsset.balance, {
                                         shouldValidate: true,
                                     })
                                 }
@@ -400,7 +420,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                         }
                     </div>
                     <div className="mt-1 text-sm text-white/40">
-                        Available: {`${formatNumberByFrac(selectedAsset.amount, 5)} ${selectedAsset.symbol}`}
+                        Available: {`${formatNumberByFrac(selectedAsset.balance, 5)} ${selectedAsset.symbol}`}
                     </div>
                 </div>
 
@@ -554,7 +574,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
                                         <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Confirming...
                                         </div>
-                                    ) : (isChainSwitching && selectedAsset.network != "Solana") ? (
+                                    ) : (isChainSwitching && selectedAsset.network?.name != "Solana") ? (
                                         <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Switching Chain...
                                         </div>

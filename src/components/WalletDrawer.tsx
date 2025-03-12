@@ -31,9 +31,7 @@ export type PageType = 'main' | 'asset' | 'send' | 'receive'
 export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen }) => {
     const { theme } = useStore();
 
-
     const { address, logout, solanaWalletInfo } = useContext(Web3AuthContext);
-    const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
     const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
     const [page, setPage] = useState<PageType>('main');
     const { isLoading: isLoadingBalance } = useWalletBalance();
@@ -197,19 +195,6 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                 {
                     (page === "send") &&
                     <SendDrawer
-                        // isOpen={showSendDrawer}
-                        selectedAssetIndex={selectedBalanceIndex}
-                        // onClose={() => setShowSendDrawer(false)}
-                        assets={tokenBalances.map(p => ({
-                            name: p.name,
-                            address: p.address,
-                            symbol: p.symbol,
-                            amount: Number(p.balance),
-                            logo: p.logo,
-                            chain: p.chain,
-                            decimals: p.decimals,
-                            network: p.network?.name || ""
-                        }))}
                         setPage={setPage}
                     />
                 }
