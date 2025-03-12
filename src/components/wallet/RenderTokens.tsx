@@ -10,16 +10,11 @@ import useTokenBalanceStore, { TokenBalance } from "../../store/useTokenBalanceS
 
 interface RenderTokensProps {
     handleAsset: (token: TokenBalance) => void;
-    show: boolean;
 }
 
-const RenderTokens: React.FC<RenderTokensProps> = ({ handleAsset, show }) => {
+const RenderTokens: React.FC<RenderTokensProps> = ({ handleAsset }) => {
     const { isLoading: isLoadingBalance } = useWalletBalance();
     const { tokenBalances } = useTokenBalanceStore();
-
-    if (!show) {
-        return null
-    }
 
     return (
         <div className="flex-1 space-y-2 mt-4 sm:mt-5 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-290px)] mx-4">

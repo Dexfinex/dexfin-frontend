@@ -198,7 +198,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                             </button>
                         </div>
 
-                        <RenderTokens handleAsset={handleAsset} show={selectedTab === "tokens"} />
+                        {selectedTab === "tokens" && <RenderTokens handleAsset={handleAsset} />}
                         {selectedTab === "defi" && <RenderDefi />}
                         {selectedTab === "activity" && <RenderActivity />}
                     </div>
