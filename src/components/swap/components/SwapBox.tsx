@@ -1,25 +1,25 @@
-import {useContext, useEffect, useMemo, useState} from 'react';
-import {ArrowDownUp, Info} from 'lucide-react';
-import {TokenSelector} from './TokenSelector';
-import {GaslessQuoteResponse, QuoteResponse, SlippageOption, TokenType} from '../../../types/swap.type';
-import {formatNumberByFrac} from '../../../utils/common.util';
-import {Button, Flex, Skeleton} from '@chakra-ui/react';
-import {ZEROX_AFFILIATE_FEE} from "../../../constants";
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { ArrowDownUp, Info } from 'lucide-react';
+import { TokenSelector } from './TokenSelector';
+import { GaslessQuoteResponse, QuoteResponse, SlippageOption, TokenType } from '../../../types/swap.type';
+import { formatNumberByFrac } from '../../../utils/common.util';
+import { Button, Flex, Skeleton } from '@chakra-ui/react';
+import { ZEROX_AFFILIATE_FEE } from "../../../constants";
 import useTokenStore from "../../../store/useTokenStore.ts";
 import use0xQuote from "../../../hooks/use0xQuote.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
 import useGasEstimation from "../../../hooks/useGasEstimation.ts";
-import {mapChainId2ChainName, mapChainId2ExplorerUrl, mapChainId2NativeAddress} from "../../../config/networks.ts";
-import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
-import {useBalance} from "../../../hooks/useBalance.tsx";
-import {ethers} from "ethers";
-import {concat, Hex, numberToHex, size} from "viem";
-import {TransactionModal} from "../modals/TransactionModal.tsx";
-import {use0xTokenApprove} from "../../../hooks/use0xTokenApprove.ts";
-import {zeroxService} from "../../../services/0x.service.ts";
+import { mapChainId2ChainName, mapChainId2ExplorerUrl, mapChainId2NativeAddress } from "../../../config/networks.ts";
+import { Web3AuthContext } from "../../../providers/Web3AuthContext.tsx";
+import { useBalance } from "../../../hooks/useBalance.tsx";
+import { ethers } from "ethers";
+import { concat, Hex, numberToHex, size } from "viem";
+import { TransactionModal } from "../modals/TransactionModal.tsx";
+import { use0xTokenApprove } from "../../../hooks/use0xTokenApprove.ts";
+import { zeroxService } from "../../../services/0x.service.ts";
 import use0xGaslessSwapStatus from "../../../hooks/use0xGaslessSwapStatus.ts";
-import {signTradeObject, tradeSplitSigDataToSubmit} from "../../../utils/swap.util.ts";
-import {WalletTypeEnum} from "../../../types/wallet.ts";
+import { signTradeObject, tradeSplitSigDataToSubmit } from "../../../utils/swap.util.ts";
+import { WalletTypeEnum } from "../../../types/wallet.ts";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -52,19 +52,19 @@ const getUSDAmount = (selectedToken: TokenType | undefined, price: number, amoun
 }
 
 const PreviewDetailItem = ({
-                               title,
-                               info,
-                               value,
-                               valueClassName,
-                               isFree,
-                               isLoading,
-                           }: PreviewDetailItemProps) => {
+    title,
+    info,
+    value,
+    valueClassName,
+    isFree,
+    isLoading,
+}: PreviewDetailItemProps) => {
     return (
         <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-1">
                 <span className="text-gray-400">{title}</span>
                 <div className="group relative">
-                    <Info className="w-3.5 h-3.5 text-gray-500"/>
+                    <Info className="w-3.5 h-3.5 text-gray-500" />
                     <div
                         className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 text-xs text-gray-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                         {info}
@@ -89,17 +89,17 @@ const PreviewDetailItem = ({
 }
 
 export function SwapBox({
-                            fromToken,
-                            toToken,
-                            fromAmount,
-                            toAmount,
-                            onFromTokenSelect,
-                            onToTokenSelect,
-                            onFromAmountChange,
-                            onToAmountChange,
-                            onSwitch,
-                            slippage,
-                        }: SwapBoxProps) {
+    fromToken,
+    toToken,
+    fromAmount,
+    toAmount,
+    onFromTokenSelect,
+    onToTokenSelect,
+    onFromAmountChange,
+    onToAmountChange,
+    onSwitch,
+    slippage,
+}: SwapBoxProps) {
 
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [isConfirming, setIsConfirming] = useState(false);
@@ -119,7 +119,7 @@ export function SwapBox({
         isChainSwitching,
     } = useContext(Web3AuthContext);
 
-    const {getTokenPrice} = useTokenStore()
+    const { getTokenPrice } = useTokenStore()
     const {
         isLoading: isQuoteLoading,
         quoteResponse,
@@ -148,13 +148,13 @@ export function SwapBox({
         isLoading: isFromBalanceLoading,
         refetch: refetchFromBalance,
         data: fromBalance
-    } = useBalance({chainId: fromToken?.chainId, token: fromToken?.address})
+    } = useBalance({ chainId: fromToken?.chainId, token: fromToken?.address })
 
     const {
         isLoading: isToBalanceLoading,
         refetch: refetchToBalance,
         data: toBalance
-    } = useBalance({chainId: toToken?.chainId, token: toToken?.address})
+    } = useBalance({ chainId: toToken?.chainId, token: toToken?.address })
 
     const amountToApprove =
         fromToken && fromAmount !== ''
@@ -386,7 +386,7 @@ export function SwapBox({
                         onClick={onSwitch}
                         className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
                     >
-                        <ArrowDownUp className="w-4 h-4"/>
+                        <ArrowDownUp className="w-4 h-4" />
                     </button>
                 </div>
             </div>
@@ -430,13 +430,12 @@ export function SwapBox({
                             title={'Price Impact'}
                             info={'The difference between market price and estimated price due to trade size'}
                             value={`${formatNumberByFrac(priceImpact, 2)}%`}
-                            valueClassName={`${
-                                priceImpact < -5
-                                    ? 'text-red-500'
-                                    : priceImpact < -3
-                                        ? 'text-yellow-500'
-                                        : 'text-green-500'
-                            }`}
+                            valueClassName={`${priceImpact < -5
+                                ? 'text-red-500'
+                                : priceImpact < -3
+                                    ? 'text-yellow-500'
+                                    : 'text-green-500'
+                                }`}
                             isLoading={isQuoteLoading}
                         />
 
@@ -499,7 +498,7 @@ export function SwapBox({
                                         <div className="flex items-center gap-1">
                                             <span className="text-gray-400">Route</span>
                                             <div className="group relative">
-                                                <Info className="w-3.5 h-3.5 text-gray-500"/>
+                                                <Info className="w-3.5 h-3.5 text-gray-500" />
                                                 <div
                                                     className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 text-xs text-gray-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                                     Trading route for best price execution
@@ -509,10 +508,10 @@ export function SwapBox({
                                     </div>
                                     <div className="flex items-center gap-2 mt-2">
                                         <img src={fromToken?.logoURI} alt={fromToken?.symbol}
-                                             className="w-5 h-5 rounded-full"/>
+                                            className="w-5 h-5 rounded-full" />
                                         <div className="text-xs px-2 py-1 bg-white/10 rounded-md text-gray-300">0.2%</div>
-                                        <div className="flex-1 border-t border-dashed border-gray-600"/>
-                                        <img src={toToken?.logoURI} alt={toToken?.symbol} className="w-5 h-5 rounded-full"/>
+                                        <div className="flex-1 border-t border-dashed border-gray-600" />
+                                        <img src={toToken?.logoURI} alt={toToken?.symbol} className="w-5 h-5 rounded-full" />
                                     </div>
                                 </>
                             )
@@ -617,7 +616,9 @@ export function SwapBox({
                         setIsSuccessNormalSwapAction(false)
                         setTxModalOpen(value)
                     }}
-                                      link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${transactionHash}`}/>
+                        link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${transactionHash}`}
+                        checkBalance={true}
+                    />
                 )
             }
         </div>

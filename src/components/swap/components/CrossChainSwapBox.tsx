@@ -385,7 +385,7 @@ export function CrossChainSwapBox({
                 )
             }
             <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                              link={`${mapChainId2ExplorerUrl[toToken!.chainId]}/tx/${completionHash}`}/>
+                              link={`${mapChainId2ExplorerUrl[toToken!.chainId]}/tx/${completionHash}`} checkBalance={true} />
         </div>
     )
         ;
