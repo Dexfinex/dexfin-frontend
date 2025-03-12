@@ -62,7 +62,9 @@ export async function signInWithGoogle(redirectUri: string): Promise<void> {
         { redirectUri }
       );
     */
-    await googleProvider.signIn();
+    await googleProvider.signIn((loginUrl) => {
+        window.location.href = loginUrl.replace('https://login.litgateway.com', 'https://defi-os-lit-login-server-production.up.railway.app');
+    });
 }
 
 /**
