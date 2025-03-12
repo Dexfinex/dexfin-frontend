@@ -8,7 +8,7 @@ export type TokenType = {
   decimals: number;
   logoURI: string;
   priceUSD: number;
-  coinKey: string;
+  coinKey?: string;
 };
 
 export type Protocol = {

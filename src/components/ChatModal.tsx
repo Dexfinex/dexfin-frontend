@@ -1,32 +1,42 @@
-import React, { useContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import {
-  X, Maximize2, Minimize2, Search, Smile, Download,
-  MessageSquare, Share2, Users, ArrowRight, Plus,
-  Settings, User, Info, CheckCircle, XCircle, File,
-  Edit, Lock, Eye, HelpCircle,
-  SidebarIcon
+  ArrowRight,
+  CheckCircle,
+  Edit,
+  Eye,
+  HelpCircle,
+  Info,
+  Lock,
+  Maximize2,
+  MessageSquare,
+  Minimize2,
+  Plus,
+  Search,
+  Settings,
+  Share2,
+  SidebarIcon,
+  Smile,
+  User,
+  Users,
+  X
 } from 'lucide-react';
-import EmojiPicker from 'emoji-picker-react';
-import GifPicker from 'gif-picker-react';
-import { Theme } from 'emoji-picker-react';
-import { Theme as GifTheme } from 'gif-picker-react';
-import { VideoCallModal } from './VideoCallModal';
-import { CreateGroupModal } from './CreateGroupModal';
-import { SendFileModal } from './SendFileModal';
-import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
-import { Web3AuthContext } from '../providers/Web3AuthContext';
-import { useStore } from '../store/useStore';
-import { Spinner, Tooltip, useToast } from '@chakra-ui/react';
-import { Clipboard } from './common/Clipboard';
-import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
-import { getAllChatData, getWalletProfile } from '../utils/chatApi';
-import { LIMIT, KEY_NAME } from '../utils/chatApi';
-import { EditChatProfileModal } from './EditChatProfileModal';
-import { ChatGroupModal } from './ChatGroupModal';
-import { IUser, IGroup, ChatType, IChat, ProfileType, ChatModeType, ReactionType } from '../types/chat.type';
-import { ChatMessages } from './ChatMessages';
-import { ChatHelpModal } from './ChatHelpModal';
-import { initStream } from '../utils/chatApi';
+import EmojiPicker, {Theme} from 'emoji-picker-react';
+import GifPicker, {Theme as GifTheme} from 'gif-picker-react';
+import {VideoCallModal} from './VideoCallModal';
+import {CreateGroupModal} from './CreateGroupModal';
+import {SendFileModal} from './SendFileModal';
+import {CONSTANTS, PushAPI} from '@pushprotocol/restapi';
+import {Web3AuthContext} from '../providers/Web3AuthContext';
+import {useStore} from '../store/useStore';
+import {Spinner, Tooltip, useToast} from '@chakra-ui/react';
+import {Clipboard} from './common/Clipboard';
+import {extractAddress, getChatHistoryDate, getEnsName, shrinkAddress} from '../utils/common.util';
+import {getAllChatData, getWalletProfile, initStream, LIMIT} from '../utils/chatApi';
+import {EditChatProfileModal} from './EditChatProfileModal';
+import {ChatGroupModal} from './ChatGroupModal';
+import {ChatModeType, ChatType, IChat, IGroup, IUser, ProfileType, ReactionType} from '../types/chat.type';
+import {ChatMessages} from './ChatMessages';
+import {ChatHelpModal} from './ChatHelpModal';
 
 interface ChatModalProps {
   isOpen: boolean;

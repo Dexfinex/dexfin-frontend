@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
-import { TokenType, Step, Protocol } from '../../../types/brian.type';
-import { convertCryptoAmount } from '../../../utils/agent.tsx';
-import { formatNumberByFrac } from '../../../utils/common.util';
-import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
+import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
+import { mapChainId2ViemChain } from '../../../../config/networks.ts';
+import { convertCryptoAmount } from '../../../../utils/agent.tsx';
+import { formatNumberByFrac } from '../../../../utils/common.util.ts';
+import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
+import { SuccessModal } from '../../modals/SuccessModal.tsx';
+import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 
-import { FailedTransaction } from '../modals/FailedTransaction.tsx';
-import { SuccessModal } from '../modals/SuccessModal.tsx';
-interface SwapProcessProps {
+interface BridgeProcessProps {
   onClose: () => void;
   fromToken: TokenType;
   toToken: TokenType;
@@ -15,17 +16,58 @@ interface SwapProcessProps {
   receiver: string;
   steps: Step[];
   protocol: Protocol | undefined;
+  solver: string;
 }
 
-export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol, onClose }) => {
+export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol, solver, onClose }) => {
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [failedTransaction, setFailedTransaction] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
-  const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
+  const [failedTransaction, setFailedTransaction] = useState(false);
   const { mutate: sendTransactionMutate } = useBrianTransactionMutation();
-  const [scan, setScan] = useState<string>('https://etherscan.io/');
+  const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
+  const [scan, setScan] = useState<string>('');
+  useEffect(() => {
+    if (step === 1) {
+      const timer = setInterval(() => {
+        setProgress(p => {
+          if (p >= 100) {
+            clearInterval(timer);
+            setTimeout(() => setStep(2), 500);
+            return 100;
+          }
+          return p + 1;
+        });
+      }, 30);
+      return () => clearInterval(timer);
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (showConfirmation) {
+      const stages = [
+        { progress: 25, status: 'Preparing transaction...' },
+        { progress: 50, status: `Submitting to ${solver}...` },
+        { progress: 75, status: 'Waiting for confirmation...' },
+        { progress: 100, status: 'Transaction confirmed!' }
+      ];
+
+      let currentStage = 0;
+      const timer = setInterval(() => {
+        if (currentStage < stages.length - 1) {
+          setTransactionProgress(stages[currentStage].progress);
+          setTransactionStatus(stages[currentStage].status);
+          currentStage++;
+        } else {
+          clearInterval(timer);
+        }
+      }, 500);
+
+      return () => clearInterval(timer);
+    }
+  }, [showConfirmation]);
+
 
   const handleTransaction = async (data: any) => {
     try {
@@ -58,47 +100,6 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
     }
   };
 
-
-  useEffect(() => {
-    if (step === 1) {
-      const timer = setInterval(() => {
-        setProgress(p => {
-          if (p >= 100) {
-            clearInterval(timer);
-            setTimeout(() => setStep(2), 500);
-            return 100;
-          }
-          return p + 1;
-        });
-      }, 30);
-      return () => clearInterval(timer);
-    }
-  }, [step]);
-
-  useEffect(() => {
-    if (showConfirmation) {
-      const stages = [
-        { progress: 25, status: 'Preparing transaction...' },
-        { progress: 50, status: 'Submitting to Protocol...' },
-        { progress: 75, status: 'Waiting for confirmation...' },
-        { progress: 100, status: 'Transaction confirmed!' }
-      ];
-
-      let currentStage = 0;
-      const timer = setInterval(() => {
-        if (currentStage < stages.length - 1) {
-          setTransactionProgress(stages[currentStage].progress);
-          setTransactionStatus(stages[currentStage].status);
-          currentStage++;
-        } else {
-          clearInterval(timer);
-        }
-      }, 1500);
-
-      return () => clearInterval(timer);
-    }
-  }, [showConfirmation]);
-
   const renderStep1 = () => (
     <div className="flex flex-col items-center justify-center h-full">
       <div className="relative w-32 h-32">
@@ -128,9 +129,9 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
           <Bot className="w-12 h-12 text-blue-500" />
         </div>
       </div>
-      <h3 className="mt-8 text-xl font-medium">Finding Best Rate</h3>
+      <h3 className="mt-8 text-xl font-medium">Finding Best Route</h3>
       <p className="mt-2 text-white/60 text-center max-w-md">
-        Scanning DEXs for the best {fromToken.symbol} to {toToken.symbol} swap rate...
+        Analyzing optimal bridge route for {fromToken.symbol} from {mapChainId2ViemChain[fromToken.chainId].name} to {mapChainId2ViemChain[toToken.chainId].name}...
       </p>
     </div>
   );
@@ -138,14 +139,16 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
   const renderStep2 = () => (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 mb-6">
-        {/* <img 
-          src={protocol.logoURI??''}
-          alt={protocol?.name}
-          className="w-12 h-12"
-        /> */}
+        {protocol &&
+          <img
+            src={protocol.logoURI}
+            alt={protocol.name}
+            className="w-12 h-12"
+          />
+        }
         <div>
-          <h3 className="text-xl font-medium">Best Rate Found</h3>
-          <p className="text-white/60">{protocol?.name} offers the best rate</p>
+          <h3 className="text-xl font-medium">Best Route Found</h3>
+          <p className="text-white/60">{solver} offers the best rate</p>
         </div>
       </div>
 
@@ -159,7 +162,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
                 className="w-10 h-10"
               />
               <div>
-                <div className="text-sm text-white/60">You pay</div>
+                <div className="text-sm text-white/60">You send</div>
                 <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol}</div>
               </div>
             </div>
@@ -179,8 +182,12 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
 
           <div className="p-4 bg-white/5 rounded-lg space-y-3">
             <div className="flex justify-between">
-              <span className="text-white/60">Rate</span>
-              <span className="font-medium">1 {fromToken.symbol} = {formatNumberByFrac(Number(fromToken.priceUSD)/Number(toToken.priceUSD), 2)} {toToken.symbol} </span>
+              <span className="text-white/60">From</span>
+              <span className="font-medium">{mapChainId2ViemChain[fromToken.chainId].name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-white/60">To</span>
+              <span className="font-medium">{mapChainId2ViemChain[toToken.chainId].name}</span>
             </div>
           </div>
         </div>
@@ -189,7 +196,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
           onClick={() => handleTransaction(steps)}
           className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
         >
-          Confirm Swap
+          Confirm Bridge
         </button>
       </div>
     </div>
@@ -225,11 +232,11 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
             />
           </div>
           <p className="mt-4 text-white/60">
-            Swapping {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} for {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} via {protocol?.name}
+            Bridging {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} ( {mapChainId2ViemChain[fromToken.chainId].name} ) to {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} ( {mapChainId2ViemChain[toToken.chainId].name} ) via {solver}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`Successfully bridged ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} ( ${mapChainId2ViemChain[fromToken.chainId].name} ) to ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} ( ${mapChainId2ViemChain[toToken.chainId].name} )`} />
       )}
     </div>
   );
@@ -266,7 +273,7 @@ export const SwapProcess: React.FC<SwapProcessProps> = ({ steps, fromAmount, toT
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Swap ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} via ${protocol?.name}`}
+          description={`Bridge ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} ( ${mapChainId2ViemChain[fromToken.chainId].name} ) to ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} ( ${mapChainId2ViemChain[toToken.chainId].name} ) via ${solver}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (

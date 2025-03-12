@@ -1,9 +1,10 @@
 // Helper functions
 import {splitSignature} from "./signature.util.ts";
-import {GaslessQuoteResponse, SignatureType, TokenType} from "../types/swap.type.ts";
+import {ChartDataPoint, GaslessQuoteResponse, SignatureType, TimeRange, TokenType} from "../types/swap.type.ts";
 import {BITCOIN_CHAIN_ID, SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
 import {WalletClient} from "viem";
 import {CreateKernelAccountReturnType} from "@zerodev/sdk";
+import {mapTimeRangeToExactSeconds} from "../constants/chart.constants.ts";
 
 export async function signTradeObject(walletClient: WalletClient | CreateKernelAccountReturnType, quote: GaslessQuoteResponse): Promise<any> {
     // Logic to sign trade object
@@ -76,4 +77,13 @@ export const getBridgingSpendTime = (estimatedTime: number) => {
         return 'In Progress'
 
     return `Remained Time: ${formatEstimatedTimeBySeconds(remainedSeconds)}`
+}
+
+export const findClosestClosedValue = (data: ChartDataPoint[], timeRange: TimeRange): number => {
+    const lastTime = data[data.length - 1]?.time ?? Math.floor(Date.now() / 1000)
+    const targetTime = lastTime - mapTimeRangeToExactSeconds[timeRange];
+
+    return data.reduce((closest, item) => {
+        return Math.abs(item.time - targetTime) < Math.abs(closest.time - targetTime) ? item : closest;
+    }, data[0])?.close ?? 0;
 }

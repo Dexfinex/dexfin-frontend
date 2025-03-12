@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
-import { TokenType, Step, Protocol } from '../../../types/brian.type';
-import { convertCryptoAmount } from '../../../utils/agent.tsx';
-import { formatNumberByFrac } from '../../../utils/common.util';
-import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
+import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
+import { convertCryptoAmount } from '../../../../utils/agent.tsx';
+import { formatNumberByFrac } from '../../../../utils/common.util.ts';
+import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
 
-import { FailedTransaction } from '../modals/FailedTransaction.tsx';
-import { SuccessModal } from '../modals/SuccessModal.tsx';
+import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
+import { SuccessModal } from '../../modals/SuccessModal.tsx';
 
 interface DepositProcessProps {
   onClose: () => void;

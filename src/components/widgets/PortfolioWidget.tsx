@@ -1,12 +1,10 @@
-import React, { useContext, useState, useEffect } from "react"
-import { TrendingUp, Wallet, Landmark } from "lucide-react"
-import { useWalletBalance } from "../../hooks/useBalance"
-import { Web3AuthContext } from "../../providers/Web3AuthContext"
+import React, { useState } from "react"
+import { Wallet, Landmark } from "lucide-react"
 import { Skeleton } from "@chakra-ui/react"
 import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon"
 import { formatNumberByFrac } from "../../utils/common.util"
-import { useDefiPositionByWallet } from "../../hooks/useDefi"
 import useDefiStore from "../../store/useDefiStore"
+import useTokenBalanceStore from "../../store/useTokenBalanceStore"
 
 interface AllocationData {
   type: string
@@ -18,45 +16,21 @@ type WalletTab = "assets" | "defi"
 
 export const PortfolioWidget: React.FC = () => {
   const [activeTab, setActiveTab] = useState<WalletTab>("assets")
-  const { chainId, address } = useContext(Web3AuthContext)
-  const { isLoading, data: balanceData = [] } = useWalletBalance()
-  const { isLoading: isLoadingPositions } = useDefiPositionByWallet({
-    chainId: chainId,
-    walletAddress: address
-  })
 
-  const { positions = [] } = useDefiStore()
+  const { positions = [], totalLockedValue } = useDefiStore();
+  const { totalUsdValue, tokenBalances: balanceData } = useTokenBalanceStore()
 
-  // Calculate total portfolio value from balance data
-  const portfolioValue = React.useMemo(() => {
-    if (!balanceData || !Array.isArray(balanceData)) return 0
-    return balanceData.reduce((sum, token) => {
-      const usdValue = Number(token.usdValue) || 0
-      return sum + usdValue
-    }, 0)
-  }, [balanceData])
+  const isLoading = false;
+  const isLoadingPositions = false
 
-  // Calculate total DeFi positions value
-  const defiPositionsValue = React.useMemo(() => {
-    if (!positions || !Array.isArray(positions)) return 0
-    return positions.reduce((sum, position) => {
-      const value = Number(position.amount) || 0
-      return sum + value
-    }, 0)
-  }, [positions])
 
   // Calculate combined portfolio value
-  const totalPortfolioValue = React.useMemo(() => {
-    return portfolioValue + defiPositionsValue
-  }, [portfolioValue, defiPositionsValue])
+  const totalPortfolioValue = totalUsdValue + totalLockedValue;
 
   // Calculate allocation percentages based on real balances
   const allocation: AllocationData[] = React.useMemo(() => {
-    if (!balanceData || !Array.isArray(balanceData)) return []
 
-    const total = totalPortfolioValue
-
-    if (total === 0) {
+    if (totalPortfolioValue === 0) {
       return [
         {
           type: "Spot",
@@ -68,10 +42,10 @@ export const PortfolioWidget: React.FC = () => {
 
     // Filter positions by type
     const lendingPositions = Array.isArray(positions)
-      ? positions.filter(position => position.type === 'LENDING')
+      ? positions.filter(position => position?.type?.toLowerCase() === 'liquidity')
       : []
     const stakingPositions = Array.isArray(positions)
-      ? positions.filter(position => position.type === 'STAKING')
+      ? positions.filter(position => position?.type?.toLowerCase() === 'staking')
       : []
 
     // Calculate values for each category
@@ -83,12 +57,12 @@ export const PortfolioWidget: React.FC = () => {
       const value = Number(position.amount) || 0
       return sum + value
     }, 0)
-    const spotValue = portfolioValue
+    const spotValue = totalUsdValue
 
     // Calculate percentages (with safe division)
-    const spotPercentage = total > 0 ? Math.round((spotValue / total) * 100) : 0
-    const stakingPercentage = total > 0 ? Math.round((stakingValue / total) * 100) : 0
-    const lendingPercentage = total > 0 ? Math.round((lendingValue / total) * 100) : 0
+    const spotPercentage = totalPortfolioValue > 0 ? Math.round((spotValue / totalPortfolioValue) * 100) : 0
+    const stakingPercentage = totalPortfolioValue > 0 ? Math.round((stakingValue / totalPortfolioValue) * 100) : 0
+    const lendingPercentage = totalPortfolioValue > 0 ? Math.round((lendingValue / totalPortfolioValue) * 100) : 0
 
     return [
       {
@@ -107,7 +81,7 @@ export const PortfolioWidget: React.FC = () => {
         color: "#8B5CF6",
       },
     ].filter((item) => item.percentage > 0)
-  }, [balanceData, positions, portfolioValue, totalPortfolioValue])
+  }, [totalLockedValue, positions, totalUsdValue, totalPortfolioValue])
 
   const createPieSegments = () => {
     const radius = 40
@@ -116,12 +90,12 @@ export const PortfolioWidget: React.FC = () => {
 
     return allocation.map((item) => {
       const angle = (item.percentage / 100) * 360
-      const length = (angle / 360) * circumference
       const gap = 1
+      const length = (angle / 360) * circumference - gap;
 
       const segment = {
         offset: currentAngle,
-        length: length - gap,
+        length: length,
         color: item.color,
       }
 
@@ -180,7 +154,7 @@ export const PortfolioWidget: React.FC = () => {
                     stroke={segment.color}
                     strokeWidth="28"
                     strokeDasharray={`${segment.length} ${251.2 - segment.length}`}
-                    strokeDashoffset={-segment.offset}
+                    strokeDashoffset={segment.offset}
                     className="transition-all duration-1000 ease-out"
                   />
                 ))}
@@ -254,7 +228,7 @@ export const PortfolioWidget: React.FC = () => {
                         <div className="flex flex-col justify-start items-start">
                           <div className="font-medium">{token.symbol}</div>
                           <div className="text-sm">
-                            {`${formatNumberByFrac(token.balanceDecimal || 0)} ${token.symbol}`}
+                            {`${formatNumberByFrac(token.balance || 0)} ${token.symbol}`}
                           </div>
                         </div>
                       </div>

@@ -1,143 +1,407 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useWebSocketAlert, AlertData } from '../hooks/useWebsocket';
-import { AlertBaseApi } from '../services/api.service';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { WS_BASE_URL } from '../services/api.service';
+import { useToast } from '@chakra-ui/react';
 import { Web3AuthContext } from './Web3AuthContext';
 import { useUserData } from '../providers/UserProvider';
+import { NotificationApi } from '../services/api.service';
+
+// Type definitions based on your backend model
+export interface Notification {
+    id: string;
+    userId: string;
+    sourceId: string;
+    type: 'ALERT' | 'TRANSACTION' | 'SECURITY' | 'REWARD' | 'SYSTEM' | 'SWAP' | 'DEPOSIT' | 'WITHDRAWAL' | 'ORDER' | 'LOAN' | 'ACHIEVEMENT' | 'PAYMENT';
+    status: 'SUCCESS' | 'ERROR' | 'WARNING' | 'INFO' | 'PENDING';
+    message: string;
+    isRead: boolean;
+    metadata?: any;
+    createdAt: string;
+    updatedAt: string;
+}
 
 interface WebSocketContextType {
     isConnected: boolean;
-    alerts: AlertData[];
+    notifications: Notification[];
     unreadCount: number;
-    markAlertAsRead: (alertId: string | number) => Promise<void>;
-    markAllAlertsAsRead: () => Promise<void>;
-    refreshAlerts: () => void;
+    markAsRead: (notificationIds: string[]) => Promise<void>;
+    fetchNotifications: (limit?: number) => Promise<void>;
+    fetchAllNotifications: () => Promise<void>;
 }
 
+// Audio notification settings
+const ALERT_SOUND_PATH = '/notification.wav';
+
+// Create context
 export const WebSocketContext = createContext<WebSocketContextType>({
     isConnected: false,
-    alerts: [],
+    notifications: [],
     unreadCount: 0,
-    markAlertAsRead: async () => { },
-    markAllAlertsAsRead: async () => { },
-    refreshAlerts: () => { },
+    markAsRead: async () => { },
+    fetchNotifications: async () => { },
+    fetchAllNotifications: async () => { },
 });
 
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { isConnected } = useContext(Web3AuthContext);
+    // Context and state hooks
+    const { isConnected: isAuthConnected } = useContext(Web3AuthContext);
     const { userData } = useUserData();
-    const [userId, setUserId] = useState<string>('');
-    const [token, setToken] = useState<string>('');
-    const [refreshKey, setRefreshKey] = useState<number>(0);
-    const [isReady, setIsReady] = useState<boolean>(false);
+    const toast = useToast();
 
+    // State variables
+    const [isConnected, setIsConnected] = useState<boolean>(false);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [unreadCount, setUnreadCount] = useState<number>(0);
+    const [loading, setLoading] = useState<boolean>(false);
+
+    // Refs to maintain state between renders
+    const socketRef = useRef<Socket | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const reconnectAttemptsRef = useRef<number>(0);
+    const reconnectTimerRef = useRef<any>(null);
+    const maxReconnectAttempts = 5;
+    const reconnectDelay = 3000;
+
+    // Helper function to play notification sound
+    const playAlertSound = useCallback(() => {
+        if (!audioRef.current) return;
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(e => {
+            console.warn('Could not play alert sound:', e);
+        });
+    }, []);
+
+    // Initialize audio element
     useEffect(() => {
-        const fetchUserInfo = async () => {
-            if (userData?.accessToken) {
-                try {
-                    setUserId(userData?.userId as string);
-                    setToken(userData?.accessToken as string);
-                } catch (error) {
-                    console.error("Error fetching user info:", error);
-                    setIsReady(false);
-                }
-            } else {
-                setIsReady(false);
+        if (typeof window !== 'undefined') {
+            audioRef.current = new Audio(ALERT_SOUND_PATH);
+            audioRef.current.volume = 0.5;
+        }
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
             }
         };
+    }, []);
 
-        fetchUserInfo();
-    }, [userData, isConnected])
+    // Helper function to show toast notification
+    const showToastNotification = useCallback((notification: Notification) => {
+        let status: 'info' | 'warning' | 'success' | 'error' = 'info';
 
-    const {
-        isConnected: wsConnected,
-        alerts,
-        unreadCount,
-        markAsRead,
-        markAllAsRead,
-        connect,
-        fetchInitialAlerts
-    } = useWebSocketAlert({
-        userId: userId,
-        token: token,
-        autoConnect: false, 
-        key: refreshKey
-    });
-
-    useEffect(() => {
-        if (isReady && userId && token) {
-            connect();
-            fetchInitialAlerts();
+        switch (notification.status) {
+            case 'SUCCESS':
+                status = 'success';
+                break;
+            case 'ERROR':
+                status = 'error';
+                break;
+            case 'WARNING':
+                status = 'warning';
+                break;
+            case 'INFO':
+            case 'PENDING':
+            default:
+                status = 'info';
         }
-    }, [isReady, userId, token, connect, fetchInitialAlerts]);
+
+        toast({
+            title: getNotificationTitle(notification.type),
+            description: notification.message,
+            status,
+            duration: 5000,
+            isClosable: true,
+            position: 'top-right'
+        });
+    }, [toast]);
+
+    // Get a title for the notification based on its type
+    const getNotificationTitle = (type: string): string => {
+        switch (type) {
+            case 'ALERT':
+                return 'Price Alert';
+            case 'TRANSACTION':
+                return 'Transaction Update';
+            case 'SWAP':
+                return 'Swap Completed';
+            case 'DEPOSIT':
+                return 'Deposit Update';
+            case 'WITHDRAWAL':
+                return 'Withdrawal Update';
+            case 'SECURITY':
+                return 'Security Alert';
+            case 'REWARD':
+                return 'Reward';
+            case 'SYSTEM':
+                return 'System Notification';
+            case 'ORDER':
+                return 'Order Update';
+            case 'LOAN':
+                return 'Loan Update';
+            case 'ACHIEVEMENT':
+                return 'Achievement Unlocked';
+            case 'PAYMENT':
+                return 'Payment Update';
+            default:
+                return 'Notification';
+        }
+    };
+
+    // Connect to the WebSocket server
+    const connect = useCallback(() => {
+        if (!userData?.accessToken) {
+            console.log('Missing access token for WebSocket connection');
+            return;
+        }
+
+        // Close existing connection if any
+        if (socketRef.current) {
+            socketRef.current.close();
+        }
+
+        try {
+            console.log('Connecting to WebSocket server...');
+
+            // Configure socket options - no userId needed
+            const socketOptions = {
+                transports: ['websocket'],
+                autoConnect: true,
+                reconnection: true,
+                reconnectionAttempts: maxReconnectAttempts,
+                reconnectionDelay: reconnectDelay
+            };
+
+            // Create socket instance
+            socketRef.current = io(WS_BASE_URL, socketOptions);
+
+            // Connection handlers
+            socketRef.current.on('connect', () => {
+                console.log('WebSocket connected');
+                reconnectAttemptsRef.current = 0;
+                setIsConnected(true);
+
+                // Subscribe with token for authentication
+                // Backend will extract userId from the token
+                socketRef.current?.emit('subscribe', userData.accessToken);
+            });
+
+            socketRef.current.on('disconnect', (reason) => {
+                console.log(`WebSocket disconnected: ${reason}`);
+                setIsConnected(false);
+
+                // Attempt to reconnect
+                if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+                    clearTimeout(reconnectTimerRef.current);
+                    reconnectTimerRef.current = setTimeout(() => {
+                        reconnectAttemptsRef.current++;
+                        connect();
+                    }, reconnectDelay);
+                }
+            });
+
+            socketRef.current.on('connect_error', (error) => {
+                console.error(`WebSocket connection error: ${error.message}`);
+                reconnectAttemptsRef.current++;
+            });
+
+            // Listen for new notifications
+            socketRef.current.on('newNotification', (notification: Notification) => {
+                console.log('Received new notification:', notification);
+
+                // Add notification to state
+                setNotifications(prev => [notification, ...prev]);
+
+                // Update unread count
+                if (!notification.isRead) {
+                    setUnreadCount(prev => prev + 1);
+                }
+
+                // Play sound and show toast
+                playAlertSound();
+                showToastNotification(notification);
+            });
+
+            // Listen for transaction updates
+            socketRef.current.on('transactionUpdate', (data: any) => {
+                console.log('Received transaction update:', data);
+
+                playAlertSound();
+            });
+
+            // Listen for price alerts
+            socketRef.current.on('alertTriggered', (data: any) => {
+                console.log('Received price alert:', data);
+
+                playAlertSound();
+            });
+
+        } catch (error) {
+            console.error('Error connecting to WebSocket:', error);
+        }
+    }, [userData?.accessToken, playAlertSound, showToastNotification]);
+
+    const disconnect = useCallback(() => {
+        if (socketRef.current) {
+            console.log('Disconnecting from WebSocket server');
+            socketRef.current.emit('unsubscribe');
+            socketRef.current.disconnect();
+            socketRef.current = null;
+            setIsConnected(false);
+        }
+
+        if (reconnectTimerRef.current) {
+            clearTimeout(reconnectTimerRef.current);
+            reconnectTimerRef.current = null;
+        }
+    }, []);
+
+    const fetchNotifications = useCallback(async (limit = 50) => {
+        if (!userData?.accessToken) {
+            console.warn('Missing access token for fetching notifications');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const response = await NotificationApi.get(`/all?limit=${limit}`, {
+                headers: {
+                    'Authorization': `Bearer ${userData.accessToken}`
+                }
+            });
+
+            if (response.data && response.data.notifications) {
+                const latestNotifications = response.data.notifications;
+                setNotifications(latestNotifications);
+                const unreadCount = latestNotifications.filter((n: Notification) => !n.isRead).length;
+                setUnreadCount(unreadCount);
+            } else {
+                console.warn('Invalid notification response format:', response.data);
+                setNotifications([]);
+                setUnreadCount(0);
+            }
+
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            setNotifications([]);
+            setUnreadCount(0);
+        } finally {
+            setLoading(false);
+        }
+    }, [userData?.accessToken]);
+
+    const fetchAllNotifications = useCallback(async () => {
+        if (!userData?.accessToken) {
+            console.warn('Missing access token for fetching all notifications');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const response = await NotificationApi.get(`/all?limit=100`, {
+                headers: {
+                    'Authorization': `Bearer ${userData.accessToken}`
+                }
+            });
+
+            if (response.data && response.data.notifications) {
+                const allNotifications = response.data.notifications;
+                setNotifications(allNotifications);
+                const unreadCount = allNotifications.filter((n: Notification) => !n.isRead).length;
+                setUnreadCount(unreadCount);
+            } else {
+                console.warn('Invalid notification response format:', response.data);
+                setNotifications([]);
+                setUnreadCount(0);
+            }
+
+        } catch (error) {
+            console.error('Error fetching all notifications:', error);
+            setNotifications([]);
+            setUnreadCount(0);
+        } finally {
+            setLoading(false);
+        }
+    }, [userData?.accessToken]);
+
+    const markAsRead = useCallback(async (notificationIds: string[]) => {
+        if (!userData?.accessToken || !notificationIds.length) {
+            return;
+        }
+    
+        try {
+            setLoading(true);
+            
+            await NotificationApi.put(`/mark-read`, 
+                { notificationIds },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${userData.accessToken}`
+                    }
+                }
+            );
+    
+            setNotifications(prev =>
+                prev.map(notification =>
+                    notificationIds.includes(notification.id)
+                        ? { ...notification, isRead: true }
+                        : notification
+                )
+            );
+    
+            setUnreadCount(prev => Math.max(0, prev - notificationIds.length));
+    
+        } catch (error) {
+            console.error('Error marking notifications as read:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [userData?.accessToken]);
 
     useEffect(() => {
-        if (!wsConnected || !userId || !token) return;
-        
-        const intervalId = setInterval(() => {
-            fetchInitialAlerts();
-        }, 5 * 60 * 1000);
-        
-        return () => clearInterval(intervalId);
-    }, [wsConnected, userId, token, fetchInitialAlerts]);
+        if (isAuthConnected && userData?.accessToken) {
+            connect();
+            fetchNotifications();
+        } else {
+            disconnect();
+        }
+
+        return () => {
+            disconnect();
+        };
+    }, [isAuthConnected, userData?.accessToken, connect, disconnect, fetchNotifications]);
 
     useEffect(() => {
-        if (!isReady || !userId || !token) return;
-        
-        if (!wsConnected) {
+        if (!isConnected && isAuthConnected && userData?.accessToken) {
             const timeoutId = setTimeout(() => {
                 connect();
             }, 5000);
-            
+
             return () => clearTimeout(timeoutId);
         }
-    }, [wsConnected, isReady, userId, token, connect]);
+    }, [isConnected, isAuthConnected, userData?.accessToken, connect]);
 
-    const refreshAlerts = useCallback(() => {
-        if (userId && token) {
-            fetchInitialAlerts();
+    useEffect(() => {
+        if (isAuthConnected && userData?.accessToken) {
+            const intervalId = setInterval(() => {
+                fetchNotifications();
+            }, 3 * 60 * 1000); // every 3 minutes
+
+            return () => clearInterval(intervalId);
         }
-    }, [userId, token, fetchInitialAlerts]);
-
-    const markAlertAsRead = async (alertId: string | number) => {
-        try {
-            if (token) {
-                await AlertBaseApi.put(`/${alertId}/read`, {}, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-            }
-
-            markAsRead(alertId);
-        } catch (error) {
-            console.error('Error marking alert as read:', error);
-        }
-    };
-
-    const markAllAlertsAsRead = async () => {
-        try {
-            if (token) {
-                await AlertBaseApi.put(`/mark-all-read`, {}, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-            }
-            markAllAsRead();
-        } catch (error) {
-            console.error('Error marking all alerts as read:', error);
-        }
-    };
+    }, [isAuthConnected, userData?.accessToken, fetchNotifications]);
 
     return (
         <WebSocketContext.Provider
             value={{
-                isConnected: wsConnected,
-                alerts,
+                isConnected,
+                notifications,
                 unreadCount,
-                markAlertAsRead,
-                markAllAlertsAsRead,
-                refreshAlerts
+                markAsRead,
+                fetchNotifications,
+                fetchAllNotifications
             }}
         >
             {children}

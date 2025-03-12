@@ -1,12 +1,50 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   X, Filter, Clock, ExternalLink, Bell,
   RefreshCw, ArrowRightLeft, Wallet,
   Coins, Landmark, CheckCircle2, XCircle,
-  ChevronDown, AlertTriangle, Info
+  ChevronDown, AlertTriangle, Info, Award,
+  Shield, CreditCard, Upload, Download
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useWebSocket } from '../providers/WebSocketProvider';
+import type { Notification } from '../providers/WebSocketProvider';
+
+// Define notification types as a constant for better type safety
+export const NOTIFICATION_TYPES = {
+  TRANSACTION: 'TRANSACTION',
+  SWAP: 'SWAP',
+  DEPOSIT: 'DEPOSIT',
+  WITHDRAWAL: 'WITHDRAWAL',
+  REWARD: 'REWARD',
+  ORDER: 'ORDER',
+  LOAN: 'LOAN',
+  ALERT: 'ALERT',
+  SYSTEM: 'SYSTEM',
+  ACHIEVEMENT: 'ACHIEVEMENT',
+  SECURITY: 'SECURITY',
+  PAYMENT: 'PAYMENT',
+  ALL: 'all'
+} as const;
+
+// Define notification statuses as a constant
+export const NOTIFICATION_STATUSES = {
+  SUCCESS: 'SUCCESS',
+  ERROR: 'ERROR',
+  WARNING: 'WARNING',
+  INFO: 'INFO',
+  PENDING: 'PENDING'
+} as const;
+
+// Define Chain IDs for better readability
+export const CHAIN_IDS = {
+  ETHEREUM: 1,
+  ARBITRUM: 42161,
+  BSC: 56,
+  POLYGON: 137,
+  OPTIMISM: 10,
+  AVALANCHE: 43114
+} as const;
 
 interface NotificationPanelProps {
   isOpen: boolean;
@@ -17,26 +55,48 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   isOpen,
   onClose
 }) => {
-  // Use the WebSocket context 
   const {
     isConnected,
-    alerts,
-    unreadCount: websocketUnreadCount,
-    markAllAlertsAsRead,
-    markAlertAsRead
+    notifications,
+    unreadCount,
+    markAsRead,
+    fetchAllNotifications
   } = useWebSocket();
 
-  const [selectedType, setSelectedType] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+  const [selectedType, setSelectedType] = useState<string>(NOTIFICATION_TYPES.ALL);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const isTopbarBottom = useStore((state) => state.isTopbarBottom);
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelWidth, setPanelWidth] = useState(400);
   const [loading, setLoading] = useState(false);
+  const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
 
-  // Handle panel width for responsive design
+  // Load initial data when panel opens
+  useEffect(() => {
+    if (isOpen) {
+      refreshData();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (notifications && Array.isArray(notifications)) {
+      setAllNotifications(notifications);
+    }
+  }, [notifications]);
+
+  const refreshData = async () => {
+    setLoading(true);
+    try {
+      await fetchAllNotifications();
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      setAllNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handleResize = () => {
@@ -53,155 +113,319 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
     }
   }, []);
 
-  const formatRelativeTime = (date: Date | number) => {
-    const now = new Date();
-    const timestamp = date instanceof Date ? date.getTime() : date;
-    const diffInSeconds = Math.floor((now.getTime() - timestamp) / 1000);
+  const formatRelativeTime = (date: Date | string | number) => {
+    try {
+      const now = new Date();
+      let timestamp: number;
 
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+      if (date instanceof Date) {
+        timestamp = date.getTime();
+      } else if (typeof date === 'string') {
+        timestamp = new Date(date).getTime();
+      } else {
+        timestamp = date;
+      }
+
+      const diffInSeconds = Math.floor((now.getTime() - timestamp) / 1000);
+
+      if (diffInSeconds < 60) return 'Just now';
+      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+      return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return "Unknown time";
+    }
   };
 
+  // Improved getTypeIcon function with more comprehensive types
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'swap': return <ArrowRightLeft className="w-5 h-5" />;
-      case 'deposit': return <Wallet className="w-5 h-5" />;
-      case 'reward': return <Coins className="w-5 h-5" />;
-      case 'order': return <RefreshCw className="w-5 h-5" />;
-      case 'loan': return <Landmark className="w-5 h-5" />;
-      case 'PRICE_ALERT':
-      case 'price': return <AlertTriangle className="w-5 h-5" />;
-      case 'transaction': return <RefreshCw className="w-5 h-5" />;
-      case 'general': return <Info className="w-5 h-5" />;
-      case 'security': return <AlertTriangle className="w-5 h-5" />;
-      default: return <Bell className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.TRANSACTION:
+        return <ArrowRightLeft className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.SWAP:
+        return <ArrowRightLeft className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.DEPOSIT:
+        return <Upload className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.WITHDRAWAL:
+        return <Download className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.REWARD:
+        return <Coins className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.ORDER:
+        return <RefreshCw className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.LOAN:
+        return <Landmark className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.ALERT:
+        return <AlertTriangle className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.SYSTEM:
+        return <Info className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.ACHIEVEMENT:
+        return <Award className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.SECURITY:
+        return <Shield className="w-5 h-5" />;
+      case NOTIFICATION_TYPES.PAYMENT:
+        return <CreditCard className="w-5 h-5" />;
+      default:
+        return <Bell className="w-5 h-5" />;
     }
   };
 
+  // Improved getTypeColor function with better consistency
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'swap': return 'bg-blue-500/20 text-blue-400';
-      case 'deposit': return 'bg-green-500/20 text-green-400';
-      case 'reward': return 'bg-yellow-500/20 text-yellow-400';
-      case 'order': return 'bg-purple-500/20 text-purple-400';
-      case 'loan': return 'bg-orange-500/20 text-orange-400';
-      case 'PRICE_ALERT':
-      case 'price': return 'bg-yellow-500/20 text-yellow-400';
-      case 'transaction': return 'bg-blue-500/20 text-blue-400';
-      case 'general': return 'bg-gray-500/20 text-gray-400';
-      case 'security': return 'bg-red-500/20 text-red-400';
-      default: return 'bg-white/20 text-white';
+      case NOTIFICATION_TYPES.TRANSACTION:
+        return 'bg-blue-500/20 text-blue-400';
+      case NOTIFICATION_TYPES.SWAP:
+        return 'bg-blue-500/20 text-blue-400';
+      case NOTIFICATION_TYPES.DEPOSIT:
+        return 'bg-green-500/20 text-green-400';
+      case NOTIFICATION_TYPES.WITHDRAWAL:
+        return 'bg-red-500/20 text-red-400';
+      case NOTIFICATION_TYPES.REWARD:
+        return 'bg-yellow-500/20 text-yellow-400';
+      case NOTIFICATION_TYPES.ORDER:
+        return 'bg-purple-500/20 text-purple-400';
+      case NOTIFICATION_TYPES.LOAN:
+        return 'bg-orange-500/20 text-orange-400';
+      case NOTIFICATION_TYPES.ALERT:
+        return 'bg-yellow-500/20 text-yellow-400';
+      case NOTIFICATION_TYPES.SYSTEM:
+        return 'bg-gray-500/20 text-gray-400';
+      case NOTIFICATION_TYPES.ACHIEVEMENT:
+        return 'bg-indigo-500/20 text-indigo-400';
+      case NOTIFICATION_TYPES.SECURITY:
+        return 'bg-red-500/20 text-red-400';
+      case NOTIFICATION_TYPES.PAYMENT:
+        return 'bg-green-500/20 text-green-400';
+      default:
+        return 'bg-white/20 text-white';
     }
   };
 
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'success': return <CheckCircle2 className="w-4 h-4 text-green-400" />;
-      case 'error': return <XCircle className="w-4 h-4 text-red-400" />;
-      case 'warning': return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
-      case 'info': return <Info className="w-4 h-4 text-blue-400" />;
-      default: return <Info className="w-4 h-4 text-blue-400" />;
+  // Improved getStatusIcon function 
+  const getStatusIcon = (status: string) => {
+    if (!status) return <Info className="w-4 h-4 text-blue-400" />;
+
+    switch (status) {
+      case NOTIFICATION_STATUSES.SUCCESS:
+        return <CheckCircle2 className="w-4 h-4 text-green-400" />;
+      case NOTIFICATION_STATUSES.ERROR:
+        return <XCircle className="w-4 h-4 text-red-400" />;
+      case NOTIFICATION_STATUSES.WARNING:
+        return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
+      case NOTIFICATION_STATUSES.INFO:
+        return <Info className="w-4 h-4 text-blue-400" />;
+      case NOTIFICATION_STATUSES.PENDING:
+        return <Clock className="w-4 h-4 text-yellow-400" />;
+      default:
+        return <Info className="w-4 h-4 text-blue-400" />;
     }
   };
 
-  const getSeverityText = (severity: string) => {
-    switch (severity) {
-      case 'success': return 'Success';
-      case 'error': return 'Error';
-      case 'warning': return 'Warning';
-      case 'info': return 'Info';
-      default: return severity;
+  // Improved getStatusColor function
+  const getStatusColor = (status: string) => {
+    if (!status) return 'text-white/60';
+
+    switch (status) {
+      case NOTIFICATION_STATUSES.SUCCESS: 
+        return 'text-green-400';
+      case NOTIFICATION_STATUSES.ERROR: 
+        return 'text-red-400';
+      case NOTIFICATION_STATUSES.WARNING: 
+        return 'text-yellow-400';
+      case NOTIFICATION_STATUSES.INFO: 
+        return 'text-blue-400';
+      case NOTIFICATION_STATUSES.PENDING: 
+        return 'text-yellow-400';
+      default: 
+        return 'text-white/60';
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'success': return 'text-green-400';
-      case 'error': return 'text-red-400';
-      case 'warning': return 'text-yellow-400';
-      case 'info': return 'text-blue-400';
-      default: return 'text-white/60';
+  // Get notification background color
+  const getNotificationBgColor = (type: string) => {
+    switch (type) {
+      case NOTIFICATION_TYPES.TRANSACTION:
+      case NOTIFICATION_TYPES.SWAP:
+        return 'bg-blue-700/30';
+      case NOTIFICATION_TYPES.ALERT:
+        return 'bg-yellow-700/30';
+      case NOTIFICATION_TYPES.SECURITY:
+        return 'bg-red-700/30';
+      case NOTIFICATION_TYPES.REWARD:
+        return 'bg-yellow-700/30';
+      case NOTIFICATION_TYPES.DEPOSIT:
+        return 'bg-green-700/30';
+      case NOTIFICATION_TYPES.WITHDRAWAL:
+        return 'bg-red-700/30';
+      case NOTIFICATION_TYPES.SYSTEM:
+        return 'bg-gray-700/30';
+      case NOTIFICATION_TYPES.ACHIEVEMENT:
+        return 'bg-indigo-700/30';
+      case NOTIFICATION_TYPES.PAYMENT:
+        return 'bg-green-700/30';
+      case NOTIFICATION_TYPES.LOAN:
+        return 'bg-orange-700/30';
+      case NOTIFICATION_TYPES.ORDER:
+        return 'bg-purple-700/30';
+      default:
+        return 'bg-gray-800/30';
     }
   };
 
-  // Get all notification types from WebSocket alerts only
-  const allTypes = new Set(['all', ...alerts.map(a => a.type)]);
+  // Get chain name from chain ID
+  const getChainName = (chainId: number): string => {
+    switch (chainId) {
+      case CHAIN_IDS.ETHEREUM: 
+        return 'Ethereum';
+      case CHAIN_IDS.ARBITRUM: 
+        return 'Arbitrum';
+      case CHAIN_IDS.BSC: 
+        return 'BSC';
+      case CHAIN_IDS.POLYGON: 
+        return 'Polygon';
+      case CHAIN_IDS.OPTIMISM: 
+        return 'Optimism';
+      case CHAIN_IDS.AVALANCHE: 
+        return 'Avalanche';
+      default: 
+        return `Chain ${chainId}`;
+    }
+  };
 
-  // Set up the combined list of statuses
-  const allStatuses = new Set(['all', 'success', 'failed', 'info', 'warning', 'error']);
+  // Shorten address helper
+  const shortenAddress = (address: string): string => {
+    if (!address) return '';
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
 
-  // Only use the WebSocket alerts for display
-  const combinedNotifications = alerts.map(a => ({
-    id: a.data?.id || a.timestamp.toString(),
-    type: a.type,
-    title: a.title,
-    message: a.message,
-    timestamp: a.timestamp,
-    status: a.status,
-    txHash: a.txHash || '',
-    isRead: a.read || false,
-    source: 'websocket' as const,
-    severity: a.severity || 'info',
-    data: a.data
-  }));
+  // Get explorer URL based on chain ID
+  const getExplorerUrl = (chainId?: number): string => {
+    if (!chainId) return 'https://etherscan.io/tx/';
+    
+    switch (chainId) {
+      case CHAIN_IDS.ARBITRUM:
+        return 'https://arbiscan.io/tx/';
+      case CHAIN_IDS.BSC:
+        return 'https://bscscan.com/tx/';
+      case CHAIN_IDS.POLYGON:
+        return 'https://polygonscan.com/tx/';
+      case CHAIN_IDS.OPTIMISM:
+        return 'https://optimistic.etherscan.io/tx/';
+      case CHAIN_IDS.AVALANCHE:
+        return 'https://snowtrace.io/tx/';
+      case CHAIN_IDS.ETHEREUM:
+      default:
+        return 'https://etherscan.io/tx/';
+    }
+  };
 
-  const filteredNotifications = combinedNotifications
-    .filter(n => selectedType === 'all' || n.type === selectedType)
-    .filter(n => selectedStatus === 'all' || n.status === selectedStatus || n.severity === selectedStatus)
-    .sort((a, b) => {
-      return sortBy === 'newest'
-        ? b.timestamp - a.timestamp
-        : a.timestamp - b.timestamp;
+  // Parse JSON metadata safely
+  const parseMetadata = (metadataStr: string | object | undefined) => {
+    if (!metadataStr) return {};
+    
+    if (typeof metadataStr === 'string') {
+      try {
+        return JSON.parse(metadataStr);
+      } catch (e) {
+        console.error('Error parsing metadata:', e);
+        return {};
+      }
+    }
+    
+    return metadataStr || {};
+  };
+
+  const allNotificationTypes = useMemo(() => [
+    NOTIFICATION_TYPES.ALL, 
+    ...new Set(
+      Array.isArray(allNotifications)
+        ? allNotifications.map(n => n.type).filter(Boolean)
+        : []
+    )
+  ], [allNotifications]);
+
+  const sortedNotifications = useMemo(() => {
+    if (!Array.isArray(allNotifications)) return [];
+
+    return [...allNotifications].sort((a, b) => {
+      if (!a.createdAt || !b.createdAt) return 0;
+      const aTime = new Date(a.createdAt).getTime();
+      const bTime = new Date(b.createdAt).getTime();
+      return sortBy === 'newest' ? bTime - aTime : aTime - bTime;
     });
+  }, [allNotifications, sortBy]);
 
-  // Only count WebSocket unread notifications
-  const totalUnreadCount = websocketUnreadCount;
+  const filteredNotifications = useMemo(() => {
+    if (selectedType === NOTIFICATION_TYPES.ALL) return sortedNotifications;
+    return sortedNotifications.filter(n => n.type === selectedType);
+  }, [selectedType, sortedNotifications]);
+
+  const groupedNotifications = useMemo(() => {
+    return filteredNotifications.reduce((acc, notification) => {
+      if (!notification || typeof notification !== 'object') {
+        return acc;
+      }
+
+      const type = notification.type || 'unknown';
+      if (!acc[type]) {
+        acc[type] = [];
+      }
+      acc[type].push(notification);
+      return acc;
+    }, {} as Record<string, Notification[]>);
+  }, [filteredNotifications]);
 
   const markAllNotificationsAsRead = async () => {
     setLoading(true);
     try {
-      await markAllAlertsAsRead();
+      if (!Array.isArray(allNotifications) || allNotifications.length === 0) {
+        return;
+      }
+
+      const unreadIds = allNotifications
+        .filter(n => !n.isRead)
+        .map(n => n.id);
+
+      if (unreadIds.length > 0) {
+        await markAsRead(unreadIds);
+        const updatedNotifications = allNotifications.map(notification => ({
+          ...notification,
+          isRead: true
+        }));
+
+        setAllNotifications(updatedNotifications);
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const markNotificationAsRead = async (notification: any) => {
-    if (notification.data?.id) {
-      await markAlertAsRead(notification.data.id);
-    } else if (notification.id && notification.id !== notification.timestamp.toString()) {
-      await markAlertAsRead(notification.id);
-    } else {
-      await markAlertAsRead(notification.timestamp);
+  const markNotificationAsRead = async (notificationId: string) => {
+    if (!notificationId) return;
+
+    setLoading(true);
+    try {
+      await markAsRead([notificationId]);
+
+      const updatedNotifications = allNotifications.map(notification =>
+        notification.id === notificationId
+          ? { ...notification, isRead: true }
+          : notification
+      );
+
+      setAllNotifications(updatedNotifications);
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const notificationTypes = [
-    { value: 'all', label: 'All Types' },
-    { value: 'swap', label: 'Swaps', icon: ArrowRightLeft },
-    { value: 'deposit', label: 'Deposits', icon: Wallet },
-    { value: 'reward', label: 'Rewards', icon: Coins },
-    { value: 'order', label: 'Orders', icon: RefreshCw },
-    { value: 'loan', label: 'Loans', icon: Landmark },
-    { value: 'PRICE_ALERT', label: 'Price Alerts', icon: AlertTriangle },
-    { value: 'transaction', label: 'Transactions', icon: RefreshCw },
-    { value: 'general', label: 'General', icon: Info },
-    { value: 'security', label: 'Security', icon: AlertTriangle }
-  ];
-
-  const statusTypes = [
-    { value: 'all', label: 'All Status' },
-    { value: 'success', label: 'Success', icon: CheckCircle2 },
-    { value: 'error', label: 'Error', icon: XCircle },
-    { value: 'warning', label: 'Warning', icon: AlertTriangle },
-    { value: 'info', label: 'Info', icon: Info }
-  ];
-
   if (!isOpen) return null;
 
-  // Positioning styles for mobile
   const mobileStyles = {
     width: `${panelWidth}px`,
     right: '10px',
@@ -214,31 +438,30 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   return (
     <div
       ref={panelRef}
-      className="glass border border-white/10 rounded-xl shadow-lg z-50"
+      className="bg-black/90 border border-white/10 rounded-md shadow-xl z-50"
       style={mobileStyles}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/10">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between p-3 border-b border-white/10">
+        <div className="flex items-center gap-2.5">
           <Bell className="w-5 h-5" />
-          <h2 className="text-lg font-medium">Notifications</h2>
-          {totalUnreadCount > 0 && (
-            <span className="px-2 py-0.5 rounded-full bg-blue-500 text-xs font-medium">
-              {totalUnreadCount} new
+          <h2 className="text-base font-medium">Notifications</h2>
+          {unreadCount > 0 && (
+            <span className="px-2 py-0.5 rounded bg-blue-600 text-xs font-medium">
+              {unreadCount} new
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={markAllNotificationsAsRead}
-            className={`text-sm text-white/60 hover:text-white transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`text-sm text-white/80 hover:text-white transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={loading}
           >
             Mark all as read
           </button>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+            className="hover:text-white/80 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -254,25 +477,24 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
 
       <div className="p-4 border-b border-white/10">
         <div className="flex items-center gap-4 mb-4">
-          {/* Type Dropdown */}
-          <div className="flex-1 relative">
-            <label className="block text-sm text-white/60 mb-1">Type</label>
+          <div className="relative">
             <button
-              onClick={() => {
-                setShowTypeDropdown(!showTypeDropdown);
-                setShowStatusDropdown(false);
-              }}
-              className="w-full flex items-center justify-between p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+              onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+              className="flex items-center justify-between h-9 px-3 bg-black/40 hover:bg-black/60 rounded transition-colors"
             >
               <div className="flex items-center gap-2">
-                {selectedType === 'all' ? (
+                {selectedType === NOTIFICATION_TYPES.ALL ? (
                   <Filter className="w-4 h-4" />
                 ) : (
                   getTypeIcon(selectedType)
                 )}
-                <span>{notificationTypes.find(t => t.value === selectedType)?.label || selectedType}</span>
+                <span>
+                  {selectedType === NOTIFICATION_TYPES.ALL 
+                    ? 'All Types' 
+                    : selectedType.charAt(0) + selectedType.slice(1).toLowerCase()}
+                </span>
               </div>
-              <ChevronDown className={`w-4 h-4 transition-transform ${showTypeDropdown ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${showTypeDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             {showTypeDropdown && (
@@ -281,83 +503,57 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                   className="fixed inset-0 z-10"
                   onClick={() => setShowTypeDropdown(false)}
                 />
-                <div className="absolute top-full left-0 right-0 mt-1 py-1 glass rounded-lg z-20 border border-white/10">
-                  {notificationTypes.filter(type => allTypes.has(type.value)).map(type => (
-                    <button
-                      key={type.value}
-                      onClick={() => {
-                        setSelectedType(type.value);
-                        setShowTypeDropdown(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-white/10 transition-colors ${selectedType === type.value ? 'bg-white/10' : ''
-                        }`}
-                    >
-                      {type.icon ? <type.icon className="w-4 h-4" /> : null}
-                      <span>{type.label}</span>
-                    </button>
-                  ))}
+                <div className="absolute top-full left-0 mt-0.5 py-0 rounded z-20 border border-white/10 min-w-full bg-black/80 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setSelectedType(NOTIFICATION_TYPES.ALL);
+                      setShowTypeDropdown(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-500 text-left"
+                  >
+                    <Filter className="w-4 h-4" />
+                    <span>All Types</span>
+                  </button>
+                  {allNotificationTypes.map(type => {
+                    if (type === NOTIFICATION_TYPES.ALL) return null;
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          setSelectedType(type);
+                          setShowTypeDropdown(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-500 text-left"
+                      >
+                        {getTypeIcon(type)}
+                        <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             )}
           </div>
 
-          {/* Status Dropdown */}
-          <div className="flex-1 relative">
-            <label className="block text-sm text-white/60 mb-1">Status</label>
-            <button
-              onClick={() => {
-                setShowStatusDropdown(!showStatusDropdown);
-                setShowTypeDropdown(false);
-              }}
-              className="w-full flex items-center justify-between p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                {selectedStatus === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4 text-green-400" />
-                ) : selectedStatus === 'error' || selectedStatus === 'failed' ? (
-                  <XCircle className="w-4 h-4 text-red-400" />
-                ) : selectedStatus === 'warning' ? (
-                  <AlertTriangle className="w-4 h-4 text-yellow-400" />
-                ) : selectedStatus === 'info' ? (
-                  <Info className="w-4 h-4 text-blue-400" />
-                ) : (
-                  <Filter className="w-4 h-4" />
-                )}
-                <span>{statusTypes.find(s => s.value === selectedStatus)?.label || selectedStatus}</span>
-              </div>
-              <ChevronDown className={`w-4 h-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
-            </button>
+          <div className="flex-1"></div>
 
-            {showStatusDropdown && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowStatusDropdown(false)}
-                />
-                <div className="absolute top-full left-0 right-0 mt-1 py-1 glass rounded-lg z-20 border border-white/10">
-                  {statusTypes.filter(status => allStatuses.has(status.value)).map(status => (
-                    <button
-                      key={status.value}
-                      onClick={() => {
-                        setSelectedStatus(status.value);
-                        setShowStatusDropdown(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-white/10 transition-colors ${selectedStatus === status.value ? 'bg-white/10' : ''
-                        }`}
-                    >
-                      {status.icon && (
-                        <status.icon className={`w-4 h-4 ${status.value === 'success' ? 'text-green-400' :
-                          status.value === 'error' || status.value === 'failed' ? 'text-red-400' :
-                            status.value === 'warning' ? 'text-yellow-400' :
-                              status.value === 'info' ? 'text-blue-400' : ''
-                          }`} />
-                      )}
-                      <span>{status.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={refreshData}
+              className={`p-1.5 hover:bg-black/60 rounded transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setSortBy(sortBy === 'newest' ? 'oldest' : 'newest')}
+                className="flex items-center justify-between h-9 px-3 bg-black/40 hover:bg-black/60 rounded transition-colors"
+              >
+                <span>{sortBy === 'newest' ? 'Newest First' : 'Oldest First'}</span>
+                <ChevronDown className="w-4 h-4 ml-2" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -368,103 +564,312 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
               Showing {filteredNotifications.length} notifications
             </span>
           </div>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest')}
-            className="bg-white/5 px-3 py-1.5 rounded-lg outline-none text-sm border border-white/10 hover:bg-white/10 transition-colors cursor-pointer appearance-none pr-8 relative"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255, 255, 255, 0.6)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 8px center',
-              backgroundSize: '16px'
-            }}
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-          </select>
         </div>
       </div>
 
-      {/* Notifications List */}
-      <div className="max-h-[300px] overflow-y-auto notification-scrollbar">
-        {filteredNotifications.length === 0 ? (
+      <div className="max-h-[400px] overflow-y-auto">
+        {loading && filteredNotifications.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <RefreshCw className="w-8 h-8 text-white/40 mb-2 animate-spin" />
+            <p className="text-white/60">Loading notifications...</p>
+          </div>
+        ) : filteredNotifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Bell className="w-8 h-8 text-white/40 mb-2" />
             <p className="text-white/60">No notifications found</p>
           </div>
         ) : (
-          <div className="divide-y divide-white/10">
-            {filteredNotifications.map((notification) => (
-              <div
-                key={notification.source + "-" + notification.id}
-                onClick={() => markNotificationAsRead(notification)}
-                className={`p-4 hover:bg-white/5 transition-colors cursor-pointer ${!notification.isRead ? 'bg-white/5' : ''
-                  }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg ${getTypeColor(notification.type)}`}>
-                    {getTypeIcon(notification.type)}
+          <div>
+            {selectedType === NOTIFICATION_TYPES.ALL ? (
+              Object.entries(groupedNotifications).map(([type, typeNotifications]) => (
+                <div key={type}>
+                  <div className="flex items-center gap-2 px-4 py-1.5 text-sm text-white/70">
+                    {getTypeIcon(type)}
+                    <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
+                    <span className="text-xs text-white/60">({typeNotifications.length})</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium">{notification.title}</h3>
-                        {!notification.isRead && (
-                          <span className="px-2 py-0.5 rounded-full bg-blue-500 text-xs font-medium">
-                            NEW
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-sm text-white/60 whitespace-nowrap">
-                        {formatRelativeTime(notification.timestamp)}
-                      </span>
-                    </div>
-                    <p className="text-white/60 mt-1 break-words">{notification.message}</p>
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-white/40" />
-                        <span className="text-sm text-white/60">
-                          {new Date(notification.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-
-                      {/* Show transaction hash for transactions */}
-                      {notification.txHash && (
-                        <a
-                          href={`https://etherscan.io/tx/${notification.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <span className="truncate max-w-[80px]">{notification.txHash}</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-
-                      {/* Display severity/status */}
-                      <span className={`flex items-center gap-1 ${getSeverityColor(notification.severity)}`}>
-                        {getSeverityIcon(notification.severity)}
-                        <span className="text-sm">{getSeverityText(notification.severity)}</span>
-                      </span>
-
-                      {/* For PRICE_ALERT, show the current price and condition if available */}
-                      {notification.type === 'PRICE_ALERT' && notification.data && (
-                        <div className="flex flex-wrap items-center gap-1 mt-1 w-full">
-                          <span className="text-sm text-white/60">
-                            {notification.data.token || 'Asset'}: ${notification.data.currentPrice?.toLocaleString()}
-                            {notification.data.condition && ` (${notification.data.condition.toLowerCase()} $${notification.data.thresholdValue?.toLocaleString()})`}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                  <div>
+                    {typeNotifications.map((notification) => renderNotification(notification))}
                   </div>
                 </div>
+              ))
+            ) : (
+              <div>
+                {filteredNotifications.map((notification) => renderNotification(notification))}
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
     </div>
   );
+
+  function renderNotification(notification: Notification) {
+    if (!notification || !notification.id) {
+      return null;
+    }
+
+    // Parse metadata safely
+    const metadata = parseMetadata(notification.metadata);
+    
+    // Get appropriate background color
+    const bgColorClass = getNotificationBgColor(notification.type);
+
+    const renderMetadata = () => {
+      if (!metadata) return null;
+    
+      if (notification.type === NOTIFICATION_TYPES.ALERT) {
+        // Base content for all alert types
+        const alertContent = (
+          <>
+            {metadata.token && (
+              <div className="flex items-center mb-1">
+                <span className="font-medium mr-1">Token:</span> 
+                <span>{metadata.symbol ? `${metadata.token} (${metadata.symbol})` : metadata.token}</span>
+              </div>
+            )}
+            {metadata.name && (
+              <div className="mb-1">
+                <span className="font-medium mr-1">Alert:</span> {metadata.name}
+              </div>
+            )}
+          </>
+        );
+    
+        // Handle specific alert types
+        switch (metadata.alertyType) {
+          case 'PRICE_ALERT':
+            return (
+              <div className="mt-2 text-xs text-white/70 bg-yellow-900/20 p-2 rounded">
+                {alertContent}
+                {metadata.condition && metadata.thresholdValue && (
+                  <div className="mb-1">
+                    <span className="font-medium mr-1">Condition:</span> 
+                    Price {metadata.condition} ${parseFloat(metadata.thresholdValue).toLocaleString()}
+                  </div>
+                )}
+                {metadata.currentPrice && (
+                  <div className="mb-1">
+                    <span className="font-medium mr-1">Current Price:</span> 
+                    ${parseFloat(metadata.currentPrice).toLocaleString()}
+                  </div>
+                )}
+                <div className="mt-1 text-xs flex items-center">
+                  <span className={`px-1.5 py-0.5 rounded ${
+                    metadata.condition === 'above' ? 'bg-green-500/30 text-green-400' : 'bg-red-500/30 text-red-400'
+                  }`}>
+                    {metadata.condition === 'above' ? 'Price Increased' : 'Price Decreased'}
+                  </span>
+                </div>
+              </div>
+            );
+    
+          case 'VOLUME_ALERT':
+            return (
+              <div className="mt-2 text-xs text-white/70 bg-purple-900/20 p-2 rounded">
+                {alertContent}
+                {metadata.condition && metadata.volumeThreshold && (
+                  <div className="mb-1">
+                    <span className="font-medium mr-1">Volume Condition:</span> 
+                    {metadata.condition} ${parseFloat(metadata.volumeThreshold).toLocaleString()}
+                  </div>
+                )}
+                {metadata.currentVolume && (
+                  <div className="mb-1">
+                    <span className="font-medium mr-1">Current Volume:</span> 
+                    ${parseFloat(metadata.currentVolume).toLocaleString()}
+                  </div>
+                )}
+                {typeof metadata.priceChangePercent !== 'undefined' && (
+                  <div className="mb-1">
+                    <span className="font-medium mr-1">24h Change:</span> 
+                    <span className={metadata.priceChangePercent >= 0 ? 'text-green-400' : 'text-red-400'}>
+                      {metadata.priceChangePercent >= 0 ? '+' : ''}{parseFloat(metadata.priceChangePercent).toFixed(2)}%
+                    </span>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-1 mt-1">
+                  <span className={`px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-400`}>
+                    Volume Alert
+                  </span>
+                  {typeof metadata.priceChangeThreshold !== 'undefined' && typeof metadata.priceChangePercent !== 'undefined' && (
+                    <span className={`px-1.5 py-0.5 rounded ${
+                      metadata.priceChangePercent < metadata.priceChangeThreshold ? 'bg-red-500/30 text-red-400' : 'bg-yellow-500/30 text-yellow-400'
+                    }`}>
+                      Price Change
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+    
+          // default:
+          //   // For unknown alert types or when alertType is not provided
+          //   return (
+          //     <div className="mt-2 text-xs text-white/60">
+          //       {alertContent}
+          //       {metadata.threshold && <div className="mb-1">Threshold: {metadata.threshold}</div>}
+          //       {metadata.currentPrice && (
+          //         <div className="mb-1">Current Price: ${parseFloat(metadata.currentPrice).toLocaleString()}</div>
+          //       )}
+          //       {metadata.changePercent && (
+          //         <div>Change: {parseFloat(metadata.changePercent).toFixed(2)}%</div>
+          //       )}
+          //     </div>
+          //   );
+        }
+      }
+    
+      if (notification.type === NOTIFICATION_TYPES.TRANSACTION || 
+          notification.type === NOTIFICATION_TYPES.SWAP) {
+        // Extract transaction hash from metadata
+        let txHash = metadata.tradeHash || '';
+        
+        // Check if there are transactions in statusData
+        if (metadata.statusData?.transactions?.length > 0) {
+          txHash = metadata.statusData.transactions[0].hash || txHash;
+        }
+    
+        // Get explorer URL based on chain ID
+        const explorerUrl = getExplorerUrl(metadata.chainId);
+    
+        return (
+          <div className="mt-2 text-xs text-white/60">
+            {/* Display token information */}
+            <div className="flex items-center mb-1">
+              {metadata.tokenIn && (
+                <>
+                  <span>{metadata.tokenIn.symbol || metadata.tokenIn}</span>
+                  <span className="mx-1">→</span>
+                </>
+              )}
+              {metadata.tokenOut && (
+                <span>{metadata.tokenOut.symbol || metadata.tokenOut}</span>
+              )}
+            </div>
+    
+            {/* Display amounts */}
+            <div className="flex items-center mb-1">
+              {metadata.tokenIn?.amount && (
+                <>
+                  <span>{metadata.tokenIn.amount}</span>
+                  <span className="mx-1">→</span>
+                </>
+              )}
+              {metadata.tokenOut?.amount && (
+                <span>{metadata.tokenOut.amount}</span>
+              )}
+            </div>
+    
+            {/* Show chain ID if available */}
+            {metadata.chainId && (
+              <div className="mb-1">Chain: {getChainName(metadata.chainId)}</div>
+            )}
+    
+            {/* Transaction Hash (clickable) */}
+            {txHash && (
+              <a
+                href={`${explorerUrl}${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center mt-1 text-blue-400 hover:text-blue-300"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="truncate max-w-[200px]">{txHash}</span>
+                <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
+            )}
+            
+            {/* Wallet address if available */}
+            {metadata.walletAddress && (
+              <div className="mt-1 truncate max-w-[200px]">
+                From: {shortenAddress(metadata.walletAddress)}
+              </div>
+            )}
+          </div>
+        );
+      }
+    
+      if (notification.type === NOTIFICATION_TYPES.DEPOSIT || 
+          notification.type === NOTIFICATION_TYPES.WITHDRAWAL) {
+        return (
+          <div className="mt-2 text-xs text-white/60">
+            {metadata.amount && (
+              <div className="mb-1">
+                Amount: {metadata.amount} {metadata.currency || metadata.token || ''}
+              </div>
+            )}
+            {metadata.chainId && (
+              <div className="mb-1">Chain: {getChainName(metadata.chainId)}</div>
+            )}
+            {metadata.txHash && (
+              <a
+                href={`${getExplorerUrl(metadata.chainId)}${metadata.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center mt-1 text-blue-400 hover:text-blue-300"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="truncate max-w-[200px]">{metadata.txHash}</span>
+                <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
+            )}
+          </div>
+        );
+      }
+    
+      return null;
+    };
+
+    return (
+      <div
+        key={notification.id}
+        onClick={() => markNotificationAsRead(notification.id)}
+        className="p-4 hover:bg-black/40 transition-colors cursor-pointer"
+      >
+        <div className="flex items-start gap-3">
+          <div className={`p-2 rounded-lg ${bgColorClass}`}>
+            {getTypeIcon(notification.type)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium">
+                  {notification.type.charAt(0) + notification.type.slice(1).toLowerCase()}
+                </h3>
+                {!notification.isRead && (
+                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-600 text-white">
+                    NEW
+                  </span>
+                )}
+              </div>
+              <span className="text-sm text-white/60 whitespace-nowrap">
+                {formatRelativeTime(notification.createdAt)}
+              </span>
+            </div>
+            <p className="text-white/80 mt-1 break-words">{notification.message}</p>
+            <div className="flex flex-wrap items-center gap-3 mt-2">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-white/40" />
+                <span className="text-xs text-white/60">
+                  {new Date(notification.createdAt).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </span>
+              </div>
+
+              <span className={`flex items-center gap-1 ${getStatusColor(notification.status)}`}>
+                {getStatusIcon(notification.status)}
+                <span className="text-xs">{notification.status}</span>
+              </span>
+            </div>
+            
+            {/* Render metadata based on notification type */}
+            {renderMetadata()}
+          </div>
+        </div>
+      </div>
+    );
+  }
 };

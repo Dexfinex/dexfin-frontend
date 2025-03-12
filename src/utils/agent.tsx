@@ -1,3 +1,5 @@
+import { PublicKey } from '@solana/web3.js'
+
 export function convertBrianKnowledgeToPlainText(text: string) {
   return text
     .replace(/^###\s*(\d+\.)\s*\*\*(.*?)\*\*/gm, '$1 $2') // Remove ### and bold from numbered headings
@@ -28,4 +30,13 @@ export function BollingerBandsProgress({ value,  upperBand, lowerBand }: any): n
   if(upperBand-lowerBand == 0) return 0;
   if(lowerBand && upperBand) return (value-lowerBand)*100/(upperBand-lowerBand);
   return 0;
+}
+
+export function isValidSolanaAddress(address: string): boolean {
+  try {
+    new PublicKey(address);
+    return true;
+  } catch (error) {
+    return false;
+  }
 }

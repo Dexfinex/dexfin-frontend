@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, CheckCircle2, X } from 'lucide-react';
-import { Step, TokenType } from '../../../types/brian.type';
-import { useBrianTransactionMutation } from '../../../hooks/useBrianTransaction.ts';
+import { Step, TokenType } from '../../../../types/brian.type.ts';
+import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
 
-import { FailedTransaction } from '../modals/FailedTransaction.tsx';
-import { SuccessModal } from '../modals/SuccessModal.tsx';
+import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
+import { SuccessModal } from '../../modals/SuccessModal.tsx';
 
 interface ENSRegisterProcessProps {
   onClose: () => void;

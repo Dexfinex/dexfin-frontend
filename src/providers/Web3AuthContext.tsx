@@ -1,4 +1,4 @@
-import {createContext, useCallback, useEffect, useState} from "react";
+import {createContext, useCallback, useEffect, useRef, useState} from "react";
 import {
     getSolanaWrappedKeyMetaDataByPkpEthAddress,
     getWrappedKeyMetaDatas,
@@ -181,12 +181,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [solanaWalletInfo, setSolanaWalletInfo] = useState<SolanaWalletInfoType | undefined>()
 
     const [walletType, setWalletType] = useState<WalletTypeEnum>(WalletTypeEnum.UNKNOWN);
+    const pkpWalletRef = useRef<PKPEthersWallet | null>(null);
 
-    // const [chain, setChain] = useState(null);
-
-    // console.log("provider", provider, address, chainId, solanaWalletInfo)
-
-    // console.log("provider", provider)
 
     const {
         isConnected: isWagmiWalletConnected,
@@ -243,46 +239,50 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return detectWalletType();
     }
 
-    async function setProviderByPKPWallet(chainId: number) {
+    const setProviderByPKPWallet = useCallback(async (chainId: number) => {
         try {
             setIsChainSwitching(true)
-            await litNodeClient.connect();
+            let pkpWallet = pkpWalletRef.current;
+            if (!pkpWallet) {
+                await litNodeClient.connect();
 
-            const pkpWallet = new PKPEthersWallet({
-                controllerSessionSigs: sessionSigs,
-                pkpPubKey: currentAccount!.publicKey,
-                litNodeClient: litNodeClient,
-            });
-            await pkpWallet.init();
+                pkpWallet = new PKPEthersWallet({
+                    controllerSessionSigs: sessionSigs,
+                    pkpPubKey: currentAccount!.publicKey,
+                    litNodeClient: litNodeClient,
+                });
+                await pkpWallet.init();
 
 
-            // --- begin of some tricky action ---
-            const _savedRequestFunc = pkpWallet.request
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            pkpWallet.request = async (payload: any) => {
-                if (payload?.method === 'eth_accounts') {
-                    return [pkpWallet.address]
-                } else {
-                    return await _savedRequestFunc(payload as ETHRequestSigningPayload)
+                // --- begin of some tricky action ---
+                const _savedRequestFunc = pkpWallet.request.bind(pkpWallet)
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                pkpWallet.request = async (payload: any) => {
+                    if (payload?.method === 'eth_accounts') {
+                        return [pkpWallet!.address]
+                    } else {
+                        return await _savedRequestFunc(payload as ETHRequestSigningPayload)
+                    }
                 }
+
+                const _savedSignMessage = pkpWallet.signMessage.bind(pkpWallet);
+                pkpWallet.signMessage = async (message: string | Uint8Array) => {
+                    const messageStr = message.toString();
+                    const isHash = messageStr.startsWith('0x') && messageStr.length === 66;
+                    if (isHash) {
+                        const sigResponse = await litNodeClient.pkpSign({
+                            pubKey: currentAccount!.publicKey,
+                            toSign: ethers.utils.arrayify(messageStr),
+                            sessionSigs: sessionSigs!
+                        });
+                        return sigResponse.signature;
+                    }
+                    return _savedSignMessage(message);
+                };
+                // --- end of some tricky action ---
+                pkpWalletRef.current = pkpWallet; // Store in ref for reuse
             }
-
-            const _savedSignMessage = pkpWallet.signMessage.bind(pkpWallet);
-            pkpWallet.signMessage = async (message: string | Uint8Array) => {
-                const messageStr = message.toString();
-                const isHash = messageStr.startsWith('0x') && messageStr.length === 66;
-                if (isHash) {
-                    const sigResponse = await litNodeClient.pkpSign({
-                        pubKey: currentAccount!.publicKey,
-                        toSign: ethers.utils.arrayify(messageStr),
-                        sessionSigs: sessionSigs!
-                    });
-                    return sigResponse.signature;
-                }
-                return _savedSignMessage(message);
-            };
-            // --- end of some tricky action ---
 
             const currentChainId = chainId ?? 1
             pkpWallet.setChainId(currentChainId)
@@ -380,7 +380,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.error(err);
         }
         setIsChainSwitching(false)
-    }
+    }, [connectedWalletAddress, currentAccount, sessionSigs])
 
     useEffect(() => {
         const currentWalletType = detectWalletType();
@@ -434,7 +434,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [currentAccount, initSessionUnSafe, sessionSigs, setAuthMethod, setCurrentAccount, storedWalletInfo])
 
-
     useEffect(() => {
         if (currentAccount && sessionSigs && !solanaWalletInfo) {
             setProviderByPKPWallet(chainId ?? 1)
@@ -480,7 +479,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         }
     }, [authMethod, chainId, currentAccount, sessionSigs, setProviderByPKPWallet, setStoredWalletInfo, solanaWalletInfo])
-
 
     const initializeAllVariables = () => {
         setStoredWalletInfo(null)
@@ -568,8 +566,10 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                 const keypair = Keypair.fromSecretKey(Buffer.from(privateKey.decryptedPrivateKey, "hex"));
 
+
                 if (solToWSol(tokenMintAddress) === NATIVE_MINT.toString()) {
                     console.log('transfer native sol')
+          
                     const transaction = new Transaction().add(
                         SystemProgram.transfer({
                             fromPubkey: keypair.publicKey,
