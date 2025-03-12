@@ -16,6 +16,7 @@ import { TopCoins } from './components/Analysis/TopCoins.tsx'
 import { NewsWidget } from '../widgets/NewsWidget.tsx';
 import { YieldProcess } from './components/EVM/YieldProcess.tsx';
 import { SwapProcess } from './components/EVM/SwapProcess.tsx';
+import { SolSwapProcess } from './components/Solana/SolSwapProcess.tsx';
 import { BridgeProcess } from './components/EVM/BridgeProcess.tsx';
 import { PortfolioProcess } from '../PortfolioProcess.tsx';
 import { SendProcess } from './components/EVM/SendProcess.tsx';
@@ -27,7 +28,7 @@ import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { convertCryptoAmount, isValidSolanaAddress } from '../../utils/agent.tsx';
+import { convertCryptoAmount, isValidSolanaAddress, symbolToToken } from '../../utils/agent.tsx';
 import { DepositProcess } from './components/EVM/DepositProcess.tsx';
 import { WithdrawProcess } from './components/EVM/WithdrawProcess.tsx';
 import { BorrowProcess } from './components/EVM/BorrowProcess.tsx';
@@ -48,7 +49,7 @@ interface AIAgentModalProps {
   onClose: () => void;
 }
 
-export default function AIAgentModal({ isOpen, widgetCommand,  onClose }: AIAgentModalProps) {
+export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgentModalProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -57,6 +58,7 @@ export default function AIAgentModal({ isOpen, widgetCommand,  onClose }: AIAgen
   const [messages, setMessages] = useState<Message[]>([]);
   const [showYieldProcess, setShowYieldProcess] = useState(false);
   const [showSwapProcess, setShowSwapProcess] = useState(false);
+  const [showSolSwapProcess, setShowSolSwapProcess] = useState(false);
   const [showBridgeProcess, setShowBridgeProcess] = useState(false);
   const [showPortfolioProcess, setShowPortfolioProcess] = useState(false);
   const [showSendProcess, setShowSendProcess] = useState(false);
@@ -88,6 +90,7 @@ export default function AIAgentModal({ isOpen, widgetCommand,  onClose }: AIAgen
   const resetProcessStates = () => {
     setShowYieldProcess(false);
     setShowSwapProcess(false);
+    setShowSolSwapProcess(false);
     setShowBridgeProcess(false);
     setShowPortfolioProcess(false);
     setShowSendProcess(false);
@@ -327,6 +330,8 @@ export default function AIAgentModal({ isOpen, widgetCommand,  onClose }: AIAgen
     const sol_response = await openaiService.getOpenAISolanaData(message);
     if (sol_response && sol_response.type == "transfer_sol" && sol_response.args.networkName == "solana") {
       return sol_response;
+    } else if (sol_response && sol_response.type == "swap_sol" && sol_response.args.networkName == "solana") {
+      return sol_response;
     }
 
     for (const [key, response] of Object.entries(fallbackResponses)) {
@@ -515,9 +520,7 @@ export default function AIAgentModal({ isOpen, widgetCommand,  onClose }: AIAgen
           setYields(response.yields);
           setShowYieldProcess(true);
         } else if (response.type == "transfer_sol") {
-          console.log(response);
-          console.log(tokenBalances);
-          
+
           let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
 
           if (token && token.balance > response.args.amount) {
@@ -535,13 +538,23 @@ export default function AIAgentModal({ isOpen, widgetCommand,  onClose }: AIAgen
               setReceiver(response.args.outputMint);
               setShowSolSendProcess(true);
             } else {
-              response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.'}
+              response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.' }
             }
 
           }
           else {
             response = { text: `transfer ${response.args.amount} ${response.args.inputSymbol} to ${response.args.outputMint} on solana`, insufficient: 'Insufficient balance to perform the transaction.' };
           }
+        } else if (response.type == "swap_sol") {
+          setFromToken(symbolToToken(response.args.inputSymbol));
+          setProtocol({
+            key: "",
+            logoURI: "",
+            name: "Jupiter",
+          });
+          setToToken(symbolToToken(response.args.outputSymbol));
+          setFromAmount(response.args.inAmount);
+          setShowSolSwapProcess(true);
         }
 
         if (response) {
@@ -762,8 +775,15 @@ export default function AIAgentModal({ isOpen, widgetCommand,  onClose }: AIAgen
             onClose={() => {
               setShowSolSendProcess(false);
               setMessages([]);
-            }} />)
-          : (
+            }} />
+        ) : showSolSwapProcess && fromToken && toToken ? (
+          <SolSwapProcess fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowSolSwapProcess(false);
+              setMessages([]);
+            }} />
+        ) :
+          (
             <div className="flex flex-col h-full">
               {/* Header */}
               <TopBar processCommand={processCommand} address={address} chainId={chainId} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} onClose={onClose} setInput={setInput} />

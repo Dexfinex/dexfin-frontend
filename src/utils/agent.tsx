@@ -1,5 +1,5 @@
 import { PublicKey } from '@solana/web3.js'
-
+import {tokenList} from '../constants/mock/solana'
 export function convertBrianKnowledgeToPlainText(text: string) {
   return text
     .replace(/^###\s*(\d+\.)\s*\*\*(.*?)\*\*/gm, '$1 $2') // Remove ### and bold from numbered headings
@@ -30,6 +30,17 @@ export function BollingerBandsProgress({ value,  upperBand, lowerBand }: any): n
   if(upperBand-lowerBand == 0) return 0;
   if(lowerBand && upperBand) return (value-lowerBand)*100/(upperBand-lowerBand);
   return 0;
+}
+
+export function symbolToToken(symbol: string): any {
+  
+  if(symbol=="SOL") {
+    const token = tokenList.find(token => token.symbol === symbol && token.name === "Wrapped SOL");
+    return token;
+  } else {
+    const token = tokenList.find(token => token.symbol === symbol);
+    return token;
+  }
 }
 
 export function isValidSolanaAddress(address: string): boolean {
