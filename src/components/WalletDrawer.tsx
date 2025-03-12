@@ -87,7 +87,6 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
 
     const handleRefetch = async () => {
         await refetchWalletBalance();
-        await refetchWalletBalance();
     }
 
 
@@ -124,7 +123,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                             <div className="text-xs sm:text-sm text-white/60 flex items-center justify-between">
                                 Total Balance
                                 <button
-                                    onClick={() => refetchWalletBalance()}
+                                    onClick={handleRefetch}
                                     disabled={isLoadingBalance}
                                     className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${isLoadingBalance ? 'opacity-50 cursor-not-allowed' : ''
                                         }`}
@@ -199,7 +198,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                             </button>
                         </div>
 
-                        {selectedTab === "tokens" && <RenderTokens handleAsset={handleAsset} />}
+                        <RenderTokens handleAsset={handleAsset} show={selectedTab === "tokens"} />
                         {selectedTab === "defi" && <RenderDefi />}
                         {selectedTab === "activity" && <RenderActivity />}
                     </div>

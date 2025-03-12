@@ -1,6 +1,6 @@
-import React, { useState, useContext, useMemo, useEffect } from 'react';
-import { Skeleton, useMediaQuery } from '@chakra-ui/react';
-import { X, Maximize2, Minimize2, ArrowDown, CreditCard, Send, Wallet, TrendingUp, LayoutGrid, History, Landmark, ExternalLink, Clock } from 'lucide-react';
+import React, { useState, useContext, useMemo } from 'react';
+import { useMediaQuery } from '@chakra-ui/react';
+import { X, Maximize2, Minimize2, Wallet, LayoutGrid, History, Landmark, ExternalLink, Clock } from 'lucide-react';
 import { SendDrawer } from './wallet/SendDrawer';
 import { ReceiveDrawer } from './wallet/ReceiveDrawer';
 import { BuyDrawer } from './wallet/BuyDrawer';
@@ -8,13 +8,12 @@ import { mockDeFiPositions, mockDeFiStats, formatUsdValue, formatApy, getHealthF
 import { formatNumberByFrac } from '../utils/common.util.ts';
 import { TransactionType } from '../types/wallet';
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
-import { TokenChainIcon } from './swap/components/TokenIcon.tsx';
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
 import useTokenBalanceStore from '../store/useTokenBalanceStore.ts';
 import useTokenTransferStore from '../store/useTokenTransferStore.ts';
-import { useWalletBalance } from '../hooks/useBalance.tsx';
 import { useEvmWalletTransfer } from '../hooks/useTransfer.tsx';
 import { formatDate } from '../utils/common.util.ts';
+import RenderAssets from './wallet/RenderAssets.tsx';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -29,14 +28,13 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const [showBuyDrawer, setShowBuyDrawer] = useState(false);
   const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
 
-  const { isLoading: isLoadingBalance } = useWalletBalance();
-  const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
+  const { tokenBalances } = useTokenBalanceStore();
   useEvmWalletTransfer();
   const { transfers } = useTokenTransferStore();
 
   const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
 
-  const { address, chainId, switchChain } = useContext(Web3AuthContext);
+  const { chainId } = useContext(Web3AuthContext);
 
   const [isLargerThan1200] = useMediaQuery('(min-width: 1200px)');
   const [isLargerThan800] = useMediaQuery('(min-width: 800px)');
@@ -53,88 +51,6 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
-
-  const renderAssets = () => (
-    <div className="space-y-4">
-      {/* Total Balance */}
-      <div className="bg-white/5 rounded-xl p-4">
-        <div className="text-sm text-white/60">Total Balance</div>
-        <div className="text-3xl font-bold mt-1">
-          {
-            isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)
-          }
-        </div>
-        <div className="flex items-center gap-1 mt-1 text-green-400">
-          <TrendingUp className="w-4 h-4" />
-          <span>+1.57% TODAY</span>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-3 gap-3">
-        <button
-          disabled={tokenBalances.length === 0}
-          onClick={() => setShowSendDrawer(true)}
-          className={`flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors ${tokenBalances.length === 0 ? "opacity-[0.6] disabled:pointer-events-none disabled:cursor-default" : ""}`}
-        >
-          <Send className="w-5 h-5" />
-          <span>Send</span>
-        </button>
-        <button
-          onClick={() => setShowReceiveDrawer(true)}
-          className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
-        >
-          <ArrowDown className="w-5 h-5" />
-          <span>Receive</span>
-        </button>
-        <button
-          disabled={true}
-          onClick={() => setShowBuyDrawer(true)}
-          className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors opacity-[0.7]"
-        >
-          <CreditCard className="w-5 h-5" />
-          <span>Buy</span>
-        </button>
-      </div>
-
-      {/* Assets List */}
-      <div className="space-y-2">
-        {
-          isLoadingBalance ?
-            <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
-            : tokenBalances.map((position, index) => (
-              <button
-                key={position.chain + position.symbol}
-                className="flex w-full items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                onClick={async () => {
-                  if (Number(chainId) !== Number(position.chain)) {
-                    await switchChain(Number(position.chain));
-                  }
-                  setSelectedBalanceIndex(index);
-                  setShowSendDrawer(true);
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(position.chain)} />
-                  <div className='flex flex-col justify-start items-start'>
-                    <div className="font-medium">{position.symbol}</div>
-                    <div className="text-sm text-white/60">
-                      {`${formatNumberByFrac(position.balance)} ${position.symbol}`}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div>{formatUsdValue(position.usdValue)}</div>
-                  {/* <div className="text-sm text-green-400">
-                  {formatApy(0)} APY
-                </div> */}
-                </div>
-              </button>
-            ))
-        }
-      </div>
-    </div>
-  );
 
   const renderActivity = () => (
     <div className="space-y-3 h-[100%]">
@@ -319,7 +235,15 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
             {/* Content */}
             <div className="flex-1 p-4 overflow-y-auto ai-chat-scrollbar">
-              {selectedTab === 'assets' && renderAssets()}
+              {
+                selectedTab === 'assets' &&
+                <RenderAssets
+                  setShowSendDrawer={setShowSendDrawer}
+                  setShowReceiveDrawer={setShowReceiveDrawer}
+                  setShowBuyDrawer={setShowBuyDrawer}
+                  setSelectedBalanceIndex={setSelectedBalanceIndex}
+                />
+              }
               {selectedTab === 'activity' && renderActivity()}
               {selectedTab === 'defi' && renderDeFi()}
             </div>
