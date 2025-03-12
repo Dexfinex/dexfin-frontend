@@ -147,8 +147,6 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 	const activeChainId = params?.chainId || connectedChainId + "";
 	const activeWalletAddress = params?.address || connectedAddress;
 
-	const enabled = !!activeChainId && !!activeWalletAddress;
-
 	const fetchBalances = useCallback(async () => {
 
 		if (!activeChainId || !activeWalletAddress) {
@@ -164,7 +162,6 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 		{
 			queryKey: ['balance', activeWalletAddress, activeChainId, solanaWalletInfo],
 			queryFn: fetchBalances,
-			enabled
 		}
 	);
 
