@@ -9,7 +9,7 @@ import useTokenBalanceStore, { TokenBalance } from "../../store/useTokenBalanceS
 
 
 interface RenderTokensProps {
-    handleAsset: (token: TokenBalance) => void
+    handleAsset: (token: TokenBalance) => void;
 }
 
 const RenderTokens: React.FC<RenderTokensProps> = ({ handleAsset }) => {
