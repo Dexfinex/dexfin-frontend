@@ -1,141 +1,89 @@
-import {
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalOverlay,
-    Link as ChakraLink,
-    Text,
-    Box,
-    VStack,
-    HStack,
-    Divider,
-    Accordion,
-    AccordionItem,
-    AccordionButton,
-    AccordionPanel,
-} from '@chakra-ui/react';
-import { Check } from 'lucide-react';
-import { TransactionModalProps } from '../../../types/cart.type';
 
-export const TransactionModal = ({
-    open,
-    setOpen,
-    transactionHashes,
-    chainExplorerUrl,
-    tokenDetails,
-}: TransactionModalProps) => {
-    const totalCost = tokenDetails.reduce((sum, token) => sum + token.costInUSD, 0);
+import React from 'react';
+import { CheckCircle, ExternalLink } from 'lucide-react';
+import { TokenPurchaseDetails } from '../../../types/cart.type';
 
-    return (
-        <Modal
-            isCentered
-            motionPreset="slideInBottom"
-            closeOnOverlayClick={true}
-            isOpen={open}
-            onClose={() => setOpen(false)}
-        >
-            <ModalOverlay backdropFilter="blur(4px)" />
-            <ModalContent
-                bg="#0e0e0e"
-                color="white"
-                borderRadius="xl"
-                p={0}
-            >
-                <ModalCloseButton color="white" />
+interface TransactionModalProps {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  transactionHashes: string[];
+  chainExplorerUrl: string;
+  tokenDetails: TokenPurchaseDetails[];
+}
 
-                <ModalBody display="flex" gap="8px" flexDir="column" alignItems="center" marginY="4rem" color="white">
-                    <Box className="flex-center mb-4">
-                        <Box
-                            backgroundColor="#00ffbf1a"
-                            color="#0dda75"
-                            borderRadius="100%"
-                            p="1.5rem"
-                            fontSize="2rem"
-                        >
-                            <Check />
-                        </Box>
-                    </Box>
-                    <Text as="h1" fontSize="xl" fontWeight="600" mb={4}>
-                        Transactions Submitted
-                    </Text>
+export const TransactionModal: React.FC<TransactionModalProps> = ({
+  open,
+  setOpen,
+  transactionHashes,
+  chainExplorerUrl,
+  tokenDetails
+}) => {
+  if (!open) return null;
 
-                    <VStack spacing={3} width="100%" px={4}>
-                        {tokenDetails.map((token, index) => (
-                            <HStack key={index} justify="space-between" width="100%">
-                                <Text color="gray.300">Amount:</Text>
-                                <Text fontWeight="500">
-                                    {token.amount} {token.tokenSymbol}
-                                </Text>
-                            </HStack>
-                        ))}
-                        <Divider my={2} borderColor="gray.700" />
-                        <HStack justify="space-between" width="100%">
-                            <Text color="gray.300">Total Cost:</Text>
-                            <Text fontWeight="500">
-                                ${totalCost.toFixed(2)} USD
-                            </Text>
-                        </HStack>
-                    </VStack>
+  const getTotalCost = () => {
+    return tokenDetails.reduce((total, token) => total + token.costInUSD, 0);
+  };
 
-                    <VStack width="100%" px={4} spacing={4} mt={4}>
-                        <Accordion allowMultiple width="100%">
-                            {transactionHashes.map((hash, index) => (
-                                <AccordionItem
-                                    key={hash}
-                                    border="1px solid"
-                                    borderColor="gray.700"
-                                    borderRadius="md"
-                                    mb={2}
-                                >
-                                    <AccordionButton
-                                        _hover={{ bg: 'whiteAlpha.50' }}
-                                        borderRadius="md"
-                                    >
-                                        <Box flex="1" textAlign="left">
-                                            <Text fontWeight="500">
-                                                Transaction #{index + 1}
-                                            </Text>
-                                        </Box>
-                                    </AccordionButton>
-                                    <AccordionPanel pb={4}>
-                                        <ChakraLink
-                                            href={`${chainExplorerUrl}/tx/${hash}`}
-                                            isExternal
-                                            color="#3b82f6"
-                                            _hover={{ color: '#60a5fa' }}
-                                            fontSize="sm"
-                                            wordBreak="break-all"
-                                        >
-                                            {hash}
-                                        </ChakraLink>
-                                    </AccordionPanel>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
-                    </VStack>
-                </ModalBody>
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
+      <div className="relative bg-gray-800 max-w-md mx-auto rounded-xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="h-16 w-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="h-8 w-8 text-green-500" />
+          </div>
+          <h3 className="text-xl font-semibold">Purchase Successful!</h3>
+          <p className="text-gray-400">
+            Your purchase of {tokenDetails.length} {tokenDetails.length === 1 ? 'token' : 'tokens'} for approximately ${getTotalCost().toFixed(2)} was successful.
+          </p>
+        </div>
 
-                <Box p={4}>
-                    <ChakraLink
-                        onClick={() => setOpen(false)}
-                        fontSize="lg"
-                        textAlign="center"
-                        padding="6px 1rem"
-                        borderRadius="0.375rem"
-                        bg="#183f6d"
-                        display="block"
-                        color="white"
-                        cursor="pointer"
-                        _hover={{
-                            textDecoration: 'none',
-                            bg: '#224b82'
-                        }}
-                    >
-                        Close
-                    </ChakraLink>
-                </Box>
-            </ModalContent>
-        </Modal>
-    );
+        <div className="space-y-4 mb-6">
+          <h4 className="font-medium">Purchased Tokens:</h4>
+          <div className="space-y-2">
+            {tokenDetails.map((detail, index) => (
+              <div key={index} className="flex justify-between items-center bg-gray-700/30 rounded-lg p-3">
+                <div>
+                  <div className="font-medium">{detail.tokenSymbol}</div>
+                  <div className="text-sm text-gray-400">Amount: {detail.amount}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-medium">${detail.costInUSD.toFixed(2)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h4 className="font-medium">Transaction Details:</h4>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {transactionHashes.map((hash, index) => (
+              <a
+                key={index}
+                href={`${chainExplorerUrl}/tx/${hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex justify-between items-center bg-gray-700/30 rounded-lg p-3 hover:bg-gray-700/50 transition-colors"
+              >
+                <div className="truncate mr-2 max-w-[200px]">{hash}</div>
+                <ExternalLink className="h-4 w-4 flex-shrink-0" />
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-gray-700">
+          <button
+            onClick={() => setOpen(false)}
+            className="w-full py-3 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors text-white font-medium"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
+
+export default TransactionModal;

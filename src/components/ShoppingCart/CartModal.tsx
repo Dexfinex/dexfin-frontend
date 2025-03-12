@@ -202,12 +202,14 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     }
   }, [walletAddress, cartItems, executeBatchBuy]);
 
+
+
   const [showCart, setShowCart] = useState(false)
 
   const toggleCart = useCallback(() => {
     setShowCart((prev) => !prev)
   }, [])
-  
+
   if (!isOpen) return null;
 
   return (
