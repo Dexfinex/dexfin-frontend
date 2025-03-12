@@ -25,7 +25,7 @@ export const TwitterWidget: React.FC = () => {
   // Get data from the hook with a refresh trigger
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { data: apiTweets, loading, error: apiError, refetch } = useGetTwitterInfo(refreshTrigger);
-  console.log("twitter apiTweets : ", apiTweets);
+  // console.log("twitter apiTweets : ", apiTweets);
 
   // State for the processed tweets
   const [tweets, setTweets] = useState<Tweet[]>([]);

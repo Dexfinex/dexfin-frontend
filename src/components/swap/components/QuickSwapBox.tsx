@@ -414,10 +414,10 @@ export function QuickSwapBox({
                             info={'The difference between market price and estimated price due to trade size'}
                             value={`${formatNumberByFrac(priceImpact, 2)}%`}
                             valueClassName={`${priceImpact < -5
-                                    ? 'text-red-500'
-                                    : priceImpact < -3
-                                        ? 'text-yellow-500'
-                                        : 'text-green-500'
+                                ? 'text-red-500'
+                                : priceImpact < -3
+                                    ? 'text-yellow-500'
+                                    : 'text-green-500'
                                 }`}
                             isLoading={isQuoteLoading}
                         />
@@ -578,7 +578,7 @@ export function QuickSwapBox({
             {
                 isConfirmed && (
                     <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                        link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${transactionHash}`} />
+                        link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${transactionHash}`} checkBalance={true} />
                 )
             }
         </div>

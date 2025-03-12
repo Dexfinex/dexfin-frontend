@@ -9,7 +9,7 @@ export const FearGreedWidget: React.FC = () => {
   const { isLoading, error, refetch, data } = useGetFearGreed();
   const { theme } = useStore();
 
-  console.log("feargreed data : ", data);
+  // console.log("feargreed data : ", data);
   const handleRefresh = async () => {
     await refetch()
   };

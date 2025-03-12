@@ -12,7 +12,7 @@ import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
-import { compareWalletAddresses, formatNumberByFrac, shrinkAddress } from '../../utils/common.util';
+import { compareWalletAddresses, formatNumberByFrac, shrinkAddress, isValidAddress } from '../../utils/common.util';
 import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 import { mapChainId2ExplorerUrl, mapChainId2NativeAddress } from "../../config/networks.ts";
 import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
@@ -145,12 +145,16 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
         if (selectedAsset.network != "Solana") {
             return !amount || isConfirming || !(ethers.utils.isAddress(address) || showSelectedEnsInfo)
         } else {
-            return !amount || isConfirming || !address || showSelectedEnsInfo
+            return !amount || isConfirming || !isValidAddress(address, SOLANA_CHAIN_ID) || showSelectedEnsInfo
         }
     }, [amount, address, isConfirming, showSelectedEnsInfo])
 
     const showPreview = useMemo(() => {
-        return (amount && address && (ethers.utils.isAddress(address) || showSelectedEnsInfo))
+        if (selectedAsset.network != "Solana") {
+            return (amount && address && (ethers.utils.isAddress(address) || showSelectedEnsInfo))
+        } else {
+            return (amount && address && isValidAddress(address, SOLANA_CHAIN_ID) || showSelectedEnsInfo)
+        }
     }, [amount, address, showSelectedEnsInfo])
 
     const errorAddress = useMemo(() => {
@@ -258,7 +262,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ assets, selectedAssetInd
         <div className="mt-4 sm:mt-5 mx-4">
             {
                 hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                    link={`${mapChainId2ExplorerUrl[Number(selectedAsset.chain)]}/tx/${hash}`} />
+                    link={`${mapChainId2ExplorerUrl[Number(selectedAsset.chain)]}/tx/${hash}`} checkBalance={true} />
             }
             {/* Header */}
             {/* <div className="flex items-center justify-between p-4 border-b border-white/10">

@@ -152,3 +152,5 @@ const SearchHeader: React.FC<SearchHeaderWithSortProps> = React.memo(({
 SearchHeader.displayName = 'SearchHeader';
 
 export default SearchHeader;
+
+
