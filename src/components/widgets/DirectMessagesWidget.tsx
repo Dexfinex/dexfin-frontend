@@ -1,18 +1,18 @@
-import React, {useCallback, useContext, useEffect, useLayoutEffect, useRef, useState} from 'react';
-import {CheckCircle, Download, File, MessageSquare, Search, Send, Share2, Smile, XCircle} from 'lucide-react';
-import {useInView} from "react-intersection-observer";
-import EmojiPicker, {Theme} from 'emoji-picker-react';
-import GifPicker, {Theme as GifTheme} from 'gif-picker-react';
-import {useStore} from '../../store/useStore';
-import {CONSTANTS, PushAPI} from '@pushprotocol/restapi';
-import {Web3AuthContext} from '../../providers/Web3AuthContext';
-import {Popover, PopoverContent, PopoverTrigger, Spinner, useToast} from '@chakra-ui/react';
-import {motion} from 'framer-motion';
-import {BIG_IMAGE_WIDHT, getWalletProfile, initStream, LIMIT} from '../../utils/chatApi';
-import {ChatType, IChat, IUser} from '../../types/chat.type';
-import {downloadBase64File, extractAddress, getEnsName, getHourAndMinute, shrinkAddress} from '../../utils/common.util';
-import {ImageWithSkeleton} from '../common/ImageWithSkeleton';
-import {WalletTypeEnum} from "../../types/wallet.ts";
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { CheckCircle, Download, File, MessageSquare, Search, Send, Share2, Smile, XCircle } from 'lucide-react';
+import { useInView } from "react-intersection-observer";
+import EmojiPicker, { Theme } from 'emoji-picker-react';
+import GifPicker, { Theme as GifTheme } from 'gif-picker-react';
+import { useStore } from '../../store/useStore';
+import { CONSTANTS, PushAPI } from '@pushprotocol/restapi';
+import { Web3AuthContext } from '../../providers/Web3AuthContext';
+import { Popover, PopoverContent, PopoverTrigger, Spinner, useToast } from '@chakra-ui/react';
+import { motion } from 'framer-motion';
+import { BIG_IMAGE_WIDHT, getWalletProfile, initStream, LIMIT, KEY_NAME } from '../../utils/chatApi';
+import { ChatType, IChat, IUser } from '../../types/chat.type';
+import { downloadBase64File, extractAddress, getEnsName, getHourAndMinute, shrinkAddress } from '../../utils/common.util';
+import { ImageWithSkeleton } from '../common/ImageWithSkeleton';
+import { WalletTypeEnum } from "../../types/wallet.ts";
 
 interface OverlayProps {
   isOpen: boolean;
@@ -66,7 +66,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
     setSelectedUser(searchedUser as IUser)
     onClose()
   }
-  
+
   return (
     isOpen && (
       <motion.div
@@ -382,7 +382,7 @@ export const DirectMessagesWidget: React.FC = () => {
           }
         }
       } else if (receivedMessage.origin == "self") {
-      //
+        //
       }
     }
   }
@@ -650,27 +650,31 @@ export const DirectMessagesWidget: React.FC = () => {
 
     if (!chatUser?.uid) {
       try {
-        const user = await PushAPI.initialize(signer, {
-          env: CONSTANTS.ENV.PROD,
-        });
+        if (walletType === WalletTypeEnum.EOA) {
+          const user = await PushAPI.initialize(signer, {
+            env: CONSTANTS.ENV.PROD,
+          });
 
-        setChatUser(user)
-        initStream(user)
+          const encryption = await user.encryption.info()
 
-        /*
-                const encryption = await user.encryption.info()
+          if (encryption?.decryptedPgpPrivateKey) {
+            const pk = {
+              account: user.account,
+              decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+            }
+            localStorage.setItem(KEY_NAME, JSON.stringify(pk))
 
-                if (encryption?.decryptedPgpPrivateKey) {
-                  const pk = {
-                    account: user.account,
-                    decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
-                  }
-                  localStorage.setItem("PgpPK", JSON.stringify(pk))
+            setChatUser(user)
+            initStream(user)
+          }
+        } else if (walletType === WalletTypeEnum.EMBEDDED) {
+          // const user = await PushAPI.initialize(signer, {
+          //   env: CONSTANTS.ENV.PROD,
+          // });
 
-                  setChatUser(user)
-                  initStream(user)
-                }
-        */
+          // setChatUser(user)
+          // initStream(user)
+        }
       } catch (err) {
         console.log('initialize err: ', err)
         toast({
@@ -759,13 +763,13 @@ export const DirectMessagesWidget: React.FC = () => {
     return true
   }
 
-/*
-  useEffect(() => {
-    if (walletType === WalletTypeEnum.EMBEDDED) {
-      handleUnlock()
-    }
-  }, [handleUnlock, walletType])
-*/
+  /*
+    useEffect(() => {
+      if (walletType === WalletTypeEnum.EMBEDDED) {
+        handleUnlock()
+      }
+    }, [handleUnlock, walletType])
+  */
 
   return (
     <div className="p-2 h-full flex flex-col">
