@@ -51,24 +51,31 @@ export const ResizableWidget: React.FC<WidgetProps> = ({ id, type, position, siz
   // Special case for Ask Anything widget - no header
   const isAskAnything = type === 'Ask Anything';
 
+  // Ensure width and height are valid numbers
+  const width = typeof size.width === 'string' ? parseInt(size.width, 10) : (Number(size.width) || 300);
+  const height = typeof size.height === 'string' ? parseInt(size.height, 10) : (Number(size.height) || 200);
+
   const resizableProps: ResizableBoxProps = {
-    width: size.width,
-    height: size.height,
+    width,
+    height,
     axis: "x",
-    minConstraints: [size.width, size.height],
-    maxConstraints: [size.width + 200, size.height],
+    minConstraints: [width, height],
+    maxConstraints: [width + 200, height],
     resizeHandles: ["e"],
-    handle: <span
-      style={{
-        position: "absolute",
-        right: "-5px",
-        top: "50%",
-        transform: "translateY(-50%)",
-        width: "10px",
-        height: size.height,
-        cursor: "ew-resize",
-      }}
-    />
+    handle: (
+      <span
+        className="resize-handle"
+        style={{
+          position: "absolute",
+          right: "-5px",
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: "10px",
+          height: "100%", // Use 100% instead of a specific value
+          cursor: "ew-resize",
+        }}
+      />
+    )
   };
 
   return (
