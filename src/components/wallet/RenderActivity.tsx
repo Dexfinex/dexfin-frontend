@@ -1,13 +1,17 @@
-import React from "react";
+import React, { useContext } from "react";
+import { ExternalLink } from "lucide-react";
 import { useStore } from "../../store/useStore";
 import { mapChainName2ExplorerUrl } from "../../config/networks";
 import useActivitiesStore from "../../store/useActivitiesStore.ts";
 import { shrinkAddress, getTimeAgo } from "../../utils/common.util";
 import { TokenChainIcon } from "../swap/components/TokenIcon.tsx";
-import { ExternalLink } from "lucide-react";
+import { useActivities } from "../../hooks/useActivities.ts";
+import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 
 const RenderActivity: React.FC = () => {
     const { theme } = useStore();
+    const { address, solanaWalletInfo } = useContext(Web3AuthContext);
+    useActivities({ evmAddress: address, solanaAddress: solanaWalletInfo?.publicKey || "" })
     const { activities } = useActivitiesStore();
 
     return (

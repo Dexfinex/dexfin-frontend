@@ -11,7 +11,6 @@ import { SendDrawer } from "./wallet/SendDrawer";
 import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
 import { Skeleton } from '@chakra-ui/react';
-import { useActivities } from "../hooks/useActivities.ts";
 import Accounts from "./wallet/Accounts.tsx";
 import AssetInfo from "./wallet/AssetInfo.tsx";
 import RenderActivity from "./wallet/RenderActivity.tsx";
@@ -33,8 +32,6 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
     const { theme } = useStore();
 
     const { address, logout, solanaWalletInfo } = useContext(Web3AuthContext);
-    useActivities({ evmAddress: address, solanaAddress: solanaWalletInfo?.publicKey || "" })
-    // const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
     const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
     const [page, setPage] = useState<PageType>('main');
     const { isLoading: isLoadingBalance, refetch: refetchWalletBalance } = useWalletBalance();
