@@ -24,8 +24,8 @@ export const mapRpcUrls: Record<number, string> = {
 // const BASE_HOST_DOMAIN = 'http://localhost:3000'
 const BASE_HOST_DOMAIN = 'https://dexfinv3-backend-production.up.railway.app'
 
-// export const COINGECKO_BASE_URL = `${BASE_HOST_DOMAIN}/coingecko`
-export const COINGECKO_BASE_URL = `http://localhost:3000/coingecko`
+export const COINGECKO_BASE_URL = `${BASE_HOST_DOMAIN}/coingecko`
+// export const COINGECKO_BASE_URL = `http://localhost:3000/coingecko`
 
 export const SWAPKIT_BASE_URL = `${BASE_HOST_DOMAIN}/crosschain`
 
@@ -43,8 +43,8 @@ export const CRYPTONEWS_BASE_URL = `${BASE_HOST_DOMAIN}/crypto-news`;
 
 export const OPENAI_BASE_URL = `${BASE_HOST_DOMAIN}/openai`;
 
-export const ALERT_BASE_URL = `http://localhost:3000/alerts`;
-// export const ALERT_BASE_URL = `${BASE_HOST_DOMAIN}/alerts`;
+// export const ALERT_BASE_URL = `http://localhost:3000/alerts`;
+export const ALERT_BASE_URL = `${BASE_HOST_DOMAIN}/alerts`;
 
 export const ENSO_BASE_URL = `${BASE_HOST_DOMAIN}/enso`;
 
@@ -54,11 +54,11 @@ export const USERAUTH_BASE_URL = `${BASE_HOST_DOMAIN}/auth`;
 
 export const TECHNICALANALYSIS_BASE_URL = `${BASE_HOST_DOMAIN}/technical`;
 
-// export const NOTIFICATION_BASE_URL = `${BASE_HOST_DOMAIN}/notifications`;
-export const NOTIFICATION_BASE_URL = `http://localhost:3000/notifications`;
+export const NOTIFICATION_BASE_URL = `${BASE_HOST_DOMAIN}/notifications`;
+// export const NOTIFICATION_BASE_URL = `http://localhost:3000/notifications`;
 
-// export const WS_CONNECTION_URL = `${BASE_HOST_DOMAIN}`;
-export const WS_CONNECTION_URL = `http://127.0.0.1:3000`;
+export const WS_CONNECTION_URL = `${BASE_HOST_DOMAIN}`;
+// export const WS_CONNECTION_URL = `http://127.0.0.1:3000`;
 
 export const GAME_SYSTEM_BASEURL = `${BASE_HOST_DOMAIN}/game-system`;
 
