@@ -1,4 +1,3 @@
-// File: src/components/MarketAlerts.tsx
 import React, { useState, useEffect, useContext } from 'react';
 import {
     Bell, Plus, Trash2, RefreshCw, Edit
@@ -6,6 +5,8 @@ import {
 import { alertApiService } from '../../services/alert.service';
 import { Alert, CreateAlertDto, UpdateAlertDto, alertTypes } from '../../types/alert.types';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
+import { SearchableTokenSelect } from './Alert/TokenSelect';
+
 type AlertTypeId =
     'PRICE_ALERT' |
     'VOLUME_ALERT' |
@@ -142,8 +143,6 @@ export const MarketAlerts: React.FC = () => {
             };
 
             const createdAlert = await alertApiService.createAlert(alertData);
-            console.log(createdAlert)
-            // Add the new alert to the list
             setAlerts(prev => [...prev, createdAlert]);
 
             // Reset form and close modal
@@ -234,8 +233,6 @@ export const MarketAlerts: React.FC = () => {
 
         try {
             await alertApiService.deleteAlert(id);
-            // refreshAlerts();
-
             // Remove the alert from the list
             setAlerts(prev => prev.filter(alert => alert.id !== id));
 
@@ -246,19 +243,28 @@ export const MarketAlerts: React.FC = () => {
 
     // Get alert type configuration
     const getTypeConfig = (type: string) => {
-        // Map from uppercase to lowercase for finding in alertTypes
-        const lowercaseType = type.toLowerCase().replace('_alert', '');
+        const lowercaseType = REVERSE_TYPE_MAPPING[type] || type.toLowerCase().replace('_alert', '');
         return alertTypes.find(t => t.id === lowercaseType);
     };
 
     // Get alert type label with styling
     const getTypeLabel = (type: string) => {
         const config = getTypeConfig(type);
-        return config ? (
+        if (!config) {
+            console.warn(`No configuration found for alert type: ${type}`);
+            // Fallback styling for unknown types
+            return (
+                <span className="px-3 py-1 rounded-full text-sm bg-gray-500/20 text-gray-400">
+                    {type.replace('_', ' ')}
+                </span>
+            );
+        }
+
+        return (
             <span className={`px-3 py-1 rounded-full text-sm ${config.color}`}>
-                {config.label.toUpperCase()}
+                {config.label}
             </span>
-        ) : null;
+        );
     };
 
     // Handle custom field changes for new alert
@@ -283,7 +289,7 @@ export const MarketAlerts: React.FC = () => {
         }));
     };
 
-    // Render custom fields based on selected alert type for new alert
+    // Render custom fields based on selected alert type
     const renderCustomFields = (alert: typeof newAlert, changeHandler: (fieldName: string, value: string) => void) => {
         const selectedType = alertTypes.find(type => type.id === alert.type);
         if (!selectedType?.customFields) return null;
@@ -294,18 +300,26 @@ export const MarketAlerts: React.FC = () => {
                     <div key={field.name}>
                         <label className="block text-sm text-white/60 mb-2">{field.label}</label>
                         {field.type === 'select' ? (
-                            <select
-                                value={(alert.customData as any)[field.name] || ''}
-                                onChange={e => changeHandler(field.name, e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 outline-none focus:border-white/20"
-                            >
-                                <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>
-                                {field.options?.map(option => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
+                            field.name === 'token' ? (
+                                <SearchableTokenSelect
+                                    value={(alert.customData as any)[field.name] || null}
+                                    onChange={(value: string) => changeHandler(field.name, value)}
+                                    placeholder={field.placeholder || `Search for a token...`}
+                                />
+                            ) : (
+                                <select
+                                    value={(alert.customData as any)[field.name] || ''}
+                                    onChange={e => changeHandler(field.name, e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 outline-none focus:border-white/20"
+                                >
+                                    <option value="">{field.placeholder || `Select ${field.label.toLowerCase()}`}</option>
+                                    {field.options?.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            )
                         ) : (
                             <input
                                 type={field.type}
@@ -467,17 +481,31 @@ export const MarketAlerts: React.FC = () => {
                                     {alertTypes.map(type => (
                                         <button
                                             key={type.id}
-                                            onClick={() => setNewAlert(prev => ({ ...prev, type: type.id }))}
-                                            className={`p-3 rounded-lg transition-colors text-left ${newAlert.type === type.id
-                                                ? 'bg-blue-500'
-                                                : 'bg-white/5 hover:bg-white/10'
+                                            onClick={() => {
+                                                if (!type.comingSoon) {
+                                                    setNewAlert(prev => ({ ...prev, type: type.id }));
+                                                }
+                                            }}
+                                            className={`p-3 rounded-lg transition-colors text-left relative ${newAlert.type === type.id
+                                                    ? 'bg-blue-500'
+                                                    : type.comingSoon
+                                                        ? 'bg-white/5 cursor-not-allowed opacity-80'
+                                                        : 'bg-white/5 hover:bg-white/10'
                                                 }`}
+                                            disabled={type.comingSoon}
                                         >
                                             <div className="flex items-center gap-2 mb-1">
                                                 <type.icon className="w-4 h-4" />
                                                 <span className="font-medium">{type.label}</span>
                                             </div>
                                             <p className="text-xs text-white/60">{type.description}</p>
+
+                                            {/* Coming Soon Badge */}
+                                            {type.comingSoon && (
+                                                <div className="absolute top-0 right-0 bg-blue-500/50 text-white text-xs font-bold px-2 py-1 rounded-bl-lg rounded-tr-lg">
+                                                    COMING SOON
+                                                </div>
+                                            )}
                                         </button>
                                     ))}
                                 </div>

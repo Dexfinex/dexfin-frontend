@@ -6,7 +6,6 @@ import { Web3AuthContext } from './Web3AuthContext';
 import { useUserData } from '../providers/UserProvider';
 import { NotificationApi } from '../services/api.service';
 
-// Type definitions based on your backend model
 export interface Notification {
     id: string;
     userId: string;
@@ -29,10 +28,25 @@ interface WebSocketContextType {
     fetchAllNotifications: () => Promise<void>;
 }
 
-// Audio notification settings
-const ALERT_SOUND_PATH = '/notification.wav';
+const NOTIFICATION_SOUNDS = {
+    DEFAULT: '/sounds/notification.wav',
+    PRICE_ALERT: '/sounds/price-alert-triggered.wav',
+    TRANSACTION: '/sounds/swap-completed.wav',
+    SWAP: '/sounds/swap-completed.wav',
+    DEPOSIT: '/sounds/deposit-received.wav',
+    WITHDRAWAL: '/sounds/withdrawal-completed.wav',
+    VOLUME_ALERT: '/sounds/volume-alert-trigger.wav',
+    MARKET_CAP_ALERT: '/sounds/market-cap-alert.wav',
+    SECURITY: '/sounds/security-alert.wav',
+    REWARD: '/sounds/reward-received.wav',
+    SYSTEM: '/sounds/system-notification.wav',
+    ORDER: '/sounds/order-update.wav',
+    LOAN: '/sounds/loan-update.wav',
+    ACHIEVEMENT: '/sounds/achievement-unlocked.wav',
+    PAYMENT: '/sounds/payment-update.wav',
+    TVL_ALERT: '/sounds/tvl-alert-triggered',
+};
 
-// Create context
 export const WebSocketContext = createContext<WebSocketContextType>({
     isConnected: false,
     notifications: [],
@@ -43,50 +57,93 @@ export const WebSocketContext = createContext<WebSocketContextType>({
 });
 
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Context and state hooks
     const { isConnected: isAuthConnected } = useContext(Web3AuthContext);
     const { userData } = useUserData();
     const toast = useToast();
 
-    // State variables
     const [isConnected, setIsConnected] = useState<boolean>(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState<number>(0);
     const [loading, setLoading] = useState<boolean>(false);
 
-    // Refs to maintain state between renders
     const socketRef = useRef<Socket | null>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
     const reconnectAttemptsRef = useRef<number>(0);
     const reconnectTimerRef = useRef<any>(null);
     const maxReconnectAttempts = 5;
     const reconnectDelay = 3000;
 
-    // Helper function to play notification sound
-    const playAlertSound = useCallback(() => {
-        if (!audioRef.current) return;
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(e => {
-            console.warn('Could not play alert sound:', e);
-        });
-    }, []);
-
-    // Initialize audio element
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            audioRef.current = new Audio(ALERT_SOUND_PATH);
-            audioRef.current.volume = 0.5;
+            Object.entries(NOTIFICATION_SOUNDS).forEach(([type, soundPath]) => {
+                const audio = new Audio(soundPath);
+                audio.volume = 0.5;
+                audioRefs.current[type] = audio;
+            });
         }
+
         return () => {
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current = null;
-            }
+            Object.values(audioRefs.current).forEach(audio => {
+                audio.pause();
+            });
+            audioRefs.current = {};
         };
     }, []);
 
-    // Helper function to show toast notification
+    const getSoundKeyForNotification = (notification: Notification): string => {
+        if (notification.type === 'ALERT' && notification.metadata) {
+            try {
+                const metadata = typeof notification.metadata === 'string'
+                    ? JSON.parse(notification.metadata)
+                    : notification.metadata;
+
+                const type = metadata.alertType;
+
+                if (type) {
+                    const normalizedType = type.toString().toUpperCase();
+
+                    if (normalizedType === 'VOLUME_ALERT') {
+                        return 'VOLUME_ALERT';
+                    } else if (normalizedType === 'MARKETCAP_ALERT' || normalizedType === 'MARKET_CAP_ALERT') {
+                        console.log(normalizedType)
+                        return 'MARKET_CAP_ALERT';
+                    } else if (normalizedType === 'PRICE_ALERT') {
+                        return 'PRICE_ALERT';
+                    } else if (normalizedType === 'TVL_ALERT') {
+                        return 'TVL_ALERT';
+                    }
+                }
+
+            } catch (e) {
+                console.warn('Could not parse notification metadata:', e);
+                return 'PRICE_ALERT';
+            }
+        }
+
+        if (audioRefs.current[notification.type]) {
+            return notification.type;
+        }
+
+        return 'DEFAULT';
+    };
+
+    const playAlertSound = useCallback((notification: Notification) => {
+        const soundKey = getSoundKeyForNotification(notification);
+        console.log(soundKey)
+        const audio = audioRefs.current[soundKey];
+
+        if (!audio) {
+            console.warn(`No audio found for sound key: ${soundKey}`);
+            return;
+        }
+
+        audio.pause();
+        audio.currentTime = 0;
+        audio.play().catch(e => {
+            console.warn(`Could not play ${soundKey} alert sound:`, e);
+        });
+    }, []);
+
     const showToastNotification = useCallback((notification: Notification) => {
         let status: 'info' | 'warning' | 'success' | 'error' = 'info';
 
@@ -107,7 +164,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
 
         toast({
-            title: getNotificationTitle(notification.type),
+            title: getNotificationTitle(notification),
             description: notification.message,
             status,
             duration: 5000,
@@ -116,11 +173,36 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
     }, [toast]);
 
-    // Get a title for the notification based on its type
-    const getNotificationTitle = (type: string): string => {
-        switch (type) {
+    const getNotificationTitle = (notification: Notification): string => {
+        if (notification.type === 'ALERT' && notification.metadata) {
+            try {
+                const metadata = typeof notification.metadata === 'string'
+                    ? JSON.parse(notification.metadata)
+                    : notification.metadata;
+
+                const type = metadata.alertType;
+
+                if (type) {
+                    const normalizedType = type.toString().toUpperCase();
+
+                    if (normalizedType === 'VOLUME_ALERT') {
+                        return 'Volume Alert';
+                    } else if (normalizedType === 'MARKETCAP_ALERT' || normalizedType === 'MARKET_CAP_ALERT') {
+                        return 'Market Cap Alert';
+                    } else if (normalizedType === 'PRICE_ALERT') {
+                        return 'Price Alert';
+                    } else if (normalizedType === 'TVL_ALERT') {
+                        return 'TVL Alert';
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not parse notification metadata for title:', e);
+            }
+        }
+
+        switch (notification.type) {
             case 'ALERT':
-                return 'Price Alert';
+                return 'Alert';
             case 'TRANSACTION':
                 return 'Transaction Update';
             case 'SWAP':
@@ -148,14 +230,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
     };
 
-    // Connect to the WebSocket server
     const connect = useCallback(() => {
         if (!userData?.accessToken) {
             console.log('Missing access token for WebSocket connection');
             return;
         }
 
-        // Close existing connection if any
         if (socketRef.current) {
             socketRef.current.close();
         }
@@ -163,7 +243,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         try {
             console.log('Connecting to WebSocket server...');
 
-            // Configure socket options - no userId needed
             const socketOptions = {
                 transports: ['websocket'],
                 autoConnect: true,
@@ -172,17 +251,13 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 reconnectionDelay: reconnectDelay
             };
 
-            // Create socket instance
             socketRef.current = io(WS_BASE_URL, socketOptions);
 
-            // Connection handlers
             socketRef.current.on('connect', () => {
                 console.log('WebSocket connected');
                 reconnectAttemptsRef.current = 0;
                 setIsConnected(true);
 
-                // Subscribe with token for authentication
-                // Backend will extract userId from the token
                 socketRef.current?.emit('subscribe', userData.accessToken);
             });
 
@@ -190,7 +265,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 console.log(`WebSocket disconnected: ${reason}`);
                 setIsConnected(false);
 
-                // Attempt to reconnect
                 if (reconnectAttemptsRef.current < maxReconnectAttempts) {
                     clearTimeout(reconnectTimerRef.current);
                     reconnectTimerRef.current = setTimeout(() => {
@@ -205,35 +279,55 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 reconnectAttemptsRef.current++;
             });
 
-            // Listen for new notifications
             socketRef.current.on('newNotification', (notification: Notification) => {
                 console.log('Received new notification:', notification);
 
-                // Add notification to state
                 setNotifications(prev => [notification, ...prev]);
 
-                // Update unread count
                 if (!notification.isRead) {
                     setUnreadCount(prev => prev + 1);
                 }
 
-                // Play sound and show toast
-                playAlertSound();
+                playAlertSound(notification);
                 showToastNotification(notification);
             });
 
-            // Listen for transaction updates
             socketRef.current.on('transactionUpdate', (data: any) => {
                 console.log('Received transaction update:', data);
 
-                playAlertSound();
+                const pseudoNotification: Notification = {
+                    type: 'TRANSACTION',
+                    status: 'INFO',
+                    message: '',
+                    isRead: false,
+                    id: '',
+                    userId: '',
+                    sourceId: '',
+                    createdAt: '',
+                    updatedAt: '',
+                    metadata: data
+                };
+
+                playAlertSound(pseudoNotification);
             });
 
-            // Listen for price alerts
             socketRef.current.on('alertTriggered', (data: any) => {
                 console.log('Received price alert:', data);
 
-                playAlertSound();
+                const pseudoNotification: Notification = {
+                    type: 'ALERT',
+                    status: 'INFO',
+                    message: '',
+                    isRead: false,
+                    id: '',
+                    userId: '',
+                    sourceId: '',
+                    createdAt: '',
+                    updatedAt: '',
+                    metadata: data
+                };
+
+                playAlertSound(pseudoNotification);
             });
 
         } catch (error) {
@@ -330,11 +424,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (!userData?.accessToken || !notificationIds.length) {
             return;
         }
-    
+
         try {
             setLoading(true);
-            
-            await NotificationApi.put(`/mark-read`, 
+
+            await NotificationApi.put(`/mark-read`,
                 { notificationIds },
                 {
                     headers: {
@@ -342,7 +436,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                     }
                 }
             );
-    
+
             setNotifications(prev =>
                 prev.map(notification =>
                     notificationIds.includes(notification.id)
@@ -350,9 +444,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                         : notification
                 )
             );
-    
+
             setUnreadCount(prev => Math.max(0, prev - notificationIds.length));
-    
+
         } catch (error) {
             console.error('Error marking notifications as read:', error);
         } finally {
@@ -366,6 +460,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             fetchNotifications();
         } else {
             disconnect();
+            setNotifications([]);
+            setUnreadCount(0);
         }
 
         return () => {
@@ -387,7 +483,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (isAuthConnected && userData?.accessToken) {
             const intervalId = setInterval(() => {
                 fetchNotifications();
-            }, 3 * 60 * 1000); // every 3 minutes
+            }, 3 * 60 * 1000);
 
             return () => clearInterval(intervalId);
         }

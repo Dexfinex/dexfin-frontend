@@ -227,17 +227,17 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
     if (!status) return 'text-white/60';
 
     switch (status) {
-      case NOTIFICATION_STATUSES.SUCCESS: 
+      case NOTIFICATION_STATUSES.SUCCESS:
         return 'text-green-400';
-      case NOTIFICATION_STATUSES.ERROR: 
+      case NOTIFICATION_STATUSES.ERROR:
         return 'text-red-400';
-      case NOTIFICATION_STATUSES.WARNING: 
+      case NOTIFICATION_STATUSES.WARNING:
         return 'text-yellow-400';
-      case NOTIFICATION_STATUSES.INFO: 
+      case NOTIFICATION_STATUSES.INFO:
         return 'text-blue-400';
-      case NOTIFICATION_STATUSES.PENDING: 
+      case NOTIFICATION_STATUSES.PENDING:
         return 'text-yellow-400';
-      default: 
+      default:
         return 'text-white/60';
     }
   };
@@ -276,19 +276,19 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   // Get chain name from chain ID
   const getChainName = (chainId: number): string => {
     switch (chainId) {
-      case CHAIN_IDS.ETHEREUM: 
+      case CHAIN_IDS.ETHEREUM:
         return 'Ethereum';
-      case CHAIN_IDS.ARBITRUM: 
+      case CHAIN_IDS.ARBITRUM:
         return 'Arbitrum';
-      case CHAIN_IDS.BSC: 
+      case CHAIN_IDS.BSC:
         return 'BSC';
-      case CHAIN_IDS.POLYGON: 
+      case CHAIN_IDS.POLYGON:
         return 'Polygon';
-      case CHAIN_IDS.OPTIMISM: 
+      case CHAIN_IDS.OPTIMISM:
         return 'Optimism';
-      case CHAIN_IDS.AVALANCHE: 
+      case CHAIN_IDS.AVALANCHE:
         return 'Avalanche';
-      default: 
+      default:
         return `Chain ${chainId}`;
     }
   };
@@ -302,7 +302,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   // Get explorer URL based on chain ID
   const getExplorerUrl = (chainId?: number): string => {
     if (!chainId) return 'https://etherscan.io/tx/';
-    
+
     switch (chainId) {
       case CHAIN_IDS.ARBITRUM:
         return 'https://arbiscan.io/tx/';
@@ -323,7 +323,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   // Parse JSON metadata safely
   const parseMetadata = (metadataStr: string | object | undefined) => {
     if (!metadataStr) return {};
-    
+
     if (typeof metadataStr === 'string') {
       try {
         return JSON.parse(metadataStr);
@@ -332,12 +332,12 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
         return {};
       }
     }
-    
+
     return metadataStr || {};
   };
 
   const allNotificationTypes = useMemo(() => [
-    NOTIFICATION_TYPES.ALL, 
+    NOTIFICATION_TYPES.ALL,
     ...new Set(
       Array.isArray(allNotifications)
         ? allNotifications.map(n => n.type).filter(Boolean)
@@ -489,8 +489,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                   getTypeIcon(selectedType)
                 )}
                 <span>
-                  {selectedType === NOTIFICATION_TYPES.ALL 
-                    ? 'All Types' 
+                  {selectedType === NOTIFICATION_TYPES.ALL
+                    ? 'All Types'
                     : selectedType.charAt(0) + selectedType.slice(1).toLowerCase()}
                 </span>
               </div>
@@ -611,20 +611,20 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
 
     // Parse metadata safely
     const metadata = parseMetadata(notification.metadata);
-    
+
     // Get appropriate background color
     const bgColorClass = getNotificationBgColor(notification.type);
 
     const renderMetadata = () => {
       if (!metadata) return null;
-    
+
       if (notification.type === NOTIFICATION_TYPES.ALERT) {
         // Base content for all alert types
         const alertContent = (
           <>
             {metadata.token && (
               <div className="flex items-center mb-1">
-                <span className="font-medium mr-1">Token:</span> 
+                <span className="font-medium mr-1">Token:</span>
                 <span>{metadata.symbol ? `${metadata.token} (${metadata.symbol})` : metadata.token}</span>
               </div>
             )}
@@ -635,54 +635,53 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
             )}
           </>
         );
-    
+
         // Handle specific alert types
-        switch (metadata.alertyType) {
+        switch (metadata.alertType) {
           case 'PRICE_ALERT':
             return (
               <div className="mt-2 text-xs text-white/70 bg-yellow-900/20 p-2 rounded">
                 {alertContent}
                 {metadata.condition && metadata.thresholdValue && (
                   <div className="mb-1">
-                    <span className="font-medium mr-1">Condition:</span> 
+                    <span className="font-medium mr-1">Condition:</span>
                     Price {metadata.condition} ${parseFloat(metadata.thresholdValue).toLocaleString()}
                   </div>
                 )}
                 {metadata.currentPrice && (
                   <div className="mb-1">
-                    <span className="font-medium mr-1">Current Price:</span> 
+                    <span className="font-medium mr-1">Current Price:</span>
                     ${parseFloat(metadata.currentPrice).toLocaleString()}
                   </div>
                 )}
                 <div className="mt-1 text-xs flex items-center">
-                  <span className={`px-1.5 py-0.5 rounded ${
-                    metadata.condition === 'above' ? 'bg-green-500/30 text-green-400' : 'bg-red-500/30 text-red-400'
-                  }`}>
+                  <span className={`px-1.5 py-0.5 rounded ${metadata.condition === 'above' ? 'bg-green-500/30 text-green-400' : 'bg-red-500/30 text-red-400'
+                    }`}>
                     {metadata.condition === 'above' ? 'Price Increased' : 'Price Decreased'}
                   </span>
                 </div>
               </div>
             );
-    
+
           case 'VOLUME_ALERT':
             return (
               <div className="mt-2 text-xs text-white/70 bg-purple-900/20 p-2 rounded">
                 {alertContent}
                 {metadata.condition && metadata.volumeThreshold && (
                   <div className="mb-1">
-                    <span className="font-medium mr-1">Volume Condition:</span> 
+                    <span className="font-medium mr-1">Volume Condition:</span>
                     {metadata.condition} ${parseFloat(metadata.volumeThreshold).toLocaleString()}
                   </div>
                 )}
                 {metadata.currentVolume && (
                   <div className="mb-1">
-                    <span className="font-medium mr-1">Current Volume:</span> 
+                    <span className="font-medium mr-1">Current Volume:</span>
                     ${parseFloat(metadata.currentVolume).toLocaleString()}
                   </div>
                 )}
                 {typeof metadata.priceChangePercent !== 'undefined' && (
                   <div className="mb-1">
-                    <span className="font-medium mr-1">24h Change:</span> 
+                    <span className="font-medium mr-1">24h Change:</span>
                     <span className={metadata.priceChangePercent >= 0 ? 'text-green-400' : 'text-red-400'}>
                       {metadata.priceChangePercent >= 0 ? '+' : ''}{parseFloat(metadata.priceChangePercent).toFixed(2)}%
                     </span>
@@ -693,16 +692,58 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                     Volume Alert
                   </span>
                   {typeof metadata.priceChangeThreshold !== 'undefined' && typeof metadata.priceChangePercent !== 'undefined' && (
-                    <span className={`px-1.5 py-0.5 rounded ${
-                      metadata.priceChangePercent < metadata.priceChangeThreshold ? 'bg-red-500/30 text-red-400' : 'bg-yellow-500/30 text-yellow-400'
-                    }`}>
+                    <span className={`px-1.5 py-0.5 rounded ${metadata.priceChangePercent < metadata.priceChangeThreshold ? 'bg-red-500/30 text-red-400' : 'bg-yellow-500/30 text-yellow-400'
+                      }`}>
                       Price Change
                     </span>
                   )}
                 </div>
               </div>
             );
-    
+
+          case 'TVL_ALERT':
+            return (
+              <div className="mt-2 text-xs text-white/70 bg-purple-900/20 p-2 rounded">
+                {alertContent}
+                {metadata.condition && metadata.tvlThreshold && (
+                  <div className="mb-1">
+                    <span className="font-medium mr-1">TVL Condition:</span>
+                    {metadata.condition} ${parseFloat(metadata.tvlThreshold).toLocaleString()}
+                  </div>
+                )}
+                {metadata.currentTvl && (
+                  <div className="mb-1">
+                    <span className="font-medium mr-1">Current Volume:</span>
+                    ${parseFloat(metadata.currentTvl).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            );
+
+            case 'MARKET_CAP_ALERT':
+              return (
+                <div className="mt-2 text-xs text-white/70 bg-orange-900/20 p-2 rounded">
+                  {alertContent}
+                  {metadata.condition && metadata.currentMarketCap && (
+                    <div className="mb-1">
+                      <span className="font-medium mr-1">Condition:</span>
+                      Market {metadata.condition} ${parseFloat(metadata.currentMarketCap).toLocaleString()}
+                    </div>
+                  )}
+                  {metadata.currentMarketCap && (
+                    <div className="mb-1">
+                      <span className="font-medium mr-1">Current Market Cap:</span>
+                      ${parseFloat(metadata.currentMarketCap).toLocaleString()}
+                    </div>
+                  )}
+                  <div className="mt-1 text-xs flex items-center">
+                    <span className={`px-1.5 py-0.5 rounded ${metadata.condition === 'above' ? 'bg-green-500/30 text-green-400' : 'bg-red-500/30 text-red-400'}`}>
+                      {metadata.condition === 'above' ? 'Market Cap Increased' : 'Market Cap Decreased'}
+                    </span>
+                  </div>
+                </div>
+              );
+
           // default:
           //   // For unknown alert types or when alertType is not provided
           //   return (
@@ -719,20 +760,20 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
           //   );
         }
       }
-    
-      if (notification.type === NOTIFICATION_TYPES.TRANSACTION || 
-          notification.type === NOTIFICATION_TYPES.SWAP) {
+
+      if (notification.type === NOTIFICATION_TYPES.TRANSACTION ||
+        notification.type === NOTIFICATION_TYPES.SWAP) {
         // Extract transaction hash from metadata
         let txHash = metadata.tradeHash || '';
-        
+
         // Check if there are transactions in statusData
         if (metadata.statusData?.transactions?.length > 0) {
           txHash = metadata.statusData.transactions[0].hash || txHash;
         }
-    
+
         // Get explorer URL based on chain ID
         const explorerUrl = getExplorerUrl(metadata.chainId);
-    
+
         return (
           <div className="mt-2 text-xs text-white/60">
             {/* Display token information */}
@@ -747,7 +788,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                 <span>{metadata.tokenOut.symbol || metadata.tokenOut}</span>
               )}
             </div>
-    
+
             {/* Display amounts */}
             <div className="flex items-center mb-1">
               {metadata.tokenIn?.amount && (
@@ -760,12 +801,12 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                 <span>{metadata.tokenOut.amount}</span>
               )}
             </div>
-    
+
             {/* Show chain ID if available */}
             {metadata.chainId && (
               <div className="mb-1">Chain: {getChainName(metadata.chainId)}</div>
             )}
-    
+
             {/* Transaction Hash (clickable) */}
             {txHash && (
               <a
@@ -779,7 +820,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                 <ExternalLink className="w-3 h-3 ml-1" />
               </a>
             )}
-            
+
             {/* Wallet address if available */}
             {metadata.walletAddress && (
               <div className="mt-1 truncate max-w-[200px]">
@@ -789,9 +830,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
           </div>
         );
       }
-    
-      if (notification.type === NOTIFICATION_TYPES.DEPOSIT || 
-          notification.type === NOTIFICATION_TYPES.WITHDRAWAL) {
+
+      if (notification.type === NOTIFICATION_TYPES.DEPOSIT ||
+        notification.type === NOTIFICATION_TYPES.WITHDRAWAL) {
         return (
           <div className="mt-2 text-xs text-white/60">
             {metadata.amount && (
@@ -817,7 +858,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
           </div>
         );
       }
-    
+
       return null;
     };
 
@@ -852,9 +893,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
               <div className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-white/40" />
                 <span className="text-xs text-white/60">
-                  {new Date(notification.createdAt).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                  {new Date(notification.createdAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
                   })}
                 </span>
               </div>
@@ -864,7 +905,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                 <span className="text-xs">{notification.status}</span>
               </span>
             </div>
-            
+
             {/* Render metadata based on notification type */}
             {renderMetadata()}
           </div>

@@ -4,6 +4,7 @@ import { Skeleton } from '@chakra-ui/react';
 import { formatNumberByFrac } from "../../utils/common.util";
 import { formatUsdValue, } from '../../lib/wallet';
 import { TokenChainIcon } from "../swap/components/TokenIcon";
+import PNLPercent from "../common/PNLPercent";
 import { useWalletBalance } from "../../hooks/useBalance";
 import useTokenBalanceStore, { TokenBalance } from "../../store/useTokenBalanceStore";
 
@@ -35,12 +36,12 @@ const RenderTokens: React.FC<RenderTokensProps> = ({ handleAsset }) => {
                                         {`${formatNumberByFrac(token.balance, 5)} ${token.symbol.toUpperCase()}`}
                                     </div>
                                 </div>
-                            </div>
-                            <div className="text-right text-sm md:text-md">
-                                <span>{formatUsdValue(token.usdValue)}</span>
-                            </div>
-                        </button>
-                    ))
+                                <div className="text-right text-sm md:text-md">
+                                    <span>{formatUsdValue(token.usdValue)}</span>
+                                    <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / (token.usdPrice - token.usdPrice24hrUsdChange)} />
+                                </div>
+                            </button>
+                        ))
             }
         </div>
     )
