@@ -28,7 +28,7 @@ import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { convertCryptoAmount, isValidSolanaAddress, symbolToToken } from '../../utils/agent.tsx';
+import { convertCryptoAmount, getSolAddressFromSNS, isValidSolanaAddress, symbolToToken } from '../../utils/agent.tsx';
 import { DepositProcess } from './components/EVM/DepositProcess.tsx';
 import { WithdrawProcess } from './components/EVM/WithdrawProcess.tsx';
 import { BorrowProcess } from './components/EVM/BorrowProcess.tsx';
@@ -524,7 +524,11 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
 
           if (token && token.balance > response.args.amount) {
-            if (isValidSolanaAddress(response.args.outputMint)) {
+            let address = response.args.outputMint;
+            const snsToAddress = await getSolAddressFromSNS(address);
+            console.log(snsToAddress);
+            if(snsToAddress) address = snsToAddress;
+            if (isValidSolanaAddress(address)) {
               setFromToken({
                 symbol: token.symbol,
                 name: token.name,
@@ -535,7 +539,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
                 priceUSD: token.usdPrice
               });
               setFromAmount(response.args.amount);
-              setReceiver(response.args.outputMint);
+              setReceiver(address);
               setShowSolSendProcess(true);
             } else {
               response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.' }
@@ -546,15 +550,26 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
             response = { text: `transfer ${response.args.amount} ${response.args.inputSymbol} to ${response.args.outputMint} on solana`, insufficient: 'Insufficient balance to perform the transaction.' };
           }
         } else if (response.type == "swap_sol") {
-          setFromToken(symbolToToken(response.args.inputSymbol));
-          setProtocol({
-            key: "",
-            logoURI: "",
-            name: "Jupiter",
-          });
-          setToToken(symbolToToken(response.args.outputSymbol));
-          setFromAmount(response.args.inAmount);
-          setShowSolSwapProcess(true);
+          let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
+          if (token && token.balance > response.args.inAmount) {
+            const toToken  = symbolToToken(response.args.outputSymbol);
+            const fromToken = symbolToToken(response.args.inputSymbol);
+            if(toToken && fromToken) {
+              setFromToken(fromToken);
+              setProtocol({
+                key: "",
+                logoURI: "",
+                name: "Jupiter",
+              });
+              setToToken(toToken);
+              setFromAmount(response.args.inAmount);
+              setShowSolSwapProcess(true);
+            } else {
+              response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.' }
+            }
+          } else {
+            response = { text: `swap ${response.args.inAmount} ${response.args.inputSymbol} for ${response.args.outputSymbol} on solana`, insufficient: 'Insufficient balance to perform the transaction.' };
+          }
         }
 
         if (response) {

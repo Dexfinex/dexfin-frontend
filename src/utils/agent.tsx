@@ -1,5 +1,8 @@
 import { PublicKey } from '@solana/web3.js'
-import {tokenList} from '../constants/mock/solana'
+import { getDomainKey, NameRegistryState } from "@bonfida/spl-name-service";
+import {tokenList} from '../constants/mock/solana';
+import { connection } from "../config/solana.ts";
+
 export function convertBrianKnowledgeToPlainText(text: string) {
   return text
     .replace(/^###\s*(\d+\.)\s*\*\*(.*?)\*\*/gm, '$1 $2') // Remove ### and bold from numbered headings
@@ -49,5 +52,15 @@ export function isValidSolanaAddress(address: string): boolean {
     return true;
   } catch (error) {
     return false;
+  }
+}
+
+export async function getSolAddressFromSNS(domain: string) {
+  try {
+      const { pubkey } = await getDomainKey(domain);
+      const {registry} : any = await NameRegistryState.retrieve(connection, pubkey);
+      return registry.owner.toBase58();
+  } catch (error) {
+      console.error("No Solana address found for this domain:", error);
   }
 }
