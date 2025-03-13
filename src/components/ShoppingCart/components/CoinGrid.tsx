@@ -46,6 +46,18 @@ const chainIDPlatform: Readonly<Record<string, string>> = {
     '137': 'polygon-pos',
 } as const;
 
+// Platform to chainId mapping (reverse of chainIDPlatform)
+const platformToChainId: Readonly<Record<string, number>> = {
+    'ethereum': 1,
+    'binance-smart-chain': 56,
+    'avalanche': 43114,
+    'base': 8453,
+    'optimistic-ethereum': 10,
+    'arbitrum-one': 42161,
+    'polygon-pos': 137,
+    // 'celo': 42220,
+} as const;
+
 // List of non-EVM tokens to exclude (case-insensitive symbols)
 const nonEvmTokenSymbols = [
     'btc', 'sol', 'xrp', 'ada', 'dot', 'xlm', 'algo', 'hbar', 'xmr', 'bch', 'ltc', 'near',
@@ -77,17 +89,44 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     const abortControllerRef = useRef<AbortController | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    const getContractAddress = useCallback((platforms: any, chainId: number, selectedcategory: string): string => {
+    // Get contract address based on platform and selected category
+    const getContractAddress = useCallback((platforms: any, selectedcategory: string): string => {
         if (!platforms) return 'null';
-        if (selectedcategory !== 'All' && selectedcategory !== 'token' && selectedcategory !== 'meme') {
+        
+        // If a specific network category is selected
+        if (selectedCategory !== 'All' && selectedCategory !== 'token' && selectedCategory !== 'meme') {
             const platformKey = networkToplatform[selectedcategory.toLowerCase()];
-            return platforms[platformKey];
+            return platforms[platformKey] || 'null';
         }
-        else {
-            const platformKey = chainIDPlatform[chainId.toString()];
-            return platforms[platformKey];
+        
+        // For "All", "token", or "meme" categories, check all platforms
+        for (const platformKey of Object.values(chainIDPlatform)) {
+            if (platforms[platformKey]) {
+                return platforms[platformKey];
+            }
         }
-    }, []);
+        
+        return 'null';
+    }, [selectedCategory]);
+    
+    // Get chainId based on selected category
+    const getChainId = useCallback((platforms: any, selectedcategory: string): number => {
+        // If a specific network category is selected
+        if (selectedCategory !== 'All' && selectedCategory !== 'token' && selectedCategory !== 'meme') {
+            const platformKey = networkToplatform[selectedcategory.toLowerCase()];
+            return platformToChainId[platformKey] || walletChainId;
+        }
+        
+        // For "All", "token", or "meme" categories, find the first available platform's chainId
+        for (const [chainId, platformKey] of Object.entries(chainIDPlatform)) {
+            if (platforms[platformKey]) {
+                return parseInt(chainId);
+            }
+        }
+        
+        // Default to wallet chainId if no platforms found
+        return walletChainId;
+    }, [selectedCategory, walletChainId]);
 
     // Check if a token is an EVM-compatible token
     const isEvmToken = useCallback((coin: TokenTypeB): boolean => {
@@ -109,6 +148,18 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         }
 
         return true;
+    }, []);
+
+    // Check if a token has the platform for the selected category
+    const hasPlatformForCategory = useCallback((coin: TokenTypeB, category: string): boolean => {
+        if (category === 'All' || category === 'token' || category === 'meme') {
+            return true;
+        }
+        
+        if (!coin.platforms) return false;
+        
+        const platformKey = networkToplatform[category.toLowerCase()];
+        return !!coin.platforms[platformKey];
     }, []);
 
     useEffect(() => {
@@ -139,7 +190,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                 const evmTokens = coinList.filter(isEvmToken);
                 setCoins(evmTokens);
                 coinsRef.current = evmTokens;
-                console.log("evmTokens : ", evmTokens)
+                console.log("evmTokens : ", evmTokens);
             } catch (error) {
                 if (error === 'AbortError') return;
                 console.error('Error fetching coins:', error);
@@ -177,9 +228,14 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
             if (selectedCategory === 'token' || selectedCategory === 'meme') {
                 return coin.category === selectedCategory;
             }
-            // Network-based filtering
-            const platformKey = networkToplatform[selectedCategory.toLowerCase()];
-            return platformKey ? coin.platforms?.[platformKey] : false;
+            
+            // Network-based filtering - check if token supports this network
+            if (coin.platforms) {
+                const platformKey = networkToplatform[selectedCategory.toLowerCase()];
+                return !!coin.platforms[platformKey];
+            }
+            
+            return false;
         });
 
         // Then sort the filtered coins
@@ -322,12 +378,17 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
                 {visibleCoins.map((coin, index) => {
-                    const contractAddress = getContractAddress(coin.platforms, walletChainId, selectedCategory);
-                    // Skip coins without contract addresses
+                    // Determine correct chainId and contract address based on selected category
+                    const contractAddress = getContractAddress(coin.platforms, selectedCategory);
+                    
+                    // Skip coins without contract addresses for network categories
                     if (contractAddress === 'null' && selectedCategory !== 'All' &&
                         selectedCategory !== 'token' && selectedCategory !== 'meme') {
                         return null;
                     }
+                    
+                    // Get the chain ID based on the platform that has the contract address
+                    const chainId = getChainId(coin.platforms, selectedCategory);
 
                     // Set ref for the last element to detect when it's visible
                     const isLastElement = index === visibleCoins.length - 1;
@@ -377,7 +438,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
 
                             <button
                                 onClick={() => {
-                                    console.log("coin : ", coin)
+                                    console.log("Adding to cart with chainId:", chainId);
                                     debouncedAddToCart({
                                         id: coin.id,
                                         name: coin.name,
@@ -387,12 +448,16 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                                         category: coin.category,
                                         quantity: 1,
                                         address: contractAddress,
-                                        chainId: coin.chainId,
+                                        chainId: chainId, // Use the correct chainId
                                         decimals: coin.decimals,
-                                    })
-                                }
-
-                                }
+                                        marketCap: coin.marketCap,
+                                        marketCapRank: coin.marketCapRank,
+                                        priceChange24h: coin.priceChange24h,
+                                        sparkline: coin.sparkline,
+                                        volume24h: coin.volume24h,
+                                        platforms: coin.platforms
+                                    });
+                                }}
                                 className="w-full py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
                                 disabled={contractAddress === 'null'}
                             >
