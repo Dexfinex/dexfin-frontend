@@ -177,7 +177,9 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 			balance: item.balanceDecimal,
 			decimals: item.decimals,
 			usdPrice: item.usdPrice,
+			usdPrice24hrUsdChange: item.usdPrice24hrUsdChange,
 			usdValue: item.usdValue,
+			usdValue24hrUsdChange: item.usdValue24hrUsdChange,
 			tokenId: item.tokenId,
 			network: item.network
 		} as unknown as TokenBalance));

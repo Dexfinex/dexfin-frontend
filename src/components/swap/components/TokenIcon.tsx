@@ -2,7 +2,7 @@ import { useState } from "react";
 import { v4 as uuid } from "uuid";
 import { Skeleton } from "@chakra-ui/react";
 
-import ErrorImg from "../../../../public/images/token/error.svg"
+import ErrorImg from "/images/token/error.svg"
 import { getChainIcon } from "../../../utils/getChainIcon";
 
 interface TokenChainListIconProps {
