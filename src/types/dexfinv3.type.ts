@@ -20,7 +20,9 @@ export interface EvmWalletBalanceResponseType {
   balance: string;
   balanceDecimal: number;
   usdPrice: number;
+  usdPrice24hrUsdChange: number;
   usdValue: number;
+  usdValue24hrUsdChange: number;
   chain: string;
   network: NetworkType;
   tokenId: string;
