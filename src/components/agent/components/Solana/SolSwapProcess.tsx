@@ -40,7 +40,6 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
     try {
 
       setShowConfirmation(true);
-
       sendTransactionMutate(
         {
           transactions: quoteData
@@ -197,6 +196,10 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
             <div className="flex justify-between">
               <span className="text-white/60">Rate</span>
               <span className="font-medium">1 {fromToken.symbol} = {formatNumberByFrac(quoteData?.exchangeRate)} {toToken.symbol} </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-white/60">Network</span>
+              <span className="font-medium">{'Solana'}</span>
             </div>
           </div>
         </div>
