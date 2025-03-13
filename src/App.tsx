@@ -1,29 +1,30 @@
-import {useContext, useEffect, useState} from 'react';
-import {useStore} from './store/useStore';
-import {Header} from './components/Header';
-import {Workspace} from './components/Workspace';
+import { useContext, useEffect, useState } from 'react';
+import { useStore } from './store/useStore';
+import { Header } from './components/Header';
+import { Workspace } from './components/Workspace';
 import AIAgentModal from './components/agent/AIAgentModal.tsx';
 import SwapModal from './components/swap/SwapModal'
-import {DeFiModal} from './components/DeFiModal';
-import {DashboardModal} from './components/DashboardModal';
-import {MarketDataModal} from './components/MarketDataModal';
-import {ChatModal} from './components/ChatModal';
+import { DeFiModal } from './components/DeFiModal';
+import { DashboardModal } from './components/DashboardModal';
+import { MarketDataModal } from './components/MarketDataModal';
+import { ChatModal } from './components/ChatModal';
 import CartModal from './components/ShoppingCart/CartModal.tsx';
-import {SocialFeedModal} from './components/SocialFeedModal';
-import {GamesModal} from './components/GamesModal';
-import {RewardsModal} from './components/RewardsModal';
+import { SocialFeedModal } from './components/SocialFeedModal';
+import { GamesModal } from './components/GamesModal';
+import { RewardsModal } from './components/RewardsModal';
 import SignupModal from "./components/SignupModal.tsx";
 import SigninModal from "./components/SigninModal.tsx";
-import {AuthMethodType} from "@lit-protocol/constants";
-import {Web3AuthContext} from "./providers/Web3AuthContext.tsx";
-import {LOCAL_STORAGE_AUTH_REDIRECT_TYPE} from "./constants";
-import {TradingViewModal} from './components/TradingViewModal.tsx';
-import {initStream, KEY_NAME} from './utils/chatApi.ts';
-import {PushAPI, CONSTANTS} from '@pushprotocol/restapi';
+import { AuthMethodType } from "@lit-protocol/constants";
+import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
+import { LOCAL_STORAGE_AUTH_REDIRECT_TYPE } from "./constants";
+import { TradingViewModal } from './components/TradingViewModal.tsx';
+import { initStream, KEY_NAME } from './utils/chatApi.ts';
+import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import UsernameModal from "./components/UsernameModal.tsx";
+import WalletDrawer from './components/WalletDrawer.tsx';
 
 export default function App() {
-    const {theme} = useStore();
+    const { theme } = useStore();
     const [isSignupTriggered, setIsSignupTriggered] = useState(false);
 
     const {
@@ -59,7 +60,10 @@ export default function App() {
 
         isUsernameModalOpen,
         widgetCommand,
-        setWidgetCommand
+        setWidgetCommand,
+
+        isWalletDrawerOpen,
+        setIsWalletDrawerOpen
     } = useStore();
 
     const {
@@ -151,8 +155,8 @@ export default function App() {
 
     return (
         <div className="min-h-screen flex flex-col">
-            <Header/>
-            <Workspace/>
+            <Header />
+            <Workspace />
 
             {isSignupModalOpen && (
                 <SignupModal
@@ -174,7 +178,7 @@ export default function App() {
 
             <AIAgentModal
                 isOpen={isAIAgentOpen}
-                widgetCommand = {widgetCommand}
+                widgetCommand={widgetCommand}
                 onClose={() => setIsAIAgentOpen(false)}
             />
             <SwapModal
@@ -222,6 +226,10 @@ export default function App() {
             <UsernameModal
                 isOpen={isUsernameModalOpen}
                 onClose={() => useStore.getState().setIsUsernameModalOpen(false)}
+            />
+            <WalletDrawer
+                isOpen={isWalletDrawerOpen}
+                onClose={() => setIsWalletDrawerOpen(false)}
             />
         </div>
     );

@@ -255,9 +255,8 @@ export const coingeckoService = {
     },
     getInfo: async (tokenId: string): Promise<any> => {
         try {
-            const response = await axios.get(`${COINGECKO_URL}/coins/${tokenId}`);
-
-            return response.data;
+            const { data } = await coinGeckoApi.get<any>(`/coin?coinId=${tokenId}`);
+            return data;
         } catch (err) {
             console.log('get token info err: ', err);
         }
