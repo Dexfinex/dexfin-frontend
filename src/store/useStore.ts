@@ -153,6 +153,9 @@ interface StoreState {
   isUsernameModalOpen: boolean;
   setIsUsernameModalOpen: (isOpen: boolean) => void;
 
+  isWalletDrawerOpen: boolean;
+  setIsWalletDrawerOpen: (isOpen: boolean) => void;
+
   // Market Data View
   marketDataView: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed';
   setMarketDataView: (view: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed') => void;
@@ -346,6 +349,9 @@ const useStore = create<StoreState>((set, get) => ({
   setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
   isrewardsOpen: false,
   setIsRewardsOpen: (isOpen) => set({ isrewardsOpen: isOpen }),
+
+  isWalletDrawerOpen: false,
+  setIsWalletDrawerOpen: (isOpen) => set({ isWalletDrawerOpen: isOpen }),
 
   // Market Data View
   marketDataView: 'overview',

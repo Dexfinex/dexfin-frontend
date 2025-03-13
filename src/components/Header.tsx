@@ -7,7 +7,6 @@ import { AccountMenu } from './AccountMenu';
 import { TopbarStarredItems } from './TopbarStarredItems';
 import { NotificationPanel } from './NotificationPanel';
 import { useStore } from '../store/useStore';
-import { WalletDrawer } from './WalletDrawer';
 import { Web3AuthContext } from "../providers/Web3AuthContext";
 import { useWebSocket } from '../providers/WebSocketProvider';
 import { useToast } from '@chakra-ui/react';
@@ -21,10 +20,9 @@ export const Header: React.FC = () => {
   const toggleTopbarVisibility = useStore((state) => state.toggleTopbarVisibility);
   const toggleTopbarPosition = useStore((state) => state.toggleTopbarPosition);
   const loadStarredItems = useStore((state) => state.loadStarredItems);
-  const { theme, toggleTheme } = useStore();
+  const { theme, toggleTheme, setIsWalletDrawerOpen } = useStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const toast = useToast();
@@ -77,7 +75,7 @@ export const Header: React.FC = () => {
 
   const toggleWalletDrawer = () => {
     if (isConnected) {
-      setIsWalletOpen(true);
+      setIsWalletDrawerOpen(true);
     } else {
       toast({
         status: 'info',
@@ -214,11 +212,6 @@ export const Header: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-      />
-
-      <WalletDrawer
-        isOpen={isWalletOpen}
-        setIsOpen={setIsWalletOpen}
       />
     </>
   );

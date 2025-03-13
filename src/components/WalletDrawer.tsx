@@ -21,14 +21,14 @@ import useDefiStore from "../store/useDefiStore.ts";
 
 interface WalletDrawerProps {
     isOpen: boolean,
-    setIsOpen: (open: boolean) => void
+    onClose: () => void
 }
 
 export type PageType = 'main' | 'asset' | 'send' | 'receive'
 
 
 
-export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen }) => {
+export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
     const { theme } = useStore();
 
     const { address, logout, solanaWalletInfo } = useContext(Web3AuthContext);
@@ -63,7 +63,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
 
     const handleDisconnect = () => {
         logout()
-        setIsOpen(false)
+        onClose()
     }
 
     const handleAsset = async (token: TokenBalance) => {
@@ -95,7 +95,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                 style={{ width: drawerWidth }}
             >
                 {/* Close Button */}
-                {isOpen && <CloseButton setIsOpen={setIsOpen} />}
+                {isOpen && <CloseButton setIsOpen={onClose} />}
 
                 {/* TopBar */}
                 <div className="flex items-center justify-between mx-4">
@@ -236,7 +236,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, setIsOpen })
                 isOpen && (
                     <div
                         className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-                        onClick={() => setIsOpen(false)}
+                        onClick={() => onClose()}
                     />
                 )
             }
