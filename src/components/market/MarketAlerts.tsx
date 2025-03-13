@@ -259,7 +259,7 @@ export const MarketAlerts: React.FC = () => {
                 </span>
             );
         }
-        
+
         return (
             <span className={`px-3 py-1 rounded-full text-sm ${config.color}`}>
                 {config.label}
@@ -481,17 +481,31 @@ export const MarketAlerts: React.FC = () => {
                                     {alertTypes.map(type => (
                                         <button
                                             key={type.id}
-                                            onClick={() => setNewAlert(prev => ({ ...prev, type: type.id }))}
-                                            className={`p-3 rounded-lg transition-colors text-left ${newAlert.type === type.id
-                                                ? 'bg-blue-500'
-                                                : 'bg-white/5 hover:bg-white/10'
+                                            onClick={() => {
+                                                if (!type.comingSoon) {
+                                                    setNewAlert(prev => ({ ...prev, type: type.id }));
+                                                }
+                                            }}
+                                            className={`p-3 rounded-lg transition-colors text-left relative ${newAlert.type === type.id
+                                                    ? 'bg-blue-500'
+                                                    : type.comingSoon
+                                                        ? 'bg-white/5 cursor-not-allowed opacity-80'
+                                                        : 'bg-white/5 hover:bg-white/10'
                                                 }`}
+                                            disabled={type.comingSoon}
                                         >
                                             <div className="flex items-center gap-2 mb-1">
                                                 <type.icon className="w-4 h-4" />
                                                 <span className="font-medium">{type.label}</span>
                                             </div>
                                             <p className="text-xs text-white/60">{type.description}</p>
+
+                                            {/* Coming Soon Badge */}
+                                            {type.comingSoon && (
+                                                <div className="absolute top-0 right-0 bg-blue-500/50 text-white text-xs font-bold px-2 py-1 rounded-bl-lg rounded-tr-lg">
+                                                    COMING SOON
+                                                </div>
+                                            )}
                                         </button>
                                     ))}
                                 </div>
