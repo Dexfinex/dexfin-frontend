@@ -135,18 +135,42 @@ export const alertTypes: AlertTypeConfig[] = [
                 type: 'select',
                 placeholder: 'Select protocol',
                 options: [
-                    { value: 'aave', label: 'Aave' },
-                    { value: 'uniswap', label: 'Uniswap' },
-                    { value: 'curve', label: 'Curve' }
+                    { value: 'aave-v3', label: 'Aave' },
+                    { value: 'uniswap-v3', label: 'Uniswap' },
+                    { value: 'curve-dex', label: 'Curve Dex' },
+                    { value: 'lido', label: 'Lido' }
+                ]
+            },
+        ]
+    },
+    {
+        id: 'marketcap',
+        label: 'Market Cap Alert',
+        icon: BarChart2,
+        color: 'bg-orange-500/20 text-orange-400',
+        description: 'Monitor market capitalization changes',
+        valueLabel: 'Market Cap',
+        placeholder: 'Enter market cap in USD',
+        customFields: [
+            {
+                name: 'token',
+                label: 'Token',
+                type: 'select',
+                placeholder: 'Select token',
+                options: [
+                    { value: 'BTC', label: 'Bitcoin (BTC)' },
+                    { value: 'ETH', label: 'Ethereum (ETH)' },
+                    { value: 'SOL', label: 'Solana (SOL)' }
                 ]
             },
             {
-                name: 'changeType',
-                label: 'Change Type',
+                name: 'timeWindow',
+                label: 'Time Window',
                 type: 'select',
                 options: [
-                    { value: 'absolute', label: 'Absolute Value' },
-                    { value: 'percentage', label: 'Percentage Change' }
+                    { value: '1h', label: '1 Hour' },
+                    { value: '24h', label: '24 Hours' },
+                    { value: '7d', label: '7 Days' }
                 ]
             }
         ]
@@ -185,38 +209,6 @@ export const alertTypes: AlertTypeConfig[] = [
                 label: 'Keywords',
                 type: 'text',
                 placeholder: 'Enter keywords (comma separated)'
-            }
-        ]
-    },
-    {
-        id: 'marketcap',
-        label: 'Market Cap Alert',
-        icon: BarChart2,
-        color: 'bg-orange-500/20 text-orange-400',
-        description: 'Monitor market capitalization changes',
-        valueLabel: 'Market Cap',
-        placeholder: 'Enter market cap in USD',
-        customFields: [
-            {
-                name: 'token',
-                label: 'Token',
-                type: 'select',
-                placeholder: 'Select token',
-                options: [
-                    { value: 'BTC', label: 'Bitcoin (BTC)' },
-                    { value: 'ETH', label: 'Ethereum (ETH)' },
-                    { value: 'SOL', label: 'Solana (SOL)' }
-                ]
-            },
-            {
-                name: 'timeWindow',
-                label: 'Time Window',
-                type: 'select',
-                options: [
-                    { value: '1h', label: '1 Hour' },
-                    { value: '24h', label: '24 Hours' },
-                    { value: '7d', label: '7 Days' }
-                ]
             }
         ]
     },
@@ -298,11 +290,11 @@ export enum AlertStatus {
 export type AlertCondition = 'above' | 'below';
 
 // Alert Type IDs for type safety
-export type AlertTypeId = 
-    | 'price' 
-    | 'volume' 
-    | 'tvl' 
-    | 'social' 
-    | 'marketcap' 
-    | 'trend' 
+export type AlertTypeId =
+    | 'price'
+    | 'volume'
+    | 'tvl'
+    | 'social'
+    | 'marketcap'
+    | 'trend'
     | 'whale';
