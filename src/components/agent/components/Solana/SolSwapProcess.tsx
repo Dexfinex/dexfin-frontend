@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import {Button, Flex, Skeleton} from '@chakra-ui/react';
+import React, { useState, useEffect, useContext } from 'react';
+import { Button, Flex, Skeleton } from '@chakra-ui/react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
 import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
 import { convertCryptoAmount } from '../../../../utils/agent.tsx';
@@ -8,6 +8,10 @@ import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransacti
 import useJupiterQuote from '../../../../hooks/useJupiterQuote.ts';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
+import { Web3AuthContext } from "../../../../providers/Web3AuthContext.tsx";
+import { VersionedTransaction } from "@solana/web3.js";
+import {mapChainId2ExplorerUrl} from "../../../../config/networks.ts";
+import { connection } from "../../../../config/solana.ts";
 interface SwapProcessProps {
   onClose: () => void;
   fromToken: TokenType;
@@ -24,8 +28,12 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
   const { mutate: sendTransactionMutate } = useBrianTransactionMutation();
-  const [scan, setScan] = useState<string>('https://solscan.io/');
 
+  const [scan, setScan] = useState<string>('https://solscan.io/');
+  const {
+    solanaWalletInfo,
+    signSolanaTransaction,
+  } = useContext(Web3AuthContext);
   const {
     isLoading: isQuoteLoading,
     data: quoteData,
@@ -35,15 +43,54 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
     sellAmount: fromAmount,
     slippage: 0.5,
   })
-  useEffect(() => {
-    console.log(quoteData);
-}, [quoteData]);
 
   const handleTransaction = async () => {
     try {
 
       setShowConfirmation(true);
-      
+      // ----- I think we need it----------
+
+      const { swapTransaction } = await (
+        await fetch('https://quote-api.jup.ag/v6/swap', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            quoteResponse: quoteData,
+            userPublicKey: solanaWalletInfo?.publicKey,
+            asLegacyTransaction: false,
+            dynamicComputeUnitLimit: true,
+            prioritizationFeeLamports: 1,
+            wrapAndUnwrapSol: true
+          })
+        })
+      ).json()
+
+      const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
+      const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+      const signedTransaction = await signSolanaTransaction(transaction)
+
+      try {
+        const txid = await connection.sendRawTransaction(signedTransaction!.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+        });
+
+        console.log(`✅ Transaction Sent! TXID: ${txid}`);
+
+        // 5️⃣ Confirm the transaction
+        await connection.confirmTransaction(txid, "confirmed");
+        console.log("✅ Transaction Confirmed!");
+
+        setTransactionProgress(100);
+        setTransactionStatus('Transaction confirmed!');
+        setScan(`${mapChainId2ExplorerUrl[900]}/tx/${txid}`);
+      } catch (error) {
+        console.error("❌ Error Sending Transaction:", error);
+        setShowConfirmation(false);
+        setFailedTransaction(true);
+      }
     } catch (error) {
       console.error("Error executing transactions:", error);
       setShowConfirmation(false);
@@ -86,7 +133,7 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
         } else {
           clearInterval(timer);
         }
-      }, 1500);
+      }, 800);
 
       return () => clearInterval(timer);
     }
@@ -180,13 +227,14 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
             </div>
           </div>
         </div>
-
-        <button
-          onClick={() => handleTransaction()}
-          className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
-        >
-          Confirm Swap
-        </button>
+        {!isQuoteLoading &&
+          <button
+            onClick={() => handleTransaction()}
+            className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
+          >
+            Confirm Swap
+          </button>
+        }
       </div>
     </div>
   );
@@ -221,11 +269,11 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
             />
           </div>
           <p className="mt-4 text-white/60">
-            Swapping {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} for {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} via {protocol?.name}
+            Swapping {formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken.symbol} for {formatNumberByFrac(quoteData?.exchangeRate)} {toToken.symbol} via {protocol?.name}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken.symbol} for ${formatNumberByFrac(quoteData?.exchangeRate)} ${toToken.symbol}`} />
       )}
     </div>
   );
@@ -262,7 +310,7 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Swap ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} for ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} via ${protocol?.name}`}
+          description={`Swap ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken.symbol} for ${formatNumberByFrac(quoteData?.exchangeRate)} ${toToken.symbol} via ${protocol?.name}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (
