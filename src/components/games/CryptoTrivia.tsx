@@ -1581,7 +1581,9 @@ export const CryptoTrivia: React.FC<CryptoTriviaProps> = ({ gameType = 'TRIVIA' 
         doublePoints: true
       },
       streak: 0,
-      multiplier: difficultySettings[difficulty].multiplier
+      multiplier: difficultySettings[difficulty].multiplier,
+      selectedAnswer: null,
+      showFeedback: false
     }));
   };
 

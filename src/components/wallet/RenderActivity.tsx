@@ -1,10 +1,10 @@
 import React from "react";
-
 import { useStore } from "../../store/useStore";
 import { mapChainName2ExplorerUrl } from "../../config/networks";
 import useActivitiesStore from "../../store/useActivitiesStore.ts";
-
 import { shrinkAddress, getTimeAgo } from "../../utils/common.util";
+import { TokenChainIcon } from "../swap/components/TokenIcon.tsx";
+import { ExternalLink } from "lucide-react";
 
 const RenderActivity: React.FC = () => {
     const { theme } = useStore();
@@ -20,11 +20,20 @@ const RenderActivity: React.FC = () => {
                     <a key={activity.hash + index} className={`p-3 flex items-center justify-between ${theme === "dark" ? "bg-white/5 hover:bg-white/10" : "bg-black/5 hover:bg-black/10"} rounded-lg gap-2`}
                         href={`${mapChainName2ExplorerUrl[activity.network.id]}/tx/${activity.hash}`}
                         target="_blank">
-                        <div className="flex items-center gap-2">
-                            <img src={activity.network.icon} className="w-6 h-6 rounded-full" />
-                            <div>
+                        <div className="flex items-center gap-2 max-w-[248px]">
+                            {
+                                activity.tokenLogo ?
+                                    <TokenChainIcon src={activity.tokenLogo} alt={""} size={"md"}
+                                        chainId={Number(activity.network.chainId)} />
+                                    :
+                                    <img src={activity.network.icon} className="w-6 h-6 rounded-full" />
+                            }
+                            <div className="flex-1">
                                 <div className={`text-sm ${theme === "dark" ? "text-white/70" : "text-black/70"}`}>{activity.summary}</div>
-                                <div className={`text-xs ${theme === "dark" ? "text-white/70" : "text-black/70"}`}>{shrinkAddress(activity.hash)}</div>
+                                <div className={`flex items-center gap-2 text-xs ${theme === "dark" ? "text-white/70" : "text-black/70"}`}>
+                                    {shrinkAddress(activity.hash)}
+                                    <ExternalLink className="w-4 h-4 text-white/70" />
+                                </div>
                             </div>
                         </div>
                         <span className={`text-sm ${theme === "dark" ? "text-white/70" : "text-black/70"} `}>{getTimeAgo(activity.date)}</span>

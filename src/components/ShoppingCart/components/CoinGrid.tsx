@@ -115,7 +115,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         setPage(1);
         setHasMore(true);
         setVisibleCoins([]);
-        
+
         if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollTop = 0;
         }
@@ -139,6 +139,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                 const evmTokens = coinList.filter(isEvmToken);
                 setCoins(evmTokens);
                 coinsRef.current = evmTokens;
+                console.log("evmTokens : ", evmTokens)
             } catch (error) {
                 if (error === 'AbortError') return;
                 console.error('Error fetching coins:', error);
@@ -159,7 +160,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     // Memoized and optimized filtering
     const filteredCoins = useMemo(() => {
         const searchLower = searchQuery.toLowerCase().trim();
-        
+
         // First filter the coins
         const filtered = coins.filter(coin => {
             if (!coin) return false;
@@ -180,12 +181,12 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
             const platformKey = networkToplatform[selectedCategory.toLowerCase()];
             return platformKey ? coin.platforms?.[platformKey] : false;
         });
-        
+
         // Then sort the filtered coins
         return [...filtered].sort((a, b) => {
             const { option, direction } = sortConfig;
             const multiplier = direction === 'asc' ? 1 : -1;
-            
+
             switch (option) {
                 case 'marketCap':
                     return multiplier * ((a.marketCap || 0) - (b.marketCap || 0));
@@ -213,7 +214,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
             const nextCoins = filteredCoins.slice(0, page * itemsPerPage);
             setVisibleCoins(nextCoins);
         }
-        
+
         setHasMore(page * itemsPerPage < filteredCoins.length);
     }, [filteredCoins, page, itemsPerPage]);
 
@@ -250,18 +251,18 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
         // Show scrollbar
         setIsScrolling(true);
-        
+
         // Clear existing timeout
         if (scrollTimeoutRef.current) {
             clearTimeout(scrollTimeoutRef.current);
         }
-        
+
         // Set timeout to hide scrollbar after scrolling stops
         scrollTimeoutRef.current = setTimeout(() => {
             setIsScrolling(false);
         }, 1000); // Hide after 1 second of inactivity
     }, []);
-    
+
     // Clean up timeout on unmount
     useEffect(() => {
         return () => {
@@ -311,13 +312,12 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     }
 
     return (
-        <div 
+        <div
             ref={scrollContainerRef}
-            className={`h-full overflow-y-auto transition-all duration-300 ${
-                isScrolling 
-                    ? "scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent" 
-                    : "scrollbar-none"
-            }`}
+            className={`h-full overflow-y-auto transition-all duration-300 ${isScrolling
+                ? "scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent"
+                : "scrollbar-none"
+                }`}
             onScroll={handleScroll}
         >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
@@ -376,7 +376,8 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                             </div>
 
                             <button
-                                onClick={() =>
+                                onClick={() => {
+                                    console.log("coin : ", coin)
                                     debouncedAddToCart({
                                         id: coin.id,
                                         name: coin.name,
@@ -386,9 +387,11 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                                         category: coin.category,
                                         quantity: 1,
                                         address: contractAddress,
-                                        chainId: walletChainId,
+                                        chainId: coin.chainId,
                                         decimals: coin.decimals,
                                     })
+                                }
+
                                 }
                                 className="w-full py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
                                 disabled={contractAddress === 'null'}
@@ -399,7 +402,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                     )
                 }).filter(Boolean)}
             </div>
-            
+
             {/* Loading indicator at the bottom */}
             {hasMore && (
                 <div className="flex justify-center p-4">
