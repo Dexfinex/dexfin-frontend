@@ -116,6 +116,18 @@ export const coingeckoService = {
             throw error;
         }
     },
+
+    getTokenIds: async (): Promise<any[]> => {
+        try {
+            const response = await coinGeckoApi.get<any[]>('/tokens/list');
+            const data = response.data;
+            return data;
+        } catch (error) {
+            console.error('Failed to fetch memecoins:', error);
+            throw error;
+        }
+    },
+
     getOHLCV: async (
         tokenId: string,
         timeInterval = '1H',
