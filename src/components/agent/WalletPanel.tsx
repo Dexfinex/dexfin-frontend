@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Landmark,
-  TrendingUp,
   Wallet,
 } from 'lucide-react';
 import { WalletTab } from '../../types/agent.type.ts';
@@ -15,6 +14,7 @@ import { useWalletBalance } from '../../hooks/useBalance.tsx';
 import { TokenChainIcon } from './../swap/components/TokenIcon.tsx';
 import { PositionList } from '../wallet/PositionList.tsx';
 import PNL from '../common/PNL.tsx';
+import PNLPercent from '../common/PNLPercent.tsx';
 import { formatNumberByFrac } from '../../utils/common.util.ts';
 
 interface WalletPanelProps {
@@ -106,7 +106,7 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                             </div>
                             <div className="text-right">
                               <span>{formatUsdValue(position.usdValue)}</span>
-                              <PNL pnlUsd={position.usdPrice24hrUsdChange} pnlPercent={position.usdPrice24hrUsdChange * 100 / (position.usdPrice - position.usdPrice24hrUsdChange)} />
+                              <PNLPercent pnlPercent={position.usdPrice24hrUsdChange * 100 / (position.usdPrice - position.usdPrice24hrUsdChange)} />
                             </div>
                           </button>
                         ))
@@ -208,7 +208,7 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                                     </div>
                                     <div className="text-right">
                                       <div>{formatUsdValue(position.usdValue)}</div>
-                                      <PNL pnlUsd={position.usdPrice24hrUsdChange} pnlPercent={position.usdPrice24hrUsdChange * 100 / (position.usdPrice - position.usdPrice24hrUsdChange)} />
+                                      <PNLPercent pnlPercent={position.usdPrice24hrUsdChange * 100 / (position.usdPrice - position.usdPrice24hrUsdChange)} />
                                     </div>
                                   </button>
                                 ))
