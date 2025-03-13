@@ -213,11 +213,11 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex justify-between text-sm sm:text-base">
-                                        <span>{tokenBalance.symbol}</span>
+                                        <span>{tokenBalance.symbol.toUpperCase()}</span>
                                         <span>${info.market_data.current_price.usd}</span>
                                     </div>
                                     <div className={`flex justify-between ${theme === "dark" ? "text-white/70" : "text-black/70"} text-sm`}>
-                                        <span>{formatNumberByFrac(tokenBalance.balance, 5)} {tokenBalance.symbol}</span>
+                                        <span>{formatNumberByFrac(tokenBalance.balance, 5)} {tokenBalance.symbol.toUpperCase()}</span>
                                         <span>{formatUsdValue(info.market_data.current_price.usd * tokenBalance.balance)}</span>
                                     </div>
                                 </div>
