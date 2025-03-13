@@ -1,4 +1,4 @@
-import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   CheckCircle,
@@ -20,23 +20,24 @@ import {
   Users,
   X
 } from 'lucide-react';
-import EmojiPicker, {Theme} from 'emoji-picker-react';
-import GifPicker, {Theme as GifTheme} from 'gif-picker-react';
-import {VideoCallModal} from './VideoCallModal';
-import {CreateGroupModal} from './CreateGroupModal';
-import {SendFileModal} from './SendFileModal';
-import {CONSTANTS, PushAPI} from '@pushprotocol/restapi';
-import {Web3AuthContext} from '../providers/Web3AuthContext';
-import {useStore} from '../store/useStore';
-import {Spinner, Tooltip, useToast} from '@chakra-ui/react';
-import {Clipboard} from './common/Clipboard';
-import {extractAddress, getChatHistoryDate, getEnsName, shrinkAddress} from '../utils/common.util';
-import {getAllChatData, getWalletProfile, initStream, LIMIT} from '../utils/chatApi';
-import {EditChatProfileModal} from './EditChatProfileModal';
-import {ChatGroupModal} from './ChatGroupModal';
-import {ChatModeType, ChatType, IChat, IGroup, IUser, ProfileType, ReactionType} from '../types/chat.type';
-import {ChatMessages} from './ChatMessages';
-import {ChatHelpModal} from './ChatHelpModal';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
+import GifPicker, { Theme as GifTheme } from 'gif-picker-react';
+import { VideoCallModal } from './VideoCallModal';
+import { CreateGroupModal } from './CreateGroupModal';
+import { SendFileModal } from './SendFileModal';
+import { CONSTANTS, PushAPI } from '@pushprotocol/restapi';
+import { Web3AuthContext } from '../providers/Web3AuthContext';
+import { useStore } from '../store/useStore';
+import { Spinner, Tooltip, useToast } from '@chakra-ui/react';
+import { Clipboard } from './common/Clipboard';
+import { extractAddress, getChatHistoryDate, getEnsName, shrinkAddress } from '../utils/common.util';
+import { getAllChatData, getWalletProfile, initStream, LIMIT, KEY_NAME } from '../utils/chatApi';
+import { EditChatProfileModal } from './EditChatProfileModal';
+import { ChatGroupModal } from './ChatGroupModal';
+import { ChatModeType, ChatType, IChat, IGroup, IUser, ProfileType, ReactionType } from '../types/chat.type';
+import { WalletTypeEnum } from '../types/wallet';
+import { ChatMessages } from './ChatMessages';
+import { ChatHelpModal } from './ChatHelpModal';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -56,7 +57,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isChatGroupModalActive, setIsChatGroupModalActive] = useState(false);
   const [isSendModalActive, setIsSendModalActive] = useState(false);
   const [isHelpModalActive, setIsHelpModalActive] = useState(false);
-  const { signer, address } = useContext(Web3AuthContext);
+  const { signer, address, walletType } = useContext(Web3AuthContext);
   const { setChatUser, chatUser, receivedMessage, setSelectedUserInChatModal, theme } = useStore();
   const toast = useToast()
 
@@ -564,27 +565,31 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const handleUnlock = async () => {
     if (!chatUser?.uid) {
       try {
-        const user = await PushAPI.initialize(signer, {
-          env: CONSTANTS.ENV.PROD,
-        });
+        if (walletType === WalletTypeEnum.EOA) {
+          const user = await PushAPI.initialize(signer, {
+            env: CONSTANTS.ENV.PROD,
+          });
 
-        setChatUser(user)
-        initStream(user)
+          const encryption = await user.encryption.info()
 
-        /*
-                const encryption = await user.encryption.info()
+          if (encryption?.decryptedPgpPrivateKey) {
+            const pk = {
+              account: user.account,
+              decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+            }
+            localStorage.setItem(KEY_NAME, JSON.stringify(pk))
 
-                if (encryption?.decryptedPgpPrivateKey) {
-                  const pk = {
-                    account: user.account,
-                    decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
-                  }
-                  localStorage.setItem(KEY_NAME, JSON.stringify(pk))
+            setChatUser(user)
+            initStream(user)
+          }
+        } else if (walletType === WalletTypeEnum.EMBEDDED) {
+          // const user = await PushAPI.initialize(signer, {
+          //   env: CONSTANTS.ENV.PROD,
+          // });
 
-                  setChatUser(user)
-                  initStream(user)
-                }
-        */
+          // setChatUser(user)
+          // initStream(user)
+        }
       } catch (err) {
         console.log('initialize err: ', err)
         toast({
