@@ -1,4 +1,7 @@
 import { PublicKey } from '@solana/web3.js'
+import { getDomainKey, NameRegistryState } from "@bonfida/spl-name-service";
+import {tokenList} from '../constants/mock/solana';
+import { connection } from "../config/solana.ts";
 
 export function convertBrianKnowledgeToPlainText(text: string) {
   return text
@@ -32,11 +35,32 @@ export function BollingerBandsProgress({ value,  upperBand, lowerBand }: any): n
   return 0;
 }
 
+export function symbolToToken(symbol: string): any {
+  
+  if(symbol=="SOL") {
+    const token = tokenList.find(token => token.symbol === symbol && token.name === "Wrapped SOL");
+    return token;
+  } else {
+    const token = tokenList.find(token => token.symbol === symbol);
+    return token;
+  }
+}
+
 export function isValidSolanaAddress(address: string): boolean {
   try {
     new PublicKey(address);
     return true;
   } catch (error) {
     return false;
+  }
+}
+
+export async function getSolAddressFromSNS(domain: string) {
+  try {
+      const { pubkey } = await getDomainKey(domain);
+      const {registry} : any = await NameRegistryState.retrieve(connection, pubkey);
+      return registry.owner.toBase58();
+  } catch (error) {
+      console.error("No Solana address found for this domain:", error);
   }
 }

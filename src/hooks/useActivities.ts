@@ -29,7 +29,6 @@ export const useActivities = ({
     const { isLoading, refetch, data } = useQuery<WalletActivityType[]>({
         queryKey: ["activities", evmAddress, solanaAddress],
         queryFn: fetchActivities,
-        refetchInterval: 10_000,
         enabled: isConnected
     })
 

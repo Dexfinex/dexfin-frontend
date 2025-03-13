@@ -46,6 +46,18 @@ const chainIDPlatform: Readonly<Record<string, string>> = {
     '137': 'polygon-pos',
 } as const;
 
+// Platform to chainId mapping (reverse of chainIDPlatform)
+const platformToChainId: Readonly<Record<string, number>> = {
+    'ethereum': 1,
+    'binance-smart-chain': 56,
+    'avalanche': 43114,
+    'base': 8453,
+    'optimistic-ethereum': 10,
+    'arbitrum-one': 42161,
+    'polygon-pos': 137,
+    // 'celo': 42220,
+} as const;
+
 // List of non-EVM tokens to exclude (case-insensitive symbols)
 const nonEvmTokenSymbols = [
     'btc', 'sol', 'xrp', 'ada', 'dot', 'xlm', 'algo', 'hbar', 'xmr', 'bch', 'ltc', 'near',
@@ -71,23 +83,49 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     const [hasMore, setHasMore] = useState(true);
     const [page, setPage] = useState(1);
     const itemsPerPage = 6; // Show 6 coins per page (3x2 grid)
-    const observer = useRef<IntersectionObserver | null>(null);
-    const lastCoinElementRef = useRef<HTMLDivElement | null>(null);
+    const loadingIndicatorRef = useRef<HTMLDivElement | null>(null);
     const coinsRef = useRef<TokenTypeB[]>([]);
     const abortControllerRef = useRef<AbortController | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    const getContractAddress = useCallback((platforms: any, chainId: number, selectedcategory: string): string => {
+    // Get contract address based on platform and selected category
+    const getContractAddress = useCallback((platforms: any, selectedcategory: string): string => {
         if (!platforms) return 'null';
-        if (selectedcategory !== 'All' && selectedcategory !== 'token' && selectedcategory !== 'meme') {
+        
+        // If a specific network category is selected
+        if (selectedCategory !== 'All' && selectedCategory !== 'token' && selectedCategory !== 'meme') {
             const platformKey = networkToplatform[selectedcategory.toLowerCase()];
-            return platforms[platformKey];
+            return platforms[platformKey] || 'null';
         }
-        else {
-            const platformKey = chainIDPlatform[chainId.toString()];
-            return platforms[platformKey];
+        
+        // For "All", "token", or "meme" categories, check all platforms
+        for (const platformKey of Object.values(chainIDPlatform)) {
+            if (platforms[platformKey]) {
+                return platforms[platformKey];
+            }
         }
-    }, []);
+        
+        return 'null';
+    }, [selectedCategory]);
+    
+    // Get chainId based on selected category
+    const getChainId = useCallback((platforms: any, selectedcategory: string): number => {
+        // If a specific network category is selected
+        if (selectedCategory !== 'All' && selectedCategory !== 'token' && selectedCategory !== 'meme') {
+            const platformKey = networkToplatform[selectedcategory.toLowerCase()];
+            return platformToChainId[platformKey] || walletChainId;
+        }
+        
+        // For "All", "token", or "meme" categories, find the first available platform's chainId
+        for (const [chainId, platformKey] of Object.entries(chainIDPlatform)) {
+            if (platforms[platformKey]) {
+                return parseInt(chainId);
+            }
+        }
+        
+        // Default to wallet chainId if no platforms found
+        return walletChainId;
+    }, [selectedCategory, walletChainId]);
 
     // Check if a token is an EVM-compatible token
     const isEvmToken = useCallback((coin: TokenTypeB): boolean => {
@@ -109,6 +147,18 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         }
 
         return true;
+    }, []);
+
+    // Check if a token has the platform for the selected category
+    const hasPlatformForCategory = useCallback((coin: TokenTypeB, category: string): boolean => {
+        if (category === 'All' || category === 'token' || category === 'meme') {
+            return true;
+        }
+        
+        if (!coin.platforms) return false;
+        
+        const platformKey = networkToplatform[category.toLowerCase()];
+        return !!coin.platforms[platformKey];
     }, []);
 
     useEffect(() => {
@@ -139,7 +189,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                 const evmTokens = coinList.filter(isEvmToken);
                 setCoins(evmTokens);
                 coinsRef.current = evmTokens;
-                console.log("evmTokens : ", evmTokens)
+                console.log("evmTokens : ", evmTokens);
             } catch (error) {
                 if (error === 'AbortError') return;
                 console.error('Error fetching coins:', error);
@@ -177,9 +227,14 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
             if (selectedCategory === 'token' || selectedCategory === 'meme') {
                 return coin.category === selectedCategory;
             }
-            // Network-based filtering
-            const platformKey = networkToplatform[selectedCategory.toLowerCase()];
-            return platformKey ? coin.platforms?.[platformKey] : false;
+            
+            // Network-based filtering - check if token supports this network
+            if (coin.platforms) {
+                const platformKey = networkToplatform[selectedCategory.toLowerCase()];
+                return !!coin.platforms[platformKey];
+            }
+            
+            return false;
         });
 
         // Then sort the filtered coins
@@ -219,33 +274,33 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     }, [filteredCoins, page, itemsPerPage]);
 
     // Setup intersection observer for infinite scroll
+    // Setup load more trigger when scrolling near the bottom
     useEffect(() => {
         if (loading) return;
 
-        // Disconnect previous observer
-        if (observer.current) {
-            observer.current.disconnect();
-        }
-
-        // Create new observer
-        observer.current = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && hasMore) {
-                // User has scrolled to the last item, load more
+        const handleScroll = () => {
+            if (!scrollContainerRef.current || !hasMore) return;
+            
+            const container = scrollContainerRef.current;
+            const scrollPosition = container.scrollTop + container.clientHeight;
+            const scrollThreshold = container.scrollHeight - 300; // Load more when within 300px of bottom
+            
+            if (scrollPosition > scrollThreshold) {
                 setPage(prevPage => prevPage + 1);
             }
-        }, { threshold: 0.5 });
-
-        // Observe the last coin element
-        if (lastCoinElementRef.current) {
-            observer.current.observe(lastCoinElementRef.current);
+        };
+        
+        const scrollContainer = scrollContainerRef.current;
+        if (scrollContainer) {
+            scrollContainer.addEventListener('scroll', handleScroll);
         }
-
+        
         return () => {
-            if (observer.current) {
-                observer.current.disconnect();
+            if (scrollContainer) {
+                scrollContainer.removeEventListener('scroll', handleScroll);
             }
         };
-    }, [hasMore, loading, visibleCoins]);
+    }, [hasMore, loading]);
 
     // Handle scroll events to show/hide scrollbar
     const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -314,28 +369,29 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     return (
         <div
             ref={scrollContainerRef}
-            className={`h-full overflow-y-auto transition-all duration-300 ${isScrolling
+            className={`h-full overflow-y-auto transition-all duration-300 overscroll-contain ${isScrolling
                 ? "scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent"
                 : "scrollbar-none"
                 }`}
             onScroll={handleScroll}
         >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 pb-10">
                 {visibleCoins.map((coin, index) => {
-                    const contractAddress = getContractAddress(coin.platforms, walletChainId, selectedCategory);
-                    // Skip coins without contract addresses
+                    // Determine correct chainId and contract address based on selected category
+                    const contractAddress = getContractAddress(coin.platforms, selectedCategory);
+                    
+                    // Skip coins without contract addresses for network categories
                     if (contractAddress === 'null' && selectedCategory !== 'All' &&
                         selectedCategory !== 'token' && selectedCategory !== 'meme') {
                         return null;
                     }
-
-                    // Set ref for the last element to detect when it's visible
-                    const isLastElement = index === visibleCoins.length - 1;
+                    
+                    // Get the chain ID based on the platform that has the contract address
+                    const chainId = getChainId(coin.platforms, selectedCategory);
 
                     return (
                         <div
                             key={`${coin.id}-${index}`}
-                            ref={isLastElement ? lastCoinElementRef : null}
                             className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all hover:scale-[1.02]"
                         >
                             <div className="flex items-center justify-between mb-3">
@@ -377,7 +433,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
 
                             <button
                                 onClick={() => {
-                                    console.log("coin : ", coin)
+                                    console.log("Adding to cart with chainId:", chainId);
                                     debouncedAddToCart({
                                         id: coin.id,
                                         name: coin.name,
@@ -387,12 +443,16 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                                         category: coin.category,
                                         quantity: 1,
                                         address: contractAddress,
-                                        chainId: coin.chainId,
+                                        chainId: chainId, // Use the correct chainId
                                         decimals: coin.decimals,
-                                    })
-                                }
-
-                                }
+                                        marketCap: coin.marketCap,
+                                        marketCapRank: coin.marketCapRank,
+                                        priceChange24h: coin.priceChange24h,
+                                        sparkline: coin.sparkline,
+                                        volume24h: coin.volume24h,
+                                        platforms: coin.platforms
+                                    });
+                                }}
                                 className="w-full py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
                                 disabled={contractAddress === 'null'}
                             >
@@ -403,12 +463,13 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                 }).filter(Boolean)}
             </div>
 
-            {/* Loading indicator at the bottom */}
-            {hasMore && (
-                <div className="flex justify-center p-4">
-                    <Spinner />
-                </div>
-            )}
+            {/* Loading indicator at the bottom - separated from the grid */}
+            <div 
+                ref={loadingIndicatorRef} 
+                className="flex justify-center p-4 mt-4 mb-8 h-16"
+            >
+                {hasMore && <Spinner />}
+            </div>
         </div>
     );
 });

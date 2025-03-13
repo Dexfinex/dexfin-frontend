@@ -150,7 +150,7 @@ const CartList: React.FC<ExtendedCartListProps> = React.memo(({
         isChainSwitching,
         isConnected
     } = useContext(Web3AuthContext);
-    console.log("cartItems : ", cartItems)
+    // console.log("cartItems : ", cartItems)
     // Calculate total price
     const total = useMemo(() => {
         return cartItems.reduce((total, item) => {

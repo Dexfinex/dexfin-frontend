@@ -24,7 +24,7 @@ export const SolSendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmoun
   const [failedTransaction, setFailedTransaction] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
-  const [scan, setScan] = useState<string>('https://etherscan.io/');
+  const [scan, setScan] = useState<string>('https://solscan.io/');
   const { mutate: sendTransactionMutate } = useSolanaAgentActionMutation();
 
   const handleTransaction = async () => {

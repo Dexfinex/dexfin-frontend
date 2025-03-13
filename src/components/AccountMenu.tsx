@@ -1,14 +1,15 @@
-import React, {useContext, useMemo, useState} from 'react';
-import {LogIn, LogOut, Settings, User, WalletIcon} from 'lucide-react';
-import {useStore} from '../store/useStore';
-import {Web3AuthContext} from "../providers/Web3AuthContext.tsx";
-import {shrinkAddress} from "../utils/common.util.ts";
+import React, { useContext, useMemo, useState } from 'react';
+import { LogIn, LogOut, Settings, User, WalletIcon } from 'lucide-react';
+import { useStore } from '../store/useStore';
+import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
+import { shrinkAddress } from "../utils/common.util.ts";
 
 
 export const AccountMenu: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const setIsSettingsOpen = useStore((state) => state.setIsSettingsOpen);
     const isTopbarBottom = useStore((state) => state.isTopbarBottom);
+    const setIsWalletDrawerOpen = useStore((state) => state.setIsWalletDrawerOpen);
 
     const {
         /*
@@ -43,6 +44,7 @@ export const AccountMenu: React.FC = () => {
                 icon: WalletIcon,
                 label: shrinkAddress(address),
                 onClick: () => {
+                    setIsWalletDrawerOpen(true);
                 },
             }, {
                 icon: LogOut,
@@ -71,7 +73,7 @@ export const AccountMenu: React.FC = () => {
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
             >
-                <User className="w-4 h-4"/>
+                <User className="w-4 h-4" />
             </button>
 
             {isOpen && (
@@ -89,7 +91,7 @@ export const AccountMenu: React.FC = () => {
                                     className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 transition-colors group cursor-pointer"
                                     onClick={item.onClick}
                                 >
-                                    <item.icon className="w-4 h-4"/>
+                                    <item.icon className="w-4 h-4" />
                                     <span className="flex-1 text-left">{item.label}</span>
                                 </div>
                             ))}

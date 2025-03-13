@@ -1,17 +1,21 @@
-import React from "react";
+import React, { useContext } from "react";
+import { ExternalLink } from "lucide-react";
 import { useStore } from "../../store/useStore";
 import { mapChainName2ExplorerUrl } from "../../config/networks";
 import useActivitiesStore from "../../store/useActivitiesStore.ts";
 import { shrinkAddress, getTimeAgo } from "../../utils/common.util";
 import { TokenChainIcon } from "../swap/components/TokenIcon.tsx";
-import { ExternalLink } from "lucide-react";
+import { useActivities } from "../../hooks/useActivities.ts";
+import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 
 const RenderActivity: React.FC = () => {
     const { theme } = useStore();
+    const { address, solanaWalletInfo } = useContext(Web3AuthContext);
+    useActivities({ evmAddress: address, solanaAddress: solanaWalletInfo?.publicKey || "" })
     const { activities } = useActivitiesStore();
 
     return (
-        <div className="space-y-3 flex-1 mt-4 sm:mt-5 mx-4 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-290px)]">
+        <div className="space-y-3 flex-1 mt-4 sm:mt-5 mx-4 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-360px)] max-h-[calc(100vh-296px)]">
             {
                 activities.length === 0 && <div className='w-full h-full flex justify-center items-center align-center mt-20'><h2 className='text-white/60 italic'>No activities yet</h2></div>
             }

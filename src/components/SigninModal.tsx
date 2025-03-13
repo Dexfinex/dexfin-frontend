@@ -33,6 +33,7 @@ const SigninModal = ({ isOpen, onClose, goToSignUp }: SigninModalProps) => {
     sessionError,
     handleGoogleLogin,
     handleDiscordLogin,
+    isPreparingAccounts,
   } = useContext(Web3AuthContext);
 
   const error = authError || accountsError || sessionError;
@@ -66,6 +67,10 @@ const SigninModal = ({ isOpen, onClose, goToSignUp }: SigninModalProps) => {
 
     if (sessionLoading) {
       return <Loading copy={'Securing your session...'} error={error} />;
+    }
+
+    if (isPreparingAccounts) {
+      return <Loading copy={'Preparing your account...'} error={error} />;
     }
 
     // If user is authenticated and has selected an account, initialize session
