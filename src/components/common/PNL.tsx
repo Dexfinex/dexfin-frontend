@@ -2,7 +2,6 @@ import React from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 import { formatNumberByFrac } from "../../utils/common.util";
-import { formatCurrency } from "../../utils/formatter.util";
 
 interface PNLProps {
     pnlUsd: number;
@@ -16,7 +15,9 @@ const PNL: React.FC<PNLProps> = ({ pnlUsd, pnlPercent, label = "" }) => {
             {
                 pnlUsd === 0 ? null : pnlUsd > 0 ? <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             }
-            <span className="text-xs sm:text-sm">{formatCurrency(formatNumberByFrac(pnlUsd), { symbol: '$', maximumDecimalTrailingZeroes: 2 })} {`(${formatNumberByFrac(pnlPercent || 0)}%)`} {label}</span>
+            <span className="text-xs sm:text-sm">
+                {pnlUsd > 0 ? "$" : "-$"}{formatNumberByFrac(Math.abs(pnlUsd))} {`(${formatNumberByFrac(pnlPercent || 0)}%)`} {label}
+            </span>
         </div>
     )
 }
