@@ -390,19 +390,24 @@ export function initProviderByMethod(authMethod: AuthMethod) {
 */
 
 
-export const getWrappedKeyMetaDatas = async (sessionSigs: SessionSigs): Promise<StoredKeyMetadata[]> => {
-    try {
-        return await listEncryptedKeyMetadata({
-            pkpSessionSigs: sessionSigs,
-            litNodeClient: litNodeClient as ILitNodeClient,
-        })
+export const getWrappedKeyMetaDataList = async (sessionSigs: SessionSigs): Promise<StoredKeyMetadata[]> => {
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-    } catch (err) {
-        console.log("getWrappedKeyMetaDatas error", err)
-        return []
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            return await listEncryptedKeyMetadata({
+                pkpSessionSigs: sessionSigs,
+                litNodeClient: litNodeClient as ILitNodeClient,
+            });
+        } catch (err) {
+            console.log(`Attempt ${attempt} failed:`, err);
+            if (attempt < 3) await sleep(300); // Wait before retrying
+        }
     }
-}
 
+    console.log("getWrappedKeyMetaDataList failed after 3 attempts");
+    return [];
+};
 export const getSolanaWrappedKeyMetaDataByPkpEthAddress = (wrappedKeyMetaDatas: StoredKeyMetadata[], pkpEthAddress: string): StoredKeyMetadata | null => {
     let result = null
     for (const wrappedKeyMetaData of wrappedKeyMetaDatas) {
