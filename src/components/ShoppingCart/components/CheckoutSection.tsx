@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { ChevronDown, ShoppingCart, X, ArrowLeft } from 'lucide-react';
+import React, { useState, useMemo, useContext } from 'react';
+import { ChevronDown, ShoppingCart, ArrowLeft } from 'lucide-react';
 import { Alert, AlertIcon, Button } from '@chakra-ui/react';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { CheckoutSectionProps } from '../../../types/cart.type';
+import { Web3AuthContext } from '../../../providers/Web3AuthContext';
+import { WalletTypeEnum } from '../../../types/wallet';
 
 const OrderSummaryItem = React.memo(({
     item,
@@ -13,7 +15,15 @@ const OrderSummaryItem = React.memo(({
 }) => (
     <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
         <div className="flex items-center gap-3">
-            <img src={item.logo} alt={item.name} className="w-8 h-8" loading="lazy" />
+            <img
+                src={item.logo}
+                alt={item.name}
+                className="w-8 h-8"
+                loading="lazy"
+                onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/placeholder.png';
+                }}
+            />
             <div>
                 <div className="font-medium">{item.name}</div>
                 <div className="text-sm text-white/60">
@@ -69,17 +79,31 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
     onExecuteBuy
 }) => {
     const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'card'>('wallet');
+    const { walletType, isConnected } = useContext(Web3AuthContext);
 
-    const { subtotal, total } = useMemo(() => {
+    // Match the same wallet detection logic used in SwapBox
+    const isEmbeddedWallet = walletType === WalletTypeEnum.EMBEDDED;
+    
+    // console.log("walletType:", walletType);
+    // console.log("isEmbeddedWallet:", isEmbeddedWallet);
+    // console.log("WalletTypeEnum.EMBEDDED:", WalletTypeEnum.EMBEDDED);
+    // console.log("isConnected:", isConnected);
+
+    const { subtotal, total, networkFee } = useMemo(() => {
         const subtotal = cartItems.reduce((total, item) => {
             const coinPrice = tokenPrices[`1:${item.id.toLowerCase()}`] || item.price;
             return total + (Number(coinPrice) * item.quantity);
         }, 0);
+
+        // Network fee is free for embedded wallets
+        const networkFee = isEmbeddedWallet ? 0 : 2.50;
+
         return {
             subtotal,
-            total: subtotal + 2.50 // Network fee
+            networkFee,
+            total: subtotal + networkFee
         };
-    }, [cartItems, tokenPrices]);
+    }, [cartItems, tokenPrices, isEmbeddedWallet]);
 
     return (
         <>
@@ -116,6 +140,18 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                             </div>
                         </div>
 
+                        {/* Wallet Type Information */}
+                        {/* <div className="p-3 bg-blue-500/20 rounded-lg text-sm">
+                            <p className="font-medium">
+                                Wallet Type: {isEmbeddedWallet ? 'EMBEDDED' : 'EOA'}
+                            </p>
+                            <p className="text-white/70">
+                                {isEmbeddedWallet
+                                    ? "You're using an embedded wallet. Network fees are free!"
+                                    : "You're using an external wallet. Network fees will apply."}
+                            </p>
+                        </div> */}
+
                         {/* Total Section */}
                         <div className="space-y-4 sticky bottom-0 bg-background pt-4">
                             <div className="p-4 bg-white/5 rounded-lg space-y-2">
@@ -125,7 +161,14 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-white/60">Network Fee</span>
-                                    <span>~$2.50</span>
+                                    {isEmbeddedWallet ? (
+                                        <div className="flex gap-2">
+                                            <span className="text-green-500">Free!</span>
+                                            <span className="text-gray-500 line-through">~$2.50</span>
+                                        </div>
+                                    ) : (
+                                        <span>~$2.50</span>
+                                    )}
                                 </div>
                                 <div className="h-px bg-white/10 my-2" />
                                 <div className="flex justify-between text-lg font-medium">
@@ -162,8 +205,7 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                 </div>
             </div>
         </>
-    )
-
+    );
 });
 
 OrderSummaryItem.displayName = 'OrderSummaryItem';

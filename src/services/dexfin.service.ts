@@ -6,7 +6,6 @@ import {
   EvmDefiProtocol,
   SolanaTokensType,
   SolanaWalletReponseType,
-  WalletActivityType
 } from "../types/dexfinv3.type.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.ts";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";

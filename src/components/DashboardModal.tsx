@@ -3,7 +3,6 @@ import { X, Maximize2, Minimize2, TrendingUp, TrendingDown } from "lucide-react"
 import { Line } from "react-chartjs-2"
 import { Web3AuthContext } from "../providers/Web3AuthContext"
 import { useWalletBalance } from "../hooks/useBalance"
-import useTokenBalanceStore from "../store/useTokenBalanceStore"
 import { TokenIcon, TokenChainIcon } from "./swap/components/TokenIcon"
 import {
   Chart as ChartJS,
@@ -415,7 +414,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
     const fetchData = async () => {
       setIsLoading(true)
       try {
-        await refetchBalances()
+        // await refetchBalances()
       } catch (error) {
         console.error("Error fetching wallet balances:", error)
       } finally {

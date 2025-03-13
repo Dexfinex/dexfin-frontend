@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
 	Modal,
 	ModalBody,
@@ -8,14 +9,25 @@ import {
 	Text, Box
 } from '@chakra-ui/react';
 import { Check } from 'lucide-react';
+import { useWalletBalance } from '../../../hooks/useBalance';
 
 interface TransactionModalProps {
 	open: boolean;
 	setOpen: (open: boolean) => void;
 	link: string;
+	checkBalance?: boolean;
 }
 
-export const TransactionModal = ({ open, setOpen, link }: TransactionModalProps) => {
+export const TransactionModal = ({ open, setOpen, link, checkBalance = false }: TransactionModalProps) => {
+
+	const { refetch: refetchWalletBalance } = useWalletBalance();
+
+	useEffect(() => {
+		if (open && link && checkBalance) {
+			refetchWalletBalance();
+		}
+	}, [link, open, checkBalance])
+
 	return (
 		<Modal
 			isCentered
@@ -24,7 +36,7 @@ export const TransactionModal = ({ open, setOpen, link }: TransactionModalProps)
 			isOpen={open}
 			onClose={() => setOpen(false)}
 		>
-			<ModalOverlay backdropFilter="blur(4px)"/>
+			<ModalOverlay backdropFilter="blur(4px)" />
 			<ModalContent
 				bg="#0e0e0e"
 				color="white"

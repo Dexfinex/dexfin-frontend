@@ -12,7 +12,7 @@ export const useGetTwitterInfo = (refreshTrigger = 0) => {
             console.log("getting twitter info.....");
             setLoading(true);
             const result = await TechnicalAnalysisService.getTwitterInfo();
-            console.log("hook twitter data : ", result);
+            // console.log("hook twitter data : ", result);
             setData(result);
             setError(null);
         } catch (err) {
