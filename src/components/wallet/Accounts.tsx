@@ -30,7 +30,7 @@ const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAdd
                     <Copy className="w-3 h-3" />
                 </div>
             </PopoverTrigger>
-            <PopoverContent className={`!w-[236px] !border-1 !border-transparent ${theme === "dark" ? "!bg-black" : "!bg-white"} !p-2`}>
+            <PopoverContent className={`!w-[244px] !border-1 !border-transparent ${theme === "dark" ? "!bg-black" : "!bg-white"} !p-2`}>
                 <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70 cursor-pointer" onClick={handleEvmCopy}>
                     <span className="flex items-center gap-1">
                         <img src="https://cdn.moralis.io/eth/0x.png" className="w-4 h-4 mr-1" />

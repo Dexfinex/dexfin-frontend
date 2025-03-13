@@ -17,7 +17,7 @@ const RenderTokens: React.FC<RenderTokensProps> = ({ handleAsset }) => {
     const { tokenBalances } = useTokenBalanceStore();
 
     return (
-        <div className="flex-1 space-y-2 mt-4 sm:mt-5 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-350px)] max-h-[calc(100vh-290px)] mx-4">
+        <div className="flex-1 space-y-2 mt-4 sm:mt-5 overflow-y-auto ai-chat-scrollbar sm:max-h-[calc(100vh-360px)] max-h-[calc(100vh-296px)] mx-4">
             {
                 isLoadingBalance ?
                     <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'4rem'}></Skeleton>
