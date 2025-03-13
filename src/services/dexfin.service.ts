@@ -8,6 +8,7 @@ import {
   SolanaWalletReponseType,
 } from "../types/dexfinv3.type.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.ts";
+import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
 
 export const dexfinv3Service = {
   getEvmWalletBalance: async ({
@@ -60,7 +61,7 @@ export const dexfinv3Service = {
           balanceDecimal: Number(data.native.amount),
           usdPrice: data.native.usdPrice,
           usdValue: data.native.usdValue,
-          chain: "0x384",
+          chain: `0x${SOLANA_CHAIN_ID.toString(16)}`,
         } as EvmWalletBalanceResponseType)
       }
 
@@ -77,7 +78,7 @@ export const dexfinv3Service = {
             balanceDecimal: Number(token.amount),
             usdPrice: token.usdPrice,
             usdValue: token.usdValue,
-            chain: "0x384"
+            chain: `0x${SOLANA_CHAIN_ID.toString(16)}`
           } as EvmWalletBalanceResponseType
         })
 
@@ -176,8 +177,11 @@ export const dexfinv3Service = {
               balanceDecimal: Number(token.amount),
               usdPrice: token.usdPrice,
               usdValue: token.usdValue,
-              chain: "0x384",
-              network: token.network,
+              chain: `0x${SOLANA_CHAIN_ID.toString(16)}`,
+              network: {
+                ...token.network,
+                chainId: SOLANA_CHAIN_ID
+              },
               tokenId: token.tokenId
             } as EvmWalletBalanceResponseType)
           } else {
@@ -202,7 +206,22 @@ export const dexfinv3Service = {
         `/wallet/activities?evmAddress=${evmAddress}&solAddress=${solAddress}`
       );
 
-      return data
+      if (data.length > 0) {
+        let result: any = []
+        data.forEach((e: any) => {
+          if (e.summary.includes("1e-") && e.summary.includes("SOL")) return;
+
+          result.push({
+            ...e,
+            network: {
+              ...e.network,
+              chainId: e.network.id === "solana" ? SOLANA_CHAIN_ID : e.network.chainId
+            }
+          })
+        });
+
+        return result;
+      }
     } catch (error) {
       console.log("Failed to fetch evm wallet balance:", error);
     }
