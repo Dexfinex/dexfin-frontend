@@ -207,20 +207,14 @@ export const dexfinv3Service = {
       );
 
       if (data.length > 0) {
-        let result: any = []
-        data.forEach((e: any) => {
-          if (e.summary.includes("1e-") && e.summary.includes("SOL")) return;
-
-          result.push({
-            ...e,
-            network: {
-              ...e.network,
-              chainId: e.network.id === "solana" ? SOLANA_CHAIN_ID : e.network.chainId
-            }
-          })
-        });
-
-        return result;
+        return data.map((e: any) => ({
+          ...e,
+          network: {
+            ...e.network,
+            chainId: e.network.id === "solana" ? SOLANA_CHAIN_ID : e.network.chainId
+          }
+        }
+        ));
       }
     } catch (error) {
       console.log("Failed to fetch evm wallet balance:", error);

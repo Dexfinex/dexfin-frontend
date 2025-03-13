@@ -30,9 +30,9 @@ const RenderTokens: React.FC<RenderTokensProps> = ({ handleAsset }) => {
                             <div className="flex items-center gap-3">
                                 <TokenChainIcon src={token.logo} alt={token.name} size={"lg"} chainId={Number(token.chain)} />
                                 <div className='flex flex-col justify-start items-start'>
-                                    <div className="font-medium text-sm sm:text-md">{token.symbol}</div>
+                                    <div className="font-medium text-sm sm:text-md">{token.symbol.toUpperCase()}</div>
                                     <div className="text-xs sm:text-sm text-white/60">
-                                        {`${formatNumberByFrac(token.balance, 5)} ${token.symbol}`}
+                                        {`${formatNumberByFrac(token.balance, 5)} ${token.symbol.toUpperCase()}`}
                                     </div>
                                 </div>
                             </div>
