@@ -244,7 +244,8 @@ export const getTimeAgo = (time: string) => {
     const v = formatDistanceToNow(new Date(time), { addSuffix: false });
     const result = v.replace("about ", "").replace(' ago', '').
         replace("seconds", 's').replace('second', 's').
-        replace("minutes", 'm').replace('minutes', 'm').
+        replace("less than a minute", '< 1m').
+        replace("minutes", 'm').replace('minute', 'm').
         replace("hours", 'h').replace('hour', 'h').
         replace('days', 'd').replace('day', 'd').
         replace('months', 'mo').replace('month', 'mo');
