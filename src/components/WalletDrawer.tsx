@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { Wallet, XCircle, TrendingUp, Send, ArrowDown, CreditCard, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
+import { Skeleton } from '@chakra-ui/react';
 
 import { useStore } from "../store/useStore";
 import { Web3AuthContext } from "../providers/Web3AuthContext";
@@ -10,13 +11,14 @@ import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStor
 import { SendDrawer } from "./wallet/SendDrawer";
 import { BuyDrawer } from "./wallet/BuyDrawer";
 import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
-import { Skeleton } from '@chakra-ui/react';
 import Accounts from "./wallet/Accounts.tsx";
 import AssetInfo from "./wallet/AssetInfo.tsx";
 import RenderActivity from "./wallet/RenderActivity.tsx";
 import RenderDefi from "./wallet/RenderDeFi.tsx";
 import RenderTokens from "./wallet/RenderTokens.tsx";
 import CloseButton from "./wallet/CloseButton.tsx";
+import PNL from "./common/PNL.tsx";
+
 import useDefiStore from "../store/useDefiStore.ts";
 
 interface WalletDrawerProps {
@@ -35,7 +37,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
     const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
     const [page, setPage] = useState<PageType>('main');
     const { isLoading: isLoadingBalance, refetch: refetchWalletBalance } = useWalletBalance();
-    const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
+    const { totalUsdValue, tokenBalances, pnlPercent, pnlUsd } = useTokenBalanceStore();
     const { totalLockedValue } = useDefiStore();
 
     const [showBuyDrawer, setShowBuyDrawer] = useState(false);
@@ -131,10 +133,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
                                 }
                             </div>
                             {
-                                !isLoadingBalance && <div className="flex items-center gap-1 mt-1 text-green-400">
-                                    <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                    <span className="text-xs sm:text-sm">+1.57% TODAY</span>
-                                </div>
+                                isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'} h={'1rem'}></Skeleton> : <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
                             }
                         </div>
 
