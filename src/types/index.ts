@@ -190,6 +190,7 @@ export interface TrendingCoin {
   marketCapRank: number;
   priceUsd: number;
   volume: number;
+  priceChaingePercentage24hUsd: number;
 }
 
 export interface MarketToken {
