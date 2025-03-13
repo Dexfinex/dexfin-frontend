@@ -4,14 +4,10 @@ import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
 import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
 import { convertCryptoAmount } from '../../../../utils/agent.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
-import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
 import useJupiterQuote from '../../../../hooks/useJupiterQuote.ts';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
-import { Web3AuthContext } from "../../../../providers/Web3AuthContext.tsx";
-import { VersionedTransaction } from "@solana/web3.js";
-import {mapChainId2ExplorerUrl} from "../../../../config/networks.ts";
-import { connection } from "../../../../config/solana.ts";
+import { useSolanaAgentSwapActionMutation } from '../../../../hooks/useSolanaAgentAction.ts';
 interface SwapProcessProps {
   onClose: () => void;
   fromToken: TokenType;
@@ -27,13 +23,9 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
   const [failedTransaction, setFailedTransaction] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
-  const { mutate: sendTransactionMutate } = useBrianTransactionMutation();
-
+  const { mutate: sendTransactionMutate } = useSolanaAgentSwapActionMutation();
   const [scan, setScan] = useState<string>('https://solscan.io/');
-  const {
-    solanaWalletInfo,
-    signSolanaTransaction,
-  } = useContext(Web3AuthContext);
+  
   const {
     isLoading: isQuoteLoading,
     data: quoteData,
@@ -48,49 +40,30 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
     try {
 
       setShowConfirmation(true);
-      // ----- I think we need it----------
 
-      const { swapTransaction } = await (
-        await fetch('https://quote-api.jup.ag/v6/swap', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
+      sendTransactionMutate(
+        {
+          transactions: quoteData
+        },
+        {
+          onSuccess: (receipt) => {
+            if(receipt) {
+              setTransactionProgress(100);
+              setTransactionStatus('Transaction confirmed!');
+              setScan(receipt ?? ''); 
+            } else {
+              setShowConfirmation(false);
+              setFailedTransaction(true);  
+            }
           },
-          body: JSON.stringify({
-            quoteResponse: quoteData,
-            userPublicKey: solanaWalletInfo?.publicKey,
-            asLegacyTransaction: false,
-            dynamicComputeUnitLimit: true,
-            prioritizationFeeLamports: 1,
-            wrapAndUnwrapSol: true
-          })
-        })
-      ).json()
-
-      const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
-      const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-      const signedTransaction = await signSolanaTransaction(transaction)
-
-      try {
-        const txid = await connection.sendRawTransaction(signedTransaction!.serialize(), {
-          skipPreflight: false,
-          preflightCommitment: "confirmed",
-        });
-
-        console.log(`✅ Transaction Sent! TXID: ${txid}`);
-
-        // 5️⃣ Confirm the transaction
-        await connection.confirmTransaction(txid, "confirmed");
-        console.log("✅ Transaction Confirmed!");
-
-        setTransactionProgress(100);
-        setTransactionStatus('Transaction confirmed!');
-        setScan(`${mapChainId2ExplorerUrl[900]}/tx/${txid}`);
-      } catch (error) {
-        console.error("❌ Error Sending Transaction:", error);
-        setShowConfirmation(false);
-        setFailedTransaction(true);
-      }
+          onError: (error) => {
+            console.log(error);
+            setShowConfirmation(false);
+            setFailedTransaction(true);
+          },
+        },
+      );
+      
     } catch (error) {
       console.error("Error executing transactions:", error);
       setShowConfirmation(false);
