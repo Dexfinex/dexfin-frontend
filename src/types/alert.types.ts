@@ -49,6 +49,7 @@ export interface AlertTypeConfig {
     description: string;
     valueLabel: string;
     placeholder: string;
+    comingSoon?: boolean;
     customFields?: {
         name: string;
         label: string;
@@ -183,6 +184,7 @@ export const alertTypes: AlertTypeConfig[] = [
         description: 'Track social media mentions and sentiment',
         valueLabel: 'Mentions',
         placeholder: 'Enter number of mentions',
+        comingSoon: true, // Add this line
         customFields: [
             {
                 name: 'platform',
@@ -213,33 +215,6 @@ export const alertTypes: AlertTypeConfig[] = [
         ]
     },
     {
-        id: 'trend',
-        label: 'Trend Alert',
-        icon: TrendingUp,
-        color: 'bg-yellow-500/20 text-yellow-400',
-        description: 'Get notified when tokens start trending',
-        valueLabel: 'Rank',
-        placeholder: 'Enter trending rank',
-        customFields: [
-            {
-                name: 'platform',
-                label: 'Platform',
-                type: 'select',
-                options: [
-                    { value: 'coingecko', label: 'CoinGecko' },
-                    { value: 'dextools', label: 'DexTools' },
-                    { value: 'dexscreener', label: 'DexScreener' }
-                ]
-            },
-            {
-                name: 'minMarketCap',
-                label: 'Minimum Market Cap',
-                type: 'number',
-                placeholder: 'Enter min market cap in USD'
-            }
-        ]
-    },
-    {
         id: 'whale',
         label: 'Whale Alert',
         icon: Ship,
@@ -247,6 +222,7 @@ export const alertTypes: AlertTypeConfig[] = [
         description: 'Track large token transfers',
         valueLabel: 'Amount',
         placeholder: 'Enter amount in tokens',
+        comingSoon: true, // Add this line
         customFields: [
             {
                 name: 'token',
