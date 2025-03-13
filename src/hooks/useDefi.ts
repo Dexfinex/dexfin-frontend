@@ -18,7 +18,6 @@ export const useDefiPositionByWallet = ({ chainId, walletAddress }: { chainId: n
     const { isLoading, refetch, data, error } = useQuery<EvmDefiPosition[]>({
         queryKey: [`get-defi-position-${chainId}-${walletAddress}`],
         queryFn: fetchDefiPositionByWallet,
-        refetchInterval: 5 * 60_000,
     });
 
     useEffect(() => {
@@ -55,7 +54,6 @@ export const useDefiProtocolsByWallet = ({ chainId, walletAddress }: { chainId: 
     const { isLoading, refetch, data, error } = useQuery<EvmDefiProtocol>({
         queryKey: [`get-defi-protocol-${chainId}-${walletAddress}`],
         queryFn: fetchDefiProtocolsByWallet,
-        refetchInterval: 5 * 60_000,
     });
 
     useEffect(() => {

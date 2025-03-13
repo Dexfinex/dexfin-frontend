@@ -137,13 +137,28 @@ export const TrendingMarkets: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-medium text-white">
-                      ${formatNumberByFrac(coin.priceUsd)}
+                    <div className='flex gap-1 '>
+                      <div className="text-lg font-medium text-white">
+                        ${formatNumberByFrac(coin.priceUsd)}
+                      </div>
+
+                      <div className="flex items-center gap-1 text-xs mt-0.5 justify-end">
+                        <span
+                          className={` flex ${coin.priceChaingePercentage24hUsd >= 0
+                            ? 'text-green-500'
+                            : 'text-red-500'
+                            }`}
+                        >
+                          {coin.priceChaingePercentage24hUsd > 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
+                          {formatNumberByFrac(coin.priceChaingePercentage24hUsd)}%
+                        </span>
+                      </div>
                     </div>
+
                     {coin.volume > 0 && (
-                      <div className="flex items-center gap-1 text-sm mt-0.5">
+                      <div className=" items-center gap-1 text-sm mt-0.5">
                         <span className="text-white/60">Vol:</span>
-                        <span className="text-white/80">
+                        <span className="text-white/80 ml-1">
                           ${new Intl.NumberFormat('en-US', {
                             notation: 'compact',
                             maximumFractionDigits: 1

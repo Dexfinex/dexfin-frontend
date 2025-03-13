@@ -140,57 +140,6 @@ export const useBalance = ({
 	}>;
 };
 
-export const useEvmWalletBalance = (params?: IEvmWallet) => {
-
-	const { chainId: connectedChainId, address: connectedAddress } = useContext(Web3AuthContext);
-
-	const activeChainId = params?.chainId || connectedChainId + "";
-	const activeWalletAddress = params?.address || connectedAddress;
-
-	const enabled = !!activeChainId && !!activeWalletAddress;
-	const fetchBalances = useCallback(async () => {
-		if (!activeChainId || !activeWalletAddress) {
-			return []
-		}
-		const data = await dexfinv3Service.getEvmWalletBalanceAll({ address: activeWalletAddress });
-		if (data) {
-			return data;
-		}
-		return []
-	}, [activeChainId, activeWalletAddress]);
-
-	const { isLoading, refetch, data } = useQuery<EvmWalletBalanceResponseType[]>(
-		{
-			queryKey: ['balance', activeWalletAddress, activeChainId,],
-			queryFn: fetchBalances,
-			refetchInterval: 30_000,
-			enabled
-		}
-	);
-
-	useEffect(() => {
-		if (data) {
-			useTokenBalanceStore.getState().setTokenBalances(data.map((item) => ({
-				chain: item.chain,
-				address: item.tokenAddress as string,
-				symbol: item.symbol,
-				name: item.name,
-				logo: item.logo,
-				balance: item.balanceDecimal,
-				decimals: item.decimals,
-				usdPrice: item.usdPrice,
-				usdValue: item.usdValue,
-			} as unknown as TokenBalance)));
-		}
-	}, [data]);
-
-	return {
-		isLoading,
-		refetch,
-		data,
-	};
-};
-
 // get balance of all wallets include solana and bitcoin
 export const useWalletBalance = (params?: IEvmWallet) => {
 	const { chainId: connectedChainId, address: connectedAddress, solanaWalletInfo } = useContext(Web3AuthContext);
@@ -198,22 +147,7 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 	const activeChainId = params?.chainId || connectedChainId + "";
 	const activeWalletAddress = params?.address || connectedAddress;
 
-	const enabled = !!activeChainId && !!activeWalletAddress;
-
 	const fetchBalances = useCallback(async () => {
-		// let evmData: EvmWalletBalanceResponseType[] = [];
-		// if (!activeChainId || !activeWalletAddress) {
-		// 	evmData = [];
-		// } else {
-		// 	evmData = await dexfinv3Service.getEvmWalletBalanceAll({ address: activeWalletAddress });
-		// }
-
-		// if (solanaWalletInfo) {
-		// 	const solData = await dexfinv3Service.getSolanaWalletBalance({ address: solanaWalletInfo.publicKey });
-		// 	return [...evmData, ...solData];
-		// }
-
-		// return evmData;
 
 		if (!activeChainId || !activeWalletAddress) {
 			return [];
@@ -228,8 +162,6 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 		{
 			queryKey: ['balance', activeWalletAddress, activeChainId, solanaWalletInfo],
 			queryFn: fetchBalances,
-			refetchInterval: 30_000,
-			enabled
 		}
 	);
 

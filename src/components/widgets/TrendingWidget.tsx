@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { coingeckoService } from '../../services/coingecko.service';
 import { TrendingCoin } from '../../types';
+import { formatNumberByFrac } from '../../utils/common.util';
 
 export const TrendingWidget: React.FC = () => {
   const [coins, setCoins] = useState<TrendingCoin[]>([]);
@@ -76,9 +77,8 @@ export const TrendingWidget: React.FC = () => {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${
-            refreshing ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+          className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${refreshing ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           title="Refresh data"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
@@ -86,57 +86,71 @@ export const TrendingWidget: React.FC = () => {
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto ai-chat-scrollbar">
-        {coins.map((coin) => (
-          <div
-            key={coin.id}
-            className="p-2.5 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-blue-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all" />
-                <img
-                  src={coin.thumb}
-                  alt={coin.name}
-                  className="w-8 h-8 rounded-full relative"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-sm truncate">{coin.name}</h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-white/80">{coin.symbol}</span>
-                      {coin.marketCapRank && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px] font-medium">
-                          #{coin.marketCapRank}
-                        </span>
+        {coins.map((coin) => {
+          return (
+            <div
+              key={coin.id}
+              className="p-2.5 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-blue-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all" />
+                  <img
+                    src={coin.thumb}
+                    alt={coin.name}
+                    className="w-8 h-8 rounded-full relative"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-sm truncate">{coin.name}</h3>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-white/80">{coin.symbol}</span>
+                        {coin.marketCapRank && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px] font-medium">
+                            #{coin.marketCapRank}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className='flex gap-1 '>
+                        <div className="text-sm font-medium">
+                          ${formatNumberByFrac(coin.priceUsd)}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs mt-0.5 justify-end">
+                          <span
+                            className={` flex ${coin.priceChaingePercentage24hUsd >= 0
+                              ? 'text-green-500'
+                              : 'text-red-500'
+                              }`}
+                          >
+                            {coin.priceChaingePercentage24hUsd > 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
+                            {formatNumberByFrac(coin.priceChaingePercentage24hUsd)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {coin.volume > 0 && (
+                        <div className="gap-1 text-xs mt-0.5">
+                          <span className="text-white/60">Vol:</span>
+                          <span className="text-white/80 ml-1">
+                            ${new Intl.NumberFormat('en-US', {
+                              notation: 'compact',
+                              maximumFractionDigits: 1
+                            }).format(coin.volume)}
+                          </span>
+                        </div>
                       )}
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium">
-                      ${coin.priceUsd.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 6
-                      })}
-                    </div>
-                    {coin.volume > 0 && (
-                      <div className="flex items-center gap-1 text-xs mt-0.5">
-                        <span className="text-white/60">Vol:</span>
-                        <span className="text-white/80">
-                          ${new Intl.NumberFormat('en-US', {
-                            notation: 'compact',
-                            maximumFractionDigits: 1
-                          }).format(coin.volume)}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        }
+        )}
       </div>
     </div>
   );

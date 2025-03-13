@@ -282,7 +282,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
         <div className="mt-4 sm:mt-5 mx-4">
             {
                 hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                    link={`${mapChainId2ExplorerUrl[Number(selectedAsset.chain)]}/tx/${hash}`} />
+                    link={`${mapChainId2ExplorerUrl[Number(selectedAsset.chain)]}/tx/${hash}`} checkBalance={true} />
             }
             {/* Header */}
             {/* <div className="flex items-center justify-between p-4 border-b border-white/10">
