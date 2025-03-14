@@ -3,6 +3,8 @@ import { Wallet, Landmark } from "lucide-react"
 import { Skeleton } from "@chakra-ui/react"
 import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon"
 import { formatNumberByFrac } from "../../utils/common.util"
+import PNL from "../common/PNL"
+import PNLPercent from "../common/PNLPercent"
 import useDefiStore from "../../store/useDefiStore"
 import useTokenBalanceStore from "../../store/useTokenBalanceStore"
 
@@ -18,7 +20,7 @@ export const PortfolioWidget: React.FC = () => {
   const [activeTab, setActiveTab] = useState<WalletTab>("assets")
 
   const { positions = [], totalLockedValue } = useDefiStore();
-  const { totalUsdValue, tokenBalances: balanceData } = useTokenBalanceStore()
+  const { totalUsdValue, tokenBalances: balanceData, pnlUsd, pnlPercent } = useTokenBalanceStore()
 
   const isLoading = false;
   const isLoadingPositions = false
@@ -138,6 +140,7 @@ export const PortfolioWidget: React.FC = () => {
             <div className="text-2xl font-bold mt-1">
               {formatCurrency(totalPortfolioValue)}
             </div>
+            <PNL pnlUsd={pnlUsd} pnlPercent={pnlPercent} label="Today" />
           </div>
 
           {/* Chart Section */}
@@ -232,8 +235,9 @@ export const PortfolioWidget: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right items-end justify-end flex flex-col">
                         <div>{formatCurrency(Number(token.usdValue) || 0)}</div>
+                        <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / (token.usdPrice - token.usdPrice24hrUsdChange)} />
                       </div>
                     </button>
                   ))
