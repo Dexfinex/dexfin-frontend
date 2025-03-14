@@ -3,7 +3,7 @@ import { Line } from 'react-chartjs-2';
 import { TrendingUp, TrendingDown, Search } from 'lucide-react';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { coingeckoService } from '../../../services/coingecko.service';
-import { TokenTypeB, CoinGridProps } from '../../../types/cart.type';
+import { TokenTypeB } from '../../../types/cart.type';
 import debounce from 'lodash/debounce';
 import Spinner from './Spinner';
 import { SortConfig } from './SearchHeader';
@@ -80,13 +80,20 @@ const categoryColors: Record<string, string> = {
     'token': 'bg-white/10'
 };
 
-interface CoinGridWithSortProps extends CoinGridProps {
+// Updated props interface with separate token and network category props
+interface CoinGridWithSortProps {
+    searchQuery: string;
+    activeTokenCategory: string;
+    activeNetworkCategory: string | null;
+    onAddToCart: (item: any) => void;
+    walletChainId: number;
     sortConfig: SortConfig;
 }
 
-const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
+const CoinGrid: React.FC<CoinGridWithSortProps> = ({
     searchQuery,
-    selectedCategory,
+    activeTokenCategory,
+    activeNetworkCategory,
     onAddToCart,
     walletChainId,
     sortConfig
@@ -104,70 +111,57 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     const abortControllerRef = useRef<AbortController | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    // Get contract address based on platform and selected category
-    const getContractAddress = useCallback((platforms: any, selectedcategory: string): string => {
+    // Check if a token is available on a specific network/platform
+    const isTokenAvailableOnNetwork = useCallback((coin: TokenTypeB, networkName: string): boolean => {
+        if (!coin.platforms) return false;
+
+        const platformKey = networkToplatform[networkName];
+        return !!coin.platforms[platformKey];
+    }, []);
+
+    // Get contract address based on active filters
+    const getContractAddress = useCallback((platforms: any): string => {
         if (!platforms) return 'null';
-        
-        // If a specific network category is selected
-        if (selectedCategory !== 'All' && 
-            selectedCategory !== 'token' && 
-            selectedCategory !== 'Meme' && 
-            selectedCategory !== 'DeFi' && 
-            selectedCategory !== 'AI' && 
-            selectedCategory !== 'DeFi AI' &&
-            selectedCategory !== 'Layer 2' &&
-            selectedCategory !== 'GameFi' &&
-            selectedCategory !== 'Metaverse' &&
-            selectedCategory !== 'Infrastructure' &&
-            selectedCategory !== 'Social' &&
-            selectedCategory !== 'Sports') {
-            
-            const networkKey = selectedCategory.toLowerCase();
-            const platformKey = networkToplatform[selectedCategory] || '';
-            
+
+        // If a network category is active, use that platform's contract address specifically
+        if (activeNetworkCategory) {
+            const platformKey = networkToplatform[activeNetworkCategory];
             return platforms[platformKey] || 'null';
         }
-        
-        // For category selections, check all platforms
+
+        // Otherwise, get the first available platform
         for (const platformKey of Object.values(chainIDPlatform)) {
             if (platforms[platformKey]) {
                 return platforms[platformKey];
             }
         }
-        
+
         return 'null';
-    }, [selectedCategory]);
-    
-    // Get chainId based on selected category
-    const getChainId = useCallback((platforms: any, selectedcategory: string): number => {
-        // If a specific network category is selected
-        if (selectedCategory !== 'All' && 
-            selectedCategory !== 'token' && 
-            selectedCategory !== 'Meme' && 
-            selectedCategory !== 'DeFi' && 
-            selectedCategory !== 'AI' && 
-            selectedCategory !== 'DeFi AI' &&
-            selectedCategory !== 'Layer 2' &&
-            selectedCategory !== 'GameFi' &&
-            selectedCategory !== 'Metaverse' &&
-            selectedCategory !== 'Infrastructure' &&
-            selectedCategory !== 'Social' &&
-            selectedCategory !== 'Sports') {
-            
-            const platformKey = networkToplatform[selectedCategory];
-            return platformToChainId[platformKey] || walletChainId;
+    }, [activeNetworkCategory]);
+
+    // Get chainId based on active filters
+    const getChainId = useCallback((platforms: any): number => {
+        // If a network category is active, use that specific network's chain ID
+        if (activeNetworkCategory) {
+            const platformKey = networkToplatform[activeNetworkCategory];
+            // Check if the platform exists for this token
+            if (platforms[platformKey]) {
+                // Return the chainId that corresponds to the selected network
+                return platformToChainId[platformKey];
+            }
         }
-        
-        // For token categories, find the first available platform's chainId
+
+        // If no network is selected or the selected network doesn't have this token,
+        // find the first available platform's chainId
         for (const [chainId, platformKey] of Object.entries(chainIDPlatform)) {
             if (platforms[platformKey]) {
                 return parseInt(chainId);
             }
         }
-        
+
         // Default to wallet chainId if no platforms found
         return walletChainId;
-    }, [selectedCategory, walletChainId]);
+    }, [activeNetworkCategory, walletChainId]);
 
     // Check if a token is an EVM-compatible token
     const isEvmToken = useCallback((coin: TokenTypeB): boolean => {
@@ -199,7 +193,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollTop = 0;
         }
-    }, [searchQuery, selectedCategory, sortConfig]);
+    }, [searchQuery, activeTokenCategory, activeNetworkCategory, sortConfig]);
 
     // Fetch coins with abort controller
     useEffect(() => {
@@ -221,7 +215,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                 coinsRef.current = evmTokens;
                 console.log("evmTokens : ", evmTokens);
             } catch (error) {
-                if (error === 'AbortError') return;
+                if (error instanceof DOMException && error.name === "AbortError") return;
                 console.error('Error fetching coins:', error);
             } finally {
                 setLoading(false);
@@ -242,10 +236,11 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         const searchLower = searchQuery.toLowerCase().trim();
 
         // Log for debugging
-        console.log("Filtering coins for category:", selectedCategory);
+        console.log("Filtering with token category:", activeTokenCategory);
+        console.log("Filtering with network category:", activeNetworkCategory);
         console.log("Total coins before filtering:", coins.length);
 
-        // First filter the coins
+        // Filter the coins based on both token category and network category
         const filtered = coins.filter(coin => {
             if (!coin) return false;
 
@@ -256,16 +251,24 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
 
             if (!matchesSearch) return false;
 
-            // Category filtering
-            if (selectedCategory === 'All') return true;
-            
             // Token category filtering
-            return coin.category === selectedCategory;
+            const matchesTokenCategory = activeTokenCategory === 'All' ||
+                coin.category === activeTokenCategory;
+
+            if (!matchesTokenCategory) return false;
+
+            // Network category filtering (if selected)
+            if (activeNetworkCategory) {
+                return isTokenAvailableOnNetwork(coin, activeNetworkCategory);
+            }
+
+            // If we pass all filters
+            return true;
         });
 
         console.log("Filtered coins count:", filtered.length);
 
-        // Then sort the filtered coins
+        // Sort the filtered coins
         return [...filtered].sort((a, b) => {
             const { option, direction } = sortConfig;
             const multiplier = direction === 'asc' ? 1 : -1;
@@ -287,7 +290,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                     return multiplier * ((a.marketCap || 0) - (b.marketCap || 0));
             }
         });
-    }, [coins, selectedCategory, searchQuery, sortConfig]);
+    }, [coins, activeTokenCategory, activeNetworkCategory, searchQuery, sortConfig, isTokenAvailableOnNetwork]);
 
     // Load more coins when page changes
     useEffect(() => {
@@ -307,21 +310,21 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
 
         const handleScroll = () => {
             if (!scrollContainerRef.current || !hasMore) return;
-            
+
             const container = scrollContainerRef.current;
             const scrollPosition = container.scrollTop + container.clientHeight;
             const scrollThreshold = container.scrollHeight - 300; // Load more when within 300px of bottom
-            
+
             if (scrollPosition > scrollThreshold) {
                 setPage(prevPage => prevPage + 1);
             }
         };
-        
+
         const scrollContainer = scrollContainerRef.current;
         if (scrollContainer) {
             scrollContainer.addEventListener('scroll', handleScroll);
         }
-        
+
         return () => {
             if (scrollContainer) {
                 scrollContainer.removeEventListener('scroll', handleScroll);
@@ -365,7 +368,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         const isPositiveChange = priceChange24h >= 0;
         const borderColor = isPositiveChange ? '#10B981' : '#EF4444'; // Green for positive, red for negative
         const backgroundColor = isPositiveChange ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
-        
+
         return {
             labels: Array.from({ length: sparklineData.length }, (_, i) => i.toString()),
             datasets: [{
@@ -382,6 +385,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     // Debounced add to cart handler
     const debouncedAddToCart = useCallback(
         debounce((item: any) => {
+            // console.log("item : ", item);
             onAddToCart(item);
         }, 300),
         [onAddToCart]
@@ -416,17 +420,17 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 pb-10">
                 {visibleCoins.map((coin, index) => {
-                    // Determine correct chainId and contract address based on selected category
-                    const contractAddress = getContractAddress(coin.platforms, selectedCategory);
-                    
-                    // Skip coins without contract addresses for network categories
-                    if (contractAddress === 'null' && !['All', 'token', 'Meme', 'DeFi', 'AI', 'DeFi AI', 'Layer 2', 'GameFi', 'Metaverse', 'Infrastructure', 'Social', 'Sports'].includes(selectedCategory)) {
+                    // Get contract address
+                    const contractAddress = getContractAddress(coin.platforms);
+
+                    // Skip coins without contract addresses if a network category is active
+                    if (activeNetworkCategory && contractAddress === 'null') {
                         return null;
                     }
-                    
-                    // Get the chain ID based on the platform that has the contract address
-                    const chainId = getChainId(coin.platforms, selectedCategory);
-                    
+
+                    // Get chain ID
+                    const chainId = getChainId(coin.platforms);
+
                     // Determine if price change is positive or negative
                     const isPricePositive = (coin.priceChange24h || 0) >= 0;
 
@@ -443,7 +447,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                                         className="w-8 h-8"
                                         loading="lazy"
                                         onError={(e) => {
-                                            (e.target as HTMLImageElement).src = "/placeholder.png"
+                                            (e.target as HTMLImageElement).src = "/placeholder.png";
                                         }}
                                     />
                                     <div>
@@ -457,9 +461,9 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                             </div>
 
                             <div className="h-16 sm:h-24 mb-3">
-                                <Line 
-                                    data={generateChartData(coin.sparkline, coin.priceChange24h)} 
-                                    options={getChartOptions()} 
+                                <Line
+                                    data={generateChartData(coin.sparkline, coin.priceChange24h)}
+                                    options={getChartOptions()}
                                 />
                             </div>
 
@@ -479,6 +483,10 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
 
                             <button
                                 onClick={() => {
+                                    // Get the network-specific data
+                                    const CchainId = getChainId(coin.platforms);
+                                    // Log for debugging
+                                    // console.log(`Adding ${coin.symbol} with chainId: ${CchainId} for network: ${activeNetworkCategory || 'none'}`);
                                     debouncedAddToCart({
                                         id: coin.id,
                                         name: coin.name,
@@ -488,7 +496,7 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                                         category: coin.category,
                                         quantity: 1,
                                         address: contractAddress,
-                                        chainId: chainId, // Use the correct chainId
+                                        chainId: CchainId,
                                         decimals: coin.decimals,
                                         marketCap: coin.marketCap,
                                         marketCapRank: coin.marketCapRank,
@@ -504,21 +512,21 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                                 Add to Cart
                             </button>
                         </div>
-                    )
+                    );
                 }).filter(Boolean)}
             </div>
 
-            {/* Loading indicator at the bottom - separated from the grid */}
-            <div 
-                ref={loadingIndicatorRef} 
+            {/* Loading indicator at the bottom */}
+            <div
+                ref={loadingIndicatorRef}
                 className="flex justify-center p-4 mt-4 mb-8 h-16"
             >
                 {hasMore && <Spinner />}
             </div>
         </div>
     );
-});
+};
 
 CoinGrid.displayName = 'CoinGrid';
 
-export default CoinGrid;
+export default React.memo(CoinGrid);

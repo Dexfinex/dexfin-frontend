@@ -1,6 +1,5 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
-import { SearchHeaderProps } from '../../../types/cart.type';
 
 // Sort options
 export type SortOption = 'marketCap' | 'priceChange24h' | 'price' | 'marketCapRank';
@@ -12,7 +11,7 @@ export interface SortConfig {
 }
 
 // Updated category list with exact case matching as shown in screenshot
-const categories = [
+const tokenCategories = [
     'All', 
     'Meme', 
     'DeFi', 
@@ -23,13 +22,11 @@ const categories = [
     'Metaverse',
     'Infrastructure',
     'Social',
-    'Sports',
-    'Ethereum', 
-    'Base', 
-    'Avalanche', 
-    'Bsc', 
-    'Optimism'
+    'Sports'
 ] as const;
+
+// Network categories array
+const networkCategories = ['Ethereum', 'Base', 'Avalanche', 'Bsc', 'Optimism'];
 
 // Network logos and colors
 const networkLogos: Record<string, { logo: string, color: string }> = {
@@ -107,15 +104,24 @@ const sortDisplayNames: Record<SortOption, string> = {
     'marketCapRank': 'Market Cap Rank'
 };
 
-interface SearchHeaderWithSortProps extends SearchHeaderProps {
+// Extended interface to support separate token and network categories
+export interface ExtendedSearchHeaderProps {
+    activeTokenCategory: string;
+    activeNetworkCategory: string | null;
+    searchQuery: string;
+    onTokenCategoryChange: (category: string) => void;
+    onNetworkCategoryChange: (category: string | null) => void;
+    onSearchChange: (query: string) => void;
     sortConfig: SortConfig;
     onSortChange: (sort: SortConfig) => void;
 }
 
-const SearchHeader: React.FC<SearchHeaderWithSortProps> = React.memo(({
-    selectedCategory,
+const SearchHeader: React.FC<ExtendedSearchHeaderProps> = React.memo(({
+    activeTokenCategory,
+    activeNetworkCategory,
     searchQuery,
-    onCategoryChange,
+    onTokenCategoryChange,
+    onNetworkCategoryChange,
     onSearchChange,
     sortConfig,
     onSortChange
@@ -144,6 +150,20 @@ const SearchHeader: React.FC<SearchHeaderWithSortProps> = React.memo(({
         setShowSortMenu(false);
     }, [sortConfig, onSortChange]);
 
+    const handleTokenCategoryChange = useCallback((category: string) => {
+        onTokenCategoryChange(category);
+        setShowCategoryMenu(false);
+    }, [onTokenCategoryChange]);
+
+    const handleNetworkCategoryChange = useCallback((networkCategory: string) => {
+        // If clicking the same network category again, toggle it off
+        if (activeNetworkCategory === networkCategory) {
+            onNetworkCategoryChange(null);
+        } else {
+            onNetworkCategoryChange(networkCategory);
+        }
+    }, [activeNetworkCategory, onNetworkCategoryChange]);
+
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (showSortMenu &&
@@ -166,23 +186,16 @@ const SearchHeader: React.FC<SearchHeaderWithSortProps> = React.memo(({
         };
     }, [showSortMenu, showCategoryMenu]);
 
-    // Network categories that should be displayed in the right section
-    const networkCategories = ['Ethereum', 'Base', 'Avalanche', 'Bsc', 'Optimism'];
-    const tokenCategories = [
-        'All', 'Meme', 'DeFi', 'AI', 'DeFi AI', 'Layer 2', 'GameFi', 
-        'Metaverse', 'Infrastructure', 'Social', 'Sports'
-    ];
-
     return (
         <div className="p-4 border-b border-white/10">
             <div className="flex items-center justify-between">
-                {/* Left side categories - now as dropdown */}
+                {/* Token category dropdown */}
                 <div className="relative" ref={categoryMenuRef}>
                     <button
                         onClick={() => setShowCategoryMenu(!showCategoryMenu)}
                         className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2"
                     >
-                        <span>{selectedCategory || 'All'}</span>
+                        <span>{activeTokenCategory || 'All'}</span>
                         <ChevronDown className="w-4 h-4" />
                     </button>
 
@@ -193,12 +206,9 @@ const SearchHeader: React.FC<SearchHeaderWithSortProps> = React.memo(({
                                     <button
                                         key={category}
                                         className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors ${
-                                            selectedCategory === category ? 'bg-white/10' : ''
+                                            activeTokenCategory === category ? 'bg-white/10' : ''
                                         }`}
-                                        onClick={() => {
-                                            onCategoryChange(category);
-                                            setShowCategoryMenu(false);
-                                        }}
+                                        onClick={() => handleTokenCategoryChange(category)}
                                     >
                                         {category}
                                     </button>
@@ -208,18 +218,18 @@ const SearchHeader: React.FC<SearchHeaderWithSortProps> = React.memo(({
                     )}
                 </div>
                 
-                {/* Right side chain logos */}
+                {/* Network category buttons */}
                 <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-white/10">
                     {networkCategories.map((network) => (
                         <button
                             key={network}
-                            onClick={() => onCategoryChange(network)}
+                            onClick={() => handleNetworkCategoryChange(network)}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
-                                selectedCategory === network ? "bg-white/10" : "hover:bg-white/5"
+                                activeNetworkCategory === network ? "bg-white/10" : "hover:bg-white/5"
                             }`}
                             style={{
-                                borderColor: selectedCategory === network ? networkLogos[network].color : 'transparent',
-                                borderWidth: selectedCategory === network ? '1px' : '0px'
+                                borderColor: activeNetworkCategory === network ? networkLogos[network].color : 'transparent',
+                                borderWidth: activeNetworkCategory === network ? '1px' : '0px'
                             }}
                         >
                             <img 
