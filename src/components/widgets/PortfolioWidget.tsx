@@ -259,11 +259,7 @@ export const PortfolioWidget: React.FC = () => {
                       className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <img
-                          src={position.logo || "/placeholder.svg"}
-                          alt={position.protocol}
-                          className="w-8 h-8 rounded-full"
-                        />
+                        <TokenChainIcon src={position.logo || "/placeholder.svg"} alt={position.protocol} className="w-8 h-8 rounded-full" chainId={position.chainId} />
                         <div className="flex flex-col justify-start items-start">
                           <div className="font-medium">{position.protocol}</div>
                           {position.tokens && position.tokens.length > 0 &&
