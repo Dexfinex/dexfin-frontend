@@ -8,7 +8,8 @@ import debounce from 'lodash/debounce';
 import Spinner from './Spinner';
 import { SortConfig } from './SearchHeader';
 
-const chartOptions = {
+// Base chart options
+const getChartOptions = () => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -22,15 +23,15 @@ const chartOptions = {
     elements: {
         point: { radius: 0 }
     }
-} as const;
+} as const);
 
 // Network to platform mapping
 const networkToplatform: Readonly<Record<string, string>> = {
-    'ethereum': 'ethereum',
-    'bsc': 'binance-smart-chain',
-    'avalanche': 'avalanche',
-    'base': 'base',
-    'optimism': 'optimistic-ethereum',
+    'Ethereum': 'ethereum',
+    'Bsc': 'binance-smart-chain',
+    'Avalanche': 'avalanche',
+    'Base': 'base',
+    'Optimism': 'optimistic-ethereum',
     // 'celo': 'celo'
 } as const;
 
@@ -64,6 +65,21 @@ const nonEvmTokenSymbols = [
     'ton', 'miota', 'klay', 'xtz', 'cosmos', 'atom', 'trx', 'eos', 'xec', 'zec', 'xem', 'dcr'
 ];
 
+// Category background colors for badges
+const categoryColors: Record<string, string> = {
+    'Meme': 'bg-purple-500/30',
+    'DeFi': 'bg-blue-500/30',
+    'AI': 'bg-green-500/30',
+    'DeFi AI': 'bg-teal-500/30',
+    'Layer 2': 'bg-indigo-500/30',
+    'GameFi': 'bg-pink-500/30',
+    'Metaverse': 'bg-cyan-500/30',
+    'Infrastructure': 'bg-orange-500/30',
+    'Social': 'bg-red-500/30',
+    'Sports': 'bg-emerald-500/30',
+    'token': 'bg-white/10'
+};
+
 interface CoinGridWithSortProps extends CoinGridProps {
     sortConfig: SortConfig;
 }
@@ -93,12 +109,26 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         if (!platforms) return 'null';
         
         // If a specific network category is selected
-        if (selectedCategory !== 'All' && selectedCategory !== 'token' && selectedCategory !== 'meme') {
-            const platformKey = networkToplatform[selectedcategory.toLowerCase()];
+        if (selectedCategory !== 'All' && 
+            selectedCategory !== 'token' && 
+            selectedCategory !== 'Meme' && 
+            selectedCategory !== 'DeFi' && 
+            selectedCategory !== 'AI' && 
+            selectedCategory !== 'DeFi AI' &&
+            selectedCategory !== 'Layer 2' &&
+            selectedCategory !== 'GameFi' &&
+            selectedCategory !== 'Metaverse' &&
+            selectedCategory !== 'Infrastructure' &&
+            selectedCategory !== 'Social' &&
+            selectedCategory !== 'Sports') {
+            
+            const networkKey = selectedCategory.toLowerCase();
+            const platformKey = networkToplatform[selectedCategory] || '';
+            
             return platforms[platformKey] || 'null';
         }
         
-        // For "All", "token", or "meme" categories, check all platforms
+        // For category selections, check all platforms
         for (const platformKey of Object.values(chainIDPlatform)) {
             if (platforms[platformKey]) {
                 return platforms[platformKey];
@@ -111,12 +141,24 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     // Get chainId based on selected category
     const getChainId = useCallback((platforms: any, selectedcategory: string): number => {
         // If a specific network category is selected
-        if (selectedCategory !== 'All' && selectedCategory !== 'token' && selectedCategory !== 'meme') {
-            const platformKey = networkToplatform[selectedcategory.toLowerCase()];
+        if (selectedCategory !== 'All' && 
+            selectedCategory !== 'token' && 
+            selectedCategory !== 'Meme' && 
+            selectedCategory !== 'DeFi' && 
+            selectedCategory !== 'AI' && 
+            selectedCategory !== 'DeFi AI' &&
+            selectedCategory !== 'Layer 2' &&
+            selectedCategory !== 'GameFi' &&
+            selectedCategory !== 'Metaverse' &&
+            selectedCategory !== 'Infrastructure' &&
+            selectedCategory !== 'Social' &&
+            selectedCategory !== 'Sports') {
+            
+            const platformKey = networkToplatform[selectedCategory];
             return platformToChainId[platformKey] || walletChainId;
         }
         
-        // For "All", "token", or "meme" categories, find the first available platform's chainId
+        // For token categories, find the first available platform's chainId
         for (const [chainId, platformKey] of Object.entries(chainIDPlatform)) {
             if (platforms[platformKey]) {
                 return parseInt(chainId);
@@ -147,18 +189,6 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         }
 
         return true;
-    }, []);
-
-    // Check if a token has the platform for the selected category
-    const hasPlatformForCategory = useCallback((coin: TokenTypeB, category: string): boolean => {
-        if (category === 'All' || category === 'token' || category === 'meme') {
-            return true;
-        }
-        
-        if (!coin.platforms) return false;
-        
-        const platformKey = networkToplatform[category.toLowerCase()];
-        return !!coin.platforms[platformKey];
     }, []);
 
     useEffect(() => {
@@ -211,6 +241,10 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
     const filteredCoins = useMemo(() => {
         const searchLower = searchQuery.toLowerCase().trim();
 
+        // Log for debugging
+        console.log("Filtering coins for category:", selectedCategory);
+        console.log("Total coins before filtering:", coins.length);
+
         // First filter the coins
         const filtered = coins.filter(coin => {
             if (!coin) return false;
@@ -224,18 +258,12 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
 
             // Category filtering
             if (selectedCategory === 'All') return true;
-            if (selectedCategory === 'token' || selectedCategory === 'meme') {
-                return coin.category === selectedCategory;
-            }
             
-            // Network-based filtering - check if token supports this network
-            if (coin.platforms) {
-                const platformKey = networkToplatform[selectedCategory.toLowerCase()];
-                return !!coin.platforms[platformKey];
-            }
-            
-            return false;
+            // Token category filtering
+            return coin.category === selectedCategory;
         });
+
+        console.log("Filtered coins count:", filtered.length);
 
         // Then sort the filtered coins
         return [...filtered].sort((a, b) => {
@@ -273,7 +301,6 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         setHasMore(page * itemsPerPage < filteredCoins.length);
     }, [filteredCoins, page, itemsPerPage]);
 
-    // Setup intersection observer for infinite scroll
     // Setup load more trigger when scrolling near the bottom
     useEffect(() => {
         if (loading) return;
@@ -327,18 +354,30 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
         };
     }, []);
 
-    // Memoized chart data generation
-    const generateChartData = useCallback((sparklineData: number[] = []) => ({
-        labels: Array.from({ length: sparklineData.length }, (_, i) => i.toString()),
-        datasets: [{
-            data: sparklineData,
-            borderColor: '#10B981',
-            borderWidth: 2,
-            fill: true,
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-            tension: 0.4
-        }]
-    }), []);
+    // Get category background color class
+    const getCategoryBgColor = useCallback((category: string): string => {
+        return categoryColors[category] || 'bg-white/10';
+    }, []);
+
+    // Memoized chart data generation with conditional colors based on price change
+    const generateChartData = useCallback((sparklineData: number[] = [], priceChange24h: number = 0) => {
+        // Determine color based on price change
+        const isPositiveChange = priceChange24h >= 0;
+        const borderColor = isPositiveChange ? '#10B981' : '#EF4444'; // Green for positive, red for negative
+        const backgroundColor = isPositiveChange ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+        
+        return {
+            labels: Array.from({ length: sparklineData.length }, (_, i) => i.toString()),
+            datasets: [{
+                data: sparklineData,
+                borderColor: borderColor,
+                borderWidth: 2,
+                fill: true,
+                backgroundColor: backgroundColor,
+                tension: 0.4
+            }]
+        };
+    }, []);
 
     // Debounced add to cart handler
     const debouncedAddToCart = useCallback(
@@ -381,13 +420,15 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                     const contractAddress = getContractAddress(coin.platforms, selectedCategory);
                     
                     // Skip coins without contract addresses for network categories
-                    if (contractAddress === 'null' && selectedCategory !== 'All' &&
-                        selectedCategory !== 'token' && selectedCategory !== 'meme') {
+                    if (contractAddress === 'null' && !['All', 'token', 'Meme', 'DeFi', 'AI', 'DeFi AI', 'Layer 2', 'GameFi', 'Metaverse', 'Infrastructure', 'Social', 'Sports'].includes(selectedCategory)) {
                         return null;
                     }
                     
                     // Get the chain ID based on the platform that has the contract address
                     const chainId = getChainId(coin.platforms, selectedCategory);
+                    
+                    // Determine if price change is positive or negative
+                    const isPricePositive = (coin.priceChange24h || 0) >= 0;
 
                     return (
                         <div
@@ -410,19 +451,24 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
                                         <div className="text-sm text-white/60">{coin.symbol}</div>
                                     </div>
                                 </div>
-                                <div className="px-2 py-1 rounded-full text-xs font-medium bg-white/10">{coin.category}</div>
+                                <div className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryBgColor(coin.category)}`}>
+                                    {coin.category}
+                                </div>
                             </div>
 
                             <div className="h-16 sm:h-24 mb-3">
-                                <Line data={generateChartData(coin.sparkline)} options={chartOptions} />
+                                <Line 
+                                    data={generateChartData(coin.sparkline, coin.priceChange24h)} 
+                                    options={getChartOptions()} 
+                                />
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
                                 <div className="text-xl sm:text-2xl font-bold">${formatNumberByFrac(coin.price || 0)}</div>
                                 <div
-                                    className={`text-sm flex items-center gap-1 ${(coin.priceChange24h || 0) >= 0 ? "text-green-400" : "text-red-400"}`}
+                                    className={`text-sm flex items-center gap-1 ${isPricePositive ? "text-green-400" : "text-red-400"}`}
                                 >
-                                    {(coin.priceChange24h || 0) >= 0 ? (
+                                    {isPricePositive ? (
                                         <TrendingUp className="w-4 h-4" />
                                     ) : (
                                         <TrendingDown className="w-4 h-4" />
@@ -433,7 +479,6 @@ const CoinGrid: React.FC<CoinGridWithSortProps> = React.memo(({
 
                             <button
                                 onClick={() => {
-                                    console.log("Adding to cart with chainId:", chainId);
                                     debouncedAddToCart({
                                         id: coin.id,
                                         name: coin.name,
