@@ -26,9 +26,13 @@ export const getTypeColor = (type: Position['type']) => {
             return 'text-purple-400';
         case 'BORROWING':
             return 'text-red-400';
+        case 'BORROWED':
+            return 'text-red-400';
         case 'STAKING':
             return 'text-blue-400';
         case 'LIQUIDITY':
+            return 'text-green-400';
+        case 'SUPPLIED':
             return 'text-green-400';
     }
 };
