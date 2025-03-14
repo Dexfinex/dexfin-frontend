@@ -101,7 +101,7 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                               <div className='flex flex-col justify-start items-start'>
                                 <div className="font-medium">{position.symbol}</div>
                                 <div className="text-sm text-white/60">
-                                  {`${formatNumberByFrac(position.balance)} ${position.symbol}`}
+                                  {`${formatNumberByFrac(position.balance, 5)} ${position.symbol}`}
                                 </div>
                               </div>
                             </div>
