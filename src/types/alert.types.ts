@@ -49,6 +49,7 @@ export interface AlertTypeConfig {
     description: string;
     valueLabel: string;
     placeholder: string;
+    comingSoon?: boolean;
     customFields?: {
         name: string;
         label: string;
@@ -135,57 +136,12 @@ export const alertTypes: AlertTypeConfig[] = [
                 type: 'select',
                 placeholder: 'Select protocol',
                 options: [
-                    { value: 'aave', label: 'Aave' },
-                    { value: 'uniswap', label: 'Uniswap' },
-                    { value: 'curve', label: 'Curve' }
+                    { value: 'aave-v3', label: 'Aave' },
+                    { value: 'uniswap-v3', label: 'Uniswap' },
+                    { value: 'curve-dex', label: 'Curve Dex' },
+                    { value: 'lido', label: 'Lido' }
                 ]
             },
-            {
-                name: 'changeType',
-                label: 'Change Type',
-                type: 'select',
-                options: [
-                    { value: 'absolute', label: 'Absolute Value' },
-                    { value: 'percentage', label: 'Percentage Change' }
-                ]
-            }
-        ]
-    },
-    {
-        id: 'social',
-        label: 'Social Alert',
-        icon: Users,
-        color: 'bg-pink-500/20 text-pink-400',
-        description: 'Track social media mentions and sentiment',
-        valueLabel: 'Mentions',
-        placeholder: 'Enter number of mentions',
-        customFields: [
-            {
-                name: 'platform',
-                label: 'Platform',
-                type: 'select',
-                options: [
-                    { value: 'twitter', label: 'Twitter' },
-                    { value: 'reddit', label: 'Reddit' },
-                    { value: 'telegram', label: 'Telegram' }
-                ]
-            },
-            {
-                name: 'sentiment',
-                label: 'Sentiment',
-                type: 'select',
-                options: [
-                    { value: 'any', label: 'Any' },
-                    { value: 'positive', label: 'Positive' },
-                    { value: 'negative', label: 'Negative' }
-                ]
-            },
-            {
-                name: 'keywords',
-                label: 'Keywords',
-                type: 'text',
-                placeholder: 'Enter keywords (comma separated)'
-            }
         ]
     },
     {
@@ -221,29 +177,40 @@ export const alertTypes: AlertTypeConfig[] = [
         ]
     },
     {
-        id: 'trend',
-        label: 'Trend Alert',
-        icon: TrendingUp,
-        color: 'bg-yellow-500/20 text-yellow-400',
-        description: 'Get notified when tokens start trending',
-        valueLabel: 'Rank',
-        placeholder: 'Enter trending rank',
+        id: 'social',
+        label: 'Social Alert',
+        icon: Users,
+        color: 'bg-pink-500/20 text-pink-400',
+        description: 'Track social media mentions and sentiment',
+        valueLabel: 'Mentions',
+        placeholder: 'Enter number of mentions',
+        comingSoon: true, // Add this line
         customFields: [
             {
                 name: 'platform',
                 label: 'Platform',
                 type: 'select',
                 options: [
-                    { value: 'coingecko', label: 'CoinGecko' },
-                    { value: 'dextools', label: 'DexTools' },
-                    { value: 'dexscreener', label: 'DexScreener' }
+                    { value: 'twitter', label: 'Twitter' },
+                    { value: 'reddit', label: 'Reddit' },
+                    { value: 'telegram', label: 'Telegram' }
                 ]
             },
             {
-                name: 'minMarketCap',
-                label: 'Minimum Market Cap',
-                type: 'number',
-                placeholder: 'Enter min market cap in USD'
+                name: 'sentiment',
+                label: 'Sentiment',
+                type: 'select',
+                options: [
+                    { value: 'any', label: 'Any' },
+                    { value: 'positive', label: 'Positive' },
+                    { value: 'negative', label: 'Negative' }
+                ]
+            },
+            {
+                name: 'keywords',
+                label: 'Keywords',
+                type: 'text',
+                placeholder: 'Enter keywords (comma separated)'
             }
         ]
     },
@@ -255,6 +222,7 @@ export const alertTypes: AlertTypeConfig[] = [
         description: 'Track large token transfers',
         valueLabel: 'Amount',
         placeholder: 'Enter amount in tokens',
+        comingSoon: true, // Add this line
         customFields: [
             {
                 name: 'token',
@@ -298,11 +266,11 @@ export enum AlertStatus {
 export type AlertCondition = 'above' | 'below';
 
 // Alert Type IDs for type safety
-export type AlertTypeId = 
-    | 'price' 
-    | 'volume' 
-    | 'tvl' 
-    | 'social' 
-    | 'marketcap' 
-    | 'trend' 
+export type AlertTypeId =
+    | 'price'
+    | 'volume'
+    | 'tvl'
+    | 'social'
+    | 'marketcap'
+    | 'trend'
     | 'whale';

@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Landmark,
-  TrendingUp,
   Wallet,
 } from 'lucide-react';
 import { WalletTab } from '../../types/agent.type.ts';
@@ -14,7 +13,10 @@ import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 import { useWalletBalance } from '../../hooks/useBalance.tsx';
 import { TokenChainIcon } from './../swap/components/TokenIcon.tsx';
 import { PositionList } from '../wallet/PositionList.tsx';
+import PNL from '../common/PNL.tsx';
+import PNLPercent from '../common/PNLPercent.tsx';
 import { formatNumberByFrac } from '../../utils/common.util.ts';
+import useDefiStore from '../../store/useDefiStore.ts';
 
 interface WalletPanelProps {
   isWalletPanelOpen: boolean;
@@ -23,9 +25,13 @@ interface WalletPanelProps {
 
 export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletPanelProps) {
   const { isLoading: isLoadingBalance } = useWalletBalance();
-  const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
+  const { totalUsdValue, tokenBalances, pnlPercent, pnlUsd } = useTokenBalanceStore();
+  const { totalLockedValue } = useDefiStore();
   const [activeWalletTab, setActiveWalletTab] = useState<WalletTab>('assets');
   const [isLargerThan962] = useMediaQuery('(min-width: 962px)');
+
+  // Calculate combined portfolio value
+  const totalPortfolioValue = totalUsdValue + totalLockedValue;
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   // Filter positions correctly
@@ -49,13 +55,11 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
             <div className="p-4 border-b border-white/10">
               <div className="text-sm text-white/60">Total Balance</div>
               <div className="text-2xl font-bold mt-1">
-                {isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)}
+                {isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalPortfolioValue)}
               </div>
-
-              <div className="flex items-center gap-1 mt-1 text-green-400 text-sm">
-                <TrendingUp className="w-4 h-4" />
-                <span>+1.57% TODAY</span>
-              </div>
+              {
+                isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'} h={'1rem'}></Skeleton> : <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
+              }
             </div>
 
             {/* Tab Navigation */}
@@ -84,7 +88,7 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
 
             {/* Assets List */}
             <div className="flex-1 overflow-y-auto ai-chat-scrollbar">
-              <div className="p-4 space-y-2">
+              <div className="p-1 space-y-2">
                 {activeWalletTab === 'assets' ? (
                   // Assets Tab
                   <div className="space-y-2">
@@ -106,7 +110,8 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                               </div>
                             </div>
                             <div className="text-right">
-                              <div>{formatUsdValue(position.usdValue)}</div>
+                              <span>{formatUsdValue(position.usdValue)}</span>
+                              <PNLPercent pnlPercent={position.usdPrice24hrUsdChange * 100 / (position.usdPrice - position.usdPrice24hrUsdChange)} />
                             </div>
                           </button>
                         ))
@@ -154,10 +159,9 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                         {isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)}
                       </div>
 
-                      <div className="flex items-center gap-1 mt-1 text-green-400 text-sm">
-                        <TrendingUp className="w-4 h-4" />
-                        <span>+1.57% TODAY</span>
-                      </div>
+                      {
+                        isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'} h={'1rem'}></Skeleton> : <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
+                      }
                     </div>
 
                     {/* Tab Navigation */}
@@ -186,7 +190,7 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
 
                     {/* Assets List */}
                     <div className="flex-1 overflow-y-auto ai-chat-scrollbar">
-                      <div className="p-4 space-y-2">
+                      <div className="p-1 space-y-2">
                         {activeWalletTab === 'assets' ? (
                           // Assets Tab
                           <div className="space-y-2">
@@ -209,6 +213,7 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                                     </div>
                                     <div className="text-right">
                                       <div>{formatUsdValue(position.usdValue)}</div>
+                                      <PNLPercent pnlPercent={position.usdPrice24hrUsdChange * 100 / (position.usdPrice - position.usdPrice24hrUsdChange)} />
                                     </div>
                                   </button>
                                 ))
