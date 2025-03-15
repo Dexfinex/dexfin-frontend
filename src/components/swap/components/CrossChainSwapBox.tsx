@@ -1,7 +1,7 @@
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {ArrowDownUp, ArrowRight, Clock, DollarSign} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
-import {SlippageOption, TokenType} from '../../../types/swap.type';
+import {DebridgeOrderStatus, SlippageOption, TokenType} from '../../../types/swap.type';
 import {formatNumberByFrac, shrinkAddress} from '../../../utils/common.util';
 import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
 import useTokenStore from "../../../store/useTokenStore.ts";
@@ -16,13 +16,13 @@ import {
     needDestinationAddress
 } from "../../../utils/swap.util.ts";
 import {DestinationAddressInputModal} from "../modals/DestinationAddressInputModal.tsx";
-import useSwapkitQuote from "../../../hooks/useSwapkitQuote.ts";
 import {useAllBalance} from "../../../hooks/useAllBalance.tsx";
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
-import useSwapkitBridgeStatus from "../../../hooks/useSwapkitBridgeStatus.ts";
 import {useTokenApprove} from "../../../hooks/useTokenApprove.ts";
 import BigNumber from "bignumber.js";
 import {toFixedFloat} from "../../../utils/trade.util.ts";
+import useDebridgeOrderStatus from "../../../hooks/useDebridgeOrderStatus.ts";
+import useDebridgeQuote from "../../../hooks/useDebridgeQuote.ts";
 
 interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
@@ -47,39 +47,36 @@ export function CrossChainSwapBox({
                                       onFromAmountChange,
                                       onToAmountChange,
                                       onSwitch,
-                                      slippage,
                                   }: CrossChainSwapBoxProps) {
     const {
         chainId,
         solanaWalletInfo,
+        signer,
         address: evmAddress,
         transferSolToken,
     } = useContext(Web3AuthContext);
 
     const [destinationAddress, setDestinationAddress] = useState<string>('');
-    const [estimatedCompletionTime, setEstimatedCompletionTime] = useState<number>(0);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
     const [txModalOpen, setTxModalOpen] = useState(false);
-    const [isPreparing, setIsPreparing] = useState(false);
-    const [swapkitTradeHash, setSwapkitTradeHash] = useState<string | undefined>(undefined);
+    const [countdown, setCountdown] = useState(0);
+    const [isBridging, setIsBridging] = useState(false);
 
     const {getTokenPrice} = useTokenStore()
     const {
         isLoading: isQuoteLoading,
         quoteResponse,
-    } = useSwapkitQuote({
+    } = useDebridgeQuote({
         sellToken: fromToken,
         buyToken: toToken,
         sellAmount: fromAmount,
-        slippage,
         destinationAddress,
     })
     const {
         isLoading: isTracking,
-        trackingStatus,
+        orderStatus,
         completionHash,
-    } = useSwapkitBridgeStatus(fromToken?.chainId, swapkitTradeHash)
-
+    } = useDebridgeOrderStatus(quoteResponse.orderId)
 
     useGetTokenPrices({
         tokenAddresses: [fromToken?.address ?? null],
@@ -109,9 +106,18 @@ export function CrossChainSwapBox({
     // Update toAmount when calculation changes
     useEffect(() => {
         if (quoteResponse) {
-            onToAmountChange(quoteResponse.expectedBuyAmount);
+            onToAmountChange(quoteResponse.outputAmount);
         }
     }, [quoteResponse, onToAmountChange, toToken]);
+
+    useEffect(() => {
+        if (isBridging && countdown > 0) {
+            const timer = setInterval(() => {
+                setCountdown((prev) => prev - 1);
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [isBridging, countdown]);
 
     useEffect(() => {
         if (toToken) {
@@ -124,10 +130,10 @@ export function CrossChainSwapBox({
     }, [toToken, solanaWalletInfo, evmAddress]);
 
     useEffect(() => {
-        if (trackingStatus === 'completed') {
+        if (orderStatus === DebridgeOrderStatus.Fulfilled) {
             setTxModalOpen(true)
         }
-    }, [trackingStatus])
+    }, [orderStatus])
 
     const {
         fromUsdAmount,
@@ -152,8 +158,8 @@ export function CrossChainSwapBox({
 
     useEffect(() => {
         if (!txModalOpen) {
-            setSwapkitTradeHash(undefined)
-            setEstimatedCompletionTime(0)
+            setCountdown(0)
+            setIsBridging(false)
             onFromAmountChange?.('')
             onToAmountChange?.('')
         }
@@ -165,7 +171,7 @@ export function CrossChainSwapBox({
         approve
     } = useTokenApprove({
         token: fromToken?.address as `0x${string}`,
-        spender: (quoteResponse?.depositInfo?.depositAddress ?? (quoteResponse?.tx?.to ?? '')) as `0x${string}`,
+        spender: (quoteResponse.tx?.allowanceTarget) as `0x${string}`,
         amount: new BigNumber(toFixedFloat(fromAmount, 4))
             .times(new BigNumber(10)
                 .pow(fromToken?.decimals ?? 1))
@@ -182,20 +188,18 @@ export function CrossChainSwapBox({
         }
 
         // set estimated completion time in unixtimestamp
-        setEstimatedCompletionTime(Math.floor(Date.now() / 1000) + quoteResponse.estimatedTime)
+        setIsBridging(true)
+        setCountdown(quoteResponse.estimatedTime)
 
-        if (fromToken?.chainId === SOLANA_CHAIN_ID && quoteResponse.depositInfo) { // solana transaction
-
-            const signature = await transferSolToken(
-                quoteResponse.depositInfo.depositAddress,
+        if (fromToken?.chainId === SOLANA_CHAIN_ID && destinationAddress) { // solana transaction
+            await transferSolToken(
+                destinationAddress,
                 fromToken.address,
                 Number(fromAmount),
                 fromToken.decimals
             )
-            setSwapkitTradeHash(signature)
-
         } else if (quoteResponse.tx) {
-            //
+            await signer!.sendTransaction(quoteResponse.tx)
         }
     }
 
@@ -263,7 +267,7 @@ export function CrossChainSwapBox({
             </div>
 
             {
-                (fromNetwork && toNetwork && quoteResponse.providerName) && (
+                (fromNetwork && toNetwork) && (
                     <div
                         className={`rounded-xl p-4 border border-blue-500`}
                     >
@@ -282,13 +286,13 @@ export function CrossChainSwapBox({
                                             <ArrowRight size={14} className="mx-1 text-gray-400"/>
                                             <img src={toNetwork.icon} alt={toNetwork.name}
                                                  className="w-5 h-5"/>
-                                            <span className="ml-2 text-sm">{quoteResponse.providerName}</span>
+                                            <span className="ml-2 text-sm">Debridge</span>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center justify-between mb-3">
                                     <span
-                                        className="text-sm text-gray-400">You receive: {formatNumberByFrac(Number(quoteResponse.expectedBuyAmount), 5)} {toToken?.symbol}</span>
+                                        className="text-sm text-gray-400">You receive: {formatNumberByFrac(Number(quoteResponse.outputAmount), 5)} {toToken?.symbol}</span>
                                     </div>
 
                                     <div className="flex justify-between text-xs text-gray-400">
@@ -297,7 +301,7 @@ export function CrossChainSwapBox({
                                             <span>{`estimated time: ${formatEstimatedTimeBySeconds(quoteResponse.estimatedTime)}`}</span>
                                         </div>
                                         <div className="flex items-center">
-                                            <span>Fee: {quoteResponse.formattedFeeInUsd}</span>
+                                            <span>Fee: {quoteResponse.feeAmount}</span>
                                             <DollarSign size={12} className="mr-1"/>
                                         </div>
                                     </div>
@@ -338,16 +342,16 @@ export function CrossChainSwapBox({
                         Please Use Embedded Wallet
                     </Button>
                 ) : (
-                    swapkitTradeHash ? (
+                    isBridging ? (
                         <Button
                             isLoading={isTracking}
-                            loadingText={getBridgingSpendTime(estimatedCompletionTime)}
+                            loadingText={getBridgingSpendTime(countdown)}
                             width="full"
                             colorScheme="blue"
                             onClick={handleSwap}
                             isDisabled={true}
                         >
-                            {trackingStatus}
+                            {orderStatus}
                         </Button>
                     ) : (
                         insufficientBalance ? (

@@ -583,12 +583,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             initStream(user)
           }
         } else if (walletType === WalletTypeEnum.EMBEDDED) {
-          // const user = await PushAPI.initialize(signer, {
-          //   env: CONSTANTS.ENV.PROD,
-          // });
+          const user = await PushAPI.initialize(signer, {
+            env: CONSTANTS.ENV.PROD,
+          });
 
-          // setChatUser(user)
-          // initStream(user)
+          setChatUser(user)
+          initStream(user)
         }
       } catch (err) {
         console.log('initialize err: ', err)

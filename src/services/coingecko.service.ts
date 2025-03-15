@@ -1,10 +1,10 @@
-import { coinGeckoApi } from "./api.service.ts";
-import { CoinData, CoinGeckoToken, Ganiner, Loser, SearchResult, TrendingCoin } from "../types";
-import { ChartDataPoint } from "../types/swap.type.ts";
-import { TokenTypeB } from "../types/cart.type.ts";
+import {coinGeckoApi} from "./api.service.ts";
+import {CoinData, CoinGeckoToken, Ganiner, Loser, SearchResult, TrendingCoin} from "../types";
+import {ChartDataPoint} from "../types/swap.type.ts";
+import {TokenTypeB} from "../types/cart.type.ts";
 import axios from "axios";
-import { MarketCapToken } from "../components/market/MarketCap.tsx";
-import { COINGECKO_URL } from "../constants/index.ts";
+import {MarketCapToken} from "../components/market/MarketCap.tsx";
+import {NULL_ADDRESS, ZERO_ADDRESS} from "../constants";
 
 interface CoinGeckoStableToken {
     id: string;
@@ -15,6 +15,7 @@ interface CoinGeckoStableToken {
     total_supply: number;
     image: string;
 }
+
 interface CexVolum {
     trade_volume_24h_usd_sum: number;
     trade_volume_24h_usd_normalized_sum: number;
@@ -23,7 +24,7 @@ interface CexVolum {
 export const coingeckoService = {
     getMemecoins: async () => {
         try {
-            const { data } = await coinGeckoApi.get<CoinGeckoToken[]>('/memecoins');
+            const {data} = await coinGeckoApi.get<CoinGeckoToken[]>('/memecoins');
             const memedata = data.map(token => ({
                 category: "meme",
                 chainId: token.chainId,
@@ -82,7 +83,7 @@ export const coingeckoService = {
     },
     getStablecoins: async (): Promise<CoinGeckoStableToken[]> => {
         try {
-            const { data } = await coinGeckoApi.get<CoinGeckoStableToken[]>('/stablecoin?ids=tether%2Cusd-coin%2Cdai');
+            const {data} = await coinGeckoApi.get<CoinGeckoStableToken[]>('/stablecoin?ids=tether%2Cusd-coin%2Cdai');
             const stableTokens = data.map(token => ({
                 id: token.id,
                 name: token.name,
@@ -169,35 +170,24 @@ export const coingeckoService = {
     },
     getCoinGeckoIdFrom: async (tokenAddress: string, chainId: number): Promise<string> => {
         try {
-            const { data } = await coinGeckoApi.get<string>(`/token-id/${chainId}?addresses=${tokenAddress}`);
+            const {data} = await coinGeckoApi.get<string>(`/token-id/${chainId}?addresses=${tokenAddress}`);
             return data;
         } catch (e) {
             console.log(e);
         }
         return ""
     },
-    getTokenPrices: async (chainId: number, address: (string | null)[]): Promise<Record<string, string>> => {
+    getTokenPrices: async (chainId: number, addresses: (string | null)[]): Promise<Record<string, string>> => {
         try {
-            /**
-             * @dev
-             * Base chain native token price returns null
-             * get weth token price
-            **/
-            if (chainId === 8453) {
-                const nativeTokenAddress = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
-                const wrapNativeTokenAddress = "0x4200000000000000000000000000000000000006"
-                const nativeIndex = address.findIndex(item => item === nativeTokenAddress);
-                const addresses = address.map(item => item?.toLowerCase() == nativeTokenAddress ? wrapNativeTokenAddress : item)
-
-                const response = await coinGeckoApi.get<Record<string, string>>(`/prices/${chainId}?addresses=${addresses}`);
-                if (nativeIndex !== -1) {
-                    response.data[nativeTokenAddress] = response.data[wrapNativeTokenAddress]
-                }
-                return response.data;
-            } else {
-                const response = await coinGeckoApi.get<Record<string, string>>(`/prices/${chainId}?addresses=${address}`);
-                return response.data;
+            const modifiedAddresses = addresses.map(addr => addr?.toLowerCase() === NULL_ADDRESS ? ZERO_ADDRESS : addr);
+            if (modifiedAddresses.length <= 0)
+                throw new Error('address not provided');
+            const {data} = await coinGeckoApi.get<Record<string, string>>(`/prices/${chainId}?addresses=${modifiedAddresses}`);
+            const updatedResponse: Record<string, string> = {};
+            for (const [key, value] of Object.entries(data)) {
+                updatedResponse[key === ZERO_ADDRESS ? NULL_ADDRESS : key] = value;
             }
+            return updatedResponse;
         } catch (e) {
             console.log(e);
         }
@@ -205,7 +195,7 @@ export const coingeckoService = {
     },
     getTrendingCoins: async (): Promise<TrendingCoin[]> => {
         try {
-            const { data } = await coinGeckoApi.get<TrendingCoin[]>('/trending/');
+            const {data} = await coinGeckoApi.get<TrendingCoin[]>('/trending/');
             return data;
         } catch (error) {
             console.error('Failed to fetch trending coins:', error);
@@ -215,7 +205,7 @@ export const coingeckoService = {
 
     getTopGainers: async (): Promise<Ganiner[]> => {
         try {
-            const { data } = await coinGeckoApi.get<Ganiner[]>('/top_gainers/');
+            const {data} = await coinGeckoApi.get<Ganiner[]>('/top_gainers/');
             return data;
         } catch (error) {
             console.error('Failed to fetch top gainers:', error);
@@ -225,7 +215,7 @@ export const coingeckoService = {
 
     getTopLosers: async (): Promise<Loser[]> => {
         try {
-            const { data } = await coinGeckoApi.get<Loser[]>('/top_losers/');
+            const {data} = await coinGeckoApi.get<Loser[]>('/top_losers/');
             return data;
         } catch (error) {
             console.error('Failed to fetch top losers:', error);
@@ -235,7 +225,7 @@ export const coingeckoService = {
 
     searchCoins: async (query: string): Promise<SearchResult[]> => {
         try {
-            const { data } = await coinGeckoApi.get<SearchResult[]>(`/search?query=${encodeURIComponent(query)}`);
+            const {data} = await coinGeckoApi.get<SearchResult[]>(`/search?query=${encodeURIComponent(query)}`);
             return data;
         } catch (error) {
             console.error('Error searching coins:', error);
@@ -245,7 +235,7 @@ export const coingeckoService = {
 
     getCoinPrice: async (coinId: string): Promise<CoinData> => {
         try {
-            const { data } = await coinGeckoApi.get<CoinData>(`/price/${coinId}`);
+            const {data} = await coinGeckoApi.get<CoinData>(`/price/${coinId}`);
             return data;
         } catch (error) {
             console.error('CoinGecko API Error:', {
@@ -258,7 +248,7 @@ export const coingeckoService = {
     },
     getMarketCap: async (page: number): Promise<MarketCapToken[]> => {
         try {
-            const { data } = await coinGeckoApi.get<MarketCapToken[]>(`/tokens/marketcap?page=${page}`);
+            const {data} = await coinGeckoApi.get<MarketCapToken[]>(`/tokens/marketcap?page=${page}`);
             return data;
         } catch (error) {
             console.error('Error searching coins:', error);
@@ -267,7 +257,7 @@ export const coingeckoService = {
     },
     getInfo: async (tokenId: string): Promise<any> => {
         try {
-            const { data } = await coinGeckoApi.get<any>(`/coin?coinId=${tokenId}`);
+            const {data} = await coinGeckoApi.get<any>(`/coin?coinId=${tokenId}`);
             return data;
         } catch (err) {
             console.log('get token info err: ', err);

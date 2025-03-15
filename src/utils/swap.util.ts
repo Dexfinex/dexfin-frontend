@@ -69,10 +69,7 @@ export const needDestinationAddress = (fromChainId: number | undefined, toChainI
     return fromChainId !== toChainId && (exceptionalChainIds.indexOf(fromChainId) >= 0 || exceptionalChainIds.indexOf(toChainId) >= 0);
 }
 
-export const getBridgingSpendTime = (estimatedTime: number) => {
-    const currentTime = Math.floor(Date.now() / 1000)
-    const remainedSeconds = estimatedTime - currentTime
-
+export const getBridgingSpendTime = (remainedSeconds: number) => {
     if (remainedSeconds <= 0)
         return 'In Progress'
 
