@@ -191,7 +191,7 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
           >
             <div className="flex items-center gap-4 mb-2">
               
-              {yieldItem.protocolLogo[0] &&
+              {yieldItem?.protocolLogo &&
                 <img
                   src={protocolLogos[yieldItem?.protocolSlug] ? protocolLogos[yieldItem?.protocolSlug] : yieldItem?.protocolLogo[0] + '?raw=true'}
                   alt={yieldItem?.protocolSlug}
