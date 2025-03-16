@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import { mapChainId2NativeAddress } from "../config/networks.ts";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
 import { formatDistanceToNow } from 'date-fns';
+import { mainnet } from 'viem/chains';
 
 const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
 const solanaAddressRegex = /^[1-9A-HJ-NP-Za-km-zZ]{32,44}$/;
@@ -48,7 +49,7 @@ export const downloadBase64File = (base64Data: string, fileName: string, fileTyp
 };
 
 export const getEnsName = async (address: string): Promise<string> => {
-    const provider = new ethers.providers.JsonRpcProvider("https://eth-mainnet.g.alchemy.com/v2/YhklBkpnW3RdeoL0fw-I6CRkGG1cu2-z");
+    const provider = new ethers.providers.JsonRpcProvider(mainnet.rpcUrls.default.http[0]);
 
     try {
         const ensName = await provider.lookupAddress(address);

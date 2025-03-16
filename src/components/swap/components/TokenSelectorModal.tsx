@@ -1,14 +1,15 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
-import {Search, Star, X} from 'lucide-react';
-import {TokenType} from "../../../types/swap.type.ts";
-import {mapPopularTokens, NETWORK, NETWORKS} from "../../../config/networks.ts";
+import { Search, Star, X } from 'lucide-react';
+import { TokenType } from "../../../types/swap.type.ts";
+import { mapPopularTokens, NETWORK, NETWORKS } from "../../../config/networks.ts";
 // import {coingeckoService} from "../../../services/coingecko.service.ts";
-import {shrinkAddress} from "../../../utils/common.util.ts";
-import {savedTokens} from "../../../config/tokens.ts";
-import {Button, HStack, Image, Text} from "@chakra-ui/react";
+import { isValidAddress, shrinkAddress } from "../../../utils/common.util.ts";
+import { savedTokens } from "../../../config/tokens.ts";
+import { Button, HStack, Image, Text } from "@chakra-ui/react";
 import useLocalStorage from "../../../hooks/useLocalStorage.ts";
-import {LOCAL_STORAGE_STARRED_TOKENS} from "../../../constants";
+import { LOCAL_STORAGE_STARRED_TOKENS } from "../../../constants";
+import { getTokenInfo } from '../../../utils/token.util.ts';
 
 /*
 const CATEGORIES = [
@@ -26,12 +27,12 @@ interface TokenSelectorModalProps {
 }
 
 export function TokenSelectorModal({
-                                       isOpen,
-                                       // selectedToken,
-                                       selectedChainId,
-                                       onSelect,
-                                       onClose,
-                                   }: TokenSelectorModalProps) {
+    isOpen,
+    // selectedToken,
+    selectedChainId,
+    onSelect,
+    onClose,
+}: TokenSelectorModalProps) {
 
     const [loading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +40,9 @@ export function TokenSelectorModal({
     const [starredTokenMap, setStarredTokenMap] = useLocalStorage<Record<string, boolean> | null>(LOCAL_STORAGE_STARRED_TOKENS, {})
     const [showStarredOnly, setShowStarredOnly] = useState(false);
     const [selectedCategory] = useState<'all' | 'meme'>('all');
+    const [isSearchToken, setIsSearchToken] = useState(false);
+    const [loadingNewToken, setLoadingNewToken] = useState(false);
+    const [newToken, setNewToken] = useState<TokenType | null>(null);
 
     const tokens = useMemo(() => {
         return savedTokens[selectedNetwork?.id ?? 'all']
@@ -48,7 +52,8 @@ export function TokenSelectorModal({
         const filteredList = tokens.filter(token => {
             const matchesSearch =
                 token.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                token.name.toLowerCase().includes(searchQuery.toLowerCase());
+                token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                token.address.toLowerCase().includes(searchQuery.toLowerCase());
             // const matchesNetwork = !selectedNetwork || token.chainId.toString() === selectedNetwork;
             const matchesStarred = !showStarredOnly || starredTokenMap?.[`${token.chainId}:${token.address}`]
             const matchesCategory = selectedCategory === 'all' || token.category === selectedCategory;
@@ -62,6 +67,16 @@ export function TokenSelectorModal({
             setSelectedNetwork(NETWORKS.filter(network => network.chainId === selectedChainId)[0] ?? null)
         }
     }, [selectedChainId, isOpen])
+
+    useEffect(() => {
+        if (isValidAddress(searchQuery, selectedNetwork?.chainId || 0) && filteredTokens.length == 0) {
+            setNewToken(null)
+            setIsSearchToken(true)
+            handleSearchToken()
+        } else if (isSearchToken) {
+            setIsSearchToken(false)
+        }
+    }, [searchQuery, selectedNetwork])
 
     /*
       useEffect(() => {
@@ -79,6 +94,16 @@ export function TokenSelectorModal({
       }, []);
     */
 
+    const handleSearchToken = async () => {
+        setLoadingNewToken(true)
+        console.log('handle search token')
+        const tokenInfo = await getTokenInfo(searchQuery, selectedNetwork?.chainId || 0)
+        if (tokenInfo) {
+            setNewToken(tokenInfo as TokenType);
+        }
+        setLoadingNewToken(false)
+    }
+
     const toggleStar = (e: React.MouseEvent, chainId: number, address: string) => {
         e.stopPropagation();
         console.log("setStarredTokenMap")
@@ -87,7 +112,7 @@ export function TokenSelectorModal({
 
             const tokenKey = `${chainId}:${address}`
             if (prev[tokenKey]) {
-                const { [tokenKey]: _, ...rest} = prev
+                const { [tokenKey]: _, ...rest } = prev
                 return rest
             }
 
@@ -103,9 +128,8 @@ export function TokenSelectorModal({
     }, [selectedNetwork])
 
     return ReactDOM.createPortal(
-        <div className={`fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-[10000] ${
-            isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        } transition-opacity duration-200`}>
+        <div className={`fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-[10000] ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            } transition-opacity duration-200`}>
             <div
                 className="glass rounded-2xl w-full max-w-xl border border-white/5 mt-[10vh] animate-modal-slide-down">
                 <div className="p-4 border-b border-white/10">
@@ -114,17 +138,16 @@ export function TokenSelectorModal({
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setShowStarredOnly(!showStarredOnly)}
-                                className={`p-2 rounded-lg transition-colors group ${
-                                    showStarredOnly ? 'text-yellow-400 bg-yellow-400/10' : 'text-gray-400 hover:text-yellow-400'
-                                }`}
+                                className={`p-2 rounded-lg transition-colors group ${showStarredOnly ? 'text-yellow-400 bg-yellow-400/10' : 'text-gray-400 hover:text-yellow-400'
+                                    }`}
                             >
-                                <Star className="w-5 h-5" fill={showStarredOnly ? "currentColor" : "none"}/>
+                                <Star className="w-5 h-5" fill={showStarredOnly ? "currentColor" : "none"} />
                             </button>
                             <button
                                 onClick={onClose}
                                 className="p-2 rounded-lg hover:bg-white/5 transition-colors group"
                             >
-                                <X className="w-5 h-5"/>
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
@@ -147,7 +170,7 @@ export function TokenSelectorModal({
           </div>
 */}
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
                             placeholder="Search by token name or paste address"
@@ -162,9 +185,8 @@ export function TokenSelectorModal({
                     <div className="flex flex-wrap gap-1">
                         <button
                             onClick={() => setSelectedNetwork(null)}
-                            className={`px-3 py-1.5 rounded-lg text-sm transition-colors border ${
-                                !selectedNetwork ? 'text-white' : 'border-transparent hover:text-white'
-                            }`}
+                            className={`px-3 py-1.5 rounded-lg text-sm transition-colors border ${!selectedNetwork ? 'text-white' : 'border-transparent hover:text-white'
+                                }`}
                         >
                             All
                         </button>
@@ -172,11 +194,10 @@ export function TokenSelectorModal({
                             <button
                                 key={network.id}
                                 onClick={() => setSelectedNetwork(network)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border ${
-                                    selectedNetwork === network ? 'text-white' : 'border-transparent hover:text-white'
-                                }`}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border ${selectedNetwork === network ? 'text-white' : 'border-transparent hover:text-white'
+                                    }`}
                             >
-                                <img src={network.icon} alt={network.name} className="w-5 h-5"/>
+                                <img src={network.icon} alt={network.name} className="w-5 h-5" />
                                 {/*<span>{network.name}</span>*/}
                             </button>
                         ))}
@@ -199,29 +220,31 @@ export function TokenSelectorModal({
                                                 onSelect(popularToken);
                                                 onClose();
                                             }}
-                                            _hover={{bg: 'whiteAlpha.200'}}
+                                            _hover={{ bg: 'whiteAlpha.200' }}
                                             style={{
                                                 padding: '0px 0.75rem'
                                             }}
                                         >
                                             <HStack>
-                                                <Image src={popularToken.logoURI} boxSize='24px'/>
+                                                <Image src={popularToken.logoURI} boxSize='24px' />
                                                 <Text className="text-sm text-white">{popularToken.symbol}</Text>
                                             </HStack>
                                         </Button>
                                     ))}
                                 </div>
                             </div>
-                            <div className="text-gray-400 text-sm px-4 mt-2">
+                            {!isSearchToken ? <div className="text-gray-400 text-sm px-4 mt-2">
                                 Trending
-                            </div>
+                            </div> : <div className="text-gray-400 text-sm px-4 mt-2">
+                                Tokens
+                            </div>}
                         </>
                     )
                 }
-                <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                {!isSearchToken ? <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                     {loading ? (
                         <div className="flex items-center justify-center p-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"/>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
                         </div>
                     ) : (
                         <div className="p-2">
@@ -237,24 +260,23 @@ export function TokenSelectorModal({
                                     <div className="flex items-center gap-3">
                                         <div
                                             onClick={(e) => toggleStar(e, token.chainId, token.address)}
-                                            className={`p-1.5 rounded-lg transition-colors ${
-                                                starredTokenMap?.[`${token.chainId}:${token.address}`]
-                                                    ? 'text-yellow-400 bg-yellow-400/10'
-                                                    : 'text-gray-400 hover:text-yellow-400'
-                                            } cursor-pointer`}
+                                            className={`p-1.5 rounded-lg transition-colors ${starredTokenMap?.[`${token.chainId}:${token.address}`]
+                                                ? 'text-yellow-400 bg-yellow-400/10'
+                                                : 'text-gray-400 hover:text-yellow-400'
+                                                } cursor-pointer`}
                                         >
                                             <Star className="w-4 h-4"
-                                                  fill={starredTokenMap?.[`${token.chainId}:${token.address}`] ? "currentColor" : "none"}/>
+                                                fill={starredTokenMap?.[`${token.chainId}:${token.address}`] ? "currentColor" : "none"} />
                                         </div>
-                                        <img src={token.logoURI} alt={token.symbol} className="w-8 h-8 rounded-full"/>
+                                        <img src={token.logoURI} alt={token.symbol} className="w-8 h-8 rounded-full" />
                                         <div>
                                             <div className="flex items-center gap-2 mb-0.5">
                                                 <span className="font-medium text-white">{token.symbol}</span>
                                                 {token.category === 'meme' && (
                                                     <span
                                                         className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 rounded-md">
-                            MEME
-                          </span>
+                                                        MEME
+                                                    </span>
                                                 )}
                                                 {/*
                         <button
@@ -286,7 +308,37 @@ export function TokenSelectorModal({
                             ))}
                         </div>
                     )}
-                </div>
+                </div> : <div>
+                    {
+                        loadingNewToken ?
+                            <div className="flex items-center justify-center p-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+                            </div>
+                            :
+                            <div className='p-2'>
+                                {newToken ? <div
+                                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <img src={newToken.logoURI} className="w-8 h-8 rounded-full" />
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <span className="font-medium text-white">{newToken?.symbol}</span>
+                                            </div>
+                                            <div className="text-sm text-gray-400">{newToken?.name}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-right">
+                                            <div className="text-sm text-gray-400">{shrinkAddress(newToken?.address)}</div>
+                                        </div>
+                                    </div>
+                                </div> : <div className='text-center p-2 text-gray-400 text-sm'>
+                                    No results found for this address. Please check and try again.
+                                </div>}
+                            </div>
+                    }
+                </div>}
             </div>
         </div>,
         document.body
