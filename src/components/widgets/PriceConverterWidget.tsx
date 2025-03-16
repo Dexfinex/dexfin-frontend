@@ -95,21 +95,25 @@ export const PriceConverterWidget: React.FC = () => {
     return formatSpecialNumber(calculated);
   };
 
+/*
   const calculateFromAmount = (toValue: string, currentRate: number) => {
     if (!toValue || !currentRate) return '0.00';
     const calculated = parseFloat(toValue) / currentRate;
     return formatSpecialNumber(calculated);
   };
+*/
 
   const handleFromAmountChange = (value: string) => {
     setFromAmount(value);
     setToAmount(calculateToAmount(value, rate));
   };
 
+/*
   const handleToAmountChange = (value: string) => {
     setToAmount(value);
     setFromAmount(calculateFromAmount(value, rate));
   };
+*/
 
   const handleSwitch = () => {
     const tempToken = fromRealCurrency;

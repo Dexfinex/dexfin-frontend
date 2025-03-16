@@ -333,26 +333,31 @@ export function SwapBox({
             }
         }
         // (3) Submit the transaction with Permit2 signature
-        const tx = await signer!.sendTransaction({
-            gasLimit: normalSwapQuoteResponse?.transaction.gas
-                ? BigInt(normalSwapQuoteResponse?.transaction.gas)
-                : undefined,
-            to: normalSwapQuoteResponse?.transaction.to,
-            data: normalSwapQuoteResponse.transaction.data, // submit
-            value: normalSwapQuoteResponse?.transaction.value
-                ? BigInt(normalSwapQuoteResponse.transaction.value)
-                : undefined, // value is used for native tokens
-        })
+        try {
+            const tx = await signer!.sendTransaction({
+                gasLimit: normalSwapQuoteResponse?.transaction.gas
+                    ? BigInt(normalSwapQuoteResponse?.transaction.gas)
+                    : undefined,
+                to: normalSwapQuoteResponse?.transaction.to,
+                data: normalSwapQuoteResponse.transaction.data, // submit
+                value: normalSwapQuoteResponse?.transaction.value
+                    ? BigInt(normalSwapQuoteResponse.transaction.value)
+                    : undefined, // value is used for native tokens
+            })
 
-        setTransactionHash(tx.hash)
-        const receipt = await tx.wait();
+            setTransactionHash(tx.hash)
+            const receipt = await tx.wait();
 
-        if (receipt.status) {
-            setIsSuccessNormalSwapAction(true)
-        } else {
-            setIsSuccessNormalSwapAction(false)
+            if (receipt.status) {
+                setIsSuccessNormalSwapAction(true)
+            } else {
+                setIsSuccessNormalSwapAction(false)
+            }
+        } catch(e) {
+        //
+        } finally {
+            setIsConfirming(false)
         }
-        setIsConfirming(false)
     }
 
     const handleGaslessSwap = async () => {

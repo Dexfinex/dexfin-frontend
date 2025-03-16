@@ -1,6 +1,6 @@
 import {Alert, AlertIcon, Text} from '@chakra-ui/react';
 import {ArrowLeft, History, Wallet} from 'lucide-react';
-import {useContext, useState} from "react";
+import {useContext, useMemo, useState} from "react";
 import {isValidAddress} from "../../../utils/common.util.ts";
 import {type NETWORK} from "../../../config/networks.ts";
 import ReactDOM from "react-dom";
@@ -16,10 +16,32 @@ interface ModalProps {
 }
 
 export const DestinationAddressInputModal = ({open, setOpen, destinationNetwork, address, setAddress}: ModalProps) => {
-    const { address: evmAddress, solanaWalletInfo } = useContext(Web3AuthContext);
+    const {address: evmAddress, solanaWalletInfo} = useContext(Web3AuthContext);
     const [currentModalView, setCurrentModalView] = useState<'main' | 'recent'>('main');
     const [addressError, setAddressError] = useState<string>('');
     const [addressInput, setAddressInput] = useState<string>(address);
+
+    const {
+        connectedWalletCount,
+        connectedWalletAddress,
+    } = useMemo(() => {
+        if (destinationNetwork.chainId === SOLANA_CHAIN_ID && solanaWalletInfo)
+            return {
+                connectedWalletCount: 1,
+                connectedWalletAddress: solanaWalletInfo.publicKey,
+            }
+        else if (evmAddress && destinationNetwork.chainId !== SOLANA_CHAIN_ID) {
+            return {
+                connectedWalletCount: 1,
+                connectedWalletAddress: evmAddress,
+            }
+        }
+
+        return {
+            connectedWalletCount: 0,
+            connectedWalletAddress: '',
+        }
+    }, [destinationNetwork, solanaWalletInfo, evmAddress])
 
     const handleAddressSubmit = () => {
         if (isValidAddress(addressInput, destinationNetwork.chainId)) {
@@ -34,12 +56,11 @@ export const DestinationAddressInputModal = ({open, setOpen, destinationNetwork,
     };
 
     const handleOnClickConnectedWallet = () => {
-        if (destinationNetwork.chainId === SOLANA_CHAIN_ID && solanaWalletInfo) {
-            setAddressInput(solanaWalletInfo.publicKey)
-        } else if (evmAddress) {
-            setAddressInput(evmAddress)
+        if (connectedWalletAddress) {
+            setAddressInput(connectedWalletAddress)
         }
     }
+
 
     return open && (ReactDOM.createPortal(
             <div
@@ -133,7 +154,12 @@ export const DestinationAddressInputModal = ({open, setOpen, destinationNetwork,
                                                     <Wallet className="text-white" size={20}/>
                                                     <span className="font-medium">Connected wallets</span>
                                                 </div>
-                                                <span className="text-white">{(evmAddress && solanaWalletInfo) ? 2 : 1}</span>
+                                                {
+                                                    connectedWalletCount > 0 && (
+                                                        <span
+                                                            className="text-white">{connectedWalletCount}</span>
+                                                    )
+                                                }
                                             </button>
                                         </div>
 
