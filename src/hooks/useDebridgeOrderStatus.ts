@@ -3,8 +3,8 @@ import {useCallback} from 'react';
 import {debridgeService} from "../services/debridge.service.ts";
 import {DebridgeOrderStatus, DebridgeTrackResponseType} from "../types/swap.type.ts";
 
-const useDebridgeOrderStatus = (orderId: string) => {
-    const enabled = !!orderId;
+const useDebridgeOrderStatus = (orderId: string, isProcessing: boolean) => {
+    const enabled = !!orderId && isProcessing;
 
     const fetchStatus = useCallback(async () => {
         return await debridgeService.getTrackHash(orderId)

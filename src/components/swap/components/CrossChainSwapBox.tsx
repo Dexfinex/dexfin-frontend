@@ -58,6 +58,7 @@ export function CrossChainSwapBox({
 
     const [destinationAddress, setDestinationAddress] = useState<string>('');
     const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
+    const [sendToAnotherAddress, setSendToAnotherAddress] = useState<boolean>(false);
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [countdown, setCountdown] = useState(0);
     const [isBridging, setIsBridging] = useState(false);
@@ -76,7 +77,7 @@ export function CrossChainSwapBox({
         isLoading: isTracking,
         orderStatus,
         completionHash,
-    } = useDebridgeOrderStatus(quoteResponse.orderId)
+    } = useDebridgeOrderStatus(quoteResponse.orderId, isBridging)
 
     useGetTokenPrices({
         tokenAddresses: [fromToken?.address ?? null],
@@ -221,7 +222,7 @@ export function CrossChainSwapBox({
                 <div className="z-30">
                     <button
                         onClick={onSwitch}
-                        className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
+                        className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
                     >
                         <ArrowDownUp className="w-4 h-4"/>
                     </button>
@@ -248,22 +249,37 @@ export function CrossChainSwapBox({
                 className="rounded-xl p-4 mb-4 cursor-pointer border border-white/5 hover:border-blue-500/20 transition-all duration-200 hover:shadow-[0_8px_32px_rgba(59,130,246,0.15)]"
                 onClick={() => setIsAddressModalOpen(true)}
             >
-                <div className="flex justify-between mb-2">
+                <div className={`flex justify-between ${sendToAnotherAddress ? 'mb-4' : ''}`} onClick={(e) => {e.stopPropagation()}}>
+                    <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            checked={sendToAnotherAddress}
+                            onChange={(e) => setSendToAnotherAddress(e.target.checked)}
+                            className="appearance-none h-6 w-6 rounded-md border-2 border-blue-500/60 checked:bg-blue-500 checked:border-transparent relative checked:after:content-['✔'] checked:after:absolute checked:after:left-[4px] checked:after:top-[-2px] checked:after:text-white checked:after:text-lg"
+                        />
+                        <span className="group-hover:text-gray-300 transition-colors">Send to Another Address</span>
+                    </label>
+                    {/*
                     <span
                         className="text-blue-400/90 text-[10px] font-semibold tracking-wider uppercase bg-blue-500/10 px-2 py-0.5 rounded-md">Destination Address</span>
+*/}
                 </div>
-                <div className="flex items-center">
-                    {(destinationAddress && toNetwork) ? (
-                        <>
-                            <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2"/>
-                            <span className="font-medium">
+                {
+                    sendToAnotherAddress && (
+                        <div className="flex items-center">
+                            {(destinationAddress && toNetwork) ? (
+                                <>
+                                    <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2"/>
+                                    <span className="font-medium">
                                 {shrinkAddress(destinationAddress)}
                             </span>
-                        </>
-                    ) : (
-                        <span className="text-gray-400">Click to enter Address</span>
-                    )}
-                </div>
+                                </>
+                            ) : (
+                                <span className="text-gray-400">Click to enter Address</span>
+                            )}
+                        </div>
+                    )
+                }
             </div>
 
             {
@@ -273,7 +289,7 @@ export function CrossChainSwapBox({
                     >
                         {
                             isQuoteLoading ? (
-                                <Skeleton startColor="#444" endColor="#1d2837" w={'7rem'} h={'1rem'}></Skeleton>
+                                <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'3rem'}></Skeleton>
                             ) : (
                                 <>
                                     <div className="flex items-center justify-between mb-3">
@@ -320,7 +336,6 @@ export function CrossChainSwapBox({
                     </Alert>
                 )
             }
-
             {
                 quoteResponse.errorMessage && (
                     <Alert status="error" variant="subtle" borderRadius="md">
@@ -329,7 +344,6 @@ export function CrossChainSwapBox({
                     </Alert>
                 )
             }
-
             {
                 (chainId === SOLANA_CHAIN_ID && !solanaWalletInfo) ? (
                     <Button

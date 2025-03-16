@@ -8,6 +8,7 @@ import {AxiosError} from "axios";
 import {debridgeService} from "../services/debridge.service.ts";
 import {ethers} from "ethers";
 import {mapDebridgeFeeCosts} from "../constants/debridge.constants.ts";
+import {nullToZeroAddress} from "../utils/swap.util.ts";
 
 interface quoteParam {
     sellToken: TokenType | null,
@@ -47,9 +48,9 @@ const useDebridgeQuote = ({
         try {
             const data = await debridgeService.getQuote({
                 srcChainId: sellToken!.chainId,
-                srcChainTokenIn: sellToken!.address,
+                srcChainTokenIn: nullToZeroAddress(sellToken!.address),
                 dstChainId: buyToken!.chainId,
-                dstChainTokenOut: buyToken!.address,
+                dstChainTokenOut: nullToZeroAddress(buyToken!.address),
                 dstChainTokenOutRecipient: destinationAddress,
                 senderAddress: sellToken!.chainId === SOLANA_CHAIN_ID ? solanaWalletInfo!.publicKey : address,
                 srcChainTokenInAmount: ethers.utils.parseUnits(sellAmount!, sellToken!.decimals).toString(),
@@ -57,7 +58,7 @@ const useDebridgeQuote = ({
 
             if (data.estimation) {
                 const {srcChainTokenIn, dstChainTokenOut} = data.estimation
-                quoteResponse.outputAmount = ethers.utils.parseUnits(dstChainTokenOut.amount, buyToken!.decimals).toString()
+                quoteResponse.outputAmount = ethers.utils.formatUnits(dstChainTokenOut.amount, buyToken!.decimals).toString()
                 quoteResponse.outputUsdAmount = dstChainTokenOut.recommendedApproximateUsdValue ?? dstChainTokenOut.approximateUsdValue!
                 quoteResponse.inputUsdAmount = srcChainTokenIn.originApproximateUsdValue ?? dstChainTokenOut.approximateUsdValue!
             }

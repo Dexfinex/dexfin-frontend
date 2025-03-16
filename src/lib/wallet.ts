@@ -5,7 +5,7 @@ import { TransactionType, Transaction, DeFiPosition, DeFiStats } from '../types/
 export const mockTransactions: Transaction[] = [
   {
     id: '0x742d...f44e',
-    type: TransactionType.SEND,
+    type: TransactionType.Sent,
     timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
     token: {
       symbol: 'ETH',
