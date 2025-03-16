@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Search, Star, X } from 'lucide-react';
+import { Search, Star, X, Info } from 'lucide-react';
 import { TokenType } from "../../../types/swap.type.ts";
 import { mapPopularTokens, NETWORK, NETWORKS } from "../../../config/networks.ts";
 // import {coingeckoService} from "../../../services/coingecko.service.ts";
@@ -8,8 +8,9 @@ import { isValidAddress, shrinkAddress } from "../../../utils/common.util.ts";
 import { savedTokens } from "../../../config/tokens.ts";
 import { Button, HStack, Image, Text } from "@chakra-ui/react";
 import useLocalStorage from "../../../hooks/useLocalStorage.ts";
-import { LOCAL_STORAGE_STARRED_TOKENS } from "../../../constants";
-import { getTokenInfo, TOkEN_kEY_NAME } from '../../../utils/token.util.ts';
+import { useStore } from '../../../store/useStore.ts';
+import { LOCAL_STORAGE_STARRED_TOKENS, LOCAL_STORAGE_ADDED_TOKENS } from "../../../constants";
+import { getTokenInfo } from '../../../utils/token.util.ts';
 
 /*
 const CATEGORIES = [
@@ -26,6 +27,44 @@ interface TokenSelectorModalProps {
     onClose: () => void;
 }
 
+
+interface ApproveModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onContinue: () => void;
+}
+
+const ApproveModal: React.FC<ApproveModalProps> = ({ isOpen, onClose, onContinue }) => {
+    const { theme } = useStore();
+
+    const handleContinue = () => {
+        onContinue()
+        onClose()
+    }
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative w-[340px] md:w-[520px] glass border border-white/10 rounded-xl overflow-hidden p-8">
+                <div className='flex justify-center mb-4'>
+                    <Info className='w-8 h-8 text-blue-500' />
+                </div>
+                <p className='text-center mb-8'>Always do your research</p>
+                <div className='flex items-center justify-center gap-4'>
+                    <button className={`${theme === 'dark' ? 'bg-white/20 hover:bg-white/10' : 'bg-black/20 hover:bg-black/10'} rounded-xl py-1 px-6`} onClick={onClose}>
+                        Go back
+                    </button>
+                    <button className={`${theme === 'dark' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-500 hover:bg-blue-600'} rounded-xl py-1 px-6`} onClick={handleContinue}>
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </div >
+    )
+}
+
 export function TokenSelectorModal({
     isOpen,
     // selectedToken,
@@ -38,23 +77,22 @@ export function TokenSelectorModal({
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(null);
     const [starredTokenMap, setStarredTokenMap] = useLocalStorage<Record<string, boolean> | null>(LOCAL_STORAGE_STARRED_TOKENS, {})
+    const [addedTokens, setAddedTokens] = useLocalStorage<Array<TokenType> | null>(LOCAL_STORAGE_ADDED_TOKENS, [])
     const [showStarredOnly, setShowStarredOnly] = useState(false);
     const [selectedCategory] = useState<'all' | 'meme'>('all');
     const [isSearchToken, setIsSearchToken] = useState(false);
     const [loadingNewToken, setLoadingNewToken] = useState(false);
     const [newToken, setNewToken] = useState<TokenType | null>(null);
+    const [approveModalActive, setApproveModalActive] = useState(false);
 
     const tokens = useMemo(() => {
-        const data = localStorage.getItem(TOkEN_kEY_NAME)
-        if (data) {
-            const tokens = JSON.parse(data)
-
+        if (addedTokens && addedTokens.length > 0) {
             if (selectedNetwork?.id) {
-                const filtered = tokens.filter((token: any) => token.chainId == selectedNetwork.chainId)
+                const filtered = addedTokens.filter((token: TokenType) => token.chainId == selectedNetwork.chainId)
 
-                return [...filtered, ...savedTokens[selectedNetwork.id]]
+                return [...(filtered.reverse()), ...savedTokens[selectedNetwork.id]]
             } else {
-                return [...tokens, ...savedTokens['all']]
+                return [...(addedTokens.reverse()), ...savedTokens['all']]
             }
         }
 
@@ -62,7 +100,7 @@ export function TokenSelectorModal({
     }, [selectedNetwork])
 
     const filteredTokens = useMemo(() => {
-        const filteredList = tokens.filter(token => {
+        const filteredList = tokens.filter((token: TokenType) => {
             const matchesSearch =
                 token.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -135,6 +173,21 @@ export function TokenSelectorModal({
             }
         })
     };
+
+    const selectSearchedToken = async () => {
+        if (newToken) {
+            await setAddedTokens(prev => {
+                if (prev && prev?.length > 0) {
+                    return [...prev, newToken];
+                } else {
+                    return [newToken];
+                }
+            })
+
+            onSelect(newToken)
+            onClose()
+        }
+    }
 
     const popularTokens = useMemo(() => {
         return (mapPopularTokens[selectedNetwork === null ? 1 : (selectedNetwork?.chainId ?? -1)]) ?? []
@@ -261,7 +314,7 @@ export function TokenSelectorModal({
                         </div>
                     ) : (
                         <div className="p-2">
-                            {filteredTokens.map((token) => (
+                            {filteredTokens.map((token: TokenType) => (
                                 <div
                                     key={token.address}
                                     onClick={() => {
@@ -331,9 +384,7 @@ export function TokenSelectorModal({
                             <div className='p-2'>
                                 {newToken ? <div
                                     className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
-                                    onClick={() => {
-                                        onSelect(newToken)
-                                    }}
+                                    onClick={() => setApproveModalActive(true)}
                                 >
                                     <div className="flex items-center gap-3">
                                         <img src={newToken.logoURI} className="w-8 h-8 rounded-full" />
@@ -356,6 +407,12 @@ export function TokenSelectorModal({
                     }
                 </div>}
             </div>
+
+            <ApproveModal
+                isOpen={approveModalActive}
+                onClose={() => setApproveModalActive(false)}
+                onContinue={selectSearchedToken}
+            />
         </div>,
         document.body
     );

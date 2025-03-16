@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { X, File, Camera, Eye, Lock, Plus, Search, Edit } from 'lucide-react';
+import React from 'react';
+import { X } from 'lucide-react';
 
 interface ChatHelpModalProps {
     isOpen: boolean;
