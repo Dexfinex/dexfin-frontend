@@ -29,7 +29,19 @@ export const formatNumber = (num: string | number, fixedCount = 2) => {
     return getFixedNum(num, fixedCount);
 }
 
+
+export const TOkEN_kEY_NAME = 'newlyAddedTokens';
+
 export const getTokenInfo = async (address: string, chainId: number) => {
+    const data = localStorage.getItem(TOkEN_kEY_NAME);
+    if (data) {
+        const tokens = JSON.parse(data);
+        const found = tokens.find((token: any) => token.address == address && token.chainId == chainId);
+        if (found) {
+            return found;
+        }
+    }
+
     if (chainId != SOLANA_CHAIN_ID) {
         const chain = mapChainId2ViemChain[chainId];
         const provider = new ethers.providers.JsonRpcProvider(chain.rpcUrls.default.http[0]);
@@ -44,19 +56,20 @@ export const getTokenInfo = async (address: string, chainId: number) => {
             ]);
 
             const coinId = await coingeckoService.getCoinGeckoIdFrom(address, chainId);
+            let result: TokenType = {} as TokenType;
+
             if (coinId) {
                 const coinInfo = await coingeckoService.getInfo(coinId);
-
-                return {
+                result = {
                     symbol,
                     name,
                     address,
                     chainId,
                     decimals,
                     logoURI: coinInfo.image.small
-                } as TokenType
+                } as TokenType;
             } else {
-                return {
+                result = {
                     symbol,
                     name,
                     address,
@@ -65,11 +78,28 @@ export const getTokenInfo = async (address: string, chainId: number) => {
                     logoURI: ErrorImg
                 } as TokenType;
             }
+
+            const data = localStorage.getItem(TOkEN_kEY_NAME);
+            if (data) {
+                localStorage.setItem(TOkEN_kEY_NAME, JSON.stringify([...JSON.parse(data), result]));
+            } else {
+                localStorage.setItem(TOkEN_kEY_NAME, JSON.stringify([result]));
+            }
+
+            return result;
         } catch (err) {
             console.log('get token info err: ', err);
         }
     } else {
-        const tokenInfo = birdeyeService.getTokenInfo(address);
+        const response = await birdeyeService.getTokenInfo(address);
+        const tokenInfo = { ...response, chainId: SOLANA_CHAIN_ID };
+
+        const data = localStorage.getItem(TOkEN_kEY_NAME);
+        if (data) {
+            localStorage.setItem(TOkEN_kEY_NAME, JSON.stringify([...JSON.parse(data), tokenInfo]));
+        } else {
+            localStorage.setItem(TOkEN_kEY_NAME, JSON.stringify([tokenInfo]));
+        }
         return tokenInfo;
     }
 

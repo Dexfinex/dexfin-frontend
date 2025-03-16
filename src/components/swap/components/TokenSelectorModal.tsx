@@ -9,7 +9,7 @@ import { savedTokens } from "../../../config/tokens.ts";
 import { Button, HStack, Image, Text } from "@chakra-ui/react";
 import useLocalStorage from "../../../hooks/useLocalStorage.ts";
 import { LOCAL_STORAGE_STARRED_TOKENS } from "../../../constants";
-import { getTokenInfo } from '../../../utils/token.util.ts';
+import { getTokenInfo, TOkEN_kEY_NAME } from '../../../utils/token.util.ts';
 
 /*
 const CATEGORIES = [
@@ -45,6 +45,19 @@ export function TokenSelectorModal({
     const [newToken, setNewToken] = useState<TokenType | null>(null);
 
     const tokens = useMemo(() => {
+        const data = localStorage.getItem(TOkEN_kEY_NAME)
+        if (data) {
+            const tokens = JSON.parse(data)
+
+            if (selectedNetwork?.id) {
+                const filtered = tokens.filter((token: any) => token.chainId == selectedNetwork.chainId)
+
+                return [...filtered, ...savedTokens[selectedNetwork.id]]
+            } else {
+                return [...tokens, ...savedTokens['all']]
+            }
+        }
+
         return savedTokens[selectedNetwork?.id ?? 'all']
     }, [selectedNetwork])
 
@@ -318,6 +331,9 @@ export function TokenSelectorModal({
                             <div className='p-2'>
                                 {newToken ? <div
                                     className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
+                                    onClick={() => {
+                                        onSelect(newToken)
+                                    }}
                                 >
                                     <div className="flex items-center gap-3">
                                         <img src={newToken.logoURI} className="w-8 h-8 rounded-full" />
