@@ -397,29 +397,31 @@ const Web3AuthProvider = ({children}: { children: React.ReactNode }) => {
         let solanaWalletData: SolanaWalletInfoType | undefined = undefined
         try {
             const wrappedKeyMetaDataList = await getWrappedKeyMetaDataList(sessionSigs)
-            const targetMetaData = getSolanaWrappedKeyMetaDataByPkpEthAddress(wrappedKeyMetaDataList, currentAccount.ethAddress)
-            if (!targetMetaData) {
-                const {id, pkpAddress, generatedPublicKey} = await generatePrivateKey({
-                    pkpSessionSigs: sessionSigs,
-                    network: 'solana',
-                    memo: "solana address",
-                    litNodeClient: litNodeClient as ILitNodeClient,
-                });
-                // console.log("generated", pkpAddress, generatedPublicKey)
-                solanaWalletData = {
-                    publicKey: generatedPublicKey,
-                    pkpAddress: pkpAddress,
-                    wrappedKeyId: id,
+            if (wrappedKeyMetaDataList !== null) {
+                const targetMetaData = getSolanaWrappedKeyMetaDataByPkpEthAddress(wrappedKeyMetaDataList, currentAccount.ethAddress)
+                if (!targetMetaData) {
+                    const {id, pkpAddress, generatedPublicKey} = await generatePrivateKey({
+                        pkpSessionSigs: sessionSigs,
+                        network: 'solana',
+                        memo: "solana address",
+                        litNodeClient: litNodeClient as ILitNodeClient,
+                    });
+                    // console.log("generated", pkpAddress, generatedPublicKey)
+                    solanaWalletData = {
+                        publicKey: generatedPublicKey,
+                        pkpAddress: pkpAddress,
+                        wrappedKeyId: id,
+                    }
+                } else {
+                    solanaWalletData = {
+                        publicKey: targetMetaData.publicKey,
+                        pkpAddress: targetMetaData.pkpAddress,
+                        wrappedKeyId: targetMetaData.id,
+                    }
                 }
-            } else {
-                solanaWalletData = {
-                    publicKey: targetMetaData.publicKey,
-                    pkpAddress: targetMetaData.pkpAddress,
-                    wrappedKeyId: targetMetaData.id,
-                }
-            }
 
-            setSolanaWalletInfo(solanaWalletData)
+                setSolanaWalletInfo(solanaWalletData)
+            }
         } catch (err) {
             console.log("error during initialize solana address", err)
         }
