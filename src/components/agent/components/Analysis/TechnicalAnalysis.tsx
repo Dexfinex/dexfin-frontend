@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, SimpleGrid, Text, VStack, HStack, Progress, Badge, Skeleton, Tooltip } from '@chakra-ui/react';
 import { TrendingUp, TrendingDown, Activity, BarChart3, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as ChartTooltip } from 'recharts';
-import { BollingerBandsProgress } from '../../../../utils/agent';
+import { BollingerBandsProgress } from '../../../../utils/agent.util';
 import { TechnicalAnalysisData } from '../../../../types';
 
 const CustomTooltip = ({ active, payload }: any) => {

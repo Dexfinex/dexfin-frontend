@@ -4,7 +4,7 @@ import { Box, Flex, Text, Skeleton, VStack } from '@chakra-ui/react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { ComposedChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { BrianCoinData } from '../../../../types/brian.type.ts';
-import { formatVolume } from '../../../../utils/agent.tsx';
+import { formatVolume } from '../../../../utils/agent.util.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
 interface PriceCardProps {
   data?: BrianCoinData;

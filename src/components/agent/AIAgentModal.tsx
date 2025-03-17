@@ -4,7 +4,7 @@ import { coingeckoService } from '../../services/coingecko.service';
 import { cryptoNewsService } from '../../services/cryptonews.service.ts';
 import { isAddress } from "viem";
 import { brianService } from '../../services/brian.service';
-import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/agent.tsx';
+import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/agent.util.tsx';
 import {
   Mic,
   Send,
@@ -30,7 +30,7 @@ import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { convertCryptoAmount, getSolAddressFromSNS, resolveEnsToAddress, isValidSolanaAddress, symbolToToken } from '../../utils/agent.tsx';
+import { convertCryptoAmount, getSolAddressFromSNS, resolveEnsToAddress, isValidSolanaAddress, symbolToToken } from '../../utils/agent.util.tsx';
 import { DepositProcess } from './components/EVM/DepositProcess.tsx';
 import { WithdrawProcess } from './components/EVM/WithdrawProcess.tsx';
 import { BorrowProcess } from './components/EVM/BorrowProcess.tsx';
