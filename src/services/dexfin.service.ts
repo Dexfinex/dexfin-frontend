@@ -164,15 +164,15 @@ export const dexfinv3Service = {
       );
 
       if (data.length > 0) {
-        const solanaTokenAddresses = data.filter((token) => token.network.id === "solana")
-          .map(token => token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint);
+        const currentTime = Math.round(Date.now() / 1000) - 60
+        const fromTime = currentTime - 24 * 3600;
 
-        const { data: solanaPrices } = solanaTokenAddresses ? await birdeyeService.getMintPrices(solanaTokenAddresses) : { data: {} };
-
-        data.forEach(token => {
+        for (const token of data) {
           if (token.network.id == "solana") {
             const tokenAddress: string = (token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint)
-            const tokenPrice = solanaPrices[tokenAddress];
+            const data = await birdeyeService.getOHLCV(tokenAddress, "12H", fromTime, currentTime)
+            const priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
+
             result.push({
               tokenAddress,
               symbol: token.symbol,
@@ -183,9 +183,9 @@ export const dexfinv3Service = {
               balance: token.amountRaw,
               balanceDecimal: Number(token.amount),
               usdPrice: token.usdPrice,
-              usdPrice24hrUsdChange: tokenPrice.priceChange24h,
+              usdPrice24hrUsdChange: priceChange24h,
               usdValue: token.usdValue,
-              usdValue24hrUsdChange: Number(tokenPrice.priceChange24h) * Number(token.amount),
+              usdValue24hrUsdChange: Number(priceChange24h) * Number(token.amount),
               chain: `0x${SOLANA_CHAIN_ID.toString(16)}`,
               network: {
                 ...token.network,
@@ -198,7 +198,7 @@ export const dexfinv3Service = {
               ...token,
             })
           }
-        })
+        }
       }
 
       return result
