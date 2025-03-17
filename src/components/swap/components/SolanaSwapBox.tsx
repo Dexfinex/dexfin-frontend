@@ -337,7 +337,7 @@ export function SolanaSwapBox({
                 <div className="z-30">
                     <button
                         onClick={onSwitch}
-                        className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
+                        className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
                     >
                         <ArrowDownUp className="w-4 h-4"/>
                     </button>

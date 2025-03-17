@@ -9,7 +9,7 @@ import { mapChainId2NativeAddress } from "../../config/networks.ts";
 const formatSpecialNumber = (num: number): string => {
   if (num === 0) return '0.00';
 
-  let str = num.toFixed(20).replace(/\.?0+$/, '');
+  const str = num.toFixed(20).replace(/\.?0+$/, '');
 
   const match = str.match(/^0\.0+[1-9]/);
   if (match) {
@@ -95,21 +95,25 @@ export const PriceConverterWidget: React.FC = () => {
     return formatSpecialNumber(calculated);
   };
 
+/*
   const calculateFromAmount = (toValue: string, currentRate: number) => {
     if (!toValue || !currentRate) return '0.00';
     const calculated = parseFloat(toValue) / currentRate;
     return formatSpecialNumber(calculated);
   };
+*/
 
   const handleFromAmountChange = (value: string) => {
     setFromAmount(value);
     setToAmount(calculateToAmount(value, rate));
   };
 
+/*
   const handleToAmountChange = (value: string) => {
     setToAmount(value);
     setFromAmount(calculateFromAmount(value, rate));
   };
+*/
 
   const handleSwitch = () => {
     const tempToken = fromRealCurrency;
@@ -185,7 +189,7 @@ export const PriceConverterWidget: React.FC = () => {
           <div className="z-30 flex gap-2">
             <button
               onClick={handleSwitch}
-              className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
+              className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
             >
               <ArrowDownUp className="w-3 h-3" />
             </button>

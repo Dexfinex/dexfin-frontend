@@ -5,6 +5,7 @@ import {BITCOIN_CHAIN_ID, SOLANA_CHAIN_ID} from "../constants/solana.constants.t
 import {WalletClient} from "viem";
 import {CreateKernelAccountReturnType} from "@zerodev/sdk";
 import {mapTimeRangeToExactSeconds} from "../constants/chart.constants.ts";
+import {NULL_ADDRESS, ZERO_ADDRESS} from "../constants";
 
 export async function signTradeObject(walletClient: WalletClient | CreateKernelAccountReturnType, quote: GaslessQuoteResponse): Promise<any> {
     // Logic to sign trade object
@@ -69,10 +70,7 @@ export const needDestinationAddress = (fromChainId: number | undefined, toChainI
     return fromChainId !== toChainId && (exceptionalChainIds.indexOf(fromChainId) >= 0 || exceptionalChainIds.indexOf(toChainId) >= 0);
 }
 
-export const getBridgingSpendTime = (estimatedTime: number) => {
-    const currentTime = Math.floor(Date.now() / 1000)
-    const remainedSeconds = estimatedTime - currentTime
-
+export const getBridgingSpendTime = (remainedSeconds: number) => {
     if (remainedSeconds <= 0)
         return 'In Progress'
 
@@ -87,3 +85,5 @@ export const findClosestClosedValue = (data: ChartDataPoint[], timeRange: TimeRa
         return Math.abs(item.time - targetTime) < Math.abs(closest.time - targetTime) ? item : closest;
     }, data[0])?.close ?? 0;
 }
+
+export const nullToZeroAddress = (key: string): string => (key === NULL_ADDRESS ? ZERO_ADDRESS : key)

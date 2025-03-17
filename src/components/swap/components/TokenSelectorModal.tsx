@@ -129,7 +129,7 @@ export function TokenSelectorModal({
                         </div>
                     </div>
                     {/*
-          <div className="flex items-center gap-2 bg-[#1d2837] rounded-lg p-1 mb-4">
+          <div className="flex items-center gap-2 rounded-lg p-1 mb-4">
             {CATEGORIES.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}

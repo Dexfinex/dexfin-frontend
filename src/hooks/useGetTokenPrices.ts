@@ -26,7 +26,7 @@ const useGetTokenPrices = ({ chainId, tokenAddresses }: QuoteParam) => {
                 return resultData;
             }
         } else {
-            const data = await coingeckoService.getTokenPrices(chainId, uniqueTokenAddresses as (string | null)[]);
+            const data = await coingeckoService.getTokenPrices(chainId!, uniqueTokenAddresses as (string | null)[]);
             if (data) {
                 const resultData: Record<string, string> = {};
                 for (const address of Object.keys(data)) {
