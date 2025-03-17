@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Search, Star, X, Info } from 'lucide-react';
+import { Search, Star, X, ExternalLink, MessageSquareWarning } from 'lucide-react';
 import { TokenType } from "../../../types/swap.type.ts";
 import { mapPopularTokens, NETWORK, NETWORKS } from "../../../config/networks.ts";
 // import {coingeckoService} from "../../../services/coingecko.service.ts";
@@ -11,6 +11,8 @@ import useLocalStorage from "../../../hooks/useLocalStorage.ts";
 import { useStore } from '../../../store/useStore.ts';
 import { LOCAL_STORAGE_STARRED_TOKENS, LOCAL_STORAGE_ADDED_TOKENS } from "../../../constants";
 import { getTokenInfo } from '../../../utils/token.util.ts';
+import { mapChainId2ExplorerUrl } from '../../../config/networks.ts';
+import { SOLANA_CHAIN_ID } from '../../../constants/solana.constants.ts';
 
 /*
 const CATEGORIES = [
@@ -32,15 +34,26 @@ interface ApproveModalProps {
     isOpen: boolean;
     onClose: () => void;
     onContinue: () => void;
+    token: TokenType | null;
+    chainId: number;
 }
 
-const ApproveModal: React.FC<ApproveModalProps> = ({ isOpen, onClose, onContinue }) => {
+const ApproveModal: React.FC<ApproveModalProps> = ({ isOpen, onClose, onContinue, token, chainId }) => {
     const { theme } = useStore();
+    const [tokenUrl, setTokenUrl] = useState("");
 
     const handleContinue = () => {
         onContinue()
         onClose()
     }
+
+    useEffect(() => {
+        if (chainId === SOLANA_CHAIN_ID) {
+            setTokenUrl(`${mapChainId2ExplorerUrl[chainId]}/token/${token?.address}`)
+        } else {
+            setTokenUrl(`${mapChainId2ExplorerUrl[chainId]}/address/${token?.address}`)
+        }
+    }, [token, chainId])
 
     if (!isOpen) return null;
 
@@ -49,15 +62,29 @@ const ApproveModal: React.FC<ApproveModalProps> = ({ isOpen, onClose, onContinue
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
             <div className="relative w-[340px] md:w-[520px] glass border border-white/10 rounded-xl overflow-hidden p-8">
                 <div className='flex justify-center mb-4'>
-                    <Info className='w-8 h-8 text-blue-500' />
+                    <MessageSquareWarning className='w-8 h-8 text-yellow-500' />
                 </div>
-                <p className='text-center mb-8'>Always do your research</p>
-                <div className='flex items-center justify-center gap-4'>
-                    <button className={`${theme === 'dark' ? 'bg-white/20 hover:bg-white/10' : 'bg-black/20 hover:bg-black/10'} rounded-xl py-1 px-6`} onClick={onClose}>
-                        Go back
+                <p className='text-center mb-8'>Confirm Token</p>
+                <p className='text-center mb-4 text-yellow-500'>
+                    This token is not on the default token lists.
+                </p>
+                <p className='mb-4 text-white/70 text-sm'>
+                    By Clicking below, you understand that you are fully responsible for confirming the token you are trading.
+                </p>
+                <a className='mb-4 rounded-md flex items-center justify-between p-4 bg-white/5 cursor-pointer'
+                    href={tokenUrl} target='_blank'>
+                    <div className='flex items-center gap-4'>
+                        <img src={token?.logoURI} className='w-8 h-8' />
+                        <span>{token?.name}</span>
+                    </div>
+                    <ExternalLink className='text-white/70 w-5 h-5' />
+                </a>
+                <div className='flex flex-col items-center justify-center gap-4'>
+                    <button className={`${theme === 'dark' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-500 hover:bg-blue-600'} rounded-xl py-1 w-full`} onClick={handleContinue}>
+                        I understand, confirm
                     </button>
-                    <button className={`${theme === 'dark' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-500 hover:bg-blue-600'} rounded-xl py-1 px-6`} onClick={handleContinue}>
-                        Continue
+                    <button className={`${theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-black/10'} rounded-xl py-1 w-full`} onClick={onClose}>
+                        Cancel
                     </button>
                 </div>
             </div>
@@ -412,6 +439,8 @@ export function TokenSelectorModal({
                 isOpen={approveModalActive}
                 onClose={() => setApproveModalActive(false)}
                 onContinue={selectSearchedToken}
+                token={newToken}
+                chainId={selectedNetwork?.chainId || -1}
             />
         </div>,
         document.body
