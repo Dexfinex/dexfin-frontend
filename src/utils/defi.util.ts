@@ -5,6 +5,13 @@ export const capitalizeFirstLetter = (val: string) => {
     return String(val).charAt(0).toUpperCase() + String(val.toLowerCase()).slice(1);
 }
 
+export const formatUsdValue = (value: number): string => {
+    return `$${Math.abs(value).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    })}`;
+};
+
 export const getTypeIcon = (type: Position['type']) => {
     switch (type.toUpperCase()) {
         case 'LENDING':

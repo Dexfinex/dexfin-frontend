@@ -1,6 +1,6 @@
 import { ENSO_ROUTER_ADDRESS } from "../constants/enso.constants";
 import { mapChainId2NativeAddress } from "../config/networks.ts";
-import { PRIMARY_ADDRESS_BY_PROTOCOL } from "../constants/protocol.constant.ts";
+import { PRIMARY_ADDRESS_BY_PROTOCOL } from "../constants/protocol.constants.ts";
 import { compareWalletAddresses } from "./common.util.ts";
 
 /**

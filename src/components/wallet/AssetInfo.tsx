@@ -1,16 +1,22 @@
-import React, { useState, useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
-import { Skeleton, } from '@chakra-ui/react';
-import { LineChart, Line, Tooltip, ResponsiveContainer } from "recharts";
+import React, {useState, useEffect} from "react";
+import {ArrowLeft} from "lucide-react";
+import {Skeleton,} from '@chakra-ui/react';
+import {LineChart, Line, Tooltip, ResponsiveContainer} from "recharts";
 
 import CustomTooltip from "../wallet/CustomTooltip.tsx";
-import { TokenBalance } from "../../store/useTokenBalanceStore";
-import { useStore } from "../../store/useStore";
+import {TokenBalance} from "../../store/useTokenBalanceStore";
+import {useStore} from "../../store/useStore";
 
-import { coingeckoService } from "../../services/coingecko.service";
-import { formatNumberByFrac, formatNumber, getHourAndMinute, getMonthDayHour, getMonthDayYear } from "../../utils/common.util";
-import { birdeyeService } from "../../services/birdeye.service";
-import { formatUsdValue, } from '../../lib/wallet';
+import {coingeckoService} from "../../services/coingecko.service";
+import {
+    formatNumberByFrac,
+    formatNumber,
+    getHourAndMinute,
+    getMonthDayHour,
+    getMonthDayYear
+} from "../../utils/common.util";
+import {birdeyeService} from "../../services/birdeye.service";
+import {formatUsdValue} from "../../utils/defi.util.ts";
 import ShowMoreLess from "../wallet/ShowMoreLess.tsx";
 
 
@@ -36,15 +42,15 @@ type TimeRangeType = {
 }
 
 const customMapTimeRange: Record<string, TimeRangeType> = {
-    "1D": { mseconds: 86400, solInterval: "15m", interval: "1H" },
-    "1W": { mseconds: 604800, solInterval: "1H", interval: "1D" },
-    "1M": { mseconds: 2592000, solInterval: "4H", interval: "1W" },
-    "3M": { mseconds: 7776000, solInterval: "1D", interval: "1Y" },
+    "1D": {mseconds: 86400, solInterval: "15m", interval: "1H"},
+    "1W": {mseconds: 604800, solInterval: "1H", interval: "1D"},
+    "1M": {mseconds: 2592000, solInterval: "4H", interval: "1W"},
+    "3M": {mseconds: 7776000, solInterval: "1D", interval: "1Y"},
 };
 
 
-const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, setPage }) => {
-    const { theme } = useStore();
+const AssetInfo: React.FC<AssetInfoProps> = ({tokenBalance, setTokenBalance, setPage}) => {
+    const {theme} = useStore();
     const [selectedRange, setSelectedRange] = useState<ChartTimeType>("1D");
     const [chartData, setChartData] = useState<Array<ChartPriceType> | null>(null);
     const [info, setInfo] = useState<any>(null);
@@ -157,8 +163,10 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
 
     return (
         <div className="mt-4 mx-4">
-            <button className={`rounded-full ${theme === "dark" ? "text-white/70 hover:bg-white/10" : "text-black/70 hover:bg-black/10"}  p-2`} onClick={handleBack}>
-                <ArrowLeft className="w-5 h-5" />
+            <button
+                className={`rounded-full ${theme === "dark" ? "text-white/70 hover:bg-white/10" : "text-black/70 hover:bg-black/10"}  p-2`}
+                onClick={handleBack}>
+                <ArrowLeft className="w-5 h-5"/>
             </button>
 
             <div className="overflow-y-auto ai-chat-scrollbar max-h-[calc(100vh-132px)]">
@@ -166,7 +174,7 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
                     info?.name ?
                         <p className="text-center text-xl text-white">{info.name}</p> :
                         <div className="w-full flex justify-center">
-                            <Skeleton className="w-24 h-7" />
+                            <Skeleton className="w-24 h-7"/>
                         </div>
                 }
 
@@ -174,7 +182,7 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
                     info?.market_data?.current_price?.usd ?
                         <p className="text-center text-2xl text-green-500 font-bold">${info.market_data.current_price.usd}</p> :
                         <div className="w-full flex justify-center">
-                            <Skeleton className="w-24 h-7 mt-1" />
+                            <Skeleton className="w-24 h-7 mt-1"/>
                         </div>
                 }
 
@@ -182,11 +190,11 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
                     chartData ?
                         <ResponsiveContainer width="100%" height={300}>
                             <LineChart data={chartData}>
-                                <Tooltip content={<CustomTooltip />} />
-                                <Line type="monotone" dataKey="price" stroke="#22c55e" strokeWidth={1} dot={false} />
+                                <Tooltip content={<CustomTooltip/>}/>
+                                <Line type="monotone" dataKey="price" stroke="#22c55e" strokeWidth={1} dot={false}/>
                             </LineChart>
                         </ResponsiveContainer> :
-                        <Skeleton className="w-full h-[280px] my-4" />
+                        <Skeleton className="w-full h-[280px] my-4"/>
                 }
 
                 {/* Buttons for time range selection */}
@@ -204,25 +212,27 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
                 </div>
 
                 <div className="mt-4">
-                    <p className={`${theme === "dark" ? "text-white/70" : "text-black/70"} font-bold text-sm sm:text-base`}>Your Balance</p>
+                    <p className={`${theme === "dark" ? "text-white/70" : "text-black/70"} font-bold text-sm sm:text-base`}>Your
+                        Balance</p>
                     {
                         info?.market_data?.current_price?.usd ?
                             <div className="mt-1 px-2 py-3 bg-white/5 rounded-xl flex gap-2">
                                 <div className="flex items-center">
-                                    <img src={tokenBalance.logo} className="w-8 sm:w-10 h-8 sm:h-10 rounded-full" />
+                                    <img src={tokenBalance.logo} className="w-8 sm:w-10 h-8 sm:h-10 rounded-full"/>
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex justify-between text-sm sm:text-base">
                                         <span>{tokenBalance.symbol.toUpperCase()}</span>
                                         <span>${info.market_data.current_price.usd}</span>
                                     </div>
-                                    <div className={`flex justify-between ${theme === "dark" ? "text-white/70" : "text-black/70"} text-sm`}>
+                                    <div
+                                        className={`flex justify-between ${theme === "dark" ? "text-white/70" : "text-black/70"} text-sm`}>
                                         <span>{formatNumberByFrac(tokenBalance.balance, 5)} {tokenBalance.symbol.toUpperCase()}</span>
                                         <span>{formatUsdValue(info.market_data.current_price.usd * tokenBalance.balance)}</span>
                                     </div>
                                 </div>
                             </div> :
-                            <Skeleton className="mt-2 w-full h-14" />
+                            <Skeleton className="mt-2 w-full h-14"/>
                     }
                 </div>
 
@@ -230,8 +240,8 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
                     <p className={`${theme === "dark" ? "text-white/70 font-bold" : "text-black/70 font-bold"}`}>Description</p>
                     {
                         info?.description ?
-                            <ShowMoreLess text={info.description.en} maxLength={150} /> :
-                            <Skeleton className="w-full h-24" />
+                            <ShowMoreLess text={info.description.en} maxLength={150}/> :
+                            <Skeleton className="w-full h-24"/>
                     }
 
                 </div>
@@ -239,7 +249,7 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
                 <div className="mt-4">
                     <p className={`${theme === "dark" ? "text-white/70 font-bold" : "text-black/70 font-bold"} text-sm sm:text-base`}>About</p>
                     {
-                        info?.links ? renderSocialBtns(info?.links) : <Skeleton className="w-full h-24" />
+                        info?.links ? renderSocialBtns(info?.links) : <Skeleton className="w-full h-24"/>
                     }
                 </div>
 
@@ -255,19 +265,21 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
                             <span>{tokenBalance.network?.name || ""}</span>
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Market Cap</span>
+                            <span
+                                className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Market Cap</span>
                             {
                                 info?.market_data?.market_cap?.usd ?
                                     <span className="">${formatNumber(info?.market_data?.market_cap?.usd)}</span> :
-                                    <Skeleton className="w-16 h-6" />
+                                    <Skeleton className="w-16 h-6"/>
                             }
                         </div>
                         <div className="flex justify-between py-2 px-3 border-b border-black/50">
-                            <span className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Total Supply</span>
+                            <span
+                                className={`${theme === "dark" ? "text-white/70" : "text-black/70"}`}>Total Supply</span>
                             {
                                 info?.market_data?.total_supply ?
                                     <span className="">${formatNumber(info?.market_data?.total_supply)}</span> :
-                                    <Skeleton className="w-16 h-6" />
+                                    <Skeleton className="w-16 h-6"/>
                             }
                         </div>
                         <div className="flex justify-between py-2 px-3">
@@ -275,7 +287,7 @@ const AssetInfo: React.FC<AssetInfoProps> = ({ tokenBalance, setTokenBalance, se
                             {
                                 info?.market_data?.circulating_supply ?
                                     <span className="">${formatNumber(info?.market_data?.circulating_supply)}</span> :
-                                    <Skeleton className="w-16 h-6" />
+                                    <Skeleton className="w-16 h-6"/>
                             }
                         </div>
                     </div>
