@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
 import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
-import { convertCryptoAmount } from '../../../../utils/agent.tsx';
+import { convertCryptoAmount } from '../../../../utils/agent.util.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
 import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
 

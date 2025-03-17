@@ -3,7 +3,7 @@ import { Bot, Search, ArrowRight, CheckCircle2, X } from 'lucide-react';
 import { Yield } from '../../../../types/brian.type.ts';
 import { useAgentMutation } from '../../../../hooks/useAgentAction.ts';
 import { Web3AuthContext } from '../../../../providers/Web3AuthContext.tsx';
-import { formatVolume } from '../../../../utils/agent.tsx';
+import { formatVolume } from '../../../../utils/agent.util.tsx';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
 import {protocolLogos} from '../../../../constants/agent.constants.ts'
