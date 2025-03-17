@@ -1,21 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { RefreshCw, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { coingeckoService } from '../../services/coingecko.service';
 import { TrendingCoin } from '../../types';
 import { formatNumberByFrac } from '../../utils/common.util';
-import { useGetTrendingCoins, useGetTopGainers, useGetTopLosers } from '../../hooks/useMarketTrend';
+import { useGetTopGainers, useGetTopLosers } from '../../hooks/useMarketTrend';
+import { RefreshableWidget } from '../ResizableWidget';
 
 type TrendingTab = "trending" | "gainers" | "losers";
 
-export const TrendingWidget: React.FC = () => {
+export const TrendingWidget = forwardRef<RefreshableWidget, {}>((props, ref) => {
   const [coins, setCoins] = useState<TrendingCoin[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TrendingTab>("trending");
-  
-  const { data: gainers, isLoading: isLoadingGainer, error: errorGainer, refetch: refetchGainer } = useGetTopGainers();
+
   const { data: losers, isLoading: isLoadingLoser, error: errorLoser, refetch: refetchLoser } = useGetTopLosers();
+  const { data: gainers, isLoading: isLoadingGainer, error: errorGainer, refetch: refetchGainer } = useGetTopGainers();
 
   const fetchData = async (showRefreshState = false) => {
     try {
@@ -47,30 +48,36 @@ export const TrendingWidget: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Expose the handleRefresh method to the parent
   const handleRefresh = async () => {
     switch (activeTab) {
       case "trending":
         await fetchData(true);
         break;
-      case "gainers":
-        await refetchGainer();
-        break;
       case "losers":
         await refetchLoser();
+        break;
+      case "gainers":
+        await refetchGainer();
         break;
       default:
         break;
     }
   };
 
+  // Expose the refresh method through the ref
+  useImperativeHandle(ref, () => ({
+    handleRefresh
+  }));
+
   const isLoading = () => {
     switch (activeTab) {
       case "trending":
         return loading;
-      case "gainers":
-        return isLoadingGainer;
       case "losers":
         return isLoadingLoser;
+      case "gainers":
+        return isLoadingGainer;
       default:
         return false;
     }
@@ -80,10 +87,10 @@ export const TrendingWidget: React.FC = () => {
     switch (activeTab) {
       case "trending":
         return error;
-      case "gainers":
-        return errorGainer?.message || null;
       case "losers":
         return errorLoser?.message || null;
+      case "gainers":
+        return errorGainer?.message || null;
       default:
         return null;
     }
@@ -119,17 +126,6 @@ export const TrendingWidget: React.FC = () => {
 
   return (
     <div className="p-2 h-full flex flex-col">
-      <div className="flex justify-end mb-2">
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${refreshing ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          title="Refresh data"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
       {/* Tab Navigation */}
       <div className="flex border-b border-black/10 dark:border-white/10">
         <button
@@ -142,15 +138,6 @@ export const TrendingWidget: React.FC = () => {
           Trending
         </button>
         <button
-          onClick={() => setActiveTab('gainers')}
-          className={`flex items-center gap-2 flex-1 p-2 text-sm transition-colors ${activeTab === 'gainers'
-            ? 'bg-black/10 dark:bg-white/10 font-medium'
-            : 'hover:bg-black/5 dark:hover:bg-white/5'
-            }`}
-        >
-          Top Gainers
-        </button>
-        <button
           onClick={() => setActiveTab('losers')}
           className={`flex items-center gap-2 flex-1 p-2 text-sm transition-colors ${activeTab === 'losers'
             ? 'bg-black/10 dark:bg-white/10 font-medium'
@@ -159,8 +146,14 @@ export const TrendingWidget: React.FC = () => {
         >
           Top Losers
         </button>
+        <button
+          onClick={() => setActiveTab('gainers')}
+          className={`flex items-center gap-2 flex-1 p-2 text-sm transition-colors ${activeTab === 'gainers'
+            ? 'bg-black/10 dark:bg-white/10 font-medium'
+            : 'hover:bg-black/5 dark:hover:bg-white/5'
+            }`}>Top Gainers</button>
       </div>
-      
+
       {/* Trending Tab Content */}
       {activeTab === "trending" && (
         <div className="flex-1 space-y-2 overflow-y-auto ai-chat-scrollbar">
@@ -228,7 +221,6 @@ export const TrendingWidget: React.FC = () => {
           ))}
         </div>
       )}
-      
       {/* Top Gainers Tab Content */}
       {activeTab === "gainers" && gainers && (
         <div className="flex-1 space-y-2 overflow-y-auto ai-chat-scrollbar">
@@ -291,7 +283,6 @@ export const TrendingWidget: React.FC = () => {
           ))}
         </div>
       )}
-      
       {/* Top Losers Tab Content */}
       {activeTab === "losers" && losers && (
         <div className="flex-1 space-y-2 overflow-y-auto ai-chat-scrollbar">
@@ -356,4 +347,6 @@ export const TrendingWidget: React.FC = () => {
       )}
     </div>
   );
-};
+});
+
+TrendingWidget.displayName = 'TrendingWidget';
