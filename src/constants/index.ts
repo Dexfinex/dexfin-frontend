@@ -8,6 +8,7 @@ export const LOCAL_STORAGE_WALLET_INFO = 'LIT-WALLET-INFO'
 export const LOCAL_STORAGE_STARRED_TOKENS = 'LOCAL_STORAGE_STARRED_TOKENS'
 export const LOCAL_STORAGE_AUTH_REDIRECT_TYPE = 'REDIRECT-TYPE'
 export const LOCAL_STORAGE_ADDED_TOKENS = 'LOCAL_STORAGE_ADDED_TOKENS'
+export const LOCAL_STORAGE_PUSH_KEY = 'PgpPK'
 
 export const mapRpcUrls: Record<number, string> = {
     [mainnet.id]: 'https://mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',

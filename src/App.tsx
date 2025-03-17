@@ -16,9 +16,9 @@ import SignupModal from "./components/SignupModal.tsx";
 import SigninModal from "./components/SigninModal.tsx";
 import { AuthMethodType } from "@lit-protocol/constants";
 import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
-import { LOCAL_STORAGE_AUTH_REDIRECT_TYPE } from "./constants";
+import { LOCAL_STORAGE_AUTH_REDIRECT_TYPE, LOCAL_STORAGE_PUSH_KEY } from "./constants";
 import { TradingViewModal } from './components/TradingViewModal.tsx';
-import { initStream, KEY_NAME } from './utils/chatApi.ts';
+import { initStream } from './utils/chat.util.ts';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import UsernameModal from "./components/UsernameModal.tsx";
 import WalletDrawer from './components/WalletDrawer.tsx';
@@ -99,7 +99,7 @@ export default function App() {
     }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen]);
 
     const unlockProfile = async () => {
-        const chatKey = localStorage.getItem(KEY_NAME)
+        const chatKey = localStorage.getItem(LOCAL_STORAGE_PUSH_KEY)
 
         if (chatKey) {
             const key: { account: string; decryptedPgpPrivateKey: string } = JSON.parse(chatKey)
