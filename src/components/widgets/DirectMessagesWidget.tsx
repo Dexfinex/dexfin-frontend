@@ -8,11 +8,12 @@ import { CONSTANTS, PushAPI } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
 import { Popover, PopoverContent, PopoverTrigger, Spinner, useToast } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { BIG_IMAGE_WIDHT, getWalletProfile, initStream, LIMIT, KEY_NAME } from '../../utils/chatApi';
+import { BIG_IMAGE_WIDHT, getWalletProfile, initStream, LIMIT } from '../../utils/chat.util.ts';
 import { ChatType, IChat, IUser } from '../../types/chat.type';
 import { downloadBase64File, extractAddress, getEnsName, getHourAndMinute, shrinkAddress } from '../../utils/common.util';
 import { ImageWithSkeleton } from '../common/ImageWithSkeleton';
-import { WalletTypeEnum } from "../../types/wallet.type.ts";
+import { WalletTypeEnum } from "../../types/wallet.ts";
+import { LOCAL_STORAGE_PUSH_KEY } from '../../constants/index.ts';
 
 interface OverlayProps {
   isOpen: boolean;
@@ -662,7 +663,7 @@ export const DirectMessagesWidget: React.FC = () => {
               account: user.account,
               decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
             }
-            localStorage.setItem(KEY_NAME, JSON.stringify(pk))
+            localStorage.setItem(LOCAL_STORAGE_PUSH_KEY, JSON.stringify(pk))
 
             setChatUser(user)
             initStream(user)
