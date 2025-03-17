@@ -333,11 +333,12 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
     }
 
     const sol_response = await openaiService.getOpenAISolanaData(message);
-    if (sol_response && sol_response.type == "transfer_sol" && sol_response.args.networkName == "solana") {
+    console.log(sol_response);
+    if (sol_response && sol_response.type == "transfer_sol" && sol_response.args.chainName == "solana") {
       return sol_response;
-    } else if (sol_response && sol_response.type == "swap_sol" && sol_response.args.networkName == "solana") {
+    } else if (sol_response && sol_response.type == "swap_sol" && sol_response.args.chainName == "solana") {
       return sol_response;
-    } else if (sol_response && sol_response.type == "transfer_evm" && sol_response.args.networkName != "solana") {
+    } else if (sol_response && sol_response.type == "transfer_evm" && sol_response.args.chainName != "solana") {
       return sol_response;
     }
 
@@ -548,7 +549,6 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
             } else {
               response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.' }
             }
-
           }
           else {
             response = { text: `transfer ${response.args.amount} ${response.args.inputSymbol} to ${response.args.outputMint} on solana`, insufficient: 'Insufficient balance to perform the transaction.' };
@@ -576,7 +576,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           }
         } else if (response.type == "transfer_evm") {
           resetProcessStates();
-          const fromNetwork = mapChainName2Network[response.args.networkName];
+          const fromNetwork = mapChainName2Network[response.args.chainName];
           if (chainId != fromNetwork.chainId) {
             await switchChain(fromNetwork.chainId);
           }
