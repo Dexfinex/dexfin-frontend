@@ -1,13 +1,13 @@
-import { useContext, useState, useEffect } from 'react';
-import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
-import { Web3AuthContext } from "../providers/Web3AuthContext";
-import { TokenTypeB } from "../types/cart.type";
-import { nativeAddress } from '../constants';
-import { zeroxService } from "../services/0x.service";
-import { ethers } from 'ethers';
-import { coingeckoService } from "../services/coingecko.service";
-import { WalletTypeEnum } from '../types/wallet';
-import { concat, Hex, numberToHex, size } from "viem";
+import {useContext, useState} from 'react';
+import {useSendTransaction, useWaitForTransactionReceipt} from 'wagmi';
+import {Web3AuthContext} from "../providers/Web3AuthContext";
+import {TokenTypeB} from "../types/cart.type";
+import {nativeAddress} from '../constants';
+import {zeroxService} from "../services/0x.service";
+import {ethers} from 'ethers';
+import {coingeckoService} from "../services/coingecko.service";
+import {WalletTypeEnum} from '../types/wallet.type';
+import {concat, Hex, numberToHex, size} from "viem";
 
 export const useTokenBuyHandler = () => {
     const [error, setError] = useState<Error | null>(null);
@@ -36,7 +36,7 @@ export const useTokenBuyHandler = () => {
 
     const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
         hash: currentTxHash as `0x${string}`,
-        enabled: !!currentTxHash
+        // enabled: !!currentTxHash
     });
 
     const getEthPrice = async (): Promise<number> => {

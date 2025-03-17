@@ -6,7 +6,7 @@ import {nativeAddress} from '../constants';
 import {Web3AuthContext} from "../providers/Web3AuthContext.tsx";
 import {getBalance} from "./useBalance.tsx";
 import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
-import type {SolanaWalletInfoType} from "../types/auth.ts";
+import type {SolanaWalletInfoType} from "../types/auth.type.ts";
 import {getSolanaBalance} from "./useSolanaBalance.tsx";
 
 

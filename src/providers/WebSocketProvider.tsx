@@ -21,6 +21,7 @@ export interface Notification {
 
 interface WebSocketContextType {
     isConnected: boolean;
+    loading: boolean;
     notifications: Notification[];
     unreadCount: number;
     markAsRead: (notificationIds: string[]) => Promise<void>;
@@ -49,6 +50,7 @@ const NOTIFICATION_SOUNDS = {
 
 export const WebSocketContext = createContext<WebSocketContextType>({
     isConnected: false,
+    loading: false,
     notifications: [],
     unreadCount: 0,
     markAsRead: async () => { },
@@ -497,7 +499,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 unreadCount,
                 markAsRead,
                 fetchNotifications,
-                fetchAllNotifications
+                fetchAllNotifications,
+                loading
             }}
         >
             {children}

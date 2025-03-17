@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { Transfer } from "../types/wallet";
+import { Transfer } from "../types/wallet.type";
 
 // Define the store's state and actions
 interface TokenBalanceStoreState {

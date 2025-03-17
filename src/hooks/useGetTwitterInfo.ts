@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TechnicalAnalysisService } from "../services/technicalanalysis.service";
-import { TwitterInfo } from "../types/twitterinfo";
+
+class TwitterInfo {
+}
 
 export const useGetTwitterInfo = (refreshTrigger = 0) => {
     const [data, setData] = useState<TwitterInfo[]>([]);
