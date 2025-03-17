@@ -3,7 +3,7 @@ import { v4 as uuid } from "uuid";
 import { Skeleton } from "@chakra-ui/react";
 
 import ErrorImg from "/images/token/error.svg"
-import { getChainIcon } from "../../../utils/getChainIcon";
+import { getChainIcon } from "../../../utils/defi.util";
 
 interface TokenChainListIconProps {
   src: string;

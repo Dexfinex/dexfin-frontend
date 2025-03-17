@@ -8,7 +8,7 @@ import {
   SolanaWalletReponseType,
 } from "../types/dexfinv3.type.ts";
 import { birdeyeService } from "./birdeye.service.ts";
-import { Transfer, TokenMetadata } from "../types/wallet.ts";
+import { Transfer, TokenMetadata } from "../types/wallet.type.ts";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
 
 export const dexfinv3Service = {

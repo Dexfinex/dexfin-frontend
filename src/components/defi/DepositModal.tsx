@@ -7,7 +7,7 @@ import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import { Position } from "../../store/useDefiStore";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
 import { formatNumberByFrac } from "../../utils/common.util";
-import { getChainIcon } from "../../utils/getChainIcon.tsx";
+import { getChainIcon } from "../../utils/defi.util.ts";
 import { getChainNameById } from "../../utils/defi.util.ts";
 
 import useGasEstimation from "../../hooks/useGasEstimation.ts";

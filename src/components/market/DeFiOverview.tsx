@@ -16,7 +16,7 @@ import { v4 as uuid } from "uuid";
 import { useGetDefillamaPools, useGetDefillamaProtocols } from '../../hooks/useDefillama';
 import useDefillamaStore from '../../store/useDefillamaStore';
 import { mapChainId2ChainName } from '../../config/networks';
-import { getChainIcon } from '../../utils/getChainIcon';
+import { getChainIcon } from '../../utils/defi.util';
 import { getChainName } from '../../utils/defi.util';
 
 

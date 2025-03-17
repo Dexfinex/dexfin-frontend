@@ -14,7 +14,7 @@ import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
 import { TokenIcon } from "../swap/components/TokenIcon";
 import SelectChain from "./SelectChain.tsx";
-import { getChainIcon } from "../../utils/getChainIcon.tsx";
+import { getChainIcon } from "../../utils/defi.util.ts";
 import { getChainNameById } from "../../utils/defi.util.ts";
 import { STAKING_TOKENS } from "../../constants/mock/defi.ts";
 
