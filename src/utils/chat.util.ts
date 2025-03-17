@@ -4,7 +4,6 @@ const { setReceivedMessage } = getStore();
 
 export const LIMIT = 20;
 export const BIG_IMAGE_WIDHT = "208px";
-export const KEY_NAME = "PgpPK";
 
 export const getWalletProfile = async (chatUser: any, address: string) => {
     try {

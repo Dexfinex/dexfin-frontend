@@ -1,5 +1,5 @@
 // Mock data for wallet transactions and DeFi positions
-import { TransactionType, Transaction, DeFiPosition, DeFiStats } from '../types/wallet';
+import { TransactionType, Transaction, DeFiPosition, DeFiStats } from '../types/wallet.type';
 
 // Transaction mock data
 export const mockTransactions: Transaction[] = [

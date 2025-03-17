@@ -6,7 +6,7 @@ import {GaslessQuoteResponse, QuoteDataType, QuoteResponse, TokenType} from "../
 import {zeroxService} from "../services/0x.service.ts";
 import {formatUnits} from "ethers/lib/utils";
 import {isNativeTokenAddress} from "../utils/common.util.ts";
-import {WalletTypeEnum} from "../types/wallet.ts";
+import {WalletTypeEnum} from "../types/wallet.type.ts";
 
 interface quoteParam {
     sellToken: TokenType | null,

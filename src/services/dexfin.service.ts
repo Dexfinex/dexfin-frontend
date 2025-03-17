@@ -7,6 +7,7 @@ import {
   SolanaTokensType,
   SolanaWalletReponseType,
 } from "../types/dexfinv3.type.ts";
+import { birdeyeService } from "./birdeye.service.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.ts";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
 
@@ -163,9 +164,15 @@ export const dexfinv3Service = {
       );
 
       if (data.length > 0) {
+        const solanaTokenAddresses = data.filter((token) => token.network.id === "solana")
+          .map(token => token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint);
+
+        const { data: solanaPrices } = solanaTokenAddresses ? await birdeyeService.getMintPrices(solanaTokenAddresses) : { data: {} };
+
         data.forEach(token => {
           if (token.network.id == "solana") {
-            const tokenAddress = (token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint)
+            const tokenAddress: string = (token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint)
+            const tokenPrice = solanaPrices[tokenAddress];
             result.push({
               tokenAddress,
               symbol: token.symbol,
@@ -176,7 +183,9 @@ export const dexfinv3Service = {
               balance: token.amountRaw,
               balanceDecimal: Number(token.amount),
               usdPrice: token.usdPrice,
+              usdPrice24hrUsdChange: tokenPrice.priceChange24h,
               usdValue: token.usdValue,
+              usdValue24hrUsdChange: Number(tokenPrice.priceChange24h) * Number(token.amount),
               chain: `0x${SOLANA_CHAIN_ID.toString(16)}`,
               network: {
                 ...token.network,
