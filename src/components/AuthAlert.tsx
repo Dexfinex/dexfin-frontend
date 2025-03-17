@@ -1,5 +1,5 @@
 import {Alert, AlertIcon, Text} from "@chakra-ui/react";
-import {ExtendedError} from "../types/auth.ts";
+import {ExtendedError} from "../types/auth.type.ts";
 
 export const AuthAlert = ({error}: {error: ExtendedError | undefined}) => {
     return (

@@ -8,8 +8,8 @@ import {
     base, linea, Chain, sepolia
 } from "viem/chains";
 import { TokenType } from "../types/swap.type.ts";
-import { NULL_ADDRESS } from "../constants";
 import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
+import {NULL_ADDRESS} from "../constants";
 
 export interface NETWORK {
     id: string;
@@ -89,7 +89,7 @@ export const mapChainId2NativeAddress: Record<number, string> = {
     10: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Optimism (ETH)
     42161: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Arbitrum (ETH)
     8453: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Base Mainnet (ETH placeholder)
-    900: 'So11111111111111111111111111111111111111112', // Base Mainnet (ETH placeholder)
+    900: '11111111111111111111111111111111', // Solana
 };
 
 export const mapChainId2ChainName: Record<number, string> = {
@@ -234,7 +234,7 @@ export const mapChainId2ViemChain: Record<number, Chain> = {
 };
 
 export const mapPopularTokens: Record<number, TokenType[]> = {
-    1: [
+    [mainnet.id]: [
         {
             symbol: 'ETH',
             name: 'Ethereum',
@@ -276,7 +276,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/dai.png',
         },
     ],
-    8453: [
+    [base.id]: [
         {
             symbol: 'ETH',
             name: 'Ethereum',
@@ -318,7 +318,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/usdc.png',
         },
     ],
-    42161: [
+    [arbitrum.id]: [
         {
             symbol: 'ETH',
             name: 'Ethereum',
@@ -360,7 +360,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/dai.png',
         },
     ],
-    137: [
+    [polygon.id]: [
         {
             symbol: 'POL',
             name: 'Polygon Native Coin',
@@ -402,7 +402,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/dai.png',
         },
     ],
-    56: [
+    [bsc.id]: [
         {
             symbol: 'BNB',
             name: 'BNB',
@@ -444,7 +444,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/dai.png',
         },
     ],
-    43114: [
+    [avalanche.id]: [
         {
             symbol: 'AVAX',
             name: 'Avalanche',
@@ -486,7 +486,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/dai.png',
         },
     ],
-    10: [
+    [optimism.id]: [
         {
             symbol: 'ETH',
             name: 'Ethereum',

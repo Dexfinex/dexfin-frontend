@@ -4,7 +4,7 @@ import { useContext } from "react";
 
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
 import { dexfinv3Service } from '../services/dexfin.service.ts';
-import { Transfer } from '../types/wallet.ts';
+import { Transfer } from '../types/wallet.type.ts';
 import useTokenTransferStore from '../store/useTokenTransferStore.ts';
 
 export const useEvmWalletTransfer = () => {

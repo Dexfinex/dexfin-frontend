@@ -189,7 +189,7 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                                 </div>
 
                                 <div className='flex justify-center'>
-                                    <div className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400">
+                                    <div className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400">
                                         <ArrowDown className="w-3 h-3" />
                                     </div>
                                 </div>

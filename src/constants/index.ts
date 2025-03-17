@@ -31,6 +31,8 @@ export const COINGECKO_BASE_URL = `${BASE_HOST_DOMAIN}/coingecko`
 
 export const SWAPKIT_BASE_URL = `${BASE_HOST_DOMAIN}/crosschain`
 
+export const DEBRIDGE_BASE_URL = `${BASE_HOST_DOMAIN}/debridge`
+
 export const BIRDEYE_BASE_URL = `${BASE_HOST_DOMAIN}/birdeye`
 
 export const DEFILLAMA_BASE_URL = `${BASE_HOST_DOMAIN}/defillama`;
@@ -77,5 +79,6 @@ export const defaultMaxPriorityFee = ethers.utils.parseUnits('1.5', 'gwei');
 export const defaultGasLimit = 210000n;
 
 export const NULL_ADDRESS = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();

@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
-import { type SolanaWalletInfoType } from '../types/auth';
+import { type SolanaWalletInfoType } from '../types/auth.type';
 import { authService } from '../services/auth.service';
 import { Web3AuthContext } from './Web3AuthContext';
 import { useStore } from "../store/useStore.ts";
 import { setAuthToken } from '../services/api.service';
-import {WalletTypeEnum} from "../types/wallet.ts";
+import {WalletTypeEnum} from "../types/wallet.type.ts";
 
 interface UserContextType {
   userData: {

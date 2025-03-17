@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useContext, useRef } from 'react';
-import { Swords, Shield, Zap, X, Info, Star, Flame, Droplet, Wind } from 'lucide-react';
-import { GameState, Action, StatusEffect } from '../../types/memeArena';
-import { MemeArenaTutorial } from './MemeArenaTutorial';
-import { useUserData } from '../../providers/UserProvider';
-import { GameSession } from '../GamesModal';
-import { GameService } from '../../services/game.services.ts';
+import React, {useEffect, useRef, useState} from 'react';
+import {Droplet, Flame, Info, Shield, Star, Swords, Wind, X, Zap} from 'lucide-react';
+import {Action, GameState, StatusEffect} from '../../types/memeArena.type';
+import {MemeArenaTutorial} from './MemeArenaTutorial';
+import {useUserData} from '../../providers/UserProvider';
+import {GameSession} from '../GamesModal';
+import {GameService} from '../../services/game.services.ts';
 
 
 interface BattleArenaProps {
@@ -23,7 +23,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({
   const [showTutorial, setShowTutorial] = useState(false);
   const { userData } = useUserData();
   const gameSessionSaved = useRef(false);
-  const [gameData, setGameData] = useState<any[]>([]);
+  const [_, setGameData] = useState<any[]>([]);
   const [gameId, setGameId] = useState<string>("");
 
   // Auto-scroll battle logs

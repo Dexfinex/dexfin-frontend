@@ -35,7 +35,7 @@ import { getAllChatData, getWalletProfile, initStream, LIMIT } from '../utils/ch
 import { EditChatProfileModal } from './EditChatProfileModal';
 import { ChatGroupModal } from './ChatGroupModal';
 import { ChatModeType, ChatType, IChat, IGroup, IUser, ProfileType, ReactionType } from '../types/chat.type';
-import { WalletTypeEnum } from '../types/wallet';
+import { WalletTypeEnum } from '../types/wallet.type';
 import { ChatMessages } from './ChatMessages';
 import { ChatHelpModal } from './ChatHelpModal';
 import { LOCAL_STORAGE_PUSH_KEY } from '../constants';
@@ -584,12 +584,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             initStream(user)
           }
         } else if (walletType === WalletTypeEnum.EMBEDDED) {
-          // const user = await PushAPI.initialize(signer, {
-          //   env: CONSTANTS.ENV.PROD,
-          // });
+          const user = await PushAPI.initialize(signer, {
+            env: CONSTANTS.ENV.PROD,
+          });
 
-          // setChatUser(user)
-          // initStream(user)
+          setChatUser(user)
+          initStream(user)
         }
       } catch (err) {
         console.log('initialize err: ', err)

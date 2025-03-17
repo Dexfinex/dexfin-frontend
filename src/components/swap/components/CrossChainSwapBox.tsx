@@ -1,28 +1,28 @@
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {ArrowDownUp, ArrowRight, Clock, DollarSign} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
-import {SlippageOption, TokenType} from '../../../types/swap.type';
-import {formatNumberByFrac, shrinkAddress} from '../../../utils/common.util';
+import {DebridgeOrderStatus, SlippageOption, TokenType} from '../../../types/swap.type';
+import {formatNumberByFrac, isValidAddress, shrinkAddress} from '../../../utils/common.util';
 import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
 import useTokenStore from "../../../store/useTokenStore.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
-import {mapChainId2ExplorerUrl, mapChainId2Network} from "../../../config/networks.ts";
+import {
+    mapChainId2ChainName,
+    mapChainId2ExplorerUrl,
+    mapChainId2NativeAddress,
+    mapChainId2Network
+} from "../../../config/networks.ts";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
-import {
-    formatEstimatedTimeBySeconds,
-    getBridgingSpendTime,
-    getUSDAmount,
-    needDestinationAddress
-} from "../../../utils/swap.util.ts";
+import {formatEstimatedTimeBySeconds, getBridgingSpendTime, getUSDAmount} from "../../../utils/swap.util.ts";
 import {DestinationAddressInputModal} from "../modals/DestinationAddressInputModal.tsx";
-import useSwapkitQuote from "../../../hooks/useSwapkitQuote.ts";
 import {useAllBalance} from "../../../hooks/useAllBalance.tsx";
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
-import useSwapkitBridgeStatus from "../../../hooks/useSwapkitBridgeStatus.ts";
 import {useTokenApprove} from "../../../hooks/useTokenApprove.ts";
 import BigNumber from "bignumber.js";
 import {toFixedFloat} from "../../../utils/trade.util.ts";
+import useDebridgeOrderStatus from "../../../hooks/useDebridgeOrderStatus.ts";
+import useDebridgeQuote from "../../../hooks/useDebridgeQuote.ts";
 
 interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
@@ -47,42 +47,43 @@ export function CrossChainSwapBox({
                                       onFromAmountChange,
                                       onToAmountChange,
                                       onSwitch,
-                                      slippage,
                                   }: CrossChainSwapBoxProps) {
     const {
         chainId,
         solanaWalletInfo,
-        address: evmAddress,
+        signer,
         transferSolToken,
+        chainId: walletChainId,
+        switchChain,
     } = useContext(Web3AuthContext);
 
     const [destinationAddress, setDestinationAddress] = useState<string>('');
-    const [estimatedCompletionTime, setEstimatedCompletionTime] = useState<number>(0);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
+    const [sendToAnotherAddress, setSendToAnotherAddress] = useState<boolean>(false);
     const [txModalOpen, setTxModalOpen] = useState(false);
-    const [isPreparing, setIsPreparing] = useState(false);
-    const [swapkitTradeHash, setSwapkitTradeHash] = useState<string | undefined>(undefined);
+    const [countdown, setCountdown] = useState(0);
+    const [isBridging, setIsBridging] = useState(false);
+    const [isConfirming, setIsConfirming] = useState(false);
 
     const {getTokenPrice} = useTokenStore()
     const {
         isLoading: isQuoteLoading,
         quoteResponse,
-    } = useSwapkitQuote({
+    } = useDebridgeQuote({
         sellToken: fromToken,
         buyToken: toToken,
         sellAmount: fromAmount,
-        slippage,
-        destinationAddress,
+        destinationAddress: sendToAnotherAddress ? destinationAddress : null,
     })
     const {
         isLoading: isTracking,
-        trackingStatus,
+        orderStatus,
         completionHash,
-    } = useSwapkitBridgeStatus(fromToken?.chainId, swapkitTradeHash)
+    } = useDebridgeOrderStatus(quoteResponse.orderId, isBridging)
 
-
+    const nativeTokenAddressFromChain = mapChainId2NativeAddress[fromToken!.chainId]
     useGetTokenPrices({
-        tokenAddresses: [fromToken?.address ?? null],
+        tokenAddresses: [fromToken?.address ?? null, nativeTokenAddressFromChain],
         chainId: fromToken?.chainId,
     })
     useGetTokenPrices({
@@ -95,65 +96,102 @@ export function CrossChainSwapBox({
         // refetch: refetchFromBalance,
         data: fromBalance
     } = useAllBalance({tokenOrMintAddress: fromToken?.address, chainId: fromToken?.chainId})
-
     const {
         isLoading: isToBalanceLoading,
         // refetch: refetchToBalance,
         data: toBalance
     } = useAllBalance({tokenOrMintAddress: toToken?.address, chainId: toToken?.chainId})
+    const {
+        data: nativeBalance
+    } = useAllBalance({tokenOrMintAddress: nativeTokenAddressFromChain, chainId: fromToken?.chainId});
 
-    const insufficientBalance =
-        !isNaN(Number(fromBalance?.formatted)) ? Number(fromAmount) > Number(fromBalance?.formatted)
+    const insufficientNativeBalance =
+        !isNaN(Number(nativeBalance?.formatted))
+            ? ((nativeTokenAddressFromChain !== fromToken?.address ? 0 : Number(fromAmount)) + Number(quoteResponse.feeAmount)) > Number(nativeBalance?.formatted)
             : false;
+    const insufficientBalance =
+        !isNaN(Number(fromBalance?.formatted)) ? (Number(fromAmount) + Number(quoteResponse.feeAmount)) > Number(fromBalance?.formatted)
+            : false;
+    const isZeroAmount = !fromAmount || Number(fromAmount) <= 0 || Number(quoteResponse.outputAmount) <= 0
 
     // Update toAmount when calculation changes
     useEffect(() => {
         if (quoteResponse) {
-            onToAmountChange(quoteResponse.expectedBuyAmount);
+            onToAmountChange(quoteResponse.outputAmount);
         }
     }, [quoteResponse, onToAmountChange, toToken]);
 
     useEffect(() => {
-        if (toToken) {
-            if (toToken.chainId === SOLANA_CHAIN_ID && solanaWalletInfo) {
-                setDestinationAddress(solanaWalletInfo.publicKey)
-            } else {
-                setDestinationAddress(evmAddress)
-            }
+        if (isBridging && countdown > 0) {
+            const timer = setInterval(() => {
+                setCountdown((prev) => prev - 1);
+            }, 1000);
+            return () => clearInterval(timer);
         }
-    }, [toToken, solanaWalletInfo, evmAddress]);
+    }, [isBridging, countdown]);
 
     useEffect(() => {
-        if (trackingStatus === 'completed') {
+        if (toToken &&
+            sendToAnotherAddress &&
+            toToken.chainId === SOLANA_CHAIN_ID &&
+            !isValidAddress(destinationAddress, SOLANA_CHAIN_ID)
+        ) {
+            setDestinationAddress('')
+        }
+    }, [toToken, destinationAddress, sendToAnotherAddress]);
+
+    useEffect(() => {
+        if (orderStatus === DebridgeOrderStatus.Fulfilled) {
             setTxModalOpen(true)
         }
-    }, [trackingStatus])
+    }, [orderStatus])
 
     const {
         fromUsdAmount,
         toUsdAmount,
         fromNetwork,
         toNetwork,
+        feeAmountInUsd,
     } = useMemo(() => {
         const fromTokenPrice = fromToken ? getTokenPrice(fromToken?.address, fromToken?.chainId) : 0
         const toTokenPrice = toToken ? getTokenPrice(toToken?.address, toToken?.chainId) : 0
+        const nativeTokenPrice = fromToken ? getTokenPrice(nativeTokenAddressFromChain, fromToken?.chainId) : 0
         const fromUsdAmount = fromToken ? getUSDAmount(fromToken, fromTokenPrice, fromAmount) : 0
         const toUsdAmount = toToken ? getUSDAmount(toToken, toTokenPrice, toAmount) : 0
         const fromNetwork = fromToken ? mapChainId2Network[fromToken.chainId] : null
         const toNetwork = toToken ? mapChainId2Network[toToken.chainId] : null
+        let feeAmountInUsd = 0
+        if (quoteResponse) {
+            feeAmountInUsd = nativeTokenPrice * quoteResponse.feeAmount
+        }
 
         return {
             fromUsdAmount,
             toUsdAmount,
             toNetwork,
             fromNetwork,
+            feeAmountInUsd,
         }
-    }, [fromToken, getTokenPrice, toToken, fromAmount, toAmount])
+    }, [nativeTokenAddressFromChain, fromToken, getTokenPrice, toToken, fromAmount, toAmount, quoteResponse])
+
+    const {
+        isRequireSwitchChain,
+        textSwitchChain,
+    } = useMemo(() => {
+        const isRequireSwitchChain = walletChainId !== fromToken?.chainId
+        const textSwitchChain = `Switch to ${mapChainId2ChainName[fromToken!.chainId]} network`
+
+        return {
+            isRequireSwitchChain,
+            textSwitchChain
+        }
+    }, [fromToken, walletChainId])
+
 
     useEffect(() => {
         if (!txModalOpen) {
-            setSwapkitTradeHash(undefined)
-            setEstimatedCompletionTime(0)
+            setCountdown(0)
+            setIsBridging(false)
             onFromAmountChange?.('')
             onToAmountChange?.('')
         }
@@ -165,7 +203,7 @@ export function CrossChainSwapBox({
         approve
     } = useTokenApprove({
         token: fromToken?.address as `0x${string}`,
-        spender: (quoteResponse?.depositInfo?.depositAddress ?? (quoteResponse?.tx?.to ?? '')) as `0x${string}`,
+        spender: (quoteResponse.tx?.allowanceTarget) as `0x${string}`,
         amount: new BigNumber(toFixedFloat(fromAmount, 4))
             .times(new BigNumber(10)
                 .pow(fromToken?.decimals ?? 1))
@@ -181,21 +219,27 @@ export function CrossChainSwapBox({
             return
         }
 
-        // set estimated completion time in unixtimestamp
-        setEstimatedCompletionTime(Math.floor(Date.now() / 1000) + quoteResponse.estimatedTime)
-
-        if (fromToken?.chainId === SOLANA_CHAIN_ID && quoteResponse.depositInfo) { // solana transaction
-
-            const signature = await transferSolToken(
-                quoteResponse.depositInfo.depositAddress,
-                fromToken.address,
-                Number(fromAmount),
-                fromToken.decimals
-            )
-            setSwapkitTradeHash(signature)
-
-        } else if (quoteResponse.tx) {
+        try {
+            setIsConfirming(true)
+            if (fromToken?.chainId === SOLANA_CHAIN_ID && destinationAddress) { // solana transaction
+                await transferSolToken(
+                    destinationAddress,
+                    fromToken.address,
+                    Number(fromAmount),
+                    fromToken.decimals
+                )
+            } else if (quoteResponse.tx) {
+                await signer!.sendTransaction(quoteResponse.tx)
+            } else {
+                throw new Error('tx not provided')
+            }
+            // set estimated completion time in unixtimestamp
+            setIsBridging(true)
+            setCountdown(quoteResponse.estimatedTime)
+        } catch (e) {
             //
+        } finally {
+            setIsConfirming(false)
         }
     }
 
@@ -217,7 +261,7 @@ export function CrossChainSwapBox({
                 <div className="z-30">
                     <button
                         onClick={onSwitch}
-                        className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
+                        className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
                     >
                         <ArrowDownUp className="w-4 h-4"/>
                     </button>
@@ -242,34 +286,51 @@ export function CrossChainSwapBox({
 
             <div
                 className="rounded-xl p-4 mb-4 cursor-pointer border border-white/5 hover:border-blue-500/20 transition-all duration-200 hover:shadow-[0_8px_32px_rgba(59,130,246,0.15)]"
-                onClick={() => setIsAddressModalOpen(true)}
+                onClick={() => sendToAnotherAddress && setIsAddressModalOpen(true)}
             >
-                <div className="flex justify-between mb-2">
+                <div className={`flex justify-between ${sendToAnotherAddress ? 'mb-4' : ''}`} onClick={(e) => {
+                    e.stopPropagation()
+                }}>
+                    <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            checked={sendToAnotherAddress}
+                            onChange={(e) => setSendToAnotherAddress(e.target.checked)}
+                            className="appearance-none h-6 w-6 rounded-md border-2 border-blue-500/60 checked:bg-blue-500 checked:border-transparent relative checked:after:content-['✔'] checked:after:absolute checked:after:left-[4px] checked:after:top-[-2px] checked:after:text-white checked:after:text-lg"
+                        />
+                        <span className="group-hover:text-gray-300 transition-colors">Send to Another Address</span>
+                    </label>
+                    {/*
                     <span
                         className="text-blue-400/90 text-[10px] font-semibold tracking-wider uppercase bg-blue-500/10 px-2 py-0.5 rounded-md">Destination Address</span>
+*/}
                 </div>
-                <div className="flex items-center">
-                    {(destinationAddress && toNetwork) ? (
-                        <>
-                            <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2"/>
-                            <span className="font-medium">
+                {
+                    sendToAnotherAddress && (
+                        <div className="flex items-center">
+                            {(destinationAddress && toNetwork) ? (
+                                <>
+                                    <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2"/>
+                                    <span className="font-medium">
                                 {shrinkAddress(destinationAddress)}
                             </span>
-                        </>
-                    ) : (
-                        <span className="text-gray-400">Click to enter Address</span>
-                    )}
-                </div>
+                                </>
+                            ) : (
+                                <span className="text-gray-400">Click to enter Address</span>
+                            )}
+                        </div>
+                    )
+                }
             </div>
 
             {
-                (fromNetwork && toNetwork && quoteResponse.providerName) && (
+                (fromNetwork && toNetwork && !isZeroAmount) && (
                     <div
                         className={`rounded-xl p-4 border border-blue-500`}
                     >
                         {
                             isQuoteLoading ? (
-                                <Skeleton startColor="#444" endColor="#1d2837" w={'7rem'} h={'1rem'}></Skeleton>
+                                <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'3rem'}></Skeleton>
                             ) : (
                                 <>
                                     <div className="flex items-center justify-between mb-3">
@@ -282,13 +343,13 @@ export function CrossChainSwapBox({
                                             <ArrowRight size={14} className="mx-1 text-gray-400"/>
                                             <img src={toNetwork.icon} alt={toNetwork.name}
                                                  className="w-5 h-5"/>
-                                            <span className="ml-2 text-sm">{quoteResponse.providerName}</span>
+                                            <span className="ml-2 text-sm">Debridge</span>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center justify-between mb-3">
                                     <span
-                                        className="text-sm text-gray-400">You receive: {formatNumberByFrac(Number(quoteResponse.expectedBuyAmount), 5)} {toToken?.symbol}</span>
+                                        className="text-sm text-gray-400">You receive: {formatNumberByFrac(Number(quoteResponse.outputAmount), 5)} {toToken?.symbol}</span>
                                     </div>
 
                                     <div className="flex justify-between text-xs text-gray-400">
@@ -297,7 +358,7 @@ export function CrossChainSwapBox({
                                             <span>{`estimated time: ${formatEstimatedTimeBySeconds(quoteResponse.estimatedTime)}`}</span>
                                         </div>
                                         <div className="flex items-center">
-                                            <span>Fee: {quoteResponse.formattedFeeInUsd}</span>
+                                            <span>Fee: {formatNumberByFrac(feeAmountInUsd, 5)}</span>
                                             <DollarSign size={12} className="mr-1"/>
                                         </div>
                                     </div>
@@ -307,25 +368,14 @@ export function CrossChainSwapBox({
                     </div>
                 )
             }
-
-            {
-                (needDestinationAddress(fromToken?.chainId, toToken?.chainId)) && !destinationAddress && (
-                    <Alert status="info" variant="subtle" borderRadius="md">
-                        <AlertIcon/>
-                        <Text width={'calc(100% - 20px)'}>You Should Input Destination Address</Text>
-                    </Alert>
-                )
-            }
-
             {
                 quoteResponse.errorMessage && (
                     <Alert status="error" variant="subtle" borderRadius="md">
                         <AlertIcon/>
-                        <Text width={'calc(100% - 20px)'}>Error: {quoteResponse.errorMessage}</Text>
+                        <Text width={'calc(100% - 20px)'}>{quoteResponse.errorMessage}</Text>
                     </Alert>
                 )
             }
-
             {
                 (chainId === SOLANA_CHAIN_ID && !solanaWalletInfo) ? (
                     <Button
@@ -338,19 +388,42 @@ export function CrossChainSwapBox({
                         Please Use Embedded Wallet
                     </Button>
                 ) : (
-                    swapkitTradeHash ? (
+                    isBridging ? (
                         <Button
-                            isLoading={isTracking}
-                            loadingText={getBridgingSpendTime(estimatedCompletionTime)}
+                            isLoading={isBridging || isTracking}
+                            loadingText={getBridgingSpendTime(countdown)}
                             width="full"
                             colorScheme="blue"
                             onClick={handleSwap}
                             isDisabled={true}
                         >
-                            {trackingStatus}
+                            {orderStatus}
+                        </Button>
+                    ) : isConfirming ? (
+                        <Button
+                            isLoading={isConfirming}
+                            loadingText={'Confirming...'}
+                            width="full"
+                            colorScheme="blue"
+                            isDisabled={true}
+                        >
                         </Button>
                     ) : (
-                        insufficientBalance ? (
+                        isRequireSwitchChain ? (
+                            <Button
+                                isLoading={false}
+                                loadingText={'Changing Network...'}
+                                width="full"
+                                colorScheme="blue"
+                                onClick={() => {
+                                    switchChain(fromToken!.chainId)
+                                    // if (approveReset) approveReset();
+                                }}
+                                isDisabled={false}
+                            >
+                                {textSwitchChain}
+                            </Button>
+                        ) : (insufficientBalance || insufficientNativeBalance) ? (
                             <Button
                                 width="full"
                                 colorScheme="blue"
@@ -365,7 +438,7 @@ export function CrossChainSwapBox({
                                 width="full"
                                 colorScheme="blue"
                                 onClick={handleSwap}
-                                isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !isApproved || !!quoteResponse.errorMessage}
+                                isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !isApproved || !!quoteResponse.errorMessage || Number(quoteResponse.outputAmount) <= 0}
                             >
                                 {isApproved ? 'Bridge' : 'Approve'}
                             </Button>
@@ -385,7 +458,8 @@ export function CrossChainSwapBox({
                 )
             }
             <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                              link={`${mapChainId2ExplorerUrl[toToken!.chainId]}/tx/${completionHash}`} checkBalance={true} />
+                              link={`${mapChainId2ExplorerUrl[toToken!.chainId]}/tx/${completionHash}`}
+                              checkBalance={true}/>
         </div>
     )
         ;

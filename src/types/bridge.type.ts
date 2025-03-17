@@ -1,3 +1,5 @@
+import {DebridgeTransaction} from "./swap.type.ts";
+
 interface Fee {
     type: string;
     amount: string;
@@ -151,3 +153,29 @@ export type SwapkitFinalizedQuoteResponse =  {
     errorMessage: string;
     depositInfo: DepositInfo | null;
 }
+
+export type DebridgeQuoteResponse =  {
+    inputUsdAmount: number,
+    outputUsdAmount: number,
+    outputAmount: string,
+    feeAmount: number,
+    estimatedTime: number,
+    orderId: string,
+    tx: DebridgeTransaction | null;
+    errorMessage: string;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

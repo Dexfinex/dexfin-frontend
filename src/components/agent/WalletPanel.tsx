@@ -16,6 +16,7 @@ import { PositionList } from '../wallet/PositionList.tsx';
 import PNL from '../common/PNL.tsx';
 import PNLPercent from '../common/PNLPercent.tsx';
 import { formatNumberByFrac } from '../../utils/common.util.ts';
+import useDefiStore from '../../store/useDefiStore.ts';
 
 interface WalletPanelProps {
   isWalletPanelOpen: boolean;
@@ -25,8 +26,12 @@ interface WalletPanelProps {
 export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletPanelProps) {
   const { isLoading: isLoadingBalance } = useWalletBalance();
   const { totalUsdValue, tokenBalances, pnlPercent, pnlUsd } = useTokenBalanceStore();
+  const { totalLockedValue } = useDefiStore();
   const [activeWalletTab, setActiveWalletTab] = useState<WalletTab>('assets');
   const [isLargerThan962] = useMediaQuery('(min-width: 962px)');
+
+  // Calculate combined portfolio value
+  const totalPortfolioValue = totalUsdValue + totalLockedValue;
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   // Filter positions correctly
@@ -50,7 +55,7 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
             <div className="p-4 border-b border-white/10">
               <div className="text-sm text-white/60">Total Balance</div>
               <div className="text-2xl font-bold mt-1">
-                {isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)}
+                {isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalPortfolioValue)}
               </div>
               {
                 isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'} h={'1rem'}></Skeleton> : <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
@@ -100,7 +105,7 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                               <div className='flex flex-col justify-start items-start'>
                                 <div className="font-medium">{position.symbol}</div>
                                 <div className="text-sm text-white/60">
-                                  {`${formatNumberByFrac(position.balance)} ${position.symbol}`}
+                                  {`${formatNumberByFrac(position.balance, 5)} ${position.symbol}`}
                                 </div>
                               </div>
                             </div>

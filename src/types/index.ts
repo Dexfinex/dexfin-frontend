@@ -458,3 +458,26 @@ export interface Loser {
   usd24hVol: number;
 }
 
+export interface TwitterInfo {
+  name: string;
+  username: string;
+  content: string;
+  timestamp: string;
+  data: {};
+  legacy: {};
+  last_seen: {
+    timestamp: string;
+  }
+  profile_image_url: string;
+}
+
+export interface SignificantTransactions {
+  from_address: string;
+  to_address: string;
+  amount: number;
+  timestamp: string;
+  transaction_type: string;
+  blockchain: string;
+  hash: string;
+  data: {}
+}
