@@ -8,16 +8,20 @@ import { useStore } from '../../store/useStore';
 import useTokenStore from '../../store/useTokenStore';
 import { X, ShoppingCart, Minimize2, Maximize2 } from 'lucide-react';
 import Spinner from './components/Spinner';
-import SearchHeader, { SortConfig, SortOption } from './components/SearchHeader';
+import SearchHeader from './components/SearchHeader';
 import CoinGrid from './components/CoinGrid';
 import CartList from './components/CartList';
 import CheckoutSection from './components/CheckoutSection';
-
+import { SortConfig } from './components/SearchHeader';
 
 const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  // New state for separate token and network category filters
+  const [activeTokenCategory, setActiveTokenCategory] = useState('All');
+  const [activeNetworkCategory, setActiveNetworkCategory] = useState<string | null>(null);
+
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     option: 'marketCap',
     direction: 'desc'
@@ -137,8 +141,13 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     }
   }, [allTransactionsComplete]);
 
-  const handleCategoryChange = useCallback((category: string) => {
-    setSelectedCategory(category);
+  // Updated handlers for token category and network category
+  const handleTokenCategoryChange = useCallback((category: string) => {
+    setActiveTokenCategory(category);
+  }, []);
+
+  const handleNetworkCategoryChange = useCallback((networkCategory: string | null) => {
+    setActiveNetworkCategory(networkCategory);
   }, []);
 
   const handleSearchChange = useCallback((query: string) => {
@@ -258,18 +267,23 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
         ) : (
           <div className="flex flex-col md:flex-row h-[calc(100%-48px)]">
             <div className="flex-1 flex flex-col h-full">
+              {/* Updated SearchHeader component with separate category props */}
               <SearchHeader
-                selectedCategory={selectedCategory}
+                activeTokenCategory={activeTokenCategory}
+                activeNetworkCategory={activeNetworkCategory}
                 searchQuery={searchQuery}
-                onCategoryChange={handleCategoryChange}
+                onTokenCategoryChange={handleTokenCategoryChange}
+                onNetworkCategoryChange={handleNetworkCategoryChange}
                 onSearchChange={handleSearchChange}
                 sortConfig={sortConfig}
                 onSortChange={handleSortChange}
               />
               <div className="flex-1 h-full">
+                {/* Updated CoinGrid with active token and network categories */}
                 <CoinGrid
                   searchQuery={searchQuery}
-                  selectedCategory={selectedCategory}
+                  activeTokenCategory={activeTokenCategory}
+                  activeNetworkCategory={activeNetworkCategory}
                   onAddToCart={addToCart}
                   walletChainId={walletChainId ?? 8453}
                   sortConfig={sortConfig}
