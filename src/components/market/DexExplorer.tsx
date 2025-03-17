@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { AlertCircle, Filter, RefreshCw, Search, TrendingDown, TrendingUp, ArrowUpDown } from 'lucide-react';
 import _ from 'lodash';
 import { formatAge, formatNumber } from '../../utils';
-import { getChainIcon } from '../../utils/getChainIcon';
+import { getChainIcon } from '../../utils/defi.util';
 
 import { useGetTrendingPools, useGetNewPools, useGetTopPools } from '../../hooks/useGeckoTerminal';
 import {LoadingSpinner} from './LoadingSpinner'
