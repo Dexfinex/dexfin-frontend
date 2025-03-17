@@ -1,7 +1,7 @@
-import {birdeyeApi} from "./api.service.ts";
-import {birdeyeOHLCVResponse, ChartDataPoint} from "../types/swap.type.ts";
+import { birdeyeApi } from "./api.service.ts";
+import { birdeyeOHLCVResponse, ChartDataPoint } from "../types/swap.type.ts";
 import axios from "axios";
-import {mintPriceResponse} from "../types/birdeye.type.ts";
+import { mintPriceResponse } from "../types/birdeye.type.ts";
 
 export const birdeyeService = {
     getOHLCV: async (
@@ -55,6 +55,16 @@ export const birdeyeService = {
         } catch (e) {
             console.log(e);
         }
-        return {data: {}}
+        return { data: {} }
     },
+    getTokenInfo: async (address: string) => {
+        try {
+            const { data } = await birdeyeApi.get<any>(`/token-info?address=${address}`);
+            return data;
+        } catch (err) {
+            console.log('err: ', err);
+        }
+
+        return null;
+    }
 }
