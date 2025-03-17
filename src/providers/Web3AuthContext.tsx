@@ -6,7 +6,7 @@ import {
     ORIGIN,
     signInWithDiscord,
     signInWithGoogle
-} from "../utils/lit";
+} from "../utils/lit.util.ts";
 import useAuthenticate from "../hooks/auth/useAuthenticate";
 import useAccounts from "../hooks/auth/useAccounts";
 import useSession from "../hooks/auth/useSession";

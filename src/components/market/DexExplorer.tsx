@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { AlertCircle, Filter, RefreshCw, Search, TrendingDown, TrendingUp, ArrowUpDown } from 'lucide-react';
 import _ from 'lodash';
-import { formatAge, formatNumber } from '../../utils';
+import { formatAge, formatNumber } from '../../utils/dex-explorer.util.ts';
 import { getChainIcon } from '../../utils/defi.util';
 
 import { useGetTrendingPools, useGetNewPools, useGetTopPools } from '../../hooks/useGeckoTerminal';
@@ -177,7 +177,7 @@ export const DexExplorer: React.FC = () => {
       const parseFormattedNumber = (value: string): number => {
         if (!value) return 0;
         const cleanValue = value.replace(/,/g, '').toUpperCase();
-        const multipliers = { 'K': 1000, 'M': 1000000, 'B': 1000000000 };
+        const multipliers: Record<string, number> = { 'K': 1000, 'M': 1000000, 'B': 1000000000 };
         const match = cleanValue.match(/^([\d.]+)([KMB])?$/);
         if (!match) return 0;
         const [, number, suffix] = match;
@@ -192,7 +192,7 @@ export const DexExplorer: React.FC = () => {
         if (!match) return 0;
         const [, value, unit] = match;
         const numValue = parseInt(value);
-        const multipliers = {
+        const multipliers: Record<string, number> = {
           'y': 525600,
           'mth': 43800,
           'd': 1440,
@@ -233,7 +233,7 @@ export const DexExplorer: React.FC = () => {
             bValue = parseFormattedNumber(b.attributes.reserve_in_usd || '0');
             break;
           case 'transactions':
-            const aTransactions = typeof a.attributes.transactions?.h24 === 'string'
+            { const aTransactions = typeof a.attributes.transactions?.h24 === 'string'
               ? JSON.parse(a.attributes.transactions.h24)
               : a.attributes.transactions?.h24 || { buyers: 0, sellers: 0 };
             const bTransactions = typeof b.attributes.transactions?.h24 === 'string'
@@ -241,7 +241,7 @@ export const DexExplorer: React.FC = () => {
               : b.attributes.transactions?.h24 || { buyers: 0, sellers: 0 };
             aValue = Number(aTransactions.buyers || 0) + Number(aTransactions.sellers || 0);
             bValue = Number(bTransactions.buyers || 0) + Number(bTransactions.sellers || 0);
-            break;
+            break; }
           case 'age':
             aValue = parseAgeToMinutes(formatAge(a.attributes.pool_created_at));
             bValue = parseAgeToMinutes(formatAge(b.attributes.pool_created_at));
@@ -280,9 +280,6 @@ export const DexExplorer: React.FC = () => {
     );
   }
   
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = sortedPools.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(sortedPools.length / itemsPerPage);
   
   const PaginationButton = ({ page, isActive, onClick }) => (
