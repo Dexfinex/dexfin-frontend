@@ -1,4 +1,8 @@
 const MAX_LENGTH = 12;
+const subscriptDigits:Record<string, string> = {
+  '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+  '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'
+};
 
 export function cropString(value: string, length = 5): string {
   if (value.length < MAX_LENGTH) {
@@ -18,7 +22,7 @@ export function formatAge(dateString: string): string {
 
 
   const now = new Date();
-  let date = new Date(now);
+  const date = new Date(now);
 
   switch (unit) {
     case 'y':
@@ -76,12 +80,6 @@ export function formatNumber(value: string | number): string {
       }
       
       const significantDigits = mantissa.replace('.', '');
-      
-      const subscriptDigits = {
-        '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
-        '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'
-      };
-      
       const subscript = zeroCount.toString()
         .split('')
         .map(digit => subscriptDigits[digit])
@@ -104,11 +102,6 @@ export function formatNumber(value: string | number): string {
     const scientific = num.toExponential();
     const [mantissa, exponent] = scientific.split('e-');
     const significantDigits = mantissa.replace('.', '');
-    
-    const subscriptDigits = {
-      '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
-      '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'
-    };
     
     const subscript = (parseInt(exponent) - 1).toString()
       .split('')
