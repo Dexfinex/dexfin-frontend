@@ -12,7 +12,7 @@ import { BIG_IMAGE_WIDHT, getWalletProfile, initStream, LIMIT, KEY_NAME } from '
 import { ChatType, IChat, IUser } from '../../types/chat.type';
 import { downloadBase64File, extractAddress, getEnsName, getHourAndMinute, shrinkAddress } from '../../utils/common.util';
 import { ImageWithSkeleton } from '../common/ImageWithSkeleton';
-import { WalletTypeEnum } from "../../types/wallet.ts";
+import { WalletTypeEnum } from "../../types/wallet.type.ts";
 
 interface OverlayProps {
   isOpen: boolean;

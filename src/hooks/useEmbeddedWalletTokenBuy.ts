@@ -6,7 +6,7 @@
 // import { ethers } from 'ethers';
 // import { nativeAddress } from '../constants';
 // import { coingeckoService } from "../services/coingecko.service";
-// import { WalletTypeEnum } from "../types/wallet.ts";
+// import { WalletTypeEnum } from "../types/wallet.type.ts";
 
 // export const useWalletTokenPurchase = () => {
 //   const [isPending, setIsPending] = useState(false);
@@ -168,7 +168,7 @@ import { TokenTypeB } from "../types/cart.type";
 import { ethers } from 'ethers';
 import { nativeAddress } from '../constants';
 import { coingeckoService } from "../services/coingecko.service";
-import { WalletTypeEnum } from "../types/wallet";
+import { WalletTypeEnum } from "../types/wallet.type";
 
 export const useWalletTokenPurchase = () => {
   const [isPending, setIsPending] = useState(false);
@@ -181,7 +181,6 @@ export const useWalletTokenPurchase = () => {
     chainId, 
     provider, 
     signer, 
-    walletType,
     kernelAccount,
     getWalletType
   } = useContext(Web3AuthContext);

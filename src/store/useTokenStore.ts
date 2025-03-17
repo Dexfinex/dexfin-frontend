@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { TokenMetadata } from "../types/wallet";
+import { TokenMetadata } from "../types/wallet.type";
 import {solToWSol} from "../utils/solana.util.ts";
 
 // Define the store's state and actions

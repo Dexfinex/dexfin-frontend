@@ -19,7 +19,7 @@ import { use0xTokenApprove } from "../../../hooks/use0xTokenApprove.ts";
 import { zeroxService } from "../../../services/0x.service.ts";
 import use0xGaslessSwapStatus from "../../../hooks/use0xGaslessSwapStatus.ts";
 import { signTradeObject, tradeSplitSigDataToSubmit } from "../../../utils/swap.util.ts";
-import { WalletTypeEnum } from "../../../types/wallet.ts";
+import { WalletTypeEnum } from "../../../types/wallet.type.ts";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;

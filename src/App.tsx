@@ -52,15 +52,13 @@ export default function App() {
         setIsSigninModalOpen,
         isTradeOpen,
         setTradeOpen,
-        menuItems,
         chatUser,
         setChatUser,
-        isrewardsOpen,
+        isRewardsOpen,
         setIsRewardsOpen,
 
         isUsernameModalOpen,
         widgetCommand,
-        setWidgetCommand,
 
         isWalletDrawerOpen,
         setIsWalletDrawerOpen
@@ -143,16 +141,6 @@ export default function App() {
         document.body.setAttribute('data-theme', theme);
     }, [theme]);
 
-    // Find rewards menu item
-    // const rewardsMenuItem = menuItems.find(item => item.id === 'rewards');
-    // const isRewardsOpen = rewardsMenuItem?.isStarred || false;
-    // const setIsRewardsOpen = (open: boolean) => {
-    //     console.log("open", open)
-    //     if (rewardsMenuItem) {
-    //         useStore.getState().toggleStarMenuItem('rewards');
-    //     }
-    // };
-
     return (
         <div className="min-h-screen flex flex-col">
             <Header />
@@ -214,7 +202,7 @@ export default function App() {
                 onClose={() => setIsGamesOpen(false)}
             />
             <RewardsModal
-                isOpen={isrewardsOpen}
+                isOpen={isRewardsOpen}
                 onClose={() => setIsRewardsOpen(false)}
             />
             {

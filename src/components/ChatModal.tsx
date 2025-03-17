@@ -35,7 +35,7 @@ import { getAllChatData, getWalletProfile, initStream, LIMIT, KEY_NAME } from '.
 import { EditChatProfileModal } from './EditChatProfileModal';
 import { ChatGroupModal } from './ChatGroupModal';
 import { ChatModeType, ChatType, IChat, IGroup, IUser, ProfileType, ReactionType } from '../types/chat.type';
-import { WalletTypeEnum } from '../types/wallet';
+import { WalletTypeEnum } from '../types/wallet.type';
 import { ChatMessages } from './ChatMessages';
 import { ChatHelpModal } from './ChatHelpModal';
 
