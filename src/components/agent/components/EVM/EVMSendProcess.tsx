@@ -115,7 +115,7 @@ export const EVMSendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmoun
               />
               <div>
                 <div className="text-sm text-white/60">Amount</div>
-                <div className="text-xl font-medium">{fromToken ? formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals)) : ''} {fromToken?.symbol}</div>
+                <div className="text-xl font-medium">{fromToken ? formatNumberByFrac(convertCryptoAmount(fromAmount, 0)) : ''} {fromToken?.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40 hidden md:block" />
@@ -139,7 +139,7 @@ export const EVMSendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmoun
             </div>
             <div className="flex justify-between">
               <span className="text-white/60">Amount</span>
-              <span className="font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken?.symbol}</span>
+              <span className="font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken?.symbol}</span>
             </div>
           </div>
         </div>
@@ -185,11 +185,11 @@ export const EVMSendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmoun
             />
           </div>
           <p className="mt-4 text-white/60">
-            Sending {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken?.symbol} to {shrinkAddress(receiver)}
+            Sending {formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken?.symbol} to {shrinkAddress(receiver)}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`Successfully sent ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`Successfully sent ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
       )}
     </div>
   );
@@ -213,7 +213,7 @@ export const EVMSendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmoun
         </button>
       </div>
       {failedTransaction &&
-        <FailedTransaction onClose={onClose} description={`Send ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
+        <FailedTransaction onClose={onClose} description={`Send ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
       }
       {showConfirmation && !failedTransaction ? renderConfirmation() : (
         <div className="h-[calc(100%-60px)]">

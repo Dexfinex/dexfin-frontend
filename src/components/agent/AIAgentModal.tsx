@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 import { coingeckoService } from '../../services/coingecko.service';
 import { cryptoNewsService } from '../../services/cryptonews.service.ts';
+import { isAddress } from "viem";
 import { brianService } from '../../services/brian.service';
 import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/agent.tsx';
 import {
@@ -29,7 +30,7 @@ import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { convertCryptoAmount, getSolAddressFromSNS, isValidSolanaAddress, symbolToToken } from '../../utils/agent.tsx';
+import { convertCryptoAmount, getSolAddressFromSNS, resolveEnsToAddress, isValidSolanaAddress, symbolToToken } from '../../utils/agent.tsx';
 import { DepositProcess } from './components/EVM/DepositProcess.tsx';
 import { WithdrawProcess } from './components/EVM/WithdrawProcess.tsx';
 import { BorrowProcess } from './components/EVM/BorrowProcess.tsx';
@@ -231,7 +232,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
   const findFallbackResponse = async (message: string) => {
     const normalizedMessage = message.toLowerCase();
     const response = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
-    console.log(response);
+
     if (response && response.type == "price") {
 
       if (response.data) {
@@ -530,7 +531,6 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           if (token && token.balance > response.args.amount) {
             let address = response.args.outputMint;
             const snsToAddress = await getSolAddressFromSNS(address);
-            console.log(snsToAddress);
             if (snsToAddress) address = snsToAddress;
             if (isValidSolanaAddress(address)) {
               setFromToken({
@@ -580,22 +580,31 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           if (chainId != fromNetwork.chainId) {
             await switchChain(fromNetwork.chainId);
           }
+          console.log(response);
           console.log(tokenBalances);
           let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === fromNetwork.id);
-
+          console.log(token);
+          let address = response.args.outputMint;
+          const ensAddress = await resolveEnsToAddress(address);
+          console.log(ensAddress);
+          if (ensAddress) address = ensAddress;
           if (token && token.balance > response.args.amount) {
-            setFromToken({
-              symbol: token.symbol,
-              name: token.name,
-              address: token.address,
-              chainId: token.chain,
-              decimals: token.decimals,
-              logoURI: token.logo,
-              priceUSD: token.usdPrice
-            });
-            setFromAmount(response.args.amount);
-            setReceiver(response.args.outputMint);
-            setShowEVMSendProcess(true);
+            if (isAddress(address)) {
+              setFromToken({
+                symbol: token.symbol,
+                name: token.name,
+                address: token.address,
+                chainId: Number(token.chain),
+                decimals: token.decimals,
+                logoURI: token.logo,
+                priceUSD: token.usdPrice
+              });
+              setFromAmount(response.args.amount);
+              setReceiver(address);
+              setShowEVMSendProcess(true);
+            } else {
+              response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.' }
+            }
           }
           else {
             response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
