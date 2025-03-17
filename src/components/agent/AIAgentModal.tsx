@@ -2,8 +2,9 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 import { coingeckoService } from '../../services/coingecko.service';
 import { cryptoNewsService } from '../../services/cryptonews.service.ts';
+import { isAddress } from "viem";
 import { brianService } from '../../services/brian.service';
-import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/agent.tsx';
+import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/agent.util.tsx';
 import {
   Mic,
   Send,
@@ -20,6 +21,7 @@ import { SolSwapProcess } from './components/Solana/SolSwapProcess.tsx';
 import { BridgeProcess } from './components/EVM/BridgeProcess.tsx';
 import { PortfolioProcess } from '../PortfolioProcess.tsx';
 import { SendProcess } from './components/EVM/SendProcess.tsx';
+import { EVMSendProcess } from './components/EVM/EVMSendProcess.tsx';
 import { SolSendProcess } from './components/Solana/SolSendProcess.tsx';
 import { StakeProcess } from '../StakeProcess.tsx';
 import { ProjectAnalysisProcess } from '../ProjectAnalysisProcess.tsx';
@@ -28,7 +30,7 @@ import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
 import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { convertCryptoAmount, getSolAddressFromSNS, isValidSolanaAddress, symbolToToken } from '../../utils/agent.tsx';
+import { convertCryptoAmount, getSolAddressFromSNS, resolveEnsToAddress, isValidSolanaAddress, symbolToToken } from '../../utils/agent.util.tsx';
 import { DepositProcess } from './components/EVM/DepositProcess.tsx';
 import { WithdrawProcess } from './components/EVM/WithdrawProcess.tsx';
 import { BorrowProcess } from './components/EVM/BorrowProcess.tsx';
@@ -43,6 +45,7 @@ import { PredictionAnalysis } from './components/Analysis/PredictionAnalysis.tsx
 import { MarketOverview } from './components/Analysis/MarketOverview.tsx';
 import { yields_data } from '../../constants/mock/agent.ts';
 import { Yield } from '../../types/brian.type.ts';
+import { mapChainName2Network } from '../../config/networks.ts';
 interface AIAgentModalProps {
   isOpen: boolean;
   widgetCommand: string;
@@ -62,6 +65,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
   const [showBridgeProcess, setShowBridgeProcess] = useState(false);
   const [showPortfolioProcess, setShowPortfolioProcess] = useState(false);
   const [showSendProcess, setShowSendProcess] = useState(false);
+  const [showEVMSendProcess, setShowEVMSendProcess] = useState(false);
   const [showSolSendProcess, setShowSolSendProcess] = useState(false);
   const [showStakeProcess, setShowStakeProcess] = useState(false);
   const [showProjectAnalysis, setShowProjectAnalysis] = useState(false);
@@ -94,6 +98,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
     setShowBridgeProcess(false);
     setShowPortfolioProcess(false);
     setShowSendProcess(false);
+    setShowEVMSendProcess(false);
     setShowStakeProcess(false);
     setShowProjectAnalysis(false);
     setShowDepositProcess(false);
@@ -227,7 +232,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
   const findFallbackResponse = async (message: string) => {
     const normalizedMessage = message.toLowerCase();
     const response = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
-    console.log(response);
+
     if (response && response.type == "price") {
 
       if (response.data) {
@@ -331,6 +336,8 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
     if (sol_response && sol_response.type == "transfer_sol" && sol_response.args.networkName == "solana") {
       return sol_response;
     } else if (sol_response && sol_response.type == "swap_sol" && sol_response.args.networkName == "solana") {
+      return sol_response;
+    } else if (sol_response && sol_response.type == "transfer_evm" && sol_response.args.networkName != "solana") {
       return sol_response;
     }
 
@@ -520,14 +527,11 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           setYields(response.yields);
           setShowYieldProcess(true);
         } else if (response.type == "transfer_sol") {
-
           let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
-
           if (token && token.balance > response.args.amount) {
             let address = response.args.outputMint;
             const snsToAddress = await getSolAddressFromSNS(address);
-            console.log(snsToAddress);
-            if(snsToAddress) address = snsToAddress;
+            if (snsToAddress) address = snsToAddress;
             if (isValidSolanaAddress(address)) {
               setFromToken({
                 symbol: token.symbol,
@@ -552,9 +556,9 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
         } else if (response.type == "swap_sol") {
           let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
           if (token && token.balance > response.args.inAmount) {
-            const toToken  = symbolToToken(response.args.outputSymbol);
+            const toToken = symbolToToken(response.args.outputSymbol);
             const fromToken = symbolToToken(response.args.inputSymbol);
-            if(toToken && fromToken) {
+            if (toToken && fromToken) {
               setFromToken(fromToken);
               setProtocol({
                 key: "",
@@ -569,6 +573,41 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
             }
           } else {
             response = { text: `swap ${response.args.inAmount} ${response.args.inputSymbol} for ${response.args.outputSymbol} on solana`, insufficient: 'Insufficient balance to perform the transaction.' };
+          }
+        } else if (response.type == "transfer_evm") {
+          resetProcessStates();
+          const fromNetwork = mapChainName2Network[response.args.networkName];
+          if (chainId != fromNetwork.chainId) {
+            await switchChain(fromNetwork.chainId);
+          }
+          console.log(response);
+          console.log(tokenBalances);
+          let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === fromNetwork.id);
+          console.log(token);
+          let address = response.args.outputMint;
+          const ensAddress = await resolveEnsToAddress(address);
+          console.log(ensAddress);
+          if (ensAddress) address = ensAddress;
+          if (token && token.balance > response.args.amount) {
+            if (isAddress(address)) {
+              setFromToken({
+                symbol: token.symbol,
+                name: token.name,
+                address: token.address,
+                chainId: Number(token.chain),
+                decimals: token.decimals,
+                logoURI: token.logo,
+                priceUSD: token.usdPrice
+              });
+              setFromAmount(response.args.amount);
+              setReceiver(address);
+              setShowEVMSendProcess(true);
+            } else {
+              response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.' }
+            }
+          }
+          else {
+            response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
           }
         }
 
@@ -795,6 +834,12 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           <SolSwapProcess fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
             onClose={() => {
               setShowSolSwapProcess(false);
+              setMessages([]);
+            }} />
+        ) : showEVMSendProcess && fromToken ? (
+          <EVMSendProcess receiver={receiver} fromAmount={fromAmount} fromToken={fromToken}
+            onClose={() => {
+              setShowEVMSendProcess(false);
               setMessages([]);
             }} />
         ) :
