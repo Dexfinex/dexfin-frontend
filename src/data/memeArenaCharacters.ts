@@ -1,4 +1,4 @@
-import { Character } from '../types/memeArena';
+import { Character } from '../types/memeArena.type';
 
 export const characters: Character[] = [
   {

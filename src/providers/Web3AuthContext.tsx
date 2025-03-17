@@ -22,7 +22,7 @@ import {
     mapPaymasterUrls,
     mapRpcUrls,
 } from "../constants";
-import {SavedWalletInfo, type SolanaWalletInfoType} from "../types/auth";
+import {SavedWalletInfo, type SolanaWalletInfoType} from "../types/auth.type";
 import {exportPrivateKey, generatePrivateKey} from "@lit-protocol/wrapped-keys/src/lib/api";
 import {
     Keypair,
@@ -61,7 +61,7 @@ import {connection as SolanaConnection} from "../config/solana.ts";
 import axios from "axios";
 import {NATIVE_MINT} from "../constants/solana.constants.ts";
 import {solToWSol} from "../utils/solana.util.ts";
-import {WalletTypeEnum} from "../types/wallet.ts";
+import {WalletTypeEnum} from "../types/wallet.type.ts";
 
 interface Web3AuthContextType {
     login: () => void;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { characters } from '../../data/memeArenaCharacters';
-import { Character } from '../../types/memeArena';
+import { Character } from '../../types/memeArena.type';
 
 interface CharacterSelectProps {
   onSelect: (character: Character) => void;

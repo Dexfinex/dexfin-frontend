@@ -2,7 +2,7 @@ import { useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { dexfinv3Service } from "../services/dexfin.service.ts";
-import { TokenMetadata } from "../types/wallet.ts";
+import { TokenMetadata } from "../types/wallet.type.ts";
 import useTokenStore from "../store/useTokenStore.ts";
 
 export const useEvmTokenMetadata = ({

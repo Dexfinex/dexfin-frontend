@@ -16,9 +16,9 @@ import SignupModal from "./components/SignupModal.tsx";
 import SigninModal from "./components/SigninModal.tsx";
 import { AuthMethodType } from "@lit-protocol/constants";
 import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
-import { LOCAL_STORAGE_AUTH_REDIRECT_TYPE } from "./constants";
+import { LOCAL_STORAGE_AUTH_REDIRECT_TYPE, LOCAL_STORAGE_PUSH_KEY } from "./constants";
 import { TradingViewModal } from './components/TradingViewModal.tsx';
-import { initStream, KEY_NAME } from './utils/chatApi.ts';
+import { initStream } from './utils/chat.util.ts';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import UsernameModal from "./components/UsernameModal.tsx";
 import WalletDrawer from './components/WalletDrawer.tsx';
@@ -52,15 +52,13 @@ export default function App() {
         setIsSigninModalOpen,
         isTradeOpen,
         setTradeOpen,
-        menuItems,
         chatUser,
         setChatUser,
-        isrewardsOpen,
+        isRewardsOpen,
         setIsRewardsOpen,
 
         isUsernameModalOpen,
         widgetCommand,
-        setWidgetCommand,
 
         isWalletDrawerOpen,
         setIsWalletDrawerOpen
@@ -99,7 +97,7 @@ export default function App() {
     }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen]);
 
     const unlockProfile = async () => {
-        const chatKey = localStorage.getItem(KEY_NAME)
+        const chatKey = localStorage.getItem(LOCAL_STORAGE_PUSH_KEY)
 
         if (chatKey) {
             const key: { account: string; decryptedPgpPrivateKey: string } = JSON.parse(chatKey)
@@ -142,16 +140,6 @@ export default function App() {
     useEffect(() => {
         document.body.setAttribute('data-theme', theme);
     }, [theme]);
-
-    // Find rewards menu item
-    // const rewardsMenuItem = menuItems.find(item => item.id === 'rewards');
-    // const isRewardsOpen = rewardsMenuItem?.isStarred || false;
-    // const setIsRewardsOpen = (open: boolean) => {
-    //     console.log("open", open)
-    //     if (rewardsMenuItem) {
-    //         useStore.getState().toggleStarMenuItem('rewards');
-    //     }
-    // };
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -214,7 +202,7 @@ export default function App() {
                 onClose={() => setIsGamesOpen(false)}
             />
             <RewardsModal
-                isOpen={isrewardsOpen}
+                isOpen={isRewardsOpen}
                 onClose={() => setIsRewardsOpen(false)}
             />
             {
