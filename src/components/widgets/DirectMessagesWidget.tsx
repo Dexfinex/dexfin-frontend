@@ -12,8 +12,8 @@ import { BIG_IMAGE_WIDHT, getWalletProfile, initStream, LIMIT } from '../../util
 import { ChatType, IChat, IUser } from '../../types/chat.type';
 import { downloadBase64File, extractAddress, getEnsName, getHourAndMinute, shrinkAddress } from '../../utils/common.util';
 import { ImageWithSkeleton } from '../common/ImageWithSkeleton';
-import { WalletTypeEnum } from "../../types/wallet.ts";
-import { LOCAL_STORAGE_PUSH_KEY } from '../../constants/index.ts';
+import { WalletTypeEnum } from "../../types/wallet.type";
+import { LOCAL_STORAGE_PUSH_KEY } from '../../constants';
 
 interface OverlayProps {
   isOpen: boolean;
