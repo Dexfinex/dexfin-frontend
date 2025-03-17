@@ -1,4 +1,4 @@
-import { useState, useContext, useMemo } from "react"
+import { useState, useContext, useMemo, useEffect } from "react"
 import { X, Maximize2, Minimize2, TrendingUp, ArrowUp } from "lucide-react"
 import { Line } from "react-chartjs-2"
 import {
@@ -22,6 +22,8 @@ import useTokenBalanceStore from "../store/useTokenBalanceStore"
 import useDefiStore from "../store/useDefiStore"
 import PNL from "./common/PNL"
 import PNLPercent from "./common/PNLPercent"
+
+import { usePortfolioPerformance } from "../hooks/usePortfolioPerformance";
 
 import { getTypeColor } from "../utils/defi.util"
 import { formatHealthFactor } from "../utils/common.util"
@@ -51,19 +53,8 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
   const spotPercent = totalUsdValue * 100 / totalPortfolioValue;
   const defiPercent = totalLockedValue * 100 / totalPortfolioValue;
 
-  const [performanceData, setPerformanceData] = useState({
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-    datasets: [
-      {
-        label: "Portfolio Value",
-        data: [12000, 13500, 14200, 14800, 15200, 15406],
-        borderColor: "#10B981",
-        backgroundColor: "rgba(16, 185, 129, 0.1)",
-        fill: true,
-        tension: 0.4,
-      },
-    ],
-  })
+  const { data: portfolioData, isLoading: isLoadingPortfolio } = usePortfolioPerformance(selectedTimeframe)
+
   const distributionData = useMemo(() => {
     // Calculate spot value (total minus DeFi and NFT)
 
@@ -103,109 +94,43 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
     }
   }, [totalLockedValue, totalPortfolioValue, totalUsdValue, defiPositions])
 
-
-  // Generate performance chart data based on current value
-  const generatePerformanceData = (currentValue: number) => {
-    // Generate historical data points based on current value and selected timeframe
-    let timeLabels: string[] = []
-    let valueData: number[] = []
-
-
-    if (selectedTimeframe === "24h") {
-      // Generate hourly data for last 24h
-      const hours = Array.from({ length: 24 }, (_, i) => {
-        const hour = new Date().getHours() - 23 + i
-        return hour < 0 ? hour + 24 : hour
-      })
-
-      timeLabels = hours.map(h => `${h}:00`)
-
-      const volatility = 0.02 // 2% daily volatility
-      let prevValue = currentValue * 0.98 // Start slightly lower
-
-      valueData = hours.map((_, i) => {
-        const change = (Math.random() - 0.45) * volatility * prevValue
-        prevValue = prevValue + change
-        return prevValue
-      })
-
-    } else if (selectedTimeframe === "7d") {
-      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-      timeLabels = days
-
-      const volatility = 0.03 // 3% volatility
-      let prevValue = currentValue * 0.93 // Start 7% lower
-
-      valueData = days.map((_, i) => {
-        const change = (Math.random() - 0.4) * volatility * prevValue
-        prevValue = prevValue + change
-        return prevValue
-      })
-
-    } else if (selectedTimeframe === "1m") {
-      timeLabels = ["Week 1", "Week 2", "Week 3", "Week 4"]
-
-      const volatility = 0.05 // 5% volatility
-      let prevValue = currentValue * 0.9 // Start 10% lower
-
-      valueData = timeLabels.map((_, i) => {
-        const change = (Math.random() - 0.35) * volatility * prevValue
-        prevValue = prevValue + change
-        return prevValue
-      })
-
-    } else if (selectedTimeframe === "6m") {
-      timeLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-
-      const volatility = 0.08 // 8% volatility
-      let prevValue = currentValue * 0.8 // Start 20% lower
-
-      valueData = timeLabels.map((_, i) => {
-        const change = (Math.random() - 0.3) * volatility * prevValue
-        prevValue = prevValue + change
-        return prevValue
-      })
-
-    } else if (selectedTimeframe === "1y") {
-      // Generate monthly data for last year
-      timeLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-      const volatility = 0.1 // 10% volatility
-      let prevValue = currentValue * 0.7 // Start 30% lower
-
-      valueData = timeLabels.map((_, i) => {
-        const change = (Math.random() - 0.25) * volatility * prevValue
-        prevValue = prevValue + change
-        return prevValue
-      })
-
-    } else {
-      timeLabels = ["2022", "2023", "2024", "2025"]
-
-      // Start from much lower value and grow
-      valueData = [
-        currentValue * 0.4,
-        currentValue * 0.6,
-        currentValue * 0.85,
-        currentValue
-      ]
-    }
-
-    // Set the chart data
-    setPerformanceData({
-      labels: timeLabels,
+  const performanceData = useMemo(() => {
+    const labelData = (portfolioData || []).map((item) => item.time);
+    const priceData = (portfolioData || []).map((item) => item.price);
+    return {
+      labels: labelData,
       datasets: [
         {
           label: "Portfolio Value",
-          data: valueData,
+          data: priceData,
           borderColor: "#10B981",
           backgroundColor: "rgba(16, 185, 129, 0.1)",
           fill: true,
           tension: 0.4,
         },
       ],
-    })
-  }
+    }
+  }, [portfolioData, selectedTimeframe])
+
+  const pnlUsdByDate = useMemo(() => {
+    if (selectedTimeframe === "24h") {
+      return pnlUsd;
+    }
+    if (!portfolioData) {
+      return 0;
+    }
+    return portfolioData[portfolioData.length - 1].price - portfolioData[0].price;
+  }, [portfolioData, selectedTimeframe, pnlUsd])
+
+  const pnlPercentByDate = useMemo(() => {
+    if (selectedTimeframe === "24h") {
+      return pnlPercent;
+    }
+    if (!portfolioData) {
+      return 0;
+    }
+    return (portfolioData[portfolioData.length - 1].price - portfolioData[0].price) * 100 / portfolioData[portfolioData.length - 1].price;
+  }, [portfolioData, selectedTimeframe, pnlPercent])
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen)
@@ -334,18 +259,20 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                 </div>
                 <div className="flex items-center gap-4">
                   {
-                    isBalanceLoading ?
-                      <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'2rem'}></Skeleton>
-                      : <div className="text-xl sm:text-2xl font-bold">${formatNumberByFrac(pnlUsd)}</div>
+                    isBalanceLoading || isLoadingPortfolio ?
+                      <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'2rem'}></Skeleton> :
+                      <div className="text-xl sm:text-2xl font-bold">
+                        {pnlUsdByDate > 0 ? "$" : "-$"}{formatNumberByFrac(Math.abs(pnlUsdByDate))}
+                      </div>
                   }
                   {
-                    isBalanceLoading ?
+                    isBalanceLoading || isLoadingPortfolio ?
                       <Skeleton startColor="#444" endColor="#1d2837" w={'3rem'} h={'1rem'}></Skeleton>
-                      : <PNLPercent pnlPercent={pnlPercent} />
+                      : <PNLPercent pnlPercent={pnlPercentByDate} />
                   }
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
-                  {["24h", "7d", "1m", "6m", "1y", "All"].map((timeframe) => (
+                  {["24h", "7d", "1m"].map((timeframe) => (
                     <button
                       key={timeframe}
                       onClick={() => setSelectedTimeframe(timeframe)}
@@ -422,7 +349,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                   <h3 className="font-medium">Portfolio Performance</h3>
                   <div className="flex flex-wrap items-center gap-2">
-                    {["24h", "7d", "1m", "6m", "1y", "All"].map((timeframe) => (
+                    {["24h", "7d", "1m"].map((timeframe) => (
                       <button
                         key={timeframe}
                         onClick={() => setSelectedTimeframe(timeframe)}
@@ -435,7 +362,11 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                   </div>
                 </div>
                 <div className="h-[250px] sm:h-[300px]">
-                  <Line data={performanceData} options={chartOptions as any} />
+                  {
+                    isLoadingPortfolio ?
+                      <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'300px'}></Skeleton> :
+                      <Line data={performanceData} options={chartOptions as any} />
+                  }
                 </div>
               </div>
 
