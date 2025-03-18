@@ -9,7 +9,10 @@ import {
 } from "../types/dexfinv3.type.ts";
 import { birdeyeService } from "./birdeye.service.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.type.ts";
+import { TokenType } from "../types/swap.type.ts";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
+import { TRENDING_TOKEN_COUNT_PERPAGE } from "../constants/swap.constants.ts";
+import { NETWORKS } from "../config/networks.ts";
 
 export const dexfinv3Service = {
   getEvmWalletBalance: async ({
@@ -229,6 +232,74 @@ export const dexfinv3Service = {
       console.log("Failed to fetch evm wallet balance:", error);
     }
 
-    return []
+    return [];
+  },
+
+  getTrendingTokens: async (skip: number, take: number, chainId: number) => {
+    try {
+      const { data } = await dexfinv3Api.get<any>(
+        `/tokenlist?skip=${skip}&take=${take}&chainId=${chainId}`
+      );
+
+      return data;
+    } catch (error) {
+      console.log("Failed to fetch token list:", error);
+    }
+
+    return [];
+  },
+
+  getAllTrendingTokens: async () => {
+    const result = {
+      'all': [] as TokenType[],
+      'ethereum': [] as TokenType[],
+      'polygon': [] as TokenType[],
+      'base': [] as TokenType[],
+      'bsc': [] as TokenType[],
+      'avalanche': [] as TokenType[],
+      'optimism': [] as TokenType[],
+      'arbitrum': [] as TokenType[],
+      'bitcoin': [] as TokenType[],
+      'solana': [] as TokenType[]
+    };
+
+    try {
+      const { data } = await dexfinv3Api.get<TokenType[]>(
+        `/tokenlist?skip=${0}&take=${1600}&chainId=`
+      );
+
+      if (data && data.length > 0) {
+        const keys = Object.keys(result);
+        keys.forEach(key => {
+          if (key === "all") {
+            result[key] = data;
+          } else {
+            const network = NETWORKS.find(net => net.id == key);
+            const filtered: TokenType[] = data.filter((d: TokenType) => d.chainId == network?.chainId);
+            result[key as keyof typeof result] = filtered;
+          }
+        })
+      }
+
+      return result;
+    } catch (error) {
+      console.log("Failed to fetch token list:", error);
+    }
+
+    return null;
+  },
+
+  searchTrendingTokens: async (query: string, chainId: number, limit: number) => {
+    try {
+      const { data } = await dexfinv3Api.get<any>(
+        `/tokenlist/search?query=${query}&chainId=${chainId}&limit=${limit}`
+      );
+
+      return data;
+    } catch (error) {
+      console.log("Failed to search token:", error);
+    }
+
+    return [];
   }
 };
