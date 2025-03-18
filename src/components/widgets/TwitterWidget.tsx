@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
+import  { useEffect, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useGetTwitterInfo } from '../../hooks/useGetTwitterInfo';
 import { getRelativeTime } from "../../utils/twitter-widget.util";
@@ -21,6 +21,61 @@ interface Tweet {
     likes: number;
   };
 }
+
+// Add a utility function to parse URLs in tweet content
+const parseLinks = (text: string) => {
+  // Regular expression to match t.co URLs (Twitter's URL shortener)
+  const urlRegex = /(https?:\/\/t\.co\/[a-zA-Z0-9]+)/g;
+
+  // Create array to hold resulting React elements
+  const result = [];
+
+  // Track the last index we've processed
+  let lastIndex = 0;
+
+  // Find all URLs in the content
+  let match;
+  let i = 0;
+
+  while ((match = urlRegex.exec(text)) !== null) {
+    // Add text before the URL
+    if (match.index > lastIndex) {
+      result.push(
+        <span key={`text-${i}`}>
+          {text.substring(lastIndex, match.index)}
+        </span>
+      );
+    }
+
+    // Add the URL as a link
+    result.push(
+      <a
+        key={`link-${i}`}
+        href={match[0]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-400 hover:underline"
+      >
+        {match[0]}
+      </a>
+    );
+
+    // Update the lastIndex to after this URL
+    lastIndex = match.index + match[0].length;
+    i++;
+  }
+
+  // Add any remaining text after the last URL
+  if (lastIndex < text.length) {
+    result.push(
+      <span key={`text-${i}`}>
+        {text.substring(lastIndex)}
+      </span>
+    );
+  }
+
+  return result;
+};
 
 export const TwitterWidget = forwardRef<RefreshableWidget, {}>((props, ref) => {
   // Get data from the hook with a refresh trigger
@@ -237,11 +292,20 @@ export const TwitterWidget = forwardRef<RefreshableWidget, {}>((props, ref) => {
                         <div className="w-1.5 h-1.5 bg-white rounded-full" />
                       </div>
                     )}
-                    <span className="text-[11px] text-white/60">@{tweet.author.handle}</span>
-                    <span className="text-[11px] text-white/40">·</span>
-                    <span className="text-[11px] text-white/60">{tweet.timestamp}</span>
+                    <span className="text-[13px] text-white/60"> <a
+
+                      href={`https://x.com/@${tweet.author.handle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:underline"
+                    >@{tweet.author.handle}</a>
+                    </span>
+                    <span className="text-[13px] text-white/40">·</span>
+                    <span className="text-[13px] text-white/60">{tweet.timestamp}</span>
                   </div>
-                  <p className="text-xs text-white/90 mb-2">{tweet.content}</p>
+                  <div className="text-sm text-white/90 mb-2">
+                    {parseLinks(tweet.content)}
+                  </div>
                 </div>
               </div>
             </div>
