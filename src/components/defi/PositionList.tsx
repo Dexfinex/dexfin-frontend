@@ -119,7 +119,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                         return (
                             isLoading ? <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'} key={`sk-${index}`}></Skeleton>
                                 : <div
-                                    key={index}
+                                    key={chainId +  position.protocol_id + tokenList.toString() + position.type + index}
                                     className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
                                 >
                                     <div className="flex items-between sm:items-center justify-between flex-col sm:flex-row">
@@ -138,7 +138,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                     <span className="text-white/40 hidden sm:block">•</span>
                                                     <div className="flex">
                                                         {
-                                                            position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" />)
+                                                            position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" key={token.symbol + index} />)
                                                         }
                                                     </div>
                                                     {

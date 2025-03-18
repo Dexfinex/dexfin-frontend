@@ -7,6 +7,7 @@ import PNL from "../common/PNL"
 import PNLPercent from "../common/PNLPercent"
 import useDefiStore from "../../store/useDefiStore"
 import useTokenBalanceStore from "../../store/useTokenBalanceStore"
+import { useWalletBalance } from "../../hooks/useBalance"
 
 interface AllocationData {
   type: string
@@ -21,10 +22,7 @@ export const PortfolioWidget: React.FC = () => {
 
   const { positions = [], totalLockedValue } = useDefiStore();
   const { totalUsdValue, tokenBalances: balanceData, pnlUsd, pnlPercent } = useTokenBalanceStore()
-
-  const isLoading = false;
-  const isLoadingPositions = false
-
+  const { isLoading } = useWalletBalance();
 
   // Calculate combined portfolio value
   const totalPortfolioValue = totalUsdValue + totalLockedValue;
@@ -122,7 +120,7 @@ export const PortfolioWidget: React.FC = () => {
     }).format(value)
   }
 
-  if (isLoading || isLoadingPositions) {
+  if (isLoading) {
     return (
       <div className="p-2 h-full flex flex-col">
         <Skeleton height="100px" />
@@ -246,7 +244,7 @@ export const PortfolioWidget: React.FC = () => {
             ) : (
               // DeFi Tab
               <div className="space-y-2">
-                {isLoadingPositions ? (
+                {isLoading ? (
                   <Skeleton startColor="#444" endColor="#1d2837" w={"100%"} h={"4rem"} />
                 ) : !positions || positions.length === 0 ? (
                   <div className="text-center py-6 text-sm opacity-60">
