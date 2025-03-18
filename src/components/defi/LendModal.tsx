@@ -15,7 +15,7 @@ import useDefillamaStore from "../../store/useDefillamaStore.ts";
 import { LENDING_LIST } from "../../constants/mock/defi.ts";
 import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 import SelectChain from "./SelectChain.tsx";
-import { getChainIcon } from "../../utils/getChainIcon.tsx";
+import { getChainIcon } from "../../utils/defi.util.ts";
 import { getChainNameById } from "../../utils/defi.util.ts";
 
 

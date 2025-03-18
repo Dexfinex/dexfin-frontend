@@ -16,7 +16,7 @@ import useDefillamaStore from "../../store/useDefillamaStore.ts";
 import { BORROWING_LIST } from "../../constants/mock/defi.ts";
 import SelectChain from "./SelectChain.tsx";
 import { TokenIcon } from "../swap/components/TokenIcon";
-import { getChainIcon, } from "../../utils/getChainIcon.tsx";
+import { getChainIcon } from "../../utils/defi.util.ts";
 import { getChainNameById } from "../../utils/defi.util.ts";
 
 interface ModalState {

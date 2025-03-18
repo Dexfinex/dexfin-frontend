@@ -1,6 +1,6 @@
 import {useContext, useEffect} from 'react';
 import {Modal, ModalContent, ModalOverlay,} from '@chakra-ui/react';
-import {registerWebAuthn} from "../utils/lit.ts";
+import {registerWebAuthn} from "../utils/lit.util.ts";
 import {AuthMethodType} from "@lit-protocol/constants";
 import Loading from "./auth/Loading";
 import SignUpMethods from "./auth/SignUpMethods.tsx";

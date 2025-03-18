@@ -36,7 +36,7 @@ export type Yield = {
   symbol: string;
   logosUri: string[],
   type: string;
-  protocolSlug: string;
+  protocol: string;
   underlyingTokens: [
     {
       address: string;

@@ -173,17 +173,18 @@ export const formatDate = (date: Date | string) => {
  * and replacing the middle with ellipses ('...').
  *
  * @param {string} address - The Ethereum address to shorten.
+ * @param length
  * @returns {string} - The shortened address, or the original address if it's less than 10 characters long.
  *
  * Example usage:
  * const fullAddress = "0x1234567890abcdef1234567890abcdef12345678";
  * console.log(shrinkAddress(fullAddress)); // Output: 0x1234...5678
  */
-export const shrinkAddress = (address: string): string => {
-    if (!address || address.length < 10) {
+export const shrinkAddress = (address: string, length: number = 5): string => {
+    if (!address || address.length < 12) {
         return address; // Return as-is if too short
     }
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+    return `${address.slice(0, length)}...${address.slice(-length + 1)}`;
 };
 
 /**

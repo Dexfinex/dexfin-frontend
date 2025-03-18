@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {Action, BattleLog, Character, GameState} from '../../types/memeArena.type';
 import {CharacterSelect} from './MemeArenaCharacterSelect';
 import BattleArena from './MemeArenaBattle';
-import {characters, tournamentOpponents} from '../../data/memeArenaCharacters';
+import {characters, tournamentOpponents} from "../../constants/game.constants.ts";
 
 interface MemeArenaProps {
   gameType?: string;

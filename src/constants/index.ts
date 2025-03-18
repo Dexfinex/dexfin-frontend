@@ -2,7 +2,7 @@ import { arbitrum, avalanche, base, bsc, linea, mainnet, optimism, polygon } fro
 import { baseSepolia, sepolia } from "viem/chains";
 import { ethers } from "ethers";
 
-export * from "./zerodev"
+export * from "./zerodev.constants.ts"
 
 export const LOCAL_STORAGE_WALLET_INFO = 'LIT-WALLET-INFO'
 export const LOCAL_STORAGE_STARRED_TOKENS = 'LOCAL_STORAGE_STARRED_TOKENS'

@@ -18,7 +18,6 @@ import { mapChainId2ExplorerUrl, mapChainId2NativeAddress } from "../../config/n
 import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
 import { TransactionError } from '../../types';
 import { TokenChainIcon, TokenIcon } from '../swap/components/TokenIcon.tsx';
-import { cropString } from '../../utils/index.ts';
 import { useStore } from '../../store/useStore.ts';
 import { PageType } from '../WalletDrawer.tsx';
 import useTokenBalanceStore, { TokenBalance } from '../../store/useTokenBalanceStore.ts';
@@ -319,7 +318,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                 <div className="font-medium">
                                     {selectedAsset.name}
                                     {!compareWalletAddresses(selectedAsset.address, mapChainId2NativeAddress[Number(selectedAsset.chain)]) &&
-                                        <span className='ml-1 text-sm font-light'>({cropString(selectedAsset.address || "", 4)})</span>}
+                                        <span className='ml-1 text-sm font-light'>({shrinkAddress(selectedAsset.address || "", 4)})</span>}
                                 </div>
                                 <div className="text-sm text-white/60">
                                     Balance: {`${formatNumberByFrac(selectedAsset.balance, 5)} ${selectedAsset.symbol}`}
@@ -367,7 +366,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                                         {asset.name}
                                                         {/* {!compareWalletAddresses(asset.address, mapChainId2NativeAddress[Number(asset.chain)]) &&
                                                             <span
-                                                                className='ml-1 text-sm font-light'>({cropString(asset.address, 10)})</span>} */}
+                                                                className='ml-1 text-sm font-light'>({shrinkAddress(asset.address, 10)})</span>} */}
                                                     </div>
                                                     <div className="text-sm text-white/60">
                                                         {`${formatNumberByFrac(asset.balance, 5)} ${asset.symbol}`}
@@ -455,7 +454,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                 <div className="flex-1 text-left">
                                     <div className="font-medium">{address}</div>
                                     <div className="text-sm text-white/60">
-                                        {cropString(ensAddress || "")}
+                                        {shrinkAddress(ensAddress || "")}
                                     </div>
                                 </div>
                                 <XCircle onClick={() => {
@@ -489,7 +488,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                         <div className="flex-1 text-left">
                                             <div className="font-medium">{address}</div>
                                             <div className="text-sm text-white/60">
-                                                {cropString(ensAddress || "")}
+                                                {shrinkAddress(ensAddress || "")}
                                             </div>
                                         </div>
                                     </button>
@@ -540,9 +539,9 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                                 }
                                                 <div className='flex flex-col ml-2'>
                                                     <div>{address}</div>
-                                                    <div>{cropString(ensAddress || "", 4)}</div>
+                                                    <div>{shrinkAddress(ensAddress || "", 4)}</div>
                                                 </div>
-                                            </div> : `${cropString(address)}`
+                                            </div> : `${shrinkAddress(address)}`
                                     }
                                 </div>
                             </div>

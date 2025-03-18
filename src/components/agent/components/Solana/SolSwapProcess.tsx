@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext,useMemo } from 'react';
 import { Button, Flex, Skeleton } from '@chakra-ui/react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
 import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
-import { convertCryptoAmount } from '../../../../utils/agent.tsx';
+import { convertCryptoAmount } from '../../../../utils/agent.util.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
 import useJupiterQuote from '../../../../hooks/useJupiterQuote.ts';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';

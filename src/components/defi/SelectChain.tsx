@@ -2,7 +2,7 @@ import React, { useContext, useMemo, useState } from "react";
 import { Search, ChevronDown } from 'lucide-react';
 import { mapChainId2ChainName } from "../../config/networks";
 import { TokenIcon } from "../swap/components/TokenIcon";
-import { getChainIcon } from "../../utils/getChainIcon";
+import { getChainIcon } from "../../utils/defi.util";
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
 
 interface SelectChainProps {

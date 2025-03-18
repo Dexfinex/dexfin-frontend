@@ -1,49 +1,56 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { ArrowRight, Wallet, X } from 'lucide-react';
 
 import { TokenType, Step } from '../../../../types/brian.type.ts';
 import { convertCryptoAmount } from '../../../../utils/agent.util.tsx';
 import { shrinkAddress } from '../../../../utils/common.util.ts';
-import { mapChainId2ViemChain } from '../../../../config/networks.ts';
-import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
+import { mapChainId2ViemChain, mapChainId2ExplorerUrl } from '../../../../config/networks.ts';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
+import useGasEstimation from "../../../../hooks/useGasEstimation.ts";
+import { useSendTransactionMutation } from '../../../../hooks/useSendTransactionMutation.ts';
+import { Web3AuthContext } from "../../../../providers/Web3AuthContext.tsx";
 
 interface SendProcessProps {
   onClose: () => void;
   fromToken: TokenType;
-  toToken: TokenType;
   fromAmount: string;
   receiver: string;
-  steps: Step[];
 }
 
-export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromAmount, fromToken, onClose }) => {
+export const EVMSendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmount, fromToken, onClose }) => {
+  const { signer } = useContext(Web3AuthContext);
   const [step/*, setStep*/] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [failedTransaction, setFailedTransaction] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
   const [scan, setScan] = useState<string>('https://etherscan.io/');
-  const { mutate: sendTransactionMutate } = useBrianTransactionMutation();
 
-  const handleTransaction = async (data: any) => {
+  const { mutate: sendTransactionMutate } = useSendTransactionMutation();
+
+  const {
+    isLoading: isGasEstimationLoading,
+    data: gasData
+  } = useGasEstimation()
+  const handleTransaction = async () => {
     try {
-
-      if (steps.length === 0) {
-        console.error("No transaction details available");
-        return;
-      }
       setShowConfirmation(true);
-
       sendTransactionMutate(
-        { transactions: data, duration: 0 },
+        {
+          tokenAddress: fromToken.address,
+          sendAddress: receiver,
+          sendAmount: Number(fromAmount),
+          signer,
+          gasLimit: gasData.gasLimit,
+          gasPrice: gasData.gasPrice,
+        },
         {
           onSuccess: (receipt) => {
             setTransactionProgress(100);
             setTransactionStatus('Transaction confirmed!');
-            setScan(receipt ?? '');
+            setScan(`${mapChainId2ExplorerUrl[fromToken.chainId]}/tx/${receipt.transactionHash}`);
           },
           onError: (error) => {
             console.log(error);
@@ -108,7 +115,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
               />
               <div>
                 <div className="text-sm text-white/60">Amount</div>
-                <div className="text-xl font-medium">{fromToken ? formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals)) : ''} {fromToken?.symbol}</div>
+                <div className="text-xl font-medium">{fromToken ? formatNumberByFrac(convertCryptoAmount(fromAmount, 0)) : ''} {fromToken?.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40 hidden md:block" />
@@ -132,19 +139,20 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
             </div>
             <div className="flex justify-between">
               <span className="text-white/60">Amount</span>
-              <span className="font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken?.symbol}</span>
+              <span className="font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken?.symbol}</span>
             </div>
           </div>
         </div>
-
-        <button
-          onClick={() => handleTransaction(steps)}
-          className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
-        >
-          Confirm Send
-        </button>
+        {!isGasEstimationLoading &&
+          < button
+            onClick={() => handleTransaction()}
+            className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
+          >
+            Confirm Send
+          </button>
+        }
       </div>
-    </div>
+    </div >
   );
 
   const renderConfirmation = () => (
@@ -177,11 +185,11 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
             />
           </div>
           <p className="mt-4 text-white/60">
-            Sending {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken?.symbol} to {shrinkAddress(receiver)}
+            Sending {formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken?.symbol} to {shrinkAddress(receiver)}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`Successfully sent ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`Successfully sent ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
       )}
     </div>
   );
@@ -205,7 +213,7 @@ export const SendProcess: React.FC<SendProcessProps> = ({ steps, receiver, fromA
         </button>
       </div>
       {failedTransaction &&
-        <FailedTransaction onClose={onClose} description={`Send ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
+        <FailedTransaction onClose={onClose} description={`Send ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken?.symbol} to ${shrinkAddress(receiver)}`} />
       }
       {showConfirmation && !failedTransaction ? renderConfirmation() : (
         <div className="h-[calc(100%-60px)]">
