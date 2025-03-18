@@ -5,12 +5,15 @@ Welcome to the **Dexfin Frontend** repository! This project serves as the user i
 ## 🚀 Overview
 🔗 **Live URL:** [Dexfin Frontend](https://dexfin-frontend-production.up.railway.app/)
 
-Dexfin aims to revolutionize DeFi by providing seamless, secure, and trustless cross-chain trading experiences. By integrating advanced AI capabilities, Dexfin offers users:
+Dexfin is redefining the DeFi experience by combining seamless cross-chain aggregation, AI-driven insights, and a decentralized social layer. Our platform offers:
 
-- **Optimized Yield Strategies** – AI-driven optimization for better returns.
-- **Efficient Risk Management** – Enhanced security and risk mitigation.
-- **Cross-Chain Liquidity Aggregation** – Access to liquidity across multiple blockchain networks.
-- **Gas and Slippage Optimization** – Cost-effective and efficient trading.
+- DEX Aggregation Across EVM & Solana – Access to liquidity across EVM chains and Solana, with L1 native assets like Bitcoin coming soon.
+- DeFi Aggregation – A unified interface to access staking, lending, borrowing, and yield protocols across multiple chains, starting with EVM and Solana, with more on the roadmap.
+- AI Agent – An intelligent market research assistant and execution agent to optimize DeFi operations.
+- Social Layer – An internal chat system based on a decentralized messaging protocol, fostering a community-driven environment.
+- Market Data – A comprehensive market data dashboard providing real-time insights to help you make informed decisions.
+
+Dexfin aims to be the all-in-one platform for DeFi, bringing efficiency, innovation, and community engagement to the forefront of decentralized finance.
 
 ## 🛠 Tech Stack
 The Dexfin Frontend is built using modern web technologies:
