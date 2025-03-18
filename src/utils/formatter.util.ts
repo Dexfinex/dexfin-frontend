@@ -66,17 +66,17 @@ export function trimTailingZero(s: string) {
 }
 
 const userLocale =
-    typeof window !== 'undefined'
-        ? navigator.languages && navigator.languages.length
-            ? navigator.languages[0]
-            : navigator.language
-        : 'en-US'
+  typeof window !== 'undefined'
+    ? navigator.languages && navigator.languages.length
+      ? navigator.languages[0]
+      : navigator.language
+    : 'en-US'
 
 export const detectedSeparator = new Intl.NumberFormat(userLocale, {
   style: 'decimal'
 })
-    .format(1.1)
-    .substring(1, 2)
+  .format(1.1)
+  .substring(1, 2)
 export const percentFormatter = new Intl.NumberFormat(userLocale, {
   style: 'percent',
   maximumFractionDigits: 2
@@ -135,10 +135,10 @@ export interface FormatCurrencyParams {
 const subscriptNumbers: string[] = ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉']
 function toSubscript(number: number): string {
   return number
-      .toString()
-      .split('')
-      .map((digit) => subscriptNumbers[parseInt(digit, 10)])
-      .join('')
+    .toString()
+    .split('')
+    .map((digit) => subscriptNumbers[parseInt(digit, 10)])
+    .join('')
 }
 function formatSmallNumberWithFixed(number: number, fixedDigits: number): number {
   const [base, exponent] = number.toExponential().split('e')
@@ -166,8 +166,8 @@ function formatWithAbbreviation(value: number, numDecimals: number) {
 function decimalTrailingZeroesToExponent(formattedCurrency: string, maximumDecimalTrailingZeroes: number): string {
   const decimalTrailingZeroesPattern = new RegExp(`(\\.|,)(0{${maximumDecimalTrailingZeroes + 1},})(?=[1-9]?)`)
   return formattedCurrency.replace(
-      decimalTrailingZeroesPattern,
-      (_match, separator, decimalTrailingZeroes) => `${separator}0${toSubscript(decimalTrailingZeroes.length)}`
+    decimalTrailingZeroesPattern,
+    (_match, separator, decimalTrailingZeroes) => `${separator}0${toSubscript(decimalTrailingZeroes.length)}`
   )
 }
 
@@ -251,9 +251,28 @@ export function formatCurrency(amount?: string | number | Decimal, params: Forma
     // show 12 fraction digits
     const currencyFormatterVeryVerySmall: { format: (value: number) => string } = generateIntlNumberFormatter(symbol, abbreviated, 12)
     return formatCurrencyOverride(
-        currencyFormatterVeryVerySmall.format(formatSmallNumberWithFixed(amountNumber, 3)),
-        maximumDecimalTrailingZeroes
+      currencyFormatterVeryVerySmall.format(formatSmallNumberWithFixed(amountNumber, 3)),
+      maximumDecimalTrailingZeroes
     )
   }
   return formatCurrencyOverride(currencyFormatterNoDecimal.format(amountNumber))
 }
+
+export const formatTimeAgo = (timestamp: string): string => {
+  const timestampNum = parseInt(timestamp);
+  const now = Math.floor(Date.now() / 1000);
+  const seconds = now - timestampNum;
+
+  if (seconds < 60) {
+    return 'just now';
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}min ago`;
+  } else if (seconds < 86400) {
+    const hours = Math.floor(seconds / 3600);
+    return `${hours}h ago`;
+  } else {
+    const days = Math.floor(seconds / 86400);
+    return `${days}d ago`;
+  }
+};

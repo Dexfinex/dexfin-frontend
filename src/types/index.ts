@@ -26,6 +26,9 @@ export interface Message {
   tip?: string;
   priceData?: BrianCoinData;
   technicalAnalysis?: TechnicalAnalysisData;
+  sentimentAnalysis?: SentimentAnalysisData;
+  predictionAnalysis?: PredictionAnalysisData;
+  marketOverview?: MarketOverviewData;
   trending?: AnalysisTrendingCoin[];
   losers?: AnalysisLoser[];
   gainers?: AnalysisGainer[];
@@ -68,6 +71,53 @@ export interface AnalysisTrendingCoin {
   analysis: string;
 }
 
+export interface MarketOverviewData {
+  market: {
+    total_market_cap: number;
+    total_volume: number;
+    btc_dominance: number;
+    total_value_locked: number;
+    market_cap_change_percentage_24h: number;
+  }
+  fear: {
+    value: number;
+    previous_value: number;
+    previous_week_value: number;
+  }
+}
+
+export interface PredictionAnalysisData {
+  predictions: {
+    price_24h: number;
+    confidence_24h: number;
+    price_7d: number;
+    confidence_7d: number;
+  };
+  signals: {
+    moving_averages: number;
+    moving_averages_direction: 'up' | 'down';
+    rsi: number;
+    rsi_direction: 'up' | 'down';
+    macd: number;
+    macd_direction: 'up' | 'down';
+  };
+  current_price: number;
+  price_change_percentage_24h: number;
+  price_history: number[];
+}
+
+export interface SentimentAnalysisData {
+  social_sentiment: number;
+  trading_sentiment: number;
+  technical_sentiment: number;
+  current_price: number;
+  price_change_percentage_24h: number;
+  price_history: any[];
+  volume_24h: number;
+  market_cap: number;
+  name: string;
+}
+
 export interface TechnicalAnalysisData {
   analysis: {
     technicalIndicators: {
@@ -99,9 +149,9 @@ export interface TechnicalAnalysisData {
     priceChangePercent: number;
     movingAverages: {
       ma20: number;
-      ma50: number;
-      ma100: number;
-      ma200: number;
+      ma40: number;
+      ma60: number;
+      ma80: number;
     };
     chartData: {
       time: number;
@@ -110,7 +160,7 @@ export interface TechnicalAnalysisData {
       ma50?: number;
       ma100?: number;
       ma200?: number;
-    }[]; 
+    }[];
   }
   signals: {
     signals: {
@@ -140,6 +190,7 @@ export interface TrendingCoin {
   marketCapRank: number;
   priceUsd: number;
   volume: number;
+  priceChaingePercentage24hUsd: number;
 }
 
 export interface MarketToken {
@@ -405,4 +456,28 @@ export interface Loser {
   priceUsd: number;
   usd24hChange: number;
   usd24hVol: number;
+}
+
+export interface TwitterInfo {
+  name: string;
+  username: string;
+  content: string;
+  timestamp: string;
+  data: {};
+  legacy: {};
+  last_seen: {
+    timestamp: string;
+  }
+  profile_image_url: string;
+}
+
+export interface SignificantTransactions {
+  from_address: string;
+  to_address: string;
+  amount: number;
+  timestamp: string;
+  transaction_type: string;
+  blockchain: string;
+  hash: string;
+  data: {}
 }

@@ -1,5 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Timer, Trophy, RotateCcw, Gamepad2 } from 'lucide-react';
+import { useBreakpointValue } from '@chakra-ui/react';
+import { useUserData } from '../../providers/UserProvider';
+
+import { GameSession } from '../GamesModal';
+import { GameService } from '../../services/game.services.ts';
+import { useStore } from '../../store/useStore';
+interface CryptoPexesoProps {
+  gameType?: string;
+}
 
 interface Card {
   id: number;
@@ -40,7 +49,7 @@ const shuffleArray = <T extends unknown>(array: T[]): T[] => {
   return newArray;
 };
 
-export const CryptoPexeso: React.FC = () => {
+export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' }) => {
   const [cards, setCards] = useState<Card[]>(createBoard());
   const [flippedIndexes, setFlippedIndexes] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
@@ -52,6 +61,41 @@ export const CryptoPexeso: React.FC = () => {
   const [bestMoves, setBestMoves] = useState<number | null>(null);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+
+  const isMobile = useBreakpointValue({base: true, md: false});
+  
+  // Add Web3AuthContext and game session tracking
+  const { userData } = useUserData();
+  const gameSessionSaved = useRef(false);
+  const [gameData, setGameData] = useState<any[]>([]);
+  const [gameId, setGameId] = useState<string>("");
+  const { gameStats, updateGameStats } = useStore();
+
+
+  useEffect(() => {
+    const loadGameData = async () => {
+      if (userData && userData.accessToken) {
+        try {
+          const data = await GameService.fetchUserGameId(userData.accessToken);
+          
+          if (Array.isArray(data)) {
+            setGameData(data);
+            
+            const game = data.find(g => g.type === gameType);
+            if (game) {
+              setGameId(game.id);
+            } else {
+              console.warn(`No game found with type ${gameType}`);
+            }
+          }
+        } catch (error) {
+          console.error("Error loading game data:", error);
+        }
+      }
+    };
+    
+    loadGameData();
+  }, [userData, gameType]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -80,6 +124,58 @@ export const CryptoPexeso: React.FC = () => {
       }
     }
   }, [matches, timeLeft, moves, bestTime, bestMoves]);
+
+  useEffect(() => {
+    if (!isGameOver) {
+      gameSessionSaved.current = false;
+    }
+  }, [isGameOver]);
+
+  useEffect(() => {
+    if (isGameOver && !gameSessionSaved.current && 
+        userData && userData.accessToken && gameId) {
+      
+      const isVictory = matches === tokens.length;
+      const accuracy = timeLeft > 0 ? (matches / tokens.length) * 100 : 0;
+      
+      const baseReward = isVictory ? 100 : 0;
+      const timeBonus = isVictory ? timeLeft * 2 : 0; 
+      const streakBonus = bestStreak * 5; 
+      const totalReward = baseReward + timeBonus + streakBonus;
+      
+      const gameSession: GameSession = {
+        gameId: gameId,
+        tokensEarned: totalReward,
+        score: matches,
+        accuracy: accuracy,
+        streak: bestStreak,
+        winStatus: isVictory,
+      };
+      
+      saveGameSession(gameSession);
+      gameSessionSaved.current = true;
+    }
+  }, [isGameOver, matches, timeLeft, bestStreak, userData, gameId]);
+
+  const saveGameSession = async (gameSession: GameSession) => {
+    try {
+      if (gameSession && userData && userData.accessToken) {
+        const response = await GameService.gameHistory(userData.accessToken, gameSession);
+        console.log(response);
+        
+        if (gameStats) {
+          const tokensEarned = gameSession.tokensEarned || 0;
+          
+          updateGameStats({
+
+            totalTokens: gameStats.totalTokens + tokensEarned
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error saving game session:', error);
+    }
+  };
 
   const handleCardClick = (index: number) => {
     if (!gameStarted) {
@@ -144,13 +240,14 @@ export const CryptoPexeso: React.FC = () => {
     setIsGameOver(false);
     setGameStarted(false);
     setCurrentStreak(0);
+    gameSessionSaved.current = false;
   };
 
   const renderCard = (card: Card, index: number) => (
     <button
       key={card.id}
       onClick={() => handleCardClick(index)}
-      className={`aspect-square rounded-xl transition-all duration-500 transform perspective-1000 ${
+      className={`aspect-square rounded-xl transition-all duration-500 transform ${
         card.isFlipped || card.isMatched
           ? 'rotate-y-180'
           : 'bg-gradient-to-br from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 hover:scale-105'
@@ -160,8 +257,8 @@ export const CryptoPexeso: React.FC = () => {
       <div className={`w-full h-full rounded-xl transition-all duration-500 ${
         card.isFlipped || card.isMatched ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
       }`}>
-        <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-xl border border-white/10 backdrop-blur-sm">
-          <div className="relative w-12 h-12 mb-2">
+        <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-xl border border-white/10 backdrop-blur-sm">
+          <div className="relative w-8 h-8 mb-1 md:w-12 md:h-12 md:mb-2">
             <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-emerald-500/20 rounded-full blur-xl" />
             <img
               src={card.logo}
@@ -169,7 +266,7 @@ export const CryptoPexeso: React.FC = () => {
               className="relative w-full h-full object-contain"
             />
           </div>
-          <div className="text-sm font-medium bg-gradient-to-br from-teal-400 to-emerald-400 bg-clip-text text-transparent">
+          <div className="text-xs md:text-sm font-medium bg-gradient-to-br from-teal-400 to-emerald-400 bg-clip-text text-transparent">
             {card.token}
           </div>
           <div className="text-xs text-white/60">{card.symbol}</div>
@@ -178,109 +275,147 @@ export const CryptoPexeso: React.FC = () => {
     </button>
   );
 
-  const renderGameOver = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div className="relative glass border border-white/10 rounded-xl p-8 w-[400px] text-center">
-        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center mb-6">
-          <Trophy className="w-10 h-10 text-emerald-400" />
-        </div>
-        
-        <h2 className="text-2xl font-bold mb-2">
-          {matches === tokens.length ? 'Congratulations!' : 'Time\'s Up!'}
-        </h2>
-        
-        <p className="text-white/60 mb-6">
-          {matches === tokens.length
-            ? 'You matched all pairs!'
-            : `You matched ${matches} out of ${tokens.length} pairs`}
-        </p>
+  const renderGameOver = () => {
+    const isVictory = matches === tokens.length;
+    const accuracy = timeLeft > 0 ? (matches / tokens.length) * 100 : 0;
+    const baseReward = isVictory ? 100 : 0;
+    const timeBonus = isVictory ? timeLeft * 2 : 0;
+    const streakBonus = bestStreak * 5;
+    const totalReward = baseReward + timeBonus + streakBonus;
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-            <div className="text-2xl font-bold">{moves}</div>
-            <div className="text-sm text-white/60">Moves</div>
-          </div>
-          <div className="p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-            <div className="text-2xl font-bold">{60 - timeLeft}s</div>
-            <div className="text-sm text-white/60">Time</div>
-          </div>
-        </div>
+    const totalTokens = gameStats ? gameStats.totalTokens + totalReward : totalReward;
 
-        {(bestTime !== null || bestMoves !== null || bestStreak > 0) && (
-          <div className="mb-8">
-            <h3 className="text-lg font-medium mb-4">Best Scores</h3>
-            <div className="grid grid-cols-3 gap-4">
-              {bestTime !== null && (
-                <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-                  <div className="text-xl font-bold text-emerald-400">{bestTime}s</div>
-                  <div className="text-sm text-white/60">Best Time</div>
-                </div>
-              )}
-              {bestMoves !== null && (
-                <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-                  <div className="text-xl font-bold text-emerald-400">{bestMoves}</div>
-                  <div className="text-sm text-white/60">Best Moves</div>
-                </div>
-              )}
-              {bestStreak > 0 && (
-                <div className="p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
-                  <div className="text-xl font-bold text-emerald-400">{bestStreak}x</div>
-                  <div className="text-sm text-white/60">Best Streak</div>
-                </div>
-              )}
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="relative glass border border-white/10 rounded-xl p-4 md:p-8 w-full max-w-xs md:max-w-md lg:max-w-lg text-center">
+          <div className="w-16 h-16 md:w-20 md:h-20 mx-auto rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center mb-4 md:mb-6">
+            <Trophy className="w-8 h-8 md:w-10 md:h-10 text-emerald-400" />
+          </div>
+          
+          <h2 className="text-xl md:text-2xl font-bold mb-2">
+            {isVictory ? 'Congratulations!' : 'Time\'s Up!'}
+          </h2>
+          
+          <p className="text-white/60 mb-4 md:mb-6 text-sm md:text-base">
+            {isVictory
+              ? 'You matched all pairs!'
+              : `You matched ${matches} out of ${tokens.length} pairs`}
+          </p>
+
+          <div className="grid grid-cols-2 gap-2 md:gap-4 mb-4 md:mb-8">
+            <div className="p-2 md:p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+              <div className="text-xl md:text-2xl font-bold">{moves}</div>
+              <div className="text-xs md:text-sm text-white/60">Moves</div>
+            </div>
+            <div className="p-2 md:p-4 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+              <div className="text-xl md:text-2xl font-bold">{60 - timeLeft}s</div>
+              <div className="text-xs md:text-sm text-white/60">Time</div>
             </div>
           </div>
-        )}
 
-        <button
-          onClick={resetGame}
-          className="px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 rounded-lg transition-colors font-medium"
-        >
-          Play Again
-        </button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="h-full p-6">
-      {/* Game Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-2">
-            <Timer className="w-5 h-5 text-teal-400" />
-            <span className="text-2xl font-bold">{timeLeft}s</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-emerald-400" />
-            <span className="text-2xl font-bold">{matches}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Gamepad2 className="w-5 h-5 text-teal-400" />
-            <span className="text-2xl font-bold">{moves}</span>
-          </div>
-          {currentStreak > 0 && (
-            <div className="px-3 py-1 bg-gradient-to-r from-teal-500/20 to-emerald-500/20 rounded-full">
-              <span className="text-lg font-bold text-emerald-400">{currentStreak}x Streak!</span>
+          {isVictory && (
+            <div className="mb-4 md:mb-8 p-3 md:p-4 border border-white/10 rounded-lg bg-gradient-to-br from-teal-500/10 to-emerald-500/10">
+              <h3 className="text-base md:text-lg font-medium mb-2 md:mb-4">Rewards</h3>
+              <div className="space-y-1 md:space-y-1.5 text-xs md:text-sm">
+                <div className="flex justify-between">
+                  <span className="text-white/60">Base Reward:</span>
+                  <span>{baseReward} tokens</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/60">Time Bonus:</span>
+                  <span className="text-teal-400">+{timeBonus} tokens</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/60">Streak Bonus:</span>
+                  <span className="text-emerald-400">+{streakBonus} tokens</span>
+                </div>
+                <div className="h-px my-1 md:my-2 bg-white/10" />
+                <div className="flex justify-between font-medium">
+                  <span>Total Reward:</span>
+                  <span>{totalReward} tokens</span>
+                </div>
+              </div>
             </div>
           )}
+
+          {(bestTime !== null || bestMoves !== null || bestStreak > 0) && (
+            <div className="mb-4 md:mb-8">
+              <h3 className="text-base md:text-lg font-medium mb-2 md:mb-4">Best Scores</h3>
+              <div className="grid grid-cols-3 gap-2 md:gap-4">
+                {bestTime !== null && (
+                  <div className="p-2 md:p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+                    <div className="text-lg md:text-xl font-bold text-emerald-400">{bestTime}s</div>
+                    <div className="text-xs md:text-sm text-white/60">Best Time</div>
+                  </div>
+                )}
+                {bestMoves !== null && (
+                  <div className="p-2 md:p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+                    <div className="text-lg md:text-xl font-bold text-emerald-400">{bestMoves}</div>
+                    <div className="text-xs md:text-sm text-white/60">Best Moves</div>
+                  </div>
+                )}
+                {bestStreak > 0 && (
+                  <div className="p-2 md:p-3 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-lg backdrop-blur-sm border border-white/10">
+                    <div className="text-lg md:text-xl font-bold text-emerald-400">{bestStreak}x</div>
+                    <div className="text-xs md:text-sm text-white/60">Best Streak</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={resetGame}
+            className="px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 rounded-lg transition-colors font-medium text-sm md:text-base"
+          >
+            Play Again
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-full w-full flex flex-col overflow-hidden">
+      {/* Game Header */}
+      <div className={`flex items-center ${isMobile ? 'justify-between mb-4' : 'justify-between mb-8'} px-2 md:px-6 pt-2 md:pt-6`}>
+        <div className={`flex items-center ${isMobile ? 'gap-2 md:gap-4' : 'gap-4 md:gap-8'}`}>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Timer className="w-4 h-4 md:w-5 md:h-5 text-teal-400" />
+            <span className={`${isMobile ? 'text-lg' : 'text-xl md:text-2xl'} font-bold`}>{timeLeft}s</span>
+          </div>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Trophy className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
+            <span className={`${isMobile ? 'text-lg' : 'text-xl md:text-2xl'} font-bold`}>{matches}</span>
+          </div>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Gamepad2 className="w-4 h-4 md:w-5 md:h-5 text-teal-400" />
+            <span className={`${isMobile ? 'text-lg' : 'text-xl md:text-2xl'} font-bold`}>{moves}</span>
+          </div>
         </div>
 
-        <button
-          onClick={resetGame}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-        >
-          <RotateCcw className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {currentStreak > 0 && (
+            <div className="px-2 py-0.5 md:px-3 md:py-1 bg-gradient-to-r from-teal-500/20 to-emerald-500/20 rounded-full">
+              <span className={`${isMobile ? 'text-sm' : 'text-base md:text-lg'} font-bold text-emerald-400`}>{currentStreak}x</span>
+            </div>
+          )}
+          <button
+            onClick={resetGame}
+            className="p-1 md:p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
+          </button>
+        </div>
       </div>
 
-      {/* Game Grid */}
-      <div className="grid grid-cols-4 gap-4">
-        {cards.map((card, index) => renderCard(card, index))}
+      <div className="flex-grow px-2 md:px-6 pb-2 md:pb-6 flex items-center justify-center">
+        <div className="grid grid-cols-4 gap-2 md:gap-4 w-full max-w-2xl mx-auto">
+          {cards.map((card, index) => renderCard(card, index))}
+        </div>
       </div>
 
-      {/* Game Over Modal */}
       {isGameOver && renderGameOver()}
     </div>
   );

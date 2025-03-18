@@ -1,5 +1,7 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { Maximize2, Minimize2, X, } from 'lucide-react';
+import { ethers } from 'ethers';
+import { erc20Abi } from "viem";
 
 import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useDefi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
@@ -15,7 +17,7 @@ import ProtocolStatistic from './defi/ProtocolStatistic.tsx';
 
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
 import { mapChainId2NativeAddress } from "../config/networks.ts";
-import { STAKING_TOKENS, BORROWING_LIST } from '../constants/mock/defi.ts';
+import { STAKING_TOKENS, BORROWING_LIST, LENDING_LIST } from '../constants/mock/defi.ts';
 import { OfferingList } from './defi/OfferlingList.tsx';
 import GlobalMetric from './defi/GlobalMetric.tsx';
 import RedeemModal from './defi/RedeemModal.tsx';
@@ -33,6 +35,8 @@ interface DeFiModalProps {
 interface ModalState {
   type: string | null;
   position?: Position;
+  apyToken?: string;
+  supportedChains?: number[];
 }
 
 export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
@@ -58,8 +62,33 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation()
 
-  const { isLoading: isLoadingPosition, refetch: refetchDefiPositionByWallet } = useDefiPositionByWallet({ chainId: chainId, walletAddress: address });
-  const { isLoading: isLoadingProtocol, refetch: refetchDefiProtocolByWallet } = useDefiProtocolsByWallet({ chainId, walletAddress: address });
+  const positionHandlerList = [
+    1, // Ethereum Mainnet (ETH)
+    56, // Binance Smart Chain (BNB)
+    137, // Polygon Mainnet (MATIC)
+    8453, // Base Mainnet (ETH placeholder)
+  ].map(chainId => {
+    const { isLoading, refetch } = useDefiPositionByWallet({ chainId: Number(chainId), walletAddress: address });
+    return { isLoading, refetch, chainId: chainId }
+  });
+
+  const refetchDefiPositionByWallet = positionHandlerList.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
+
+  const isLoadingPosition = positionHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === positionHandlerList.length;
+
+  const protocolHandlerList = [
+    1, // Ethereum Mainnet (ETH)
+    56, // Binance Smart Chain (BNB)
+    137, // Polygon Mainnet (MATIC)
+    8453, // Base Mainnet (ETH placeholder)
+  ].map(chainId => {
+    const { isLoading, refetch } = useDefiProtocolsByWallet({ chainId: Number(chainId), walletAddress: address });
+    return { isLoading, refetch, chainId: chainId }
+  });
+
+  const isLoadingProtocol = protocolHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === protocolHandlerList.length;
+
+  const refetchDefiProtocolByWallet = protocolHandlerList.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
 
   const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
 
@@ -92,8 +121,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const handleAction = (type: string, position: Position) => {
-    setModalState({ type, position });
+  const handleAction = (type: string, position: Position, apyToken: string, supportedChains: number[]) => {
+    setModalState({ type, position, apyToken, supportedChains });
   };
 
   const depositHandler = async () => {
@@ -150,14 +179,20 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const lendHandler = async () => {
     if (signer && Number(tokenAmount) > 0) {
       setConfirming("Approving...");
+      const lendTokenInfo = LENDING_LIST.find((token) => {
+        return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
+      });
+      const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
+      const tokenOutInfo = lendTokenInfo?.tokenOut ? lendTokenInfo?.tokenOut : null;
+
       enSoActionMutation({
         chainId: Number(chainId),
         fromAddress: address,
         routingStrategy: "router",
         action: "deposit",
         protocol: (modalState.position?.protocol_id || "").toLowerCase(),
-        tokenIn: [tokenBalance1?.address || ""],
-        tokenOut: [modalState?.position?.address || ""],
+        tokenIn: [tokenInInfo?.contract_address || ""],
+        tokenOut: [tokenOutInfo?.contract_address || ""],
         amountIn: [Number(tokenAmount)],
         signer: signer,
         receiver: address,
@@ -300,7 +335,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
     }
   }
 
-  const borrowHandler = async () => {
+  const borrowDepositHandler = async () => {
     if (signer && Number(tokenAmount) > 0) {
       setConfirming("Approving...");
       const borrowTokenInfo = BORROWING_LIST.find((token) => {
@@ -311,12 +346,11 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         chainId: Number(chainId),
         fromAddress: address,
         routingStrategy: "router",
-        action: "borrow",
+        action: "deposit",
         protocol: (modalState.position?.protocol_id || "").toLowerCase(),
         tokenIn: [borrowTokenInfo?.tokenIn?.contract_address || ""],
-        tokenOut: [borrowTokenInfo?.tokenOut?.contract_address || ""],
+        tokenOut: [borrowTokenInfo?.liquidityToken?.contract_address || ""],
         amountIn: [Number(tokenAmount)],
-        amountOut: [Number(borrowingTokenAmount)],
         signer: signer,
         receiver: address,
         gasPrice: gasData.gasPrice,
@@ -324,37 +358,92 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       }, {
         onSuccess: async (txData) => {
           if (signer) {
-            setConfirming("Executing...");
+            setConfirming("Depositing...");
             // execute defi action
             const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
               setConfirming("")
               return null;
             });
+
             if (transactionResponse) {
               const receipt = await transactionResponse.wait();
+
               setHash(receipt.transactionHash);
               setTxModalOpen(true);
               await refetchDefiPositionByWallet();
               await refetchDefiProtocolByWallet();
 
-              setTokenAmount("");
-              setToken2Amount("");
-
-              setBorrowingTokenAmount("");
-
-              setShowPreview(false);
-              setModalState({ type: null });
-              setSelectedTab('overview');
+              setShowPreview(true);
+              setConfirming("");
+            } else {
+              setConfirming("");
+              throw Error("transaction sign issue")
             }
 
           }
-          setConfirming("");
         },
         onError: async (e) => {
           console.error(e)
           setConfirming("");
         }
       })
+    }
+  }
+
+  const borrowHandler = async () => {
+    if (signer && Number(tokenAmount) > 0) {
+      setConfirming("Borrowing...");
+      const borrowTokenInfo = BORROWING_LIST.find((token) => {
+        return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[1].symbol
+      });
+      if (borrowTokenInfo?.borrowContract?.abi) {
+        const borrowContract = new ethers.Contract(borrowTokenInfo?.borrowContract?.contract_address || "", borrowTokenInfo?.borrowContract?.abi, signer);
+        const tokenContract = new ethers.Contract(
+          borrowTokenInfo?.tokenOut.contract_address,
+          erc20Abi,
+          signer
+        );
+        const decimals = await tokenContract.decimals();
+        const amountValue = Number(ethers.utils.parseUnits(
+          Number(borrowingTokenAmount).toFixed(8).replace(/\.?0+$/, ""),
+          decimals
+        ));
+        const tx = {
+          to: borrowTokenInfo?.borrowContract?.contract_address,
+          data: borrowContract.interface.encodeFunctionData("borrow", [
+            borrowTokenInfo?.tokenOut.contract_address, amountValue, 2, 0, address
+          ]),
+          // gasPrice: ethers.parseUnits('10', 'gwei'),
+          gasPrice: gasData.gasPrice,
+          gasLimit: Number(gasData.gasLimit) * 2, // Example static gas limit
+          value: 0n,
+        };
+
+        const transactionResponse = await signer?.sendTransaction(tx);
+        const receipt = await transactionResponse.wait().catch(() => {
+          setConfirming("");
+          throw Error("transaction error");
+        });
+
+        setHash(receipt.transactionHash);
+        setTxModalOpen(true);
+        await refetchDefiPositionByWallet();
+        await refetchDefiProtocolByWallet();
+
+        setTokenAmount("");
+        setToken2Amount("");
+
+        setBorrowingTokenAmount("");
+
+        setShowPreview(false);
+        setModalState({ type: null });
+        setSelectedTab('overview');
+        setConfirming("");
+
+      } else {
+        setConfirming("");
+        throw Error("borrow token contract error")
+      }
     }
   }
 
@@ -421,7 +510,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           {
-            hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[Number(chainId)]}/tx/${hash}`} />
+            hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[Number(chainId)]}/tx/${hash}`} checkBalance={true} />
           }
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -542,6 +631,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           tokenAmount={tokenAmount}
           confirming={confirming}
           borrowHandler={borrowHandler}
+          depositHandler={borrowDepositHandler}
+          setConfirming={setConfirming}
           setTokenAmount={setTokenAmount}
           borrowingTokenAmount={borrowingTokenAmount}
           setBorrowingTokenAmount={setBorrowingTokenAmount}

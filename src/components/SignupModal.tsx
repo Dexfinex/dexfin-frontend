@@ -1,6 +1,6 @@
 import {useContext, useEffect} from 'react';
 import {Modal, ModalContent, ModalOverlay,} from '@chakra-ui/react';
-import {registerWebAuthn} from "../utils/lit.ts";
+import {registerWebAuthn} from "../utils/lit.util.ts";
 import {AuthMethodType} from "@lit-protocol/constants";
 import Loading from "./auth/Loading";
 import SignUpMethods from "./auth/SignUpMethods.tsx";
@@ -31,30 +31,8 @@ const SignupModal = ({ isOpen, onClose }: SignupModalProps) => {
     sessionError,
     handleGoogleLogin,
     handleDiscordLogin,
+    isPreparingAccounts,
   } = useContext(Web3AuthContext);
-
-
-  const error = authError || accountsError || sessionError;
-  if (error) {
-    if (authError) {
-      console.error('Auth error:', authError);
-    }
-
-    if (accountsError) {
-      console.error('Accounts error:', accountsError);
-    }
-
-    if (sessionError) {
-      console.error('Session error:', sessionError);
-    }
-  }
-
-  async function registerWithWebAuthn() {
-    const newPKP = await registerWebAuthn();
-    if (newPKP) {
-      setCurrentAccount(newPKP);
-    }
-  }
 
   useEffect(() => {
     // If user is authenticated, create an account
@@ -72,6 +50,32 @@ const SignupModal = ({ isOpen, onClose }: SignupModalProps) => {
     }
   }, [authMethod, currentAccount, initSession]);
 
+
+  const error = authError || accountsError || sessionError;
+  if (error) {
+    if (authError) {
+      console.error('Auth error:', authError);
+    }
+
+    if (accountsError) {
+      console.error('Accounts error:', accountsError);
+    }
+
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+    }
+
+    if (isPreparingAccounts) {
+      return <Loading copy={'Preparing your account...'} error={error} />;
+    }
+  }
+
+  async function registerWithWebAuthn() {
+    const newPKP = await registerWebAuthn();
+    if (newPKP) {
+      setCurrentAccount(newPKP);
+    }
+  }
 
   const subComponent = () => {
     if (authLoading) {

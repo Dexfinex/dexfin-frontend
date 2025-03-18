@@ -6,7 +6,7 @@ import { MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'luci
 import { Spinner, Popover, PopoverTrigger, PopoverContent, Box, Divider, AbsoluteCenter } from '@chakra-ui/react';
 import { downloadBase64File, shrinkAddress, getChatHistoryDate, extractAddress, getHourAndMinute } from '../utils/common.util';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
-import { LIMIT, BIG_IMAGE_WIDHT } from '../utils/chatApi';
+import { LIMIT, BIG_IMAGE_WIDHT } from '../utils/chat.util';
 import { ImageWithSkeleton } from './common/ImageWithSkeleton';
 
 interface ChatMessagesProps {

@@ -1,24 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { characters } from '../../data/memeArenaCharacters';
-import { Character } from '../../types/memeArena';
+import React from 'react';
+import {characters} from "../../constants/game.constants.ts";
+import {Character} from '../../types/memeArena.type';
+
+// import {useBreakpointValue} from "@chakra-ui/react";
 
 interface CharacterSelectProps {
   onSelect: (character: Character) => void;
+  tournamentMode?: boolean;
+  onToggleMode?: () => void;
 }
 
 export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onSelect }) => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  // const isMobile = useBreakpointValue({ base: true, md: false });
 
   return (
     <div className="flex flex-col items-center p-4">

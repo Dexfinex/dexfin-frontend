@@ -1,5 +1,5 @@
-import React, { useContext, useMemo, useEffect } from "react";
-import { X, ArrowLeft, ArrowDown, ArrowRight } from 'lucide-react';
+import React, { useContext, useMemo, useEffect, useState } from "react";
+import { X, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
 import { TokenChainIcon } from "../swap/components/TokenIcon";
@@ -12,11 +12,18 @@ import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
+import useDefillamaStore from "../../store/useDefillamaStore.ts";
 import { BORROWING_LIST } from "../../constants/mock/defi.ts";
+import SelectChain from "./SelectChain.tsx";
+import { TokenIcon } from "../swap/components/TokenIcon";
+import { getChainIcon } from "../../utils/defi.util.ts";
+import { getChainNameById } from "../../utils/defi.util.ts";
 
 interface ModalState {
     type: string | null;
     position?: Position;
+    supportedChains?: number[],
+    apyToken?: string
 }
 
 interface BorrowModalProps {
@@ -24,17 +31,22 @@ interface BorrowModalProps {
     showPreview: boolean,
     modalState: ModalState,
     setShowPreview: (preview: boolean) => void,
+    setConfirming: (confirming: string) => void,
     tokenAmount: string,
     confirming: string,
+    depositHandler: () => void,
     borrowHandler: () => void,
     setTokenAmount: (amount: string) => void,
     borrowingTokenAmount: string,
     setBorrowingTokenAmount: (amount: string) => void,
 }
 
-const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, borrowHandler, setTokenAmount, setBorrowingTokenAmount, borrowingTokenAmount }) => {
+const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, setConfirming, borrowHandler, depositHandler, setTokenAmount, setBorrowingTokenAmount, borrowingTokenAmount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId } = useContext(Web3AuthContext);
+    const { getOfferingPoolByChainId } = useDefillamaStore();
+    const { chainId: connectedChainId, switchChain, isChainSwitching } = useContext(Web3AuthContext)
+    const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
+    const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
     const borrowTokenInfo = BORROWING_LIST.find((token) => {
         return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[1].symbol
@@ -52,6 +64,10 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
     })
 
     const { getTokenPrice, tokenPrices } = useTokenStore();
+    const { refetch: refetchTokensPrices } = useGetTokenPrices({
+        tokenAddresses: [tokenInInfo?.contract_address || "", tokenOutInfo?.contract_address || ""],
+        chainId: Number(chainId),
+    })
 
     const nativeTokenPrice = useMemo(() => {
         if (chainId && nativeTokenAddress) {
@@ -59,6 +75,20 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
         }
         return 0;
     }, [getTokenPrice, nativeTokenAddress, chainId, tokenPrices])
+
+    const tokenInPrice = useMemo(() => {
+        if (chainId && tokenInInfo?.contract_address) {
+            return getTokenPrice(tokenInInfo?.contract_address.toLowerCase(), Number(chainId))
+        }
+        return 0;
+    }, [chainId, tokenInInfo, tokenPrices, getTokenPrice])
+
+    const tokenOutPrice = useMemo(() => {
+        if (chainId && tokenOutInfo) {
+            return getTokenPrice(tokenOutInfo?.contract_address.toLowerCase(), Number(chainId))
+        }
+        return 0;
+    }, [chainId, tokenOutInfo, tokenPrices, getTokenPrice])
 
     const isErrorTokenAmount = useMemo(() => {
         if (tokenAmount === "") {
@@ -71,15 +101,15 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
     }, [tokenAmount, tokenInBalance])
 
     const priceRatio = useMemo(() => {
-        if (tokenInBalance?.usdPrice && tokenOutBalance?.usdPrice) {
-            const ratio = tokenInBalance?.usdPrice / tokenOutBalance?.usdPrice
+        if (tokenInPrice && tokenOutPrice) {
+            const ratio = tokenInPrice / tokenOutPrice
             return ratio;
         }
         return 1;
-    }, [tokenInBalance, tokenOutBalance]);
+    }, [tokenInPrice, tokenOutPrice]);
 
     const availableBorrowAmount = useMemo(() => {
-        return Number(formatNumberByFrac(Number(tokenAmount) * 0.75 * Number(priceRatio), 2));
+        return Number(formatNumberByFrac(Number(tokenAmount) * 0.7 * Number(priceRatio), 2));
     }, [tokenAmount, priceRatio])
 
     const isErrorBorrowingTokenAmount = useMemo(() => {
@@ -92,11 +122,36 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
         return true;
     }, [borrowingTokenAmount, tokenAmount])
 
+    const isCorrectChain = useMemo(() => {
+        return Number(chainId) === Number(connectedChainId)
+    }, [chainId, connectedChainId]);
+
+    const buttonLabel = useMemo(() => {
+        if (isChainSwitching) return <div className="flex justify-center"><Spinner size="md" className='mr-2' /> Switching network</div>
+        return !isCorrectChain ?
+            <>
+                Switch Chain
+                <TokenIcon src={getChainIcon(chainId) || ""} alt={getChainNameById(Number(chainId))} size="sm" className="ml-2" />
+            </> :
+            confirming ?
+                <div><Spinner size="md" className='mr-2' /> {confirming}</div>
+                : showPreview
+                    ? "Borrow"
+                    : "Deposit"
+
+    }, [confirming, chainId, connectedChainId, isChainSwitching, showPreview])
+
     useEffect(() => {
         if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
             refetchNativeTokenPrice()
         }
     }, [chainId, nativeTokenAddress, nativeTokenPrice])
+
+    useEffect(() => {
+        if (chainId && tokenInInfo && tokenOutInfo) {
+            refetchTokensPrices();
+        }
+    }, [chainId, tokenInInfo, tokenOutInfo]);
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -105,7 +160,10 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                 <div className="flex items-center justify-between mb-6">
                     {
                         showPreview &&
-                        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setShowPreview(false)}>
+                        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => {
+                            setShowPreview(false);
+                            setConfirming("");
+                        }}>
                             <ArrowLeft />
                         </button>
                     }
@@ -134,130 +192,21 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                                     {tokenInInfo?.symbol} <ArrowRight className="mr-1 ml-1 w-3 h-3" /> {tokenOutInfo?.symbol}
                                 </div>
                             </div>
+                            <div className="ml-auto text-right">
+                                <div className={`text-emerald-400`}>
+                                    {formatNumberByFrac(poolInfo?.apy || 0)}% APY
+                                </div>
+                            </div>
                         </div>
 
                         <div className="text-sm text-white flex items-center">
                             You can deposit {tokenInInfo?.symbol} as collateral and borrow {tokenOutInfo?.symbol} token.
-                        </div>
-                        <div className="text-sm text-red-500 flex items-center italic">
-                            It is still in the development stage.
                         </div>
                     </div>
 
                     {
                         showPreview ?
                             <div className='mt-2 mb-2 flex flex-col gap-4'>
-                                <div className='flex justify-between mt-2'>
-                                    <div>
-                                        <span className='ml-2 text-2xl'>
-                                            {`${formatNumberByFrac(Number(tokenAmount), 6)} ${tokenInInfo?.symbol}`}
-                                        </span>
-                                    </div>
-                                    <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenInInfo?.logo || ""} alt={tokenInInfo?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
-                                    </div>
-                                </div>
-
-                                <div className='flex justify-center'>
-                                    <div className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400">
-                                        <ArrowDown className="w-3 h-3" />
-                                    </div>
-                                </div>
-
-                                <div className='flex justify-between mt-2'>
-                                    <div>
-                                        <span className='ml-2 text-2xl'>
-                                            {`${borrowingTokenAmount} ${tokenOutInfo?.symbol}`}
-                                        </span>
-                                    </div>
-                                    <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
-                                    </div>
-                                </div>
-
-                                <div className='flex justify-between mt-2'>
-                                    <div>
-                                        <span className='ml-2 text-sm text-white/60'>
-                                            Rate
-                                        </span>
-                                    </div>
-                                    <div className='items-center flex'>
-                                        <span className='ml-2 text-sm text-white/60'>
-                                            1 {tokenOutInfo?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenInInfo?.symbol}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className='flex justify-between'>
-                                    <div>
-                                        <span className='ml-2 text-sm text-white/60'>
-                                            New {tokenOutBalance?.symbol || ""} amount
-                                        </span>
-                                    </div>
-                                    <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenOutBalance?.logo || ""} alt={tokenOutBalance?.symbol || ""} size={"md"} chainId={Number(chainId)} />
-                                        <span className='ml-2'>
-                                            {formatNumberByFrac(Number(tokenOutBalance?.balance) + Number(borrowingTokenAmount), 4)}
-                                        </span>
-                                        <span className='ml-1 text-sm text-white/60'>
-                                            {tokenOutBalance?.symbol || ""}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className='flex justify-between'>
-                                    <div>
-                                        <span className='ml-2 text-sm text-white/60'>
-                                            Network Fee
-                                        </span>
-                                    </div>
-                                    <div className='items-center flex'>
-                                        <span className='ml-2'>
-                                            {
-                                                isGasEstimationLoading ?
-                                                    <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
-                                                    : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            :
-                            <>
-                                <div className="bg-white/5 rounded-xl p-4">
-                                    <div className="text-sm text-white/60 mb-2">
-                                        Deposit token amount
-                                    </div>
-                                    <div className='relative flex'>
-                                        <input
-                                            value={tokenAmount}
-                                            onChange={(e) => {
-                                                setTokenAmount(e.target.value);
-                                            }}
-                                            type="text"
-                                            className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""}`}
-                                            placeholder="0.00"
-                                        />
-                                        <div className='flex items-center fixed right-12'>
-                                            <TokenChainIcon src={tokenInInfo?.logo || ""} alt={tokenInInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
-                                            <span className='ml-2'>
-                                                {tokenInInfo?.symbol || ""}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-2 text-sm">
-                                        <span className="text-white/60">
-                                            {`Balance: ${formatNumberByFrac(Number(tokenInBalance?.balance) || 0)}${tokenInInfo?.symbol}`}
-                                        </span>
-                                        <button className="text-blue-400" onClick={() => {
-                                            setTokenAmount((tokenInBalance?.balance || "") + "");
-                                        }}>MAX</button>
-                                    </div>
-                                </div>
-
-                                <div className='flex justify-center'>
-                                    <div className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400">
-                                        <ArrowDown className="w-3 h-3" />
-                                    </div>
-                                </div>
 
                                 <div className="bg-white/5 rounded-xl p-4">
                                     <div className="text-sm text-white/60 mb-2">
@@ -290,6 +239,92 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                                     </div>
                                 </div>
 
+                                <div className='flex justify-between mt-2'>
+                                    <div>
+                                        <span className='ml-2 text-sm text-white/60'>
+                                            Rate
+                                        </span>
+                                    </div>
+                                    <div className='items-center flex'>
+                                        <span className='ml-2 text-sm text-white/60'>
+                                            1 {tokenOutInfo?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenInInfo?.symbol}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <div>
+                                        <span className='ml-2 text-sm text-white/60'>
+                                            Borrow status
+                                        </span>
+                                    </div>
+                                    <div className='items-center flex'>
+                                        <TokenChainIcon src={tokenInBalance?.logo || ""} alt={tokenInBalance?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                        <div className='flex items-center ml-2'>
+                                            {formatNumberByFrac(Number(tokenOutBalance?.balance || "0"))}
+                                            <ArrowRight className="mr-1 ml-1 w-3 h-3" />
+                                            {formatNumberByFrac(Number(tokenOutBalance?.balance || "0") + Number(borrowingTokenAmount))}
+                                        </div>
+                                        <span className='ml-1 text-sm text-white/60'>
+                                            {tokenOutBalance?.symbol || ""}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className='flex justify-between'>
+                                    <div>
+                                        <span className='ml-2 text-sm text-white/60'>
+                                            Network Fee
+                                        </span>
+                                    </div>
+                                    <div className='items-center flex'>
+                                        <span className='ml-2'>
+                                            {
+                                                isGasEstimationLoading ?
+                                                    <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                                                    : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            :
+                            <>
+                                <SelectChain
+                                    chainList={modalState?.supportedChains || []}
+                                    selectedChain={Number(chainId)}
+                                    setSelectedChain={setChainId}
+
+                                />
+                                <div className="bg-white/5 rounded-xl p-4">
+                                    <div className="text-sm text-white/60 mb-2">
+                                        Deposit token amount
+                                    </div>
+                                    <div className='relative flex'>
+                                        <input
+                                            value={tokenAmount}
+                                            onChange={(e) => {
+                                                setTokenAmount(e.target.value);
+                                            }}
+                                            type="text"
+                                            className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""}`}
+                                            placeholder="0.00"
+                                        />
+                                        <div className='flex items-center fixed right-12'>
+                                            <TokenChainIcon src={tokenInInfo?.logo || ""} alt={tokenInInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                            <span className='ml-2'>
+                                                {tokenInInfo?.symbol || ""}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2 text-sm">
+                                        <span className="text-white/60">
+                                            {`Balance: ${formatNumberByFrac(Number(tokenInBalance?.balance) || 0)}${tokenInInfo?.symbol}`}
+                                        </span>
+                                        <button className="text-blue-400" onClick={() => {
+                                            setTokenAmount((tokenInBalance?.balance || "") + "");
+                                        }}>MAX</button>
+                                    </div>
+                                </div>
+
                                 <div className='mt-2 mb-2 flex flex-col gap-3'>
                                     <div className='flex justify-between mt-2'>
                                         <div>
@@ -303,19 +338,16 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                                             </span>
                                         </div>
                                     </div>
-                                    <div className='flex justify-between'>
+                                    <div className='flex justify-between mt-2'>
                                         <div>
                                             <span className='ml-2 text-sm text-white/60'>
-                                                Loan token balance
+                                                Available to borrow
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
                                             <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
-                                            <span className='ml-2'>
-                                                {formatNumberByFrac(Number(tokenOutBalance?.balance))}
-                                            </span>
-                                            <span className='ml-1 text-sm text-white/60'>
-                                                {tokenOutInfo?.symbol || ""}
+                                            <span className='ml-2 text-sm text-white/60'>
+                                                {`${availableBorrowAmount}${tokenOutInfo?.symbol}`}
                                             </span>
                                         </div>
                                     </div>
@@ -342,14 +374,16 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                     <button
                         className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
                         onClick={async () => {
-                            if (showPreview) {
+                            if (!isCorrectChain) {
+                                switchChain(Number(chainId));
+                            } else if (showPreview) {
                                 borrowHandler()
                             } else {
-                                setShowPreview(true);
+                                depositHandler();
                             }
                         }}
                     >
-                        {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Borrow" : "Next"}
+                        {buttonLabel}
                     </button>
                 </div>
             </div>

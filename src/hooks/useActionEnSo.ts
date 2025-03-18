@@ -4,7 +4,7 @@ import { erc20Abi } from "viem";
 import { JsonRpcSigner } from "@ethersproject/providers";
 
 import { enSoService } from "../services/enso.service.ts";
-import { generateEnSoExecuteAction, generateEnSoBorrowAction } from "../utils/enso.util.ts";
+import { generateEnSoExecuteAction } from "../utils/enso.util.ts";
 import { mapChainId2NativeAddress } from "../config/networks.ts";
 import { compareWalletAddresses } from "../utils/common.util.ts";
 import { ENSO_ROUTER_ADDRESS } from "../constants/enso.constants.ts";
@@ -13,12 +13,11 @@ interface mutationDataParams {
     chainId: number;
     fromAddress: string;
     routingStrategy: string;
-    action: "deposit" | "redeem" | "unstake" | "borrow";
+    action: "deposit" | "redeem" | "unstake";
     protocol: string;
     tokenIn: string[];
     tokenOut: string[];
     amountIn: number[];
-    amountOut?: number[]; // use only for borrow
     signer: JsonRpcSigner | undefined;
     receiver: string,
     gasPrice: bigint;
@@ -29,7 +28,6 @@ export const useEnSoActionMutation = () => {
     return useMutation({
         mutationFn: async (data: mutationDataParams) => {
             const amountIn = [];
-            const amountOut = []; // use only for borrow
 
             for (let i = 0; i < data.tokenIn.length; i++) {
                 const tokenContract = new ethers.Contract(
@@ -79,28 +77,6 @@ export const useEnSoActionMutation = () => {
                 amountIn.push(Number(amountValue).toString());
             }
 
-            for (let i = 0; i < data.tokenOut.length; i++) {
-                const tokenContract = new ethers.Contract(
-                    data.tokenOut[i],
-                    erc20Abi,
-                    data.signer
-                );
-
-                let amountValue: number = 0;
-                const nativeTokenAddress = mapChainId2NativeAddress[Number(data.chainId)];
-                const isNativeToken = compareWalletAddresses(nativeTokenAddress, data.tokenOut[i]);
-
-                const decimals = isNativeToken ? 18 : await tokenContract.decimals();
-                if(data?.amountOut) {
-                    amountValue = Number(ethers.utils.parseUnits(
-                        Number(data?.amountOut[i]).toFixed(8).replace(/\.?0+$/, ""),
-                        decimals
-                    ));
-                }
-
-                amountOut.push(Number(amountValue).toString());
-            }
-
             if (data.protocol === "lido" && data.action === "unstake") {
                 const actionBundle = await enSoService.getRouter({
                     fromAddress: data.fromAddress,
@@ -109,17 +85,6 @@ export const useEnSoActionMutation = () => {
                     tokenIn: data.tokenIn,
                     amountIn: amountIn,
                     tokenOut: data.tokenOut
-                })
-
-                return actionBundle;
-            }
-
-            if (data.protocol === "aave-v3" && data.action === "borrow" && Number(data.chainId) === 1) {
-                const actionBundle = await enSoService.sendBundle({
-                    fromAddress: data.fromAddress,
-                    chainId: data.chainId,
-                    routingStrategy: data.routingStrategy,
-                    actions: generateEnSoBorrowAction({ protocol: data.protocol, tokenIn: data.tokenIn, tokenOut: data.tokenOut, amountIn: amountIn, amountOut: amountOut, receiver: data.receiver })
                 })
 
                 return actionBundle;

@@ -1,30 +1,36 @@
 import React from 'react';
-import {Newspaper, TrendingUp, Twitter, X} from 'lucide-react';
+import { Newspaper, TrendingUp, Twitter, X, SquareStack } from 'lucide-react';
 
 interface AddWidgetModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (type: 'news' | 'twitter' | 'trending') => void;
+  onAdd: (type: 'News' | 'Twitter' | 'Trending' | 'Whale Transactions') => void;
 }
 
 const widgets = [
   {
-    type: 'news' as const,
+    type: 'News' as const,
     name: 'News Feed',
     description: 'Latest crypto news and updates',
     icon: Newspaper
   },
   {
-    type: 'twitter' as const,
+    type: 'Twitter' as const,
     name: 'Twitter Feed',
     description: 'Real-time crypto Twitter updates',
     icon: Twitter
   },
   {
-    type: 'trending' as const,
+    type: 'Trending' as const,
     name: 'Trending',
     description: 'Top trending cryptocurrencies',
     icon: TrendingUp
+  },
+  {
+    type: 'Whale Transactions' as const,
+    name: 'Whale Transactions',
+    description: 'Track the latest whale transactions',
+    icon: SquareStack
   }
 ];
 

@@ -1,11 +1,12 @@
-import React, { useContext, useMemo } from "react";
+import React, { useContext } from "react";
 import { Skeleton } from '@chakra-ui/react';
+import { ArrowUp } from 'lucide-react';
 
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import useDefiStore, { Position } from '../../store/useDefiStore';
 import { getTypeIcon, getTypeColor } from "../../utils/defi.util";
 import { formatNumberByFrac, formatHealthFactor } from "../../utils/common.util";
-
+import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon";
 import { isEnabledPosition } from "../../constants/mock/defi";
 
 
@@ -30,7 +31,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
             case "liquidity":
                 return "Deposit";
             case "supplied":
-                return "Deposit";
+                return "";
             default:
                 return "";
         }
@@ -43,7 +44,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
             case "liquidity":
                 return "Redeem";
             case "supplied":
-                return "Withdraw";
+                return "";
             default:
                 return "";
         }
@@ -118,16 +119,16 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                         return (
                             isLoading ? <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'} key={`sk-${index}`}></Skeleton>
                                 : <div
-                                    key={index}
+                                    key={chainId +  position.protocol_id + tokenList.toString() + position.type + index}
                                     className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
                                 >
                                     <div className="flex items-between sm:items-center justify-between flex-col sm:flex-row">
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                                            <img
+                                            <TokenChainIcon
                                                 src={position.logo}
                                                 alt={position.protocol}
-                                                className="w-10 h-10"
-                                            />
+                                                chainId={position.chainId}
+                                                size="lg" />
                                             <div>
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <h3 className="font-medium">{position.protocol}</h3>
@@ -135,12 +136,13 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                         {position.type}
                                                     </span>
                                                     <span className="text-white/40 hidden sm:block">•</span>
+                                                    <div className="flex">
+                                                        {
+                                                            position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" key={token.symbol + index} />)
+                                                        }
+                                                    </div>
                                                     {
-                                                        position.tokens.map((token) => {
-                                                            return (
-                                                                `${token?.symbol} `
-                                                            )
-                                                        })
+                                                        position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : `${token?.symbol} `)
                                                     }
                                                 </div>
 
@@ -149,20 +151,28 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                         <span className="text-sm text-white/60">Amount</span>
                                                         <div className="text-lg">${formatNumberByFrac(position.amount)}</div>
                                                     </div>
-                                                    <div>
-                                                        <span className="text-sm text-white/60">APY</span>
-                                                        <div className="text-emerald-400">{(formatNumberByFrac(position.apy) || "0")}%</div>
-                                                    </div>
-                                                    {position.rewards && (
+                                                    {
+                                                        position.apy ?
+                                                            <div>
+                                                                <span className="text-sm text-white/60">APY</span>
+                                                                <div className="text-emerald-400">{(formatNumberByFrac(position.apy) || "0")}%</div>
+                                                            </div>
+                                                            : null
+                                                    }
+                                                    {Number(position?.rewards) > 0 ?
                                                         <div>
-                                                            <span className="text-sm text-white/60">Rewards</span>
-                                                            <div className="text-blue-400">+{(formatNumberByFrac(position.rewards) || "0")}% APR</div>
+                                                            <span className={`text-sm text-white/60`}>Rewards by year</span>
+                                                            <div className={`flex text-emerald-400 items-center gap-1`}>
+                                                                ${(formatNumberByFrac(position.rewards) || "0")}
+                                                                <ArrowUp className="w-4 h-4" />
+                                                            </div>
                                                         </div>
-                                                    )}
+                                                        : null
+                                                    }
                                                     {!!position.healthFactor && (
                                                         <div>
                                                             <span className="text-sm text-white/60">Health Factor</span>
-                                                            <div className="text-green-400">{formatHealthFactor(position.healthFactor)}</div>
+                                                            <div className="text-emerald-400">{formatHealthFactor(position.healthFactor)}</div>
                                                         </div>
                                                     )}
                                                     {position.poolShare && (

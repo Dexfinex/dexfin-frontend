@@ -1,14 +1,18 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
-import {Search, Star, X} from 'lucide-react';
-import {TokenType} from "../../../types/swap.type.ts";
-import {mapPopularTokens, NETWORK, NETWORKS} from "../../../config/networks.ts";
+import { Search, Star, X, ExternalLink, MessageSquareWarning } from 'lucide-react';
+import { TokenType } from "../../../types/swap.type.ts";
+import { mapPopularTokens, NETWORK, NETWORKS } from "../../../config/networks.ts";
 // import {coingeckoService} from "../../../services/coingecko.service.ts";
-import {shrinkAddress} from "../../../utils/common.util.ts";
-import {savedTokens} from "../../../config/tokens.ts";
-import {Button, HStack, Image, Text} from "@chakra-ui/react";
+import { isValidAddress, shrinkAddress } from "../../../utils/common.util.ts";
+import { savedTokens } from "../../../config/tokens.ts";
+import { Button, HStack, Image, Text } from "@chakra-ui/react";
 import useLocalStorage from "../../../hooks/useLocalStorage.ts";
-import {LOCAL_STORAGE_STARRED_TOKENS} from "../../../constants";
+import { useStore } from '../../../store/useStore.ts';
+import { LOCAL_STORAGE_STARRED_TOKENS, LOCAL_STORAGE_ADDED_TOKENS } from "../../../constants";
+import { getTokenInfo } from '../../../utils/token.util.ts';
+import { mapChainId2ExplorerUrl } from '../../../config/networks.ts';
+import { SOLANA_CHAIN_ID } from '../../../constants/solana.constants.ts';
 
 /*
 const CATEGORIES = [
@@ -25,30 +29,109 @@ interface TokenSelectorModalProps {
     onClose: () => void;
 }
 
+
+interface ApproveModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onContinue: () => void;
+    token: TokenType | null;
+    chainId: number;
+}
+
+const ApproveModal: React.FC<ApproveModalProps> = ({ isOpen, onClose, onContinue, token, chainId }) => {
+    const { theme } = useStore();
+    const [tokenUrl, setTokenUrl] = useState("");
+
+    const handleContinue = () => {
+        onContinue()
+        onClose()
+    }
+
+    useEffect(() => {
+        if (chainId === SOLANA_CHAIN_ID) {
+            setTokenUrl(`${mapChainId2ExplorerUrl[chainId]}/token/${token?.address}`)
+        } else {
+            setTokenUrl(`${mapChainId2ExplorerUrl[chainId]}/address/${token?.address}`)
+        }
+    }, [token, chainId])
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative w-[340px] md:w-[520px] glass border border-white/10 rounded-xl overflow-hidden p-8">
+                <div className='flex justify-center mb-4'>
+                    <MessageSquareWarning className='w-8 h-8 text-yellow-500' />
+                </div>
+                <p className='text-center mb-8'>Confirm Token</p>
+                <p className='text-center mb-4 text-yellow-500'>
+                    This token is not on the default token lists.
+                </p>
+                <p className='mb-4 text-white/70 text-sm'>
+                    By Clicking below, you understand that you are fully responsible for confirming the token you are trading.
+                </p>
+                <a className='mb-4 rounded-md flex items-center justify-between p-4 bg-white/5 cursor-pointer'
+                    href={tokenUrl} target='_blank'>
+                    <div className='flex items-center gap-4'>
+                        <img src={token?.logoURI} className='w-8 h-8' />
+                        <span>{token?.name}</span>
+                    </div>
+                    <ExternalLink className='text-white/70 w-5 h-5' />
+                </a>
+                <div className='flex flex-col items-center justify-center gap-4'>
+                    <button className={`${theme === 'dark' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-500 hover:bg-blue-600'} rounded-xl py-1 w-full`} onClick={handleContinue}>
+                        I understand, confirm
+                    </button>
+                    <button className={`${theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-black/10'} rounded-xl py-1 w-full`} onClick={onClose}>
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div >
+    )
+}
+
 export function TokenSelectorModal({
-                                       isOpen,
-                                       // selectedToken,
-                                       selectedChainId,
-                                       onSelect,
-                                       onClose,
-                                   }: TokenSelectorModalProps) {
+    isOpen,
+    // selectedToken,
+    selectedChainId,
+    onSelect,
+    onClose,
+}: TokenSelectorModalProps) {
 
     const [loading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(null);
     const [starredTokenMap, setStarredTokenMap] = useLocalStorage<Record<string, boolean> | null>(LOCAL_STORAGE_STARRED_TOKENS, {})
+    const [addedTokens, setAddedTokens] = useLocalStorage<Array<TokenType> | null>(LOCAL_STORAGE_ADDED_TOKENS, [])
     const [showStarredOnly, setShowStarredOnly] = useState(false);
     const [selectedCategory] = useState<'all' | 'meme'>('all');
+    const [isSearchToken, setIsSearchToken] = useState(false);
+    const [loadingNewToken, setLoadingNewToken] = useState(false);
+    const [newToken, setNewToken] = useState<TokenType | null>(null);
+    const [approveModalActive, setApproveModalActive] = useState(false);
 
     const tokens = useMemo(() => {
+        if (addedTokens && addedTokens.length > 0) {
+            if (selectedNetwork?.id) {
+                const filtered = addedTokens.filter((token: TokenType) => token.chainId == selectedNetwork.chainId)
+
+                return [...(filtered.reverse()), ...savedTokens[selectedNetwork.id]]
+            } else {
+                return [...(addedTokens.reverse()), ...savedTokens['all']]
+            }
+        }
+
         return savedTokens[selectedNetwork?.id ?? 'all']
     }, [selectedNetwork])
 
     const filteredTokens = useMemo(() => {
-        const filteredList = tokens.filter(token => {
+        const filteredList = tokens.filter((token: TokenType) => {
             const matchesSearch =
                 token.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                token.name.toLowerCase().includes(searchQuery.toLowerCase());
+                token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                token.address.toLowerCase().includes(searchQuery.toLowerCase());
             // const matchesNetwork = !selectedNetwork || token.chainId.toString() === selectedNetwork;
             const matchesStarred = !showStarredOnly || starredTokenMap?.[`${token.chainId}:${token.address}`]
             const matchesCategory = selectedCategory === 'all' || token.category === selectedCategory;
@@ -62,6 +145,16 @@ export function TokenSelectorModal({
             setSelectedNetwork(NETWORKS.filter(network => network.chainId === selectedChainId)[0] ?? null)
         }
     }, [selectedChainId, isOpen])
+
+    useEffect(() => {
+        if (isValidAddress(searchQuery, selectedNetwork?.chainId || 0) && filteredTokens.length == 0) {
+            setNewToken(null)
+            setIsSearchToken(true)
+            handleSearchToken()
+        } else if (isSearchToken) {
+            setIsSearchToken(false)
+        }
+    }, [searchQuery, selectedNetwork])
 
     /*
       useEffect(() => {
@@ -79,6 +172,16 @@ export function TokenSelectorModal({
       }, []);
     */
 
+    const handleSearchToken = async () => {
+        setLoadingNewToken(true)
+        console.log('handle search token')
+        const tokenInfo = await getTokenInfo(searchQuery, selectedNetwork?.chainId || 0)
+        if (tokenInfo) {
+            setNewToken(tokenInfo as TokenType);
+        }
+        setLoadingNewToken(false)
+    }
+
     const toggleStar = (e: React.MouseEvent, chainId: number, address: string) => {
         e.stopPropagation();
         console.log("setStarredTokenMap")
@@ -87,7 +190,7 @@ export function TokenSelectorModal({
 
             const tokenKey = `${chainId}:${address}`
             if (prev[tokenKey]) {
-                const { [tokenKey]: _, ...rest} = prev
+                const { [tokenKey]: _, ...rest } = prev
                 return rest
             }
 
@@ -98,14 +201,28 @@ export function TokenSelectorModal({
         })
     };
 
+    const selectSearchedToken = async () => {
+        if (newToken) {
+            await setAddedTokens(prev => {
+                if (prev && prev?.length > 0) {
+                    return [...prev, newToken];
+                } else {
+                    return [newToken];
+                }
+            })
+
+            onSelect(newToken)
+            onClose()
+        }
+    }
+
     const popularTokens = useMemo(() => {
         return (mapPopularTokens[selectedNetwork === null ? 1 : (selectedNetwork?.chainId ?? -1)]) ?? []
     }, [selectedNetwork])
 
     return ReactDOM.createPortal(
-        <div className={`fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-[10000] ${
-            isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        } transition-opacity duration-200`}>
+        <div className={`fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-[10000] ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            } transition-opacity duration-200`}>
             <div
                 className="glass rounded-2xl w-full max-w-xl border border-white/5 mt-[10vh] animate-modal-slide-down">
                 <div className="p-4 border-b border-white/10">
@@ -114,22 +231,21 @@ export function TokenSelectorModal({
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setShowStarredOnly(!showStarredOnly)}
-                                className={`p-2 rounded-lg transition-colors group ${
-                                    showStarredOnly ? 'text-yellow-400 bg-yellow-400/10' : 'text-gray-400 hover:text-yellow-400'
-                                }`}
+                                className={`p-2 rounded-lg transition-colors group ${showStarredOnly ? 'text-yellow-400 bg-yellow-400/10' : 'text-gray-400 hover:text-yellow-400'
+                                    }`}
                             >
-                                <Star className="w-5 h-5" fill={showStarredOnly ? "currentColor" : "none"}/>
+                                <Star className="w-5 h-5" fill={showStarredOnly ? "currentColor" : "none"} />
                             </button>
                             <button
                                 onClick={onClose}
                                 className="p-2 rounded-lg hover:bg-white/5 transition-colors group"
                             >
-                                <X className="w-5 h-5"/>
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
                     {/*
-          <div className="flex items-center gap-2 bg-[#1d2837] rounded-lg p-1 mb-4">
+          <div className="flex items-center gap-2 rounded-lg p-1 mb-4">
             {CATEGORIES.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -147,7 +263,7 @@ export function TokenSelectorModal({
           </div>
 */}
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
                             placeholder="Search by token name or paste address"
@@ -162,9 +278,8 @@ export function TokenSelectorModal({
                     <div className="flex flex-wrap gap-1">
                         <button
                             onClick={() => setSelectedNetwork(null)}
-                            className={`px-3 py-1.5 rounded-lg text-sm transition-colors border ${
-                                !selectedNetwork ? 'text-white' : 'border-transparent hover:text-white'
-                            }`}
+                            className={`px-3 py-1.5 rounded-lg text-sm transition-colors border ${!selectedNetwork ? 'text-white' : 'border-transparent hover:text-white'
+                                }`}
                         >
                             All
                         </button>
@@ -172,11 +287,10 @@ export function TokenSelectorModal({
                             <button
                                 key={network.id}
                                 onClick={() => setSelectedNetwork(network)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border ${
-                                    selectedNetwork === network ? 'text-white' : 'border-transparent hover:text-white'
-                                }`}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border ${selectedNetwork === network ? 'text-white' : 'border-transparent hover:text-white'
+                                    }`}
                             >
-                                <img src={network.icon} alt={network.name} className="w-5 h-5"/>
+                                <img src={network.icon} alt={network.name} className="w-5 h-5" />
                                 {/*<span>{network.name}</span>*/}
                             </button>
                         ))}
@@ -199,33 +313,35 @@ export function TokenSelectorModal({
                                                 onSelect(popularToken);
                                                 onClose();
                                             }}
-                                            _hover={{bg: 'whiteAlpha.200'}}
+                                            _hover={{ bg: 'whiteAlpha.200' }}
                                             style={{
                                                 padding: '0px 0.75rem'
                                             }}
                                         >
                                             <HStack>
-                                                <Image src={popularToken.logoURI} boxSize='24px'/>
+                                                <Image src={popularToken.logoURI} boxSize='24px' />
                                                 <Text className="text-sm text-white">{popularToken.symbol}</Text>
                                             </HStack>
                                         </Button>
                                     ))}
                                 </div>
                             </div>
-                            <div className="text-gray-400 text-sm px-4 mt-2">
+                            {!isSearchToken ? <div className="text-gray-400 text-sm px-4 mt-2">
                                 Trending
-                            </div>
+                            </div> : <div className="text-gray-400 text-sm px-4 mt-2">
+                                Tokens
+                            </div>}
                         </>
                     )
                 }
-                <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                {!isSearchToken ? <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                     {loading ? (
                         <div className="flex items-center justify-center p-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"/>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
                         </div>
                     ) : (
                         <div className="p-2">
-                            {filteredTokens.map((token) => (
+                            {filteredTokens.map((token: TokenType) => (
                                 <div
                                     key={token.address}
                                     onClick={() => {
@@ -237,24 +353,23 @@ export function TokenSelectorModal({
                                     <div className="flex items-center gap-3">
                                         <div
                                             onClick={(e) => toggleStar(e, token.chainId, token.address)}
-                                            className={`p-1.5 rounded-lg transition-colors ${
-                                                starredTokenMap?.[`${token.chainId}:${token.address}`]
-                                                    ? 'text-yellow-400 bg-yellow-400/10'
-                                                    : 'text-gray-400 hover:text-yellow-400'
-                                            } cursor-pointer`}
+                                            className={`p-1.5 rounded-lg transition-colors ${starredTokenMap?.[`${token.chainId}:${token.address}`]
+                                                ? 'text-yellow-400 bg-yellow-400/10'
+                                                : 'text-gray-400 hover:text-yellow-400'
+                                                } cursor-pointer`}
                                         >
                                             <Star className="w-4 h-4"
-                                                  fill={starredTokenMap?.[`${token.chainId}:${token.address}`] ? "currentColor" : "none"}/>
+                                                fill={starredTokenMap?.[`${token.chainId}:${token.address}`] ? "currentColor" : "none"} />
                                         </div>
-                                        <img src={token.logoURI} alt={token.symbol} className="w-8 h-8 rounded-full"/>
+                                        <img src={token.logoURI} alt={token.symbol} className="w-8 h-8 rounded-full" />
                                         <div>
                                             <div className="flex items-center gap-2 mb-0.5">
                                                 <span className="font-medium text-white">{token.symbol}</span>
                                                 {token.category === 'meme' && (
                                                     <span
                                                         className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 rounded-md">
-                            MEME
-                          </span>
+                                                        MEME
+                                                    </span>
                                                 )}
                                                 {/*
                         <button
@@ -286,8 +401,47 @@ export function TokenSelectorModal({
                             ))}
                         </div>
                     )}
-                </div>
+                </div> : <div>
+                    {
+                        loadingNewToken ?
+                            <div className="flex items-center justify-center p-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+                            </div>
+                            :
+                            <div className='p-2'>
+                                {newToken ? <div
+                                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
+                                    onClick={() => setApproveModalActive(true)}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <img src={newToken.logoURI} className="w-8 h-8 rounded-full" />
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <span className="font-medium text-white">{newToken?.symbol}</span>
+                                            </div>
+                                            <div className="text-sm text-gray-400">{newToken?.name}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-right">
+                                            <div className="text-sm text-gray-400">{shrinkAddress(newToken?.address)}</div>
+                                        </div>
+                                    </div>
+                                </div> : <div className='text-center p-2 text-gray-400 text-sm'>
+                                    No results found for this address. Please check and try again.
+                                </div>}
+                            </div>
+                    }
+                </div>}
             </div>
+
+            <ApproveModal
+                isOpen={approveModalActive}
+                onClose={() => setApproveModalActive(false)}
+                onContinue={selectSearchedToken}
+                token={newToken}
+                chainId={selectedNetwork?.chainId || -1}
+            />
         </div>,
         document.body
     );

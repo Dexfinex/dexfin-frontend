@@ -1,20 +1,19 @@
-import React, { useEffect, useState, useContext, useRef, useCallback, useLayoutEffect } from 'react';
-import { Share2, Search, Send, MessageSquare, Smile, File, Download, CheckCircle, XCircle } from 'lucide-react';
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { CheckCircle, Download, File, MessageSquare, Search, Send, Share2, Smile, XCircle } from 'lucide-react';
 import { useInView } from "react-intersection-observer";
-import EmojiPicker from 'emoji-picker-react';
-import GifPicker from 'gif-picker-react';
-import { Theme } from 'emoji-picker-react';
-import { Theme as GifTheme } from 'gif-picker-react';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
+import GifPicker, { Theme as GifTheme } from 'gif-picker-react';
 import { useStore } from '../../store/useStore';
-import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
+import { CONSTANTS, PushAPI } from '@pushprotocol/restapi';
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
-import { Spinner, useToast, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/react';
+import { Popover, PopoverContent, PopoverTrigger, Spinner, useToast } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { getWalletProfile, initStream } from '../../utils/chatApi';
-import { IUser, IChat, ChatType } from '../../types/chat.type';
-import { getEnsName, shrinkAddress, extractAddress, downloadBase64File, getHourAndMinute } from '../../utils/common.util';
-import { LIMIT, BIG_IMAGE_WIDHT } from '../../utils/chatApi';
+import { BIG_IMAGE_WIDHT, getWalletProfile, initStream, LIMIT } from '../../utils/chat.util.ts';
+import { ChatType, IChat, IUser } from '../../types/chat.type';
+import { downloadBase64File, extractAddress, getEnsName, getHourAndMinute, shrinkAddress } from '../../utils/common.util';
 import { ImageWithSkeleton } from '../common/ImageWithSkeleton';
+import { WalletTypeEnum } from "../../types/wallet.type";
+import { LOCAL_STORAGE_PUSH_KEY } from '../../constants';
 
 interface OverlayProps {
   isOpen: boolean;
@@ -122,7 +121,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
 
 export const DirectMessagesWidget: React.FC = () => {
   const { chatUser, setChatUser, receivedMessage, selectedUserInChatModal, isChatOpen, theme } = useStore();
-  const { signer, address } = useContext(Web3AuthContext);
+  const { address, signer, walletType } = useContext(Web3AuthContext);
   const [isOverlay, setIsOverlay] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
   const [chatHistory, setChatHistory] = useState<Array<IChat>>([]);
@@ -384,7 +383,7 @@ export const DirectMessagesWidget: React.FC = () => {
           }
         }
       } else if (receivedMessage.origin == "self") {
-
+        //
       }
     }
   }
@@ -652,21 +651,30 @@ export const DirectMessagesWidget: React.FC = () => {
 
     if (!chatUser?.uid) {
       try {
-        const user = await PushAPI.initialize(signer, {
-          env: CONSTANTS.ENV.PROD,
-        });
+        if (walletType === WalletTypeEnum.EOA) {
+          const user = await PushAPI.initialize(signer, {
+            env: CONSTANTS.ENV.PROD,
+          });
 
-        const encryption = await user.encryption.info()
+          const encryption = await user.encryption.info()
 
-        if (encryption?.decryptedPgpPrivateKey) {
-          const pk = {
-            account: user.account,
-            decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+          if (encryption?.decryptedPgpPrivateKey) {
+            const pk = {
+              account: user.account,
+              decryptedPgpPrivateKey: encryption.decryptedPgpPrivateKey
+            }
+            localStorage.setItem(LOCAL_STORAGE_PUSH_KEY, JSON.stringify(pk))
+
+            setChatUser(user)
+            initStream(user)
           }
-          localStorage.setItem("PgpPK", JSON.stringify(pk))
+        } else if (walletType === WalletTypeEnum.EMBEDDED) {
+          // const user = await PushAPI.initialize(signer, {
+          //   env: CONSTANTS.ENV.PROD,
+          // });
 
-          setChatUser(user)
-          initStream(user)
+          // setChatUser(user)
+          // initStream(user)
         }
       } catch (err) {
         console.log('initialize err: ', err)
@@ -755,6 +763,14 @@ export const DirectMessagesWidget: React.FC = () => {
 
     return true
   }
+
+  /*
+    useEffect(() => {
+      if (walletType === WalletTypeEnum.EMBEDDED) {
+        handleUnlock()
+      }
+    }, [handleUnlock, walletType])
+  */
 
   return (
     <div className="p-2 h-full flex flex-col">

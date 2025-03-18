@@ -5,11 +5,11 @@ import {
     aurora, ronin, boba, cronos, telos, metis, ubiq, velas,
     klaytn, nahmii, meter, theta, syscoin,
     moonbeam, astar, canto, zksync, kava,
-    base, linea, Chain
+    base, linea, Chain, sepolia
 } from "viem/chains";
 import { TokenType } from "../types/swap.type.ts";
-import { NULL_ADDRESS } from "../constants";
 import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
+import {NULL_ADDRESS} from "../constants";
 
 export interface NETWORK {
     id: string;
@@ -60,12 +60,14 @@ export const NETWORKS: NETWORK[] = [
         icon: 'https://cryptologos.cc/logos/arbitrum-arb-logo.svg',
         chainId: 42161,
     },
+/*
     {
         id: 'bitcoin',
         name: 'Bitcoin',
         icon: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg',
         chainId: 0,
     },
+*/
     {
         id: 'solana',
         name: 'Solana',
@@ -73,6 +75,16 @@ export const NETWORKS: NETWORK[] = [
         chainId: SOLANA_CHAIN_ID,
     },
 ] as const;
+
+export const mapChainId2Network: Record<number, NETWORK> = {}
+for(const network of NETWORKS) {
+    mapChainId2Network[network.chainId] = network;
+}
+
+export const mapChainName2Network: Record<string, NETWORK> = {}
+for(const network of NETWORKS) {
+    mapChainName2Network[network.id] = network;
+}
 
 export const mapChainId2NativeAddress: Record<number, string> = {
     1: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Ethereum Mainnet (ETH)
@@ -82,7 +94,7 @@ export const mapChainId2NativeAddress: Record<number, string> = {
     10: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Optimism (ETH)
     42161: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Arbitrum (ETH)
     8453: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Base Mainnet (ETH placeholder)
-    900: 'So11111111111111111111111111111111111111112', // Base Mainnet (ETH placeholder)
+    900: '11111111111111111111111111111111', // Solana
 };
 
 export const mapChainId2ChainName: Record<number, string> = {
@@ -104,6 +116,17 @@ export const mapChainId2ExplorerUrl: Record<number, string> = {
     42161: 'https://arbiscan.io', // Arbitrum Explorer
     8453: 'https://basescan.org', // Base Mainnet Explorer
     [SOLANA_CHAIN_ID]: 'https://solscan.io'
+};
+
+export const mapChainName2ExplorerUrl: Record<string, string> = {
+    'ethereum': 'https://etherscan.io', // Ethereum Mainnet Explorer
+    'bsc': 'https://bscscan.com', // Binance Smart Chain Explorer
+    'polygon': 'https://polygonscan.com', // Polygon Mainnet Explorer
+    'avalanche': 'https://snowtrace.io', // Avalanche C-Chain Explorer
+    'optimism': 'https://optimistic.etherscan.io', // Optimism Explorer
+    'arbitrum': 'https://arbiscan.io', // Arbitrum Explorer
+    'base': 'https://basescan.org', // Base Mainnet Explorer
+    'solana': 'https://solscan.io'
 };
 
 export const mapChainId2ProviderChainName: Record<number, string> = {
@@ -211,11 +234,12 @@ export const mapChainId2ViemChain: Record<number, Chain> = {
     324: zksync,
     2222: kava,
     8453: base,
-    59144: linea
+    59144: linea,
+    [sepolia.id]: sepolia,
 };
 
 export const mapPopularTokens: Record<number, TokenType[]> = {
-    1: [
+    [mainnet.id]: [
         {
             symbol: 'ETH',
             name: 'Ethereum',
@@ -257,7 +281,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/dai.png',
         },
     ],
-    8453: [
+    [base.id]: [
         {
             symbol: 'ETH',
             name: 'Ethereum',
@@ -299,7 +323,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/usdc.png',
         },
     ],
-    42161: [
+    [arbitrum.id]: [
         {
             symbol: 'ETH',
             name: 'Ethereum',
@@ -341,7 +365,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/dai.png',
         },
     ],
-    137: [
+    [polygon.id]: [
         {
             symbol: 'POL',
             name: 'Polygon Native Coin',
@@ -383,7 +407,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/dai.png',
         },
     ],
-    56: [
+    [bsc.id]: [
         {
             symbol: 'BNB',
             name: 'BNB',
@@ -405,7 +429,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             name: 'Tether USDT',
             address: '0x55d398326f99059ff775485246999027b3197955',
             chainId: 56,
-            decimals: 6,
+            decimals: 18,
             logoURI: '/images/token/usdt.png',
         },
         {
@@ -413,7 +437,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             name: 'USDC',
             address: '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d',
             chainId: 56,
-            decimals: 6,
+            decimals: 18,
             logoURI: '/images/token/usdc.png',
         },
         {
@@ -425,7 +449,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/dai.png',
         },
     ],
-    43114: [
+    [avalanche.id]: [
         {
             symbol: 'AVAX',
             name: 'Avalanche',
@@ -467,7 +491,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             logoURI: '/images/token/dai.png',
         },
     ],
-    10: [
+    [optimism.id]: [
         {
             symbol: 'ETH',
             name: 'Ethereum',
@@ -507,6 +531,32 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
             chainId: 10,
             decimals: 18,
             logoURI: '/images/token/dai.png',
+        },
+    ],
+    [SOLANA_CHAIN_ID]: [
+        {
+            address: "11111111111111111111111111111111",
+            chainId: 900,
+            decimals: 9,
+            logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
+            name: "SOL",
+            symbol: "SOL"
+        },
+        {
+            address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            chainId: 900,
+            decimals: 6,
+            logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png",
+            name: "USD Coin",
+            symbol: "USDC"
+        },
+        {
+            address: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+            chainId: 900,
+            decimals: 6,
+            logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg",
+            name: "USDT",
+            symbol: "USDT"
         },
     ],
 

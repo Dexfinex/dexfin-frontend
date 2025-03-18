@@ -1,30 +1,58 @@
-import React, { useState, useContext } from 'react';
-import { Bell, Maximize2, Minimize2, Wallet, ArrowUp, ArrowDown, Sun, Moon } from 'lucide-react';
+import React, { useState, useContext, useEffect } from 'react';
+import { Bell, Maximize2, Minimize2, Wallet, ArrowUp, ArrowDown, Sun, Moon, Menu, X } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
 import { StarMenu } from './StarMenu';
 import { MainMenu } from './MainMenu';
 import { AccountMenu } from './AccountMenu';
 import { TopbarStarredItems } from './TopbarStarredItems';
 import { NotificationPanel } from './NotificationPanel';
-// import { WalletModal } from './WalletModal';
 import { useStore } from '../store/useStore';
-import { WalletDrawer } from './WalletDrawer';
 import { Web3AuthContext } from "../providers/Web3AuthContext";
+import { useWebSocket } from '../providers/WebSocketProvider';
 import { useToast } from '@chakra-ui/react';
 
 export const Header: React.FC = () => {
+  const { isConnected } = useContext(Web3AuthContext);
   const isSettingsOpen = useStore((state) => state.isSettingsOpen);
   const setIsSettingsOpen = useStore((state) => state.setIsSettingsOpen);
   const isTopbarVisible = useStore((state) => state.isTopbarVisible);
   const isTopbarBottom = useStore((state) => state.isTopbarBottom);
   const toggleTopbarVisibility = useStore((state) => state.toggleTopbarVisibility);
   const toggleTopbarPosition = useStore((state) => state.toggleTopbarPosition);
-  const { theme, toggleTheme } = useStore();
-  const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const loadStarredItems = useStore((state) => state.loadStarredItems);
+  const { theme, toggleTheme, setIsWalletDrawerOpen } = useStore();
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isWalletOpen, setIsWalletOpen] = useState(false);
-  const { isConnected } = useContext(Web3AuthContext);
-  const toast = useToast()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const toast = useToast();
+
+  const { unreadCount } = useWebSocket();
+
+  // Load starred items from localStorage when the component mounts
+  useEffect(() => {
+    if (isConnected) {
+      loadStarredItems();
+    }
+  }, [isConnected, loadStarredItems]);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 640);
+    };
+
+    checkScreenSize();
+
+    window.addEventListener('resize', checkScreenSize);
+
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  useEffect(() => {
+    if (!isSmallScreen && isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [isSmallScreen, isMobileMenuOpen]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -36,7 +64,7 @@ export const Header: React.FC = () => {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
@@ -47,22 +75,24 @@ export const Header: React.FC = () => {
 
   const toggleWalletDrawer = () => {
     if (isConnected) {
-      setIsWalletOpen(true)
+      setIsWalletDrawerOpen(true);
     } else {
       toast({
         status: 'info',
         description: `Please sign in to access your wallet.`,
         duration: 3500
-      })
+      });
     }
-  }
+  };
 
   const renderToggleButton = () => (
     <button
       onClick={toggleTopbarVisibility}
-      className={`fixed ${isTopbarBottom ? 'bottom-0' : 'top-0'} left-1/2 -translate-x-1/2 p-1 bg-black/40 backdrop-blur-xl border border-white/10 ${isTopbarBottom ? 'rounded-t-lg' : 'rounded-b-lg'
-        } transition-all z-50 hover:bg-black/60 ${isTopbarVisible ? '' : `${isTopbarBottom ? '-translate-y-1' : 'translate-y-1'}`
-        }`}
+      className={`fixed ${isTopbarBottom ? 'bottom-0' : 'top-0'} left-1/2 -translate-x-1/2 p-1 z-40
+        bg-black/40 backdrop-blur-xl border border-white/10 
+        ${isTopbarBottom ? 'rounded-t-lg' : 'rounded-b-lg'}
+        transition-all hover:bg-black/60 
+        ${isTopbarVisible ? '' : `${isTopbarBottom ? '-translate-y-1' : 'translate-y-1'}`}`}
     >
       {isTopbarVisible ? (
         isTopbarBottom ? <ArrowDown className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />
@@ -75,13 +105,19 @@ export const Header: React.FC = () => {
   return (
     <>
       <header
-        className={`fixed ${isTopbarBottom ? 'bottom-0' : 'top-0'} left-0 right-0 h-12 glass z-40 transition-all duration-300 ${isTopbarVisible ? '' : isTopbarBottom ? 'translate-y-full' : '-translate-y-full'
-          }`}
+        className={`fixed ${isTopbarBottom ? 'bottom-0' : 'top-0'} left-0 right-0 h-12 glass z-40 
+          transition-all duration-300 
+          ${isTopbarVisible ? '' : isTopbarBottom ? 'translate-y-full' : '-translate-y-full'}`}
       >
-        <div className="h-full flex items-center justify-between">
-          <div className="flex items-center gap-3 pl-4">
+        <div className="h-full flex items-center justify-between px-2">
+          {/* Left section */}
+          <div className="flex items-center gap-1 sm:gap-3">
             <MainMenu />
-            <div className="h-8 w-px bg-white/10" />
+
+            {!isSmallScreen && (
+              <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
+            )}
+
             <div className="h-6 w-auto relative">
               <img
                 src="https://i.imgur.com/PMmM0EA.png"
@@ -93,17 +129,21 @@ export const Header: React.FC = () => {
 
           <TopbarStarredItems />
 
-          <div className="flex items-center space-x-4 pr-4">
-            <StarMenu />
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
+            {!isSmallScreen && <StarMenu />}
+
             <div className="relative">
               <button
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors relative"
+                className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors relative"
+                aria-label="Notifications"
               >
-                <Bell className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full text-xs flex items-center justify-center">
-                  2
-                </span>
+                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded-full text-xs flex items-center justify-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
               {isNotificationsOpen && (
                 <NotificationPanel
@@ -112,43 +152,56 @@ export const Header: React.FC = () => {
                 />
               )}
             </div>
+
             <button
               onClick={toggleWalletDrawer}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
+              aria-label="Wallet"
             >
-              <Wallet className="w-4 h-4" />
+              <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
-            <button
-              onClick={toggleFullscreen}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              {isFullscreen ? (
-                <Minimize2 className="w-4 h-4" />
-              ) : (
-                <Maximize2 className="w-4 h-4" />
-              )}
-            </button>
-            <button
-              onClick={toggleTopbarPosition}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              {isTopbarBottom ? (
-                <ArrowUp className="w-4 h-4" />
-              ) : (
-                <ArrowDown className="w-4 h-4" />
-              )}
-            </button>
+
+            {(!isSmallScreen || window.innerWidth > 380) && (
+              <button
+                onClick={toggleFullscreen}
+                className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
+                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                ) : (
+                  <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                )}
+              </button>
+            )}
+
+            {(!isSmallScreen || window.innerWidth > 420) && (
+              <button
+                onClick={toggleTopbarPosition}
+                className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
+                aria-label="Toggle topbar position"
+              >
+                {isTopbarBottom ? (
+                  <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                ) : (
+                  <ArrowDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                )}
+              </button>
+            )}
+
             <button
               onClick={toggleTheme}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+              aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
-                <Sun className="w-4 h-4" />
+                <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               ) : (
-                <Moon className="w-4 h-4" />
+                <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               )}
             </button>
+
             <AccountMenu />
           </div>
         </div>
@@ -159,15 +212,6 @@ export const Header: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-      />
-
-      {/* <WalletModal
-        isOpen={isWalletOpen}
-        onClose={() => setIsWalletOpen(false)}
-      /> */}
-      <WalletDrawer
-        isOpen={isWalletOpen}
-        setIsOpen={setIsWalletOpen}
       />
     </>
   );

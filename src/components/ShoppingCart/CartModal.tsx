@@ -6,18 +6,26 @@ import { CartModalProps, TokenPurchaseDetails } from '../../types/cart.type';
 import { useTokenBuyHandler } from '../../hooks/useTokenBuyHandler';
 import { useStore } from '../../store/useStore';
 import useTokenStore from '../../store/useTokenStore';
-import { X, ShoppingCart } from 'lucide-react';
+import { X, ShoppingCart, Minimize2, Maximize2 } from 'lucide-react';
 import Spinner from './components/Spinner';
 import SearchHeader from './components/SearchHeader';
 import CoinGrid from './components/CoinGrid';
 import CartList from './components/CartList';
 import CheckoutSection from './components/CheckoutSection';
-
+import { SortConfig } from './components/SearchHeader';
 
 const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  // New state for separate token and network category filters
+  const [activeTokenCategory, setActiveTokenCategory] = useState('All');
+  const [activeNetworkCategory, setActiveNetworkCategory] = useState<string | null>(null);
+
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    option: 'marketCap',
+    direction: 'desc'
+  });
   const [txModalOpen, setTxModalOpen] = useState(false);
   const [transactionHashes, setTransactionHashes] = useState<string[]>([]);
   const [buyError, setBuyError] = useState<string | null>(null);
@@ -26,6 +34,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const [allTransactionsComplete, setAllTransactionsComplete] = useState(false);
   const [tokenDetails, setTokenDetails] = useState<TokenPurchaseDetails[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const { address: walletAddress, chainId: walletChainId } = useContext(Web3AuthContext);
   const { cartItems, addToCart, removeFromCart, updateQuantity, clearCart } = useStore();
@@ -39,6 +48,10 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     isConfirmed
   } = useTokenBuyHandler();
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
   // Check if document exists and set up a listener for theme changes
   useEffect(() => {
     const checkTheme = () => {
@@ -48,10 +61,10 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
         setIsDarkMode(false);
       }
     };
-    
+
     // Check initial theme
     checkTheme();
-    
+
     // Set up MutationObserver to watch for class changes on the html element
     if (typeof MutationObserver !== 'undefined') {
       const observer = new MutationObserver((mutations) => {
@@ -61,7 +74,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
           }
         });
       });
-      
+
       observer.observe(document.documentElement, { attributes: true });
       return () => observer.disconnect();
     }
@@ -128,12 +141,21 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     }
   }, [allTransactionsComplete]);
 
-  const handleCategoryChange = useCallback((category: string) => {
-    setSelectedCategory(category);
+  // Updated handlers for token category and network category
+  const handleTokenCategoryChange = useCallback((category: string) => {
+    setActiveTokenCategory(category);
+  }, []);
+
+  const handleNetworkCategoryChange = useCallback((networkCategory: string | null) => {
+    setActiveNetworkCategory(networkCategory);
   }, []);
 
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
+  }, []);
+
+  const handleSortChange = useCallback((newSortConfig: SortConfig) => {
+    setSortConfig(newSortConfig);
   }, []);
 
   const handleBuyExecution = useCallback(async () => {
@@ -143,6 +165,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     setBuyError(null);
 
     try {
+      console.log("cartItems token : ", cartItems)
       const tokenPurchases = cartItems.map(item => ({
         token: {
           address: item.address,
@@ -189,18 +212,36 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
     }
   }, [walletAddress, cartItems, executeBatchBuy]);
 
+
+
   const [showCart, setShowCart] = useState(false)
 
   const toggleCart = useCallback(() => {
     setShowCart((prev) => !prev)
   }, [])
+  const [flag, setFlag] = useState(false)
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
+
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <div className="relative glass border border-black/10 dark:border-white/10 shadow-lg w-[95%] md:w-[90%] h-[95%] md:h-[90%] rounded-xl overflow-hidden">
+      <div className={`relative glass border border-black/10 shadow-lg overflow-hidden ${isFullscreen
+        ? 'w-full h-full rounded-none'
+        : 'w-[90%] h-[90%] rounded-xl'
+        }`}>
         <span className="flex justify-end p-2">
+          <button
+            onClick={toggleFullscreen}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
+          </button>
           <button onClick={onClose} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
             <X className="w-4 h-4" />
           </button>
@@ -225,19 +266,27 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
           </div>
         ) : (
           <div className="flex flex-col md:flex-row h-[calc(100%-48px)]">
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
+            <div className="flex-1 flex flex-col h-full">
+              {/* Updated SearchHeader component with separate category props */}
               <SearchHeader
-                selectedCategory={selectedCategory}
+                activeTokenCategory={activeTokenCategory}
+                activeNetworkCategory={activeNetworkCategory}
                 searchQuery={searchQuery}
-                onCategoryChange={handleCategoryChange}
+                onTokenCategoryChange={handleTokenCategoryChange}
+                onNetworkCategoryChange={handleNetworkCategoryChange}
                 onSearchChange={handleSearchChange}
+                sortConfig={sortConfig}
+                onSortChange={handleSortChange}
               />
-              <div className="flex-1 min-h-0">
+              <div className="flex-1 h-full">
+                {/* Updated CoinGrid with active token and network categories */}
                 <CoinGrid
                   searchQuery={searchQuery}
-                  selectedCategory={selectedCategory}
+                  activeTokenCategory={activeTokenCategory}
+                  activeNetworkCategory={activeNetworkCategory}
                   onAddToCart={addToCart}
                   walletChainId={walletChainId ?? 8453}
+                  sortConfig={sortConfig}
                 />
               </div>
             </div>
@@ -294,7 +343,6 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
       )}
     </div>
   )
-
 };
 
 export default React.memo(CartModal);

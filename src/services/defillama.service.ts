@@ -21,6 +21,17 @@ export const defillamaService = {
 			throw error;
 		}
 	},
+
+	getPoolByInfo: async ({ chain, protocol, symbol }: { chain: string, protocol: string, symbol: string }): Promise<DefillamaPool[]> => {
+		try {
+			const { data } = await defillamaApi.get<DefillamaPool[]>(`/yields/pools/filtered?chain=${chain}&protocol=${protocol}&symbol=${symbol}`);
+			return data;
+		} catch (error) {
+			console.error('Failed to fetch defillama pool by info:', error);
+			throw error;
+		}
+	},
+
 	getChainTVL: async (): Promise<DefillamaChainTVL[]> => {
 		try {
 			const { data } = await defillamaApi.get<DefillamaChainTVL[]>(`/chains`);
@@ -34,7 +45,7 @@ export const defillamaService = {
 	getDexVolume: async (): Promise<DefillamaDexVolume> => {
 		try {
 			const { data } = await defillamaApi.get<DefillamaDexVolume>('/volum');
-			console.log("DEX volume dataservice:", data);
+			// console.log("DEX volume dataservice:", data);
 			return data;
 		} catch (error) {
 			console.error('Failed to fetch DEX volume:', error);

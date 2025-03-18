@@ -10,7 +10,16 @@ export interface TokenBalance {
   balance: number;
   decimals: number;
   usdPrice: number;
+  usdPrice24hrUsdChange: number;
   usdValue: number;
+  usdValue24hrUsdChange: number;
+  tokenId: string;
+  network?: {
+    chainId: number;
+    icon: string;
+    id: string;
+    name: string;
+  }
 }
 
 // Define the store's state and actions
@@ -18,6 +27,8 @@ interface TokenBalanceStoreState {
   tokenBalances: TokenBalance[];
   totalUsdValue: number;
   chainUsdValue: Record<number, number>;
+  pnlPercent: number;
+  pnlUsd: number;
   getTokenBalance: (address: string, chainId: number) => TokenBalance | null;
   setTokenBalances: (balances: TokenBalance[]) => void
 }
@@ -27,6 +38,8 @@ const useTokenBalanceStore = create<TokenBalanceStoreState>((set) => ({
   tokenBalances: [], // Initialize with an empty array
   totalUsdValue: 0,
   chainUsdValue: {},
+  pnlPercent: 0,
+  pnlUsd: 0,
   getTokenBalance: (address: string, chainId: number) => {
     const state = useTokenBalanceStore.getState() as TokenBalanceStoreState;
     const value = state.tokenBalances.find(
@@ -44,6 +57,14 @@ const useTokenBalanceStore = create<TokenBalanceStoreState>((set) => ({
       (acc, b) => acc + Number(b.usdValue) || 0,
       0
     );
+    const pnlUsd = balances.reduce(
+      (acc, b) => acc + Number(b.usdValue24hrUsdChange) || 0,
+      0
+    );
+
+
+    const pnlPercent = pnlUsd * 100 / totalUsdValue;
+
     const chainUsdValue = balances.reduce(
       (acc: Record<number, number>, current) => {
         if (!acc[current.chain]) {
@@ -60,6 +81,8 @@ const useTokenBalanceStore = create<TokenBalanceStoreState>((set) => ({
       tokenBalances: sortedBalances,
       totalUsdValue: totalUsdValue,
       chainUsdValue,
+      pnlUsd,
+      pnlPercent
     });
   },
 }));

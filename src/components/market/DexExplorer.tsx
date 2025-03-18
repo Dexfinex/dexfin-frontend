@@ -1,12 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { AlertCircle, Filter, RefreshCw, Search, TrendingDown, TrendingUp, ArrowUpDown } from 'lucide-react';
 import _ from 'lodash';
-import { formatAge, formatNumber } from '../../utils';
-import { getChainIcon } from '../../utils/getChainIcon';
+import { formatAge, formatNumber } from '../../utils/dex-explorer.util.ts';
+import { getChainIcon } from '../../utils/defi.util';
 
 import { useGetTrendingPools, useGetNewPools, useGetTopPools } from '../../hooks/useGeckoTerminal';
 import {LoadingSpinner} from './LoadingSpinner'
-
 
 const networks = [
   { id: 'eth', name: 'Ethereum', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
@@ -39,12 +38,24 @@ export const DexExplorer: React.FC = () => {
     key: '',
     direction: 'desc'
   });
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  
+  // Update screen width on resize
+  useEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-
+  // Calculate if mobile based on screen width
+  const isMobile = screenWidth < 768;
+  
+  // Calculate visible columns based on screen width
+  const getScrollableTable = () => screenWidth <= 1024;
 
   const handleSort = (key: string) => {
     let direction = 'desc';
-
 
     if (sortConfig.key === key) {
       direction = sortConfig.direction === 'desc' ? 'asc' : 'desc';
@@ -59,22 +70,22 @@ export const DexExplorer: React.FC = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [network, sortConfig, searchQuery, view]);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
   
-useEffect(() => {
-  const fetchInitialData = async () => {
-    setIsInitialLoading(true);
-    try {
-      if (view === 'trending') await refetchTrend();
-      if (view === 'new') await refetchNew();
-      if (view === 'top') await refetchTop();
-    } finally {
-      setIsInitialLoading(false);
-    }
-  };
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      setIsInitialLoading(true);
+      try {
+        if (view === 'trending') await refetchTrend();
+        if (view === 'new') await refetchNew();
+        if (view === 'top') await refetchTop();
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
 
-  fetchInitialData();
-}, [network, view]);
+    fetchInitialData();
+  }, [network, view, refetchTrend, refetchNew, refetchTop]);
+  
   const SortIndicator = ({ currentKey }: { currentKey: string }) => {
     if (sortConfig.key !== currentKey) {
       return <ArrowUpDown className="w-4 h-4 ml-1 opacity-50" />;
@@ -85,8 +96,6 @@ useEffect(() => {
       />
     );
   };
-
-
 
   const error = useMemo(() => {
     return trendingError || newError || topError
@@ -118,13 +127,13 @@ useEffect(() => {
     }
   };
 
-
   const handleNetworkChange = (newNetwork: string) => {
     setNetwork(newNetwork);
     setShowNetworkSelector(false);
     setView('trending');
     setSearchQuery('');
   };
+  
   const pools = useMemo(() => {
     switch (view) {
       case 'trending':
@@ -138,12 +147,9 @@ useEffect(() => {
     }
   }, [view, trendingPoolsData, newPoolsData, topPoolsData, network]);
 
-  
   const selectedNetwork = useMemo(()=>{
     return networks.find(n=>n.id === network)
-  }, [network])
-  
-  // const selectedNetwork = networks.find(n => n.id === network);
+  }, [network]);
 
   const filteredPools = (pools || []).filter(pool => {
     const searchLower = searchQuery.toLowerCase();
@@ -160,7 +166,8 @@ useEffect(() => {
       quoteToken?.attributes.symbol.toLowerCase().includes(searchLower)
     );
   });
-const sortedPools = useMemo(() => {
+  
+  const sortedPools = useMemo(() => {
     if (!sortConfig.key || !filteredPools) return filteredPools;
 
     return [...filteredPools].sort((a, b) => {
@@ -170,7 +177,7 @@ const sortedPools = useMemo(() => {
       const parseFormattedNumber = (value: string): number => {
         if (!value) return 0;
         const cleanValue = value.replace(/,/g, '').toUpperCase();
-        const multipliers = { 'K': 1000, 'M': 1000000, 'B': 1000000000 };
+        const multipliers: Record<string, number> = { 'K': 1000, 'M': 1000000, 'B': 1000000000 };
         const match = cleanValue.match(/^([\d.]+)([KMB])?$/);
         if (!match) return 0;
         const [, number, suffix] = match;
@@ -185,7 +192,7 @@ const sortedPools = useMemo(() => {
         if (!match) return 0;
         const [, value, unit] = match;
         const numValue = parseInt(value);
-        const multipliers = {
+        const multipliers: Record<string, number> = {
           'y': 525600,
           'mth': 43800,
           'd': 1440,
@@ -226,7 +233,7 @@ const sortedPools = useMemo(() => {
             bValue = parseFormattedNumber(b.attributes.reserve_in_usd || '0');
             break;
           case 'transactions':
-            const aTransactions = typeof a.attributes.transactions?.h24 === 'string'
+            { const aTransactions = typeof a.attributes.transactions?.h24 === 'string'
               ? JSON.parse(a.attributes.transactions.h24)
               : a.attributes.transactions?.h24 || { buyers: 0, sellers: 0 };
             const bTransactions = typeof b.attributes.transactions?.h24 === 'string'
@@ -234,7 +241,7 @@ const sortedPools = useMemo(() => {
               : b.attributes.transactions?.h24 || { buyers: 0, sellers: 0 };
             aValue = Number(aTransactions.buyers || 0) + Number(aTransactions.sellers || 0);
             bValue = Number(bTransactions.buyers || 0) + Number(bTransactions.sellers || 0);
-            break;
+            break; }
           case 'age':
             aValue = parseAgeToMinutes(formatAge(a.attributes.pool_created_at));
             bValue = parseAgeToMinutes(formatAge(b.attributes.pool_created_at));
@@ -257,6 +264,7 @@ const sortedPools = useMemo(() => {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     return sortedPools.slice(indexOfFirstItem, indexOfLastItem);
   }, [sortedPools, currentPage, itemsPerPage]);
+  
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center">
@@ -271,9 +279,7 @@ const sortedPools = useMemo(() => {
       </div>
     );
   }
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = sortedPools.slice(indexOfFirstItem, indexOfLastItem);
+  
   const totalPages = Math.ceil(sortedPools.length / itemsPerPage);
   
   const PaginationButton = ({ page, isActive, onClick }) => (
@@ -288,14 +294,83 @@ const sortedPools = useMemo(() => {
       {page}
     </button>
   );
+  
   const Pagination = () => {
-    const pages = [];
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(i);
+    // For mobile, just show current page and total pages
+    if (isMobile) {
+      return (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className={`px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5 ${
+              currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            ‹
+          </button>
+          
+          <span className="px-3 py-1.5">
+            {currentPage} / {totalPages}
+          </span>
+          
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5 ${
+              currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            ›
+          </button>
+        </div>
+      );
+    }
+    
+    // For desktop, show page numbers
+    let pages = [];
+    
+    if (totalPages <= 7) {
+      // If 7 or fewer pages, show all
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+      
+      // Show dots if current page is more than 3
+      if (currentPage > 3) {
+        pages.push('...');
+      }
+      
+      // Determine range around current page
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
+      
+      // Handle special cases
+      if (currentPage <= 3) {
+        endPage = 4;
+      } else if (currentPage >= totalPages - 2) {
+        startPage = totalPages - 3;
+      }
+      
+      // Add range of pages
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+      
+      // Show dots if current page is less than totalPages - 2
+      if (currentPage < totalPages - 2) {
+        pages.push('...');
+      }
+      
+      // Always show last page
+      pages.push(totalPages);
     }
   
     return (
-      <div className="flex items-center justify-center gap-2 mt-6">
+      <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
         <button
           onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
           disabled={currentPage === 1}
@@ -303,18 +378,22 @@ const sortedPools = useMemo(() => {
             currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
-          ‹ Prev
+          ‹
         </button>
         
-        {pages.map(page => (
-          <PaginationButton
-            key={page}
-            page={page}
-            isActive={currentPage === page}
-            onClick={() => setCurrentPage(page)}
-          />
+        {pages.map((page, index) => (
+          typeof page === 'number' ? (
+            <PaginationButton
+              key={index}
+              page={page}
+              isActive={currentPage === page}
+              onClick={() => setCurrentPage(page)}
+            />
+          ) : (
+            <span key={index} className="px-2">...</span>
+          )
         ))}
-  
+        
         <button
           onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
           disabled={currentPage === totalPages}
@@ -322,18 +401,143 @@ const sortedPools = useMemo(() => {
             currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
-          Next ›
+          ›
         </button>
       </div>
     );
   };
+
+  // Mobile card view for pools - only if really narrow screen
+  const MobilePoolCard = ({ pool }) => {
+    const baseToken = pool.included?.tokens.find(t =>
+      t.id === pool.relationships.base_token.data.id
+    );
+    const quoteToken = pool.included?.tokens.find(t =>
+      t.id === pool.relationships.quote_token.data.id
+    );
+    
+    // Parse pool data
+    const tokenPrice = parseFloat(pool.attributes.base_token_price_usd || '0');
+    const priceChange5m = parseFloat(pool.attributes.price_change_percentage?.m5 || '0');
+    const priceChange1h = parseFloat(pool.attributes.price_change_percentage?.h1 || '0');
+    const priceChange6h = parseFloat(pool.attributes.price_change_percentage?.h6 || '0');
+    const priceChange24h = parseFloat(pool.attributes.price_change_percentage?.h24 || '0');
+    const volume24h = parseFloat(pool.attributes.volume_usd?.h24 || '0');
+    const tvl = parseFloat(pool.attributes.reserve_in_usd || '0');
+    const transactions24h_json = JSON.stringify(pool.attributes.transactions?.h24 || 0);
+    const tokenAge = formatAge(pool.attributes.pool_created_at);
+    let transactions24h = 0;
+    try {
+      const txData = JSON.parse(transactions24h_json);
+      transactions24h = Number(txData.buyers || 0) + Number(txData.sellers || 0);
+    } catch (e) {
+      console.error("Error parsing transactions:", e);
+    }
+    
+    return (
+      <div className="p-4 mb-3 rounded-lg bg-white/5">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="flex -space-x-2">
+            {(baseToken as BaseToken)?.attributes.image_url ? (
+              <img
+                src={(baseToken as BaseToken).attributes.image_url}
+                alt={(baseToken as BaseToken).attributes.symbol}
+                className="w-8 h-8 rounded-full ring-2 ring-[#0a0a0c]"
+              />
+            ) : (
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 ring-2 ring-[#0a0a0c]">
+                <span className="text-xs font-medium">{baseToken?.attributes.symbol.charAt(0)}</span>
+              </div>
+            )}
+            {(quoteToken as BaseToken)?.attributes.image_url ? (
+              <img
+                src={(quoteToken as BaseToken).attributes.image_url}
+                alt={(quoteToken as BaseToken).attributes.symbol}
+                className="w-8 h-8 rounded-full ring-2 ring-[#0a0a0c]"
+              />
+            ) : (
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 ring-2 ring-[#0a0a0c]">
+                <span className="text-xs font-medium">{quoteToken?.attributes.symbol.charAt(0)}</span>
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="font-medium">
+              {baseToken?.attributes.symbol}/{quoteToken?.attributes.symbol}
+            </div>
+            <div className="text-sm text-white/60">
+              {pool.attributes.name}
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+          <div className="text-sm text-white/60">Price:</div>
+          <div className="text-sm font-medium">${formatNumber(tokenPrice)}</div>
+          
+          <div className="text-sm text-white/60">5M %:</div>
+          <div className={`text-sm font-medium flex items-center ${priceChange5m >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {priceChange5m >= 0 ? (
+              <TrendingUp className="w-4 h-4 mr-1" />
+            ) : (
+              <TrendingDown className="w-4 h-4 mr-1" />
+            )}
+            {Math.abs(priceChange5m).toFixed(2)}%
+          </div>
+          
+          <div className="text-sm text-white/60">1h %:</div>
+          <div className={`text-sm font-medium flex items-center ${priceChange1h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {priceChange1h >= 0 ? (
+              <TrendingUp className="w-4 h-4 mr-1" />
+            ) : (
+              <TrendingDown className="w-4 h-4 mr-1" />
+            )}
+            {Math.abs(priceChange1h).toFixed(2)}%
+          </div>
+          
+          <div className="text-sm text-white/60">6h %:</div>
+          <div className={`text-sm font-medium flex items-center ${priceChange6h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {priceChange6h >= 0 ? (
+              <TrendingUp className="w-4 h-4 mr-1" />
+            ) : (
+              <TrendingDown className="w-4 h-4 mr-1" />
+            )}
+            {Math.abs(priceChange6h).toFixed(2)}%
+          </div>
+          
+          <div className="text-sm text-white/60">24h %:</div>
+          <div className={`text-sm font-medium flex items-center ${priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {priceChange24h >= 0 ? (
+              <TrendingUp className="w-4 h-4 mr-1" />
+            ) : (
+              <TrendingDown className="w-4 h-4 mr-1" />
+            )}
+            {Math.abs(priceChange24h).toFixed(2)}%
+          </div>
+          
+          <div className="text-sm text-white/60">Volume (24h):</div>
+          <div className="text-sm font-medium">${formatNumber(volume24h)}</div>
+          
+          <div className="text-sm text-white/60">TVL:</div>
+          <div className="text-sm font-medium">${formatNumber(tvl)}</div>
+          
+          <div className="text-sm text-white/60">Transactions (24h):</div>
+          <div className="text-sm font-medium">{formatNumber(transactions24h)}</div>
+          
+          <div className="text-sm text-white/60">Age:</div>
+          <div className="text-sm font-medium">{tokenAge}</div>
+        </div>
+      </div>
+    );
+  };
+  
   return (
-    <div className="h-full p-6">
+    <div className="h-full p-2 md:p-6">
       {/* Header Controls */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col mb-4 space-y-3 md:space-y-0 md:flex-row md:items-center md:justify-between md:mb-6">
+        <div className="flex flex-wrap items-center gap-2 md:gap-4">
           {/* Network Selector */}
-          <div className="relative">
+          <div className="relative z-10">
             <button
               onClick={() => setShowNetworkSelector(!showNetworkSelector)}
               className="flex items-center gap-2 px-3 py-2 transition-colors rounded-lg bg-white/5 hover:bg-white/10"
@@ -341,12 +545,11 @@ const sortedPools = useMemo(() => {
               {selectedNetwork && (
                 <img
                   src={selectedNetwork.logo ? selectedNetwork.logo : ''}
-                  // src={selectedNetwork.logo}
                   alt={selectedNetwork.name}
                   className="w-5 h-5"
                 />
               )}
-              <span>{selectedNetwork?.name}</span>
+              <span className="max-w-[80px] truncate">{selectedNetwork?.name}</span>
               <svg
                 className={`w-4 h-4 transition-transform ${showNetworkSelector ? 'rotate-180' : ''}`}
                 viewBox="0 0 24 24"
@@ -373,7 +576,6 @@ const sortedPools = useMemo(() => {
                         }`}
                     >
                       <img src={n.logo ? n.logo : ''} alt={n.name} className="w-5 h-5" />
-                      {/* <img src={n.logo} alt={n.name} className="w-5 h-5" /> */}
                       <span>{n.name}</span>
                     </button>
                   ))}
@@ -382,288 +584,328 @@ const sortedPools = useMemo(() => {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <button
               onClick={() => setView('trending')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${view === 'trending' ? 'bg-white/10' : 'hover:bg-white/5'
+              className={`px-2 py-1.5 text-sm md:px-3 md:py-1.5 md:text-base rounded-lg transition-colors ${view === 'trending' ? 'bg-white/10' : 'hover:bg-white/5'
                 }`}
             >
               Trending
             </button>
             <button
               onClick={() => setView('new')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${view === 'new' ? 'bg-white/10' : 'hover:bg-white/5'
+              className={`px-2 py-1.5 text-sm md:px-3 md:py-1.5 md:text-base rounded-lg transition-colors ${view === 'new' ? 'bg-white/10' : 'hover:bg-white/5'
                 }`}
             >
               New
             </button>
             <button
               onClick={() => setView('top')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${view === 'top' ? 'bg-white/10' : 'hover:bg-white/5'
+              className={`px-2 py-1.5 text-sm md:px-3 md:py-1.5 md:text-base rounded-lg transition-colors ${view === 'top' ? 'bg-white/10' : 'hover:bg-white/5'
                 }`}
             >
               Top
             </button>
           </div>
+        </div>
 
-          <div className="relative">
+        <div className="flex items-center justify-between gap-2">
+          <div className="relative flex-grow">
             <Search className="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-white/40" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search pools..."
-              className="w-64 py-2 pl-10 pr-4 rounded-lg outline-none bg-white/5 placeholder:text-white/40"
+              className="w-full py-2 pl-10 pr-4 rounded-lg outline-none md:w-64 bg-white/5 placeholder:text-white/40"
             />
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            title="Refresh data"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button className="p-2 transition-colors rounded-lg hover:bg-white/10">
-            <Filter className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button className="p-2 transition-colors rounded-lg hover:bg-white/10" aria-label="Filter">
+              <Filter className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Pools List */}
-      <div className="overflow-x-auto market-cap-scrollbar">
-        <table className="w-full">
-          <thead>
-            <tr className="text-left text-white/60">
-              <th className="px-4 py-3 font-medium whitespace-nowrap">Pool</th>
-              <th
-                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
-                onClick={() => handleSort('price')}
-              >
-                Price{sortConfig.key === 'price' && <SortIndicator currentKey="price" />}
-              </th>
-              <th
-                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
-                onClick={() => handleSort('5m')}
-              >
-                5M %{sortConfig.key === '5m' && <SortIndicator currentKey="5m" />}
-              </th>
-              <th
-                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
-                onClick={() => handleSort('1h')}
-              >
-                1h %{sortConfig.key === '1h' && <SortIndicator currentKey="1h" />}
-              </th>
-              <th
-                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
-                onClick={() => handleSort('6h')}
-              >
-                6h %{sortConfig.key === '6h' && <SortIndicator currentKey="6h" />}
-              </th>
-              <th
-                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
-                onClick={() => handleSort('24h')}
-              >
-                24h %{sortConfig.key === '24h' && <SortIndicator currentKey="24h" />}
-              </th>
-              <th
-                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
-                onClick={() => handleSort('volume')}
-              >
-                Volume (24h){sortConfig.key === 'volume' && <SortIndicator currentKey="volume" />}
-              </th>
-              <th
-                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
-                onClick={() => handleSort('tvl')}
-              >
-                TVL{sortConfig.key === 'tvl' && <SortIndicator currentKey="tvl" />}
-              </th>
-              <th
-                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
-                onClick={() => handleSort('transactions')}
-              >
-                Transactions (24h){sortConfig.key === 'transactions' && <SortIndicator currentKey="transactions" />}
-              </th>
-              <th
-                className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
-                onClick={() => handleSort('age')}
-              >
-                Age{sortConfig.key === 'age' && <SortIndicator currentKey="age" />}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {loading ? (
-              // Loading skeletons
-              [...Array(10)].map((_, i) => (
-                <tr key={i} className="animate-pulse">
-                  <td className="px-4 py-4">
-                    <div className="w-32 h-8 rounded bg-white/10" />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="w-24 h-4 rounded bg-white/10" />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="w-16 h-4 rounded bg-white/10" />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="w-16 h-4 rounded bg-white/10" />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="w-16 h-4 rounded bg-white/10" />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="w-16 h-4 rounded bg-white/10" />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="h-4 rounded w-28 bg-white/10" />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="h-4 rounded w-28 bg-white/10" />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="w-20 h-4 rounded bg-white/10" />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="w-16 h-4 rounded bg-white/10" />
-                  </td>
-
-                </tr>
-              ))
-            ) : paginatedItems.length === 0 ? (
-              <tr>
-                <td colSpan={10} className="py-12 text-center">
-                  <Search className="w-12 h-12 mx-auto mb-4 text-white/40" />
-                  <p className="mb-2 text-lg font-medium">No pools found</p>
-                  <p className="text-white/60">
-                    Try adjusting your search or filter criteria
-                  </p>
-                </td>
-              </tr>
-            ) : (
-              paginatedItems.map((pool) => {
-                const baseToken = pool.included?.tokens.find(t =>
-                  t.id === pool.relationships.base_token.data.id
-                );
-                const quoteToken = pool.included?.tokens.find(t =>
-                  t.id === pool.relationships.quote_token.data.id
-                );
-                const Token_price=parseFloat(pool.attributes.base_token_price_usd || '0');
-                const priceChange5m = parseFloat(pool.attributes.price_change_percentage?.m5 || '0');
-                const priceChange1h = parseFloat(pool.attributes.price_change_percentage?.h1 || '0');
-                const priceChange6h = parseFloat(pool.attributes.price_change_percentage?.h6 || '0');
-                const priceChange24h = parseFloat(pool.attributes.price_change_percentage?.h24 || '0');
-                const volume24h = parseFloat(pool.attributes.volume_usd?.h24 || '0');
-                const tvl = parseFloat(pool.attributes.reserve_in_usd || '0');
-                const transactions24h_json = JSON.stringify(pool.attributes.transactions?.h24 || 0);
-                const token_age = pool.attributes.pool_created_at;
-                const transactions24h = Number(JSON.parse(transactions24h_json).buyers) + Number(JSON.parse(transactions24h_json).sellers)
-
-                return (
-                  <tr key={pool.id} className="transition-colors hover:bg-white/5">
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex -space-x-2">
-                          {(baseToken as BaseToken)?.attributes.image_url ? (
-                            <img
-                              src={(baseToken as BaseToken).attributes.image_url}
-                              alt={(baseToken as BaseToken).attributes.symbol}
-                              className="w-8 h-8 rounded-full ring-2 ring-[#0a0a0c]"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-[#0a0a0c]">
-                              <span className="text-xs font-medium">{baseToken?.attributes.symbol.charAt(0)}</span>
-                            </div>
-                          )}
-                          {(quoteToken as BaseToken)?.attributes.image_url ? (
-                            <img
-                              src={(quoteToken as BaseToken).attributes.image_url}
-                              alt={(quoteToken as BaseToken).attributes.symbol}
-                              className="w-8 h-8 rounded-full ring-2 ring-[#0a0a0c]"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-[#0a0a0c]">
-                              <span className="text-xs font-medium">{quoteToken?.attributes.symbol.charAt(0)}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-medium">
-                            {baseToken?.attributes.symbol}/{quoteToken?.attributes.symbol}
-                          </div>
-                          <div className="text-sm text-white/60">
-                            {pool.attributes.name}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      ${formatNumber(Token_price)}
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className={`flex items-center gap-1 ${priceChange5m >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                        {priceChange5m >= 0 ? (
-                          <TrendingUp className="w-4 h-4" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4" />
-                        )}
-                        <span>{Math.abs(priceChange5m).toFixed(2)}%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className={`flex items-center gap-1 ${priceChange1h >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                        {priceChange1h >= 0 ? (
-                          <TrendingUp className="w-4 h-4" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4" />
-                        )}
-                        <span>{Math.abs(priceChange1h).toFixed(2)}%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className={`flex items-center gap-1 ${priceChange6h >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                        {priceChange6h >= 0 ? (
-                          <TrendingUp className="w-4 h-4" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4" />
-                        )}
-                        <span>{Math.abs(priceChange6h).toFixed(2)}%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className={`flex items-center gap-1 ${priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                        {priceChange24h >= 0 ? (
-                          <TrendingUp className="w-4 h-4" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4" />
-                        )}
-                        <span>{Math.abs(priceChange24h).toFixed(2)}%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">${formatNumber(volume24h)}</td>
-                    <td className="px-4 py-4">${formatNumber(tvl)}</td>
-                    <td className="px-4 py-4">{formatNumber(transactions24h)}</td>
-                    <td className="px-4 py-4 text-white/60">
-                      {formatAge(token_age)}
-                    </td>
-
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+      {/* Pools List - Cards for very small screens, table with horizontal scroll for larger */}
+      {screenWidth <= 480 ? (
+        // Mobile card view
+        <div className="pb-6">
+          {loading ? (
+            [...Array(5)].map((_, i) => (
+              <div key={i} className="p-4 mb-3 rounded-lg animate-pulse bg-white/5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex -space-x-2">
+                    <div className="w-8 h-8 rounded-full bg-white/10" />
+                    <div className="w-8 h-8 rounded-full bg-white/10" />
+                  </div>
+                  <div className="w-24 h-4 rounded bg-white/10" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="w-16 h-4 rounded bg-white/10" />
+                  <div className="w-16 h-4 rounded bg-white/10" />
+                  <div className="w-16 h-4 rounded bg-white/10" />
+                  <div className="w-16 h-4 rounded bg-white/10" />
+                </div>
+              </div>
+            ))
+          ) : paginatedItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search className="w-12 h-12 mx-auto mb-4 text-white/40" />
+              <p className="mb-2 text-lg font-medium">No pools found</p>
+              <p className="text-white/60">
+                Try adjusting your search or filter criteria
+              </p>
+            </div>
+          ) : (
+            paginatedItems.map((pool) => (
+              <MobilePoolCard key={pool.id} pool={pool} />
+            ))
+          )}
         </div>
-  <Pagination />
-  {isInitialLoading && <LoadingSpinner />}
+      ) : (
+        // Table view with horizontal scroll for tablets and desktop
+        <div className={`overflow-x-auto market-cap-scrollbar ${getScrollableTable() ? 'max-w-full' : ''}`}>
+          <table className="w-full">
+            <thead>
+              <tr className="text-left text-white/60">
+                <th className="px-4 py-3 font-medium whitespace-nowrap">Pool</th>
+                <th
+                  className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                  onClick={() => handleSort('price')}
+                >
+                  Price{sortConfig.key === 'price' && <SortIndicator currentKey="price" />}
+                </th>
+                <th
+                  className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                  onClick={() => handleSort('5m')}
+                >
+                  5M %{sortConfig.key === '5m' && <SortIndicator currentKey="5m" />}
+                </th>
+                <th
+                  className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                  onClick={() => handleSort('1h')}
+                >
+                  1h %{sortConfig.key === '1h' && <SortIndicator currentKey="1h" />}
+                </th>
+                <th
+                  className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                  onClick={() => handleSort('6h')}
+                >
+                  6h %{sortConfig.key === '6h' && <SortIndicator currentKey="6h" />}
+                </th>
+                <th
+                  className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                  onClick={() => handleSort('24h')}
+                >
+                  24h %{sortConfig.key === '24h' && <SortIndicator currentKey="24h" />}
+                </th>
+                <th
+                  className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                  onClick={() => handleSort('volume')}
+                >
+                  Volume (24h){sortConfig.key === 'volume' && <SortIndicator currentKey="volume" />}
+                </th>
+                <th
+                  className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                  onClick={() => handleSort('tvl')}
+                >
+                  TVL{sortConfig.key === 'tvl' && <SortIndicator currentKey="tvl" />}
+                </th>
+                <th
+                  className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                  onClick={() => handleSort('transactions')}
+                >
+                  Transactions (24h){sortConfig.key === 'transactions' && <SortIndicator currentKey="transactions" />}
+                </th>
+                <th
+                  className="px-4 py-3 font-medium cursor-pointer whitespace-nowrap hover:text-white"
+                  onClick={() => handleSort('age')}
+                >
+                  Age{sortConfig.key === 'age' && <SortIndicator currentKey="age" />}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {loading ? (
+                // Loading skeletons
+                [...Array(10)].map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-4 py-4">
+                      <div className="w-32 h-8 rounded bg-white/10" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="w-24 h-4 rounded bg-white/10" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="w-16 h-4 rounded bg-white/10" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="w-16 h-4 rounded bg-white/10" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="w-16 h-4 rounded bg-white/10" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="w-16 h-4 rounded bg-white/10" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="h-4 rounded w-28 bg-white/10" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="h-4 rounded w-28 bg-white/10" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="w-20 h-4 rounded bg-white/10" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="w-16 h-4 rounded bg-white/10" />
+                    </td>
+                  </tr>
+                ))
+              ) : paginatedItems.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="py-12 text-center">
+                    <Search className="w-12 h-12 mx-auto mb-4 text-white/40" />
+                    <p className="mb-2 text-lg font-medium">No pools found</p>
+                    <p className="text-white/60">
+                      Try adjusting your search or filter criteria
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                paginatedItems.map((pool) => {
+                  const baseToken = pool.included?.tokens.find(t =>
+                    t.id === pool.relationships.base_token.data.id
+                  );
+                  const quoteToken = pool.included?.tokens.find(t =>
+                    t.id === pool.relationships.quote_token.data.id
+                  );
+                  const Token_price = parseFloat(pool.attributes.base_token_price_usd || '0');
+                  const priceChange5m = parseFloat(pool.attributes.price_change_percentage?.m5 || '0');
+                  const priceChange1h = parseFloat(pool.attributes.price_change_percentage?.h1 || '0');
+                  const priceChange6h = parseFloat(pool.attributes.price_change_percentage?.h6 || '0');
+                  const priceChange24h = parseFloat(pool.attributes.price_change_percentage?.h24 || '0');
+                  const volume24h = parseFloat(pool.attributes.volume_usd?.h24 || '0');
+                  const tvl = parseFloat(pool.attributes.reserve_in_usd || '0');
+                  const transactions24h_json = JSON.stringify(pool.attributes.transactions?.h24 || 0);
+                  const token_age = pool.attributes.pool_created_at;
+                  let transactions24h = 0;
+                  try {
+                    const txData = JSON.parse(transactions24h_json);
+                    transactions24h = Number(txData.buyers || 0) + Number(txData.sellers || 0);
+                  } catch (e) {
+                    console.error("Error parsing transactions:", e);
+                  }
+
+                  return (
+                    <tr key={pool.id} className="transition-colors hover:bg-white/5">
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex -space-x-2 mr-3">
+                            {(baseToken as BaseToken)?.attributes.image_url ? (
+                              <img
+                                src={(baseToken as BaseToken).attributes.image_url}
+                                alt={(baseToken as BaseToken).attributes.symbol}
+                                className="w-8 h-8 md:w-12 md:h-12 rounded-full ring-2 ring-[#0a0a0c]"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center w-8 h-8 md:w-12 md:h-12 rounded-full bg-white/10 ring-2 ring-[#0a0a0c]">
+                                <span className="text-xs font-medium">{baseToken?.attributes.symbol.charAt(0)}</span>
+                              </div>
+                            )}
+                            {(quoteToken as BaseToken)?.attributes.image_url ? (
+                              <img
+                                src={(quoteToken as BaseToken).attributes.image_url}
+                                alt={(quoteToken as BaseToken).attributes.symbol}
+                                className="w-8 h-8 md:w-12 md:h-12 rounded-full ring-2 ring-[#0a0a0c]"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center w-8 h-8 md:w-12 md:h-12 rounded-full bg-white/10 ring-2 ring-[#0a0a0c]">
+                                <span className="text-xs font-medium">{quoteToken?.attributes.symbol.charAt(0)}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className='ml-4'>
+                            <div className="font-medium truncate max-w-[120px] md:max-w-full">
+                              {baseToken?.attributes.symbol}/{quoteToken?.attributes.symbol}
+                            </div>
+                            <div className="text-sm text-white/60 truncate max-w-[120px] md:max-w-full">
+                              {pool.attributes.name}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        ${formatNumber(Token_price)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className={`flex items-center gap-1 ${priceChange5m >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {priceChange5m >= 0 ? (
+                            <TrendingUp className="w-4 h-4" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4" />
+                          )}
+                          <span>{Math.abs(priceChange5m).toFixed(2)}%</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className={`flex items-center gap-1 ${priceChange1h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {priceChange1h >= 0 ? (
+                            <TrendingUp className="w-4 h-4" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4" />
+                          )}
+                          <span>{Math.abs(priceChange1h).toFixed(2)}%</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className={`flex items-center gap-1 ${priceChange6h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {priceChange6h >= 0 ? (
+                            <TrendingUp className="w-4 h-4" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4" />
+                          )}
+                          <span>{Math.abs(priceChange6h).toFixed(2)}%</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className={`flex items-center gap-1 ${priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {priceChange24h >= 0 ? (
+                            <TrendingUp className="w-4 h-4" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4" />
+                          )}
+                          <span>{Math.abs(priceChange24h).toFixed(2)}%</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">${formatNumber(volume24h)}</td>
+                      <td className="px-4 py-4">${formatNumber(tvl)}</td>
+                      <td className="px-4 py-4">{formatNumber(transactions24h)}</td>
+                      <td className="px-4 py-4 text-white/60">
+                        {formatAge(token_age)}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <Pagination />
+      {isInitialLoading && <LoadingSpinner />}
     </div>
   );
 };

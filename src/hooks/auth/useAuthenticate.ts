@@ -9,7 +9,7 @@ import {
     authenticateWithDiscord,
     authenticateWithWebAuthn,
     authenticateWithStytch,
-} from '../../utils/lit';
+} from '../../utils/lit.util.ts';
 import {Connector} from 'wagmi';
 
 export default function useAuthenticate(redirectUri?: string) {

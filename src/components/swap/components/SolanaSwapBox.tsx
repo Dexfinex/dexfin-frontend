@@ -15,6 +15,7 @@ import {VersionedTransaction} from "@solana/web3.js";
 import {connection} from "../../../config/solana.ts";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
+import {getUSDAmount} from "../../../utils/swap.util.ts";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -36,14 +37,6 @@ interface PreviewDetailItemProps {
     valueClassName?: string;
     isFree?: boolean;
     isLoading: boolean;
-}
-
-const getUSDAmount = (selectedToken: TokenType | undefined, price: number, amount: string): number => {
-    if (selectedToken) {
-        const numAmount = Number(amount)
-        return price * numAmount
-    }
-    return 0
 }
 
 const PreviewDetailItem = ({
@@ -344,7 +337,7 @@ export function SolanaSwapBox({
                 <div className="z-30">
                     <button
                         onClick={onSwitch}
-                        className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
+                        className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
                     >
                         <ArrowDownUp className="w-4 h-4"/>
                     </button>
@@ -501,7 +494,7 @@ export function SolanaSwapBox({
             }
             {
                 <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                                  link={`${mapChainId2ExplorerUrl[SOLANA_CHAIN_ID]}/tx/${transactionHash}`}/>
+                                  link={`${mapChainId2ExplorerUrl[SOLANA_CHAIN_ID]}/tx/${transactionHash}`} checkBalance={true}/>
             }
         </div>
     )

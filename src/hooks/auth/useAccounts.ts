@@ -1,6 +1,6 @@
 import {useCallback, useState} from 'react';
 import {AuthMethod} from '@lit-protocol/types';
-import {getPKPs, mintPKP} from '../../utils/lit';
+import {getPKPs, mintPKP} from '../../utils/lit.util.ts';
 import {IRelayPKP} from '@lit-protocol/types';
 
 export default function useAccounts() {

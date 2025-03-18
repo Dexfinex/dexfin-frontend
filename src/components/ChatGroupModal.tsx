@@ -6,7 +6,7 @@ import { IGroup, IMember } from '../types/chat.type';
 import { Clipboard } from './common/Clipboard';
 import { extractAddress, shrinkAddress } from '../utils/common.util';
 import { useStore } from '../store/useStore';
-import { getWalletProfile } from '../utils/chatApi';
+import { getWalletProfile } from '../utils/chat.util';
 
 interface ChatGroupModalProps {
     isOpen: boolean;

@@ -12,7 +12,9 @@ interface GlobalMetricProps {
 
 const GlobalMetric: React.FC<GlobalMetricProps> = ({ isLoading, }) => {
 
-    const { protocol, netAPY, healthFactor, } = useDefiStore();
+    const { protocol, netAPY, healthFactor, totalLockedValue } = useDefiStore();
+    const total_usd_value = totalLockedValue;
+    const total_unclaimed_usd_value = protocol.reduce((sum, p) => sum + Number(p.total_unclaimed_usd_value) || 0, 0);
     const isHealthy = formatHealthFactor(healthFactor) === "∞";
 
     return (
@@ -25,7 +27,7 @@ const GlobalMetric: React.FC<GlobalMetricProps> = ({ isLoading, }) => {
                 <div className="text-2xl font-bold mb-1">
                     {
                         isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'2rem'}></Skeleton>
-                            : `$${formatNumberByFrac(protocol.total_usd_value)}`
+                            : `$${formatNumberByFrac(total_usd_value)}`
                     }
                 </div>
                 {/* <div className="flex items-center gap-1 text-emerald-400">
@@ -45,7 +47,7 @@ const GlobalMetric: React.FC<GlobalMetricProps> = ({ isLoading, }) => {
                         :
                         <>
                             <div className="text-2xl font-bold mb-1">
-                                {`+ ${formatNumberByFrac(netAPY)}%`}
+                                {`${formatNumberByFrac(netAPY)}%`}
                             </div>
                             <div className="text-sm text-white/60">
                                 Across all positions
@@ -64,7 +66,7 @@ const GlobalMetric: React.FC<GlobalMetricProps> = ({ isLoading, }) => {
                         :
                         <>
                             <div className="text-2xl font-bold mb-1">
-                                {`+$ ${protocol.total_unclaimed_usd_value}`}
+                                {`$ ${total_unclaimed_usd_value}`}
                             </div>
                             <div className="text-sm text-white/60">
                                 Unclaimed rewards

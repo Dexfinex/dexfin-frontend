@@ -1,21 +1,28 @@
-import React, { useContext, useMemo, useEffect } from "react";
+import React, { useContext, useMemo, useEffect, useState } from "react";
 import { X, ArrowLeft } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
-import { TokenChainIcon } from "../swap/components/TokenIcon";
+import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon";
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import { Position } from "../../store/useDefiStore";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
 import { formatNumberByFrac } from "../../utils/common.util";
+import { getChainIcon } from "../../utils/defi.util.ts";
+import { getChainNameById } from "../../utils/defi.util.ts";
 
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
+import useDefillamaStore from "../../store/useDefillamaStore.ts";
+
+import SelectChain from "./SelectChain.tsx";
 
 interface ModalState {
     type: string | null;
     position?: Position;
+    supportedChains?: number[];
+    apyToken?: string;
 }
 
 interface DepositModalProps {
@@ -33,7 +40,10 @@ interface DepositModalProps {
 
 const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, token2Amount, confirming, depositHandler, setTokenAmount, setToken2Amount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId } = useContext(Web3AuthContext);
+    const { chainId: connectedChainId, switchChain, isChainSwitching } = useContext(Web3AuthContext)
+    const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
+    const { getOfferingPoolByChainId } = useDefillamaStore();
+    const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation()
 
     const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0]?.contract_address, Number(chainId)) : null;
@@ -85,6 +95,25 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
         return true;
     }, [token2Amount, tokenBalance2])
 
+    const isCorrectChain = useMemo(() => {
+        return Number(chainId) === Number(connectedChainId)
+    }, [chainId, connectedChainId]);
+
+    const buttonLabel = useMemo(() => {
+        if (isChainSwitching) return <div className="flex justify-center"><Spinner size="md" className='mr-2' /> Switching network</div>
+        return !isCorrectChain ?
+            <>
+                Switch Chain
+                <TokenIcon src={getChainIcon(chainId) || ""} alt={getChainNameById(Number(chainId))} size="sm" className="ml-2" />
+            </> :
+            confirming ?
+                <div><Spinner size="md" className='mr-2' /> {confirming}</div>
+                : showPreview
+                    ? "Deposit"
+                    : "Next"
+
+    }, [confirming, chainId, connectedChainId, isChainSwitching, showPreview])
+
     useEffect(() => {
         if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
             refetchNativeTokenPrice()
@@ -130,10 +159,17 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                         </div>
                         <div className="ml-auto text-right">
                             <div className={`text-emerald-400`}>
-                                {modalState.position?.apy || 0}% APY
+                                {formatNumberByFrac(poolInfo?.apy || 0)}% APY
                             </div>
                         </div>
                     </div>
+
+                    <SelectChain
+                        chainList={modalState?.supportedChains || []}
+                        selectedChain={Number(chainId)}
+                        setSelectedChain={setChainId}
+
+                    />
 
                     {
                         showPreview ?
@@ -345,16 +381,18 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                     }
 
                     <button
-                        className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || isErrorToken2Amount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
+                        className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium flex align-center justify-center`} disabled={isErrorTokenAmount}
                         onClick={async () => {
-                            if (showPreview) {
-                                depositHandler()
-                            } else {
+                            if (!isCorrectChain) {
+                                switchChain(Number(chainId));
+                            } else if (showPreview) {
+                                depositHandler();
+                            } else if (isErrorTokenAmount || isErrorToken2Amount || confirming) {
                                 setShowPreview(true);
                             }
                         }}
                     >
-                        {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Deposit" : "Next"}
+                        {buttonLabel}
                     </button>
                 </div>
             </div>

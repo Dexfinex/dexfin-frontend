@@ -3,6 +3,13 @@ export interface EvmWalletBalanceRequestType {
   address: string;
 }
 
+export type NetworkType = {
+  id: string,
+  name: string,
+  icon: string,
+  chainId: string
+}
+
 export interface EvmWalletBalanceResponseType {
   tokenAddress: `0x${string}`;
   symbol: string;
@@ -13,8 +20,12 @@ export interface EvmWalletBalanceResponseType {
   balance: string;
   balanceDecimal: number;
   usdPrice: number;
+  usdPrice24hrUsdChange: number;
   usdValue: number;
+  usdValue24hrUsdChange: number;
   chain: string;
+  network: NetworkType;
+  tokenId: string;
 }
 
 export type SolanaNativeCoinType = {
@@ -121,10 +132,25 @@ export interface EvmProtocol {
   },
   positions: 1
 }
+
 export interface EvmDefiProtocol {
   active_protocols: number;
   total_positions: number;
   total_usd_value: number;
   total_unclaimed_usd_value: number;
   protocols: EvmProtocol[];
+  chainId: number;
+}
+
+export type WalletActivityType = {
+  hash: string;
+  date: string;
+  summary: string;
+  network: {
+    id: string;
+    name: string;
+    icon: string;
+    chainId: number;
+  };
+  tokenLogo: string;
 }

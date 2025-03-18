@@ -18,12 +18,11 @@ export const useDefiPositionByWallet = ({ chainId, walletAddress }: { chainId: n
     const { isLoading, refetch, data, error } = useQuery<EvmDefiPosition[]>({
         queryKey: [`get-defi-position-${chainId}-${walletAddress}`],
         queryFn: fetchDefiPositionByWallet,
-        refetchInterval: 5 * 60_000,
     });
 
     useEffect(() => {
-        if (data) {
-            useDefiStore.getState().setPositions(data);
+        if (data && chainId) {
+            useDefiStore.getState().setPositions(chainId, data);
         }
     }, [data])
 
@@ -44,6 +43,7 @@ export const useDefiProtocolsByWallet = ({ chainId, walletAddress }: { chainId: 
                 total_usd_value: 0,
                 total_unclaimed_usd_value: 0,
                 protocols: [],
+                chainId: 0
             };
         }
         const data = await dexfinv3Service.getEvmDeifProtocolsByWallet(chainId, walletAddress);
@@ -54,12 +54,11 @@ export const useDefiProtocolsByWallet = ({ chainId, walletAddress }: { chainId: 
     const { isLoading, refetch, data, error } = useQuery<EvmDefiProtocol>({
         queryKey: [`get-defi-protocol-${chainId}-${walletAddress}`],
         queryFn: fetchDefiProtocolsByWallet,
-        refetchInterval: 5 * 60_000,
     });
 
     useEffect(() => {
-        if (data) {
-            useDefiStore.getState().setProtocol(data);
+        if (data && chainId) {
+            useDefiStore.getState().setProtocol(chainId, data);
         }
     }, [data])
 

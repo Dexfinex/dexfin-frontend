@@ -1,7 +1,7 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "dexfin-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@bonfida/spl-name-service": "^3.0.10",
     "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^2.8.2",
     "@dnd-kit/core": "^6.1.0",
@@ -45,11 +46,12 @@
     "@zerodev/weighted-ecdsa-validator": "^5.4.0",
     "axios": "^1.7.9",
     "bson-objectid": "^2.0.4",
-    "buffer": "^6.0.3",
     "chart.js": "^4.4.1",
+    "date-fns": "^4.1.0",
     "decimal.js": "^10.5.0",
     "echarts": "^5.6.0",
     "emoji-picker-react": "^4.12.0",
+    "ethereum-blockies-base64": "^1.0.2",
     "ethers": "^5.7.2",
     "ethers-v6": "npm:ethers@^6.13.5",
     "framer-motion": "^12.4.4",
@@ -108,6 +110,7 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.3.0",
     "vite": "^5.4.2",
+    "vite-plugin-node-polyfills": "^0.23.0",
     "wagmi": "^2.5.7",
     "web3": "^4.16.0",
     "winston": "^3.11.0",

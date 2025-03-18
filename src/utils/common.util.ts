@@ -1,10 +1,19 @@
 import moment from 'moment/moment';
 import { ethers } from 'ethers';
 import { mapChainId2NativeAddress } from "../config/networks.ts";
+import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
+import { formatDistanceToNow } from 'date-fns';
+import { mainnet } from 'viem/chains';
 
 const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
+const solanaAddressRegex = /^[1-9A-HJ-NP-Za-km-zZ]{32,44}$/;
+const bitcoinAddressRegex = /^(1[a-km-zA-HJ-NP-Z1-9]{25,33}|3[a-km-zA-HJ-NP-Z1-9]{25,33}|bc1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{8,87})$/;
 
-export const isValidWalletAddress = (address: string): boolean => {
+export const isValidAddress = (address: string, chainId: number): boolean => {
+    if (chainId === 0)
+        return bitcoinAddressRegex.test(address);
+    else if (chainId === SOLANA_CHAIN_ID)
+        return solanaAddressRegex.test(address);
     return ethAddressRegex.test(address);
 };
 
@@ -40,7 +49,7 @@ export const downloadBase64File = (base64Data: string, fileName: string, fileTyp
 };
 
 export const getEnsName = async (address: string): Promise<string> => {
-    const provider = new ethers.providers.JsonRpcProvider("https://eth-mainnet.g.alchemy.com/v2/YhklBkpnW3RdeoL0fw-I6CRkGG1cu2-z");
+    const provider = new ethers.providers.JsonRpcProvider(mainnet.rpcUrls.default.http[0]);
 
     try {
         const ensName = await provider.lookupAddress(address);
@@ -82,6 +91,46 @@ export const getHourAndMinute = (timestamp: number) => {
     return timeString;
 }
 
+export const getMonthDayHour = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const day = date.getDate();
+
+    return `${hours}:${minutes} , ${month} ${day}`;
+}
+
+export const getMonthDayYear = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${month} ${day}, ${year}`;
+}
+
+export const getFullDate = (timestamp: number) => {
+    if (timestamp == 0) return ""
+
+    const date = new Date(timestamp);
+    const formattedDate = date.toLocaleString('en-US', {
+        weekday: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+    });
+
+    return formattedDate;
+}
+
 /**
  * Compares two wallet addresses in uppercase.
  * @param address1 - The first wallet address.
@@ -92,9 +141,11 @@ export const compareWalletAddresses = (
     address1: string,
     address2: string,
 ): boolean => {
-    if (!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
-        return false;
-    }
+    // if (!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
+    //     return false;
+    // }
+    if (!address1 || !address2) return false;
+
     // Convert both addresses to uppercase.
     const normalizedAddress1 = address1.toUpperCase();
     const normalizedAddress2 = address2.toUpperCase();
@@ -122,17 +173,18 @@ export const formatDate = (date: Date | string) => {
  * and replacing the middle with ellipses ('...').
  *
  * @param {string} address - The Ethereum address to shorten.
+ * @param length
  * @returns {string} - The shortened address, or the original address if it's less than 10 characters long.
  *
  * Example usage:
  * const fullAddress = "0x1234567890abcdef1234567890abcdef12345678";
  * console.log(shrinkAddress(fullAddress)); // Output: 0x1234...5678
  */
-export const shrinkAddress = (address: string): string => {
-    if (!address || address.length < 10) {
+export const shrinkAddress = (address: string, length: number = 5): string => {
+    if (!address || address.length < 12) {
         return address; // Return as-is if too short
     }
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+    return `${address.slice(0, length)}...${address.slice(-length + 1)}`;
 };
 
 /**
@@ -175,9 +227,29 @@ export const formatNumberByFrac = (
     return getFixedNum(num, fixedCount);
 };
 
+export const formatNumber = (num: number): string => {
+    if (num >= 1e12) return (num / 1e12).toFixed(2) + "T"; // Trillion
+    if (num >= 1e9) return (num / 1e9).toFixed(2) + "B"; // Billion
+    if (num >= 1e6) return (num / 1e6).toFixed(2) + "M"; // Million
+    if (num >= 1e3) return (num / 1e3).toFixed(2) + "K"; // Thousand
+    return num.toString(); // Less than 1K
+}
+
 export const formatHealthFactor = (num: number) => {
     if (num > 1e9) {
         return "∞";
     }
     return formatNumberByFrac(num);
+}
+
+export const getTimeAgo = (time: string) => {
+    const v = formatDistanceToNow(new Date(time), { addSuffix: false });
+    const result = v.replace("about ", "").replace(' ago', '').
+        replace("seconds", 's').replace('second', 's').
+        replace("less than a minute", '< 1m').
+        replace("minutes", 'm').replace('minute', 'm').
+        replace("hours", 'h').replace('hour', 'h').
+        replace('days', 'd').replace('day', 'd').
+        replace('months', 'mo').replace('month', 'mo');
+    return result;
 }

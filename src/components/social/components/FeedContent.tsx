@@ -31,8 +31,8 @@ export const FeedContent: React.FC<FeedContentProps> = ({
             onClick={() => onActionTypeChange(type.id)}
             className={`px-4 py-2 rounded-lg transition-colors ${
               selectedActionType === type.id
-                ? 'bg-blue-500 text-white dark:text-white'
-                : 'bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-gray-900 dark:text-white'
+                ? 'bg-blue-500 '
+                : 'bg-black/5 hover:bg-black/10 '
             }`}
           >
             {type.label}

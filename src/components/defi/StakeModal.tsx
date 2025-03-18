@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useEffect } from "react";
+import React, { useContext, useMemo, useEffect, useState } from "react";
 import { X, ArrowLeft, ArrowDown } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
@@ -12,11 +12,17 @@ import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
+import { TokenIcon } from "../swap/components/TokenIcon";
+import SelectChain from "./SelectChain.tsx";
+import { getChainIcon } from "../../utils/defi.util.ts";
+import { getChainNameById } from "../../utils/defi.util.ts";
 import { STAKING_TOKENS } from "../../constants/mock/defi.ts";
 
 interface ModalState {
     type: string | null;
     position?: Position;
+    supportedChains?: number[],
+    apyToken?: string
 }
 
 interface StakeModalProps {
@@ -32,7 +38,8 @@ interface StakeModalProps {
 
 const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, stakeHandler, setTokenAmount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId } = useContext(Web3AuthContext);
+    const { chainId: connectedChainId, switchChain, isChainSwitching } = useContext(Web3AuthContext)
+    const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
     const stakeTokenInfo = STAKING_TOKENS.find((token) => token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[0].symbol);
     const tokenInBalance = stakeTokenInfo?.tokenIn ? getTokenBalance(stakeTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
@@ -48,6 +55,29 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
     })
 
     const { getTokenPrice, tokenPrices } = useTokenStore();
+    const { refetch: refetchTokensPrices } = useGetTokenPrices({
+        tokenAddresses: [tokenInInfo?.contract_address || "", tokenOutInfo?.contract_address || ""],
+        chainId: Number(chainId),
+    })
+
+    const isCorrectChain = useMemo(() => {
+        return Number(chainId) === Number(connectedChainId)
+    }, [chainId, connectedChainId]);
+
+    const buttonLabel = useMemo(() => {
+        if (isChainSwitching) return <div className="flex justify-center"><Spinner size="md" className='mr-2' /> Switching network</div>
+        return !isCorrectChain ?
+            <>
+                Switch Chain
+                <TokenIcon src={getChainIcon(chainId) || ""} alt={getChainNameById(Number(chainId))} size="sm" className="ml-2" />
+            </> :
+            confirming ?
+                <div><Spinner size="md" className='mr-2' /> {confirming}</div>
+                : showPreview
+                    ? "Stake"
+                    : "Next"
+
+    }, [confirming, chainId, connectedChainId, isChainSwitching, showPreview])
 
     const nativeTokenPrice = useMemo(() => {
         if (chainId && nativeTokenAddress) {
@@ -55,6 +85,20 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
         }
         return 0;
     }, [getTokenPrice, nativeTokenAddress, chainId, tokenPrices])
+
+    const tokenInPrice = useMemo(() => {
+        if (chainId && tokenInInfo?.contract_address) {
+            return getTokenPrice(tokenInInfo?.contract_address.toLowerCase(), Number(chainId))
+        }
+        return 0;
+    }, [chainId, tokenInInfo, tokenPrices, getTokenPrice])
+
+    const tokenOutPrice = useMemo(() => {
+        if (chainId && tokenOutInfo) {
+            return getTokenPrice(tokenOutInfo?.contract_address.toLowerCase(), Number(chainId))
+        }
+        return 0;
+    }, [chainId, tokenOutInfo, tokenPrices, getTokenPrice])
 
     const isErrorTokenAmount = useMemo(() => {
         if (tokenAmount === "") {
@@ -67,18 +111,24 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
     }, [tokenAmount, tokenInBalance])
 
     const priceRatio = useMemo(() => {
-        if (tokenInBalance?.usdPrice && tokenOutBalance?.usdPrice) {
-            const ratio = tokenInBalance?.usdPrice / tokenOutBalance?.usdPrice
+        if (tokenInPrice && tokenOutPrice) {
+            const ratio = tokenInPrice / tokenOutPrice
             return ratio;
         }
         return 1;
-    }, [tokenInBalance, tokenOutBalance]);
+    }, [tokenInPrice, tokenOutPrice]);
 
     useEffect(() => {
         if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
             refetchNativeTokenPrice()
         }
     }, [chainId, nativeTokenAddress, nativeTokenPrice])
+
+    useEffect(() => {
+        if (chainId && tokenInInfo && tokenOutInfo) {
+            refetchTokensPrices();
+        }
+    }, [chainId, tokenInInfo, tokenOutInfo]);
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -119,7 +169,7 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                         </div>
                         <div className="ml-auto text-right">
                             <div className={`text-emerald-400`}>
-                                {modalState.position?.apy || 0}% APY
+                                {formatNumberByFrac(modalState.position?.apy || 0)}% APY
                             </div>
                         </div>
                     </div>
@@ -139,7 +189,7 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                                 </div>
 
                                 <div className='flex justify-center'>
-                                    <div className="bg-[#1d2837] hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400">
+                                    <div className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400">
                                         <ArrowDown className="w-3 h-3" />
                                     </div>
                                 </div>
@@ -170,13 +220,13 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                                 <div className='flex justify-between'>
                                     <div>
                                         <span className='ml-2 text-sm text-white/60'>
-                                            New {tokenOutBalance?.symbol || ""} amount
+                                            New {tokenOutInfo?.symbol || ""} amount
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenOutBalance?.logo || ""} alt={tokenOutBalance?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <span className='ml-2'>
-                                            {formatNumberByFrac(Number(tokenOutBalance?.balance) + Number(tokenAmount), 4)}
+                                            {formatNumberByFrac((Number(tokenOutBalance?.balance) || 0) + Number(tokenAmount), 4)}
                                         </span>
                                         <span className='ml-1 text-sm text-white/60'>
                                             {tokenOutBalance?.symbol || ""}
@@ -202,6 +252,12 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                             </div>
                             :
                             <>
+                                <SelectChain
+                                    chainList={modalState?.supportedChains || []}
+                                    selectedChain={Number(chainId)}
+                                    setSelectedChain={setChainId}
+
+                                />
                                 <div className="bg-white/5 rounded-xl p-4">
                                     <div className="text-sm text-white/60 mb-2">
                                         Amount
@@ -255,7 +311,7 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                                         <div className='items-center flex'>
                                             <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                             <span className='ml-2'>
-                                                {formatNumberByFrac(Number(tokenOutBalance?.balance))}
+                                                {formatNumberByFrac(Number(tokenOutBalance?.balance) || 0)}
                                             </span>
                                             <span className='ml-1 text-sm text-white/60'>
                                                 {tokenOutInfo?.symbol || ""}
@@ -285,14 +341,16 @@ const StakeModal: React.FC<StakeModalProps> = ({ setModalState, showPreview, mod
                     <button
                         className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${isErrorTokenAmount || confirming ? "opacity-60" : ""} flex align-center justify-center`} disabled={isErrorTokenAmount}
                         onClick={async () => {
-                            if (showPreview) {
+                            if (!isCorrectChain) {
+                                switchChain(Number(chainId));
+                            } else if (showPreview) {
                                 stakeHandler()
                             } else {
                                 setShowPreview(true);
                             }
                         }}
                     >
-                        {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Stake" : "Next"}
+                        {buttonLabel}
                     </button>
                 </div>
             </div>

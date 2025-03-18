@@ -1,17 +1,23 @@
-import React from 'react';
-import { AlertCircle, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
-import useFearGreedStore from '../../store/useFearGreedStore';
+import React, { forwardRef, useImperativeHandle } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { useGetFearGreed } from '../../hooks/useFearGreed';
+import { formatTimeAgo } from '../../utils/formatter.util';
+import { useStore } from '../../store/useStore';
+import { RefreshableWidget } from '../ResizableWidget';
 
+export const FearGreedWidget = forwardRef<RefreshableWidget, {}>((props, ref) => {
+  const { isLoading, error, refetch, data } = useGetFearGreed();
+  const { theme } = useStore();
 
-export const FearGreedWidget: React.FC = () => {
-  1
-  const { isLoading, error, refetch } = useGetFearGreed();
-  const { data } = useFearGreedStore();
-
+  // Expose the handleRefresh method to the parent
   const handleRefresh = async () => {
-    await refetch()
+    await refetch();
   };
+
+  // Expose the refresh method through the ref
+  useImperativeHandle(ref, () => ({
+    handleRefresh
+  }));
 
   const getColor = (value: number) => {
     if (value <= 25) return '#EF4444'; // Extreme Fear (Red)
@@ -37,33 +43,23 @@ export const FearGreedWidget: React.FC = () => {
   }
 
   const fearGreedValue = data?.value || 0;
-  const change = data ? fearGreedValue - data.previousClose : 0;
+  const change = data?.dailyChange || 0;
   const color = getColor(fearGreedValue);
+  // Format timestamp as "X min ago" or "X h ago"
+  const timeAgo = data?.timestamp ? formatTimeAgo(data.timestamp) : '';
 
   return (
     <div className="p-4 h-full flex flex-col">
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={handleRefresh}
-          disabled={isLoading}
-          className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          title="Refresh data"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
-
       <div className="flex-1 flex items-center justify-center -mt-2">
         <div className="flex items-center gap-8">
           <div className="relative">
-            <svg className="w-32 h-32 -rotate-90">
+            <svg className="w-32 h-32 -rotate-90 ">
               <circle
                 cx="64"
                 cy="64"
                 r="56"
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.1)"
+                stroke={theme === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgb(204 204 204)"}
                 strokeWidth="12"
               />
               <circle
@@ -89,18 +85,9 @@ export const FearGreedWidget: React.FC = () => {
               {isLoading ? 'Loading...' : data?.valueClassification}
             </div>
 
-            <div className="flex items-center gap-1.5 text-sm">
-              <span className="text-white/60">24h Change:</span>
-              <div className={`flex items-center gap-0.5 ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {change > 0 && <TrendingUp className="w-4 h-4" />}
-                {change < 0 && <TrendingDown className="w-4 h-4" />}
-                <span>{Math.abs(change)}</span>
-              </div>
-            </div>
-
             {data && (
               <div className="text-xs text-white/40">
-                Updated: {new Date(parseInt(data.timestamp) * 1000).toLocaleTimeString()}
+                Updated: {timeAgo}
               </div>
             )}
           </div>
@@ -108,4 +95,6 @@ export const FearGreedWidget: React.FC = () => {
       </div>
     </div>
   );
-};
+});
+
+FearGreedWidget.displayName = 'FearGreedWidget';

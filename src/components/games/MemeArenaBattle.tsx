@@ -1,20 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { Swords, Shield, Zap, X, Info, Star, Flame, Droplet, Wind } from 'lucide-react';
-import { GameState, Action, StatusEffect } from '../../types/memeArena';
-import { MemeArenaTutorial } from './MemeArenaTutorial';
+import React, {useEffect, useRef, useState} from 'react';
+import {Droplet, Flame, Info, Shield, Star, Swords, Wind, X, Zap} from 'lucide-react';
+import {Action, GameState, StatusEffect} from '../../types/memeArena.type';
+import {MemeArenaTutorial} from './MemeArenaTutorial';
+import {useUserData} from '../../providers/UserProvider';
+import {GameSession} from '../GamesModal';
+import {GameService} from '../../services/game.services.ts';
+
 
 interface BattleArenaProps {
   state: GameState;
   onAction: (action: Action) => void;
   onNewGame: () => void;
+  gameType?: string;
 }
 
 const BattleArena: React.FC<BattleArenaProps> = ({
   state,
   onAction,
-  onNewGame
+  onNewGame,
+  gameType = 'ARENA'
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
+  const { userData } = useUserData();
+  const gameSessionSaved = useRef(false);
+  const [_, setGameData] = useState<any[]>([]);
+  const [gameId, setGameId] = useState<string>("");
 
   // Auto-scroll battle logs
   useEffect(() => {
@@ -23,6 +33,74 @@ const BattleArena: React.FC<BattleArenaProps> = ({
       element.scrollTop = element.scrollHeight;
     }
   }, [state.battleLogs]);
+
+  useEffect(() => {
+    if (!state.isGameOver) {
+      gameSessionSaved.current = false;
+    }
+  }, [state.isGameOver]);
+  useEffect(() => {
+    const loadGameData = async () => {
+      if (userData && userData.accessToken) {
+        try {
+          const data = await GameService.fetchUserGameId(userData.accessToken);
+          
+          if (Array.isArray(data)) {
+            setGameData(data);
+            
+            const game = data.find(g => g.type === gameType);
+            if (game) {
+              setGameId(game.id);
+            } else {
+              console.warn(`No game found with type ${gameType}`);
+            }
+          }
+        } catch (error) {
+          console.error("Error loading game data:", error);
+        }
+      }
+    };
+    
+    loadGameData();
+  }, [userData, gameType]);
+
+  // Save game session when game is over
+  useEffect(() => {
+    if (state.isGameOver && !gameSessionSaved.current && 
+        userData&&gameId) {
+      
+      const isVictory = state.aiHP <= 0;
+      const baseReward = 100;
+      const comboBonus = state.battleStats.maxCombo * 20;
+      const criticalBonus = state.battleStats.criticalHits * 15;
+      const perfectBonus = state.battleStats.perfectBlocks * 10;
+      const totalReward = baseReward + comboBonus + criticalBonus + perfectBonus;
+      
+      const gameSession: GameSession = {
+        gameId: gameId,
+        tokensEarned: isVictory ? totalReward : 0,
+        score: state.battleStats.totalDamageDealt,
+        accuracy: 0, 
+        streak: state.battleStats.maxCombo,
+        winStatus: isVictory,
+      };
+      
+      saveGameSession(gameSession);
+      gameSessionSaved.current = true;
+    }
+  }, [state.isGameOver, state.aiHP, userData, gameId, state.battleStats]);
+
+  const saveGameSession = async (gameSession: GameSession) => {
+
+    try{
+      if(gameSession && userData &&userData.accessToken){
+        const response = await GameService.gameHistory(userData.accessToken, gameSession);
+        console.log("Game session save response",response)
+      }
+    } catch (error) {
+      console.error('Error saving game session:', error);
+    }
+  };
 
   const {
     playerCharacter,

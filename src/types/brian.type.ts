@@ -1,3 +1,5 @@
+import { string } from "zod";
+
 export type TokenType = {
   symbol: string;
   name: string;
@@ -6,7 +8,7 @@ export type TokenType = {
   decimals: number;
   logoURI: string;
   priceUSD: number;
-  coinKey: string;
+  coinKey?: string;
 };
 
 export type Protocol = {
@@ -23,6 +25,32 @@ export type Step = {
   gasLimit: string;
   to: string;
   value: string;
+}
+
+export type Yield = {
+  protocolLogo: string[];
+  chainId: number;
+  address: string;
+  decimals: number;
+  name: string;
+  symbol: string;
+  logosUri: string[],
+  type: string;
+  protocol: string;
+  underlyingTokens: [
+    {
+      address: string;
+      chainId: number;
+      type: string;
+      decimals: number;
+      name: string;
+      symbol: string;
+      logosUri: string[];
+    }
+  ],
+  primaryAddress: string;
+  apy: number;
+  tvl: number;
 }
 
 export interface BrianCoinData {

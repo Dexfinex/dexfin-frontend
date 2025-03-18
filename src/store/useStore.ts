@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { IUser } from '../types/chat.type';
 
@@ -15,7 +16,7 @@ interface WidgetPosition {
 
 interface WidgetSize {
   width: number;
-  height: number;
+  height: number | string;
 }
 
 interface Widget {
@@ -113,6 +114,9 @@ interface StoreState {
   // Menu Items
   menuItems: MenuItem[];
   toggleStarMenuItem: (id: string) => void;
+  setDefaultStarredItems: () => void;
+  saveStarredItems: () => void;
+  loadStarredItems: () => void;
 
   // Modal States
   isSignupModalOpen: boolean;
@@ -121,6 +125,8 @@ interface StoreState {
   setIsSigninModalOpen: (isOpen: boolean) => void;
   isAIAgentOpen: boolean;
   setIsAIAgentOpen: (isOpen: boolean) => void;
+  widgetCommand: string;
+  setWidgetCommand: (command: string) => void;
   isSwapOpen: boolean;
   setIsSwapOpen: (isOpen: boolean) => void;
   isDefiOpen: boolean;
@@ -139,8 +145,16 @@ interface StoreState {
   setIsSocialFeedOpen: (isOpen: boolean) => void;
   isGamesOpen: boolean;
   setIsGamesOpen: (isOpen: boolean) => void;
-  istrade: boolean;
+  isTradeOpen: boolean;
   setTradeOpen: (isOpen: boolean) => void;
+  isRewardsOpen: boolean;
+  setIsRewardsOpen: (isOpen: boolean) => void;
+
+  isUsernameModalOpen: boolean;
+  setIsUsernameModalOpen: (isOpen: boolean) => void;
+
+  isWalletDrawerOpen: boolean;
+  setIsWalletDrawerOpen: (isOpen: boolean) => void;
 
   // Market Data View
   marketDataView: 'overview' | 'market-cap' | 'trending' | 'dex' | 'defi' | 'news' | 'alerts' | 'technical' | 'calendar' | 'feed';
@@ -176,9 +190,20 @@ interface StoreState {
       winRate: number;
       bestStreak: number;
     };
+    huntStats: {
+      gamesPlayed: number;
+      tokensEarned: number;
+      words: number;
+      bestScore: number;
+      perfectStatus: number;
+    };
     totalTokens: number;
   };
+  user: {
+    id: string;
+  } | null;
   updateGameStats: (stats: Partial<StoreState['gameStats']>) => void;
+  setAllGameStats: (tokens: number) => void;
 
   // Appearance
   currentWallpaper: Wallpaper;
@@ -211,7 +236,8 @@ interface StoreState {
   setSelectedUserInChatModal: (user: IUser) => void;
 }
 
-const useStore = create<StoreState>((set) => ({
+const useStore = create<StoreState>((set, get) => ({
+  user: null,
   // Menu Items
   menuItems: [
     { id: 'ai', label: 'AI Agent', icon: 'Bot', isStarred: false },
@@ -219,18 +245,78 @@ const useStore = create<StoreState>((set) => ({
     { id: 'defi', label: 'DeFi', icon: 'Wallet', isStarred: false },
     { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', isStarred: false },
     { id: 'market-data', label: 'Market Data', icon: 'LineChart', isStarred: false },
-    { id: 'trade', label: 'Trade', icon: 'LineChart', isStarred: false },
+    // { id: 'trade', label: 'Trade', icon: 'LineChart', isStarred: false },
     { id: 'chat', label: 'Chat', icon: 'MessageSquare', isStarred: false },
     { id: 'cart', label: 'Cart', icon: 'ShoppingCart', isStarred: false },
     { id: 'social', label: 'Social Feed', icon: 'Users', isStarred: false },
     { id: 'games', label: 'Games', icon: 'Gamepad2', isStarred: false },
     { id: 'rewards', label: 'Rewards', icon: 'Trophy', isStarred: false },
   ],
-  toggleStarMenuItem: (id) => set((state) => ({
-    menuItems: state.menuItems.map((item) =>
+
+  toggleStarMenuItem: (id) => set((state) => {
+    const newMenuItems = state.menuItems.map((item) =>
       item.id === id ? { ...item, isStarred: !item.isStarred } : item
-    ),
-  })),
+    );
+
+    // Save to localStorage after toggling
+    localStorage.setItem('starredMenuItems', JSON.stringify(
+      newMenuItems.filter(item => item.isStarred).map(item => item.id)
+    ));
+
+    return { menuItems: newMenuItems };
+  }),
+
+  // Set default starred items when user logs in
+  setDefaultStarredItems: () => {
+    // First try to load from localStorage
+    const savedStarredItems = localStorage.getItem('starredMenuItems');
+
+    if (savedStarredItems) {
+      // If we have saved preferences, use those
+      const starredIds = JSON.parse(savedStarredItems);
+
+      set((state) => ({
+        menuItems: state.menuItems.map((item) => ({
+          ...item,
+          isStarred: starredIds.includes(item.id)
+        }))
+      }));
+    } else {
+      // Otherwise set defaults 
+      set((state) => ({
+        menuItems: state.menuItems.map((item) => ({
+          ...item,
+          isStarred: ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat'].includes(item.id)
+        }))
+      }));
+
+      // Save default starred items
+      const defaultItems = ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat'];
+      localStorage.setItem('starredMenuItems', JSON.stringify(defaultItems));
+    }
+  },
+
+  // Save starred items to localStorage
+  saveStarredItems: () => {
+    const { menuItems } = get();
+    const starredIds = menuItems.filter(item => item.isStarred).map(item => item.id);
+    localStorage.setItem('starredMenuItems', JSON.stringify(starredIds));
+  },
+
+  // Load starred items from localStorage
+  loadStarredItems: () => {
+    const savedStarredItems = localStorage.getItem('starredMenuItems');
+    if (savedStarredItems) {
+      const starredIds = JSON.parse(savedStarredItems);
+
+      set((state) => ({
+        menuItems: state.menuItems.map((item) => ({
+          ...item,
+          isStarred: starredIds.includes(item.id)
+        }))
+      }));
+    }
+  },
 
   // Modal States
   isSignupModalOpen: false,
@@ -257,69 +343,81 @@ const useStore = create<StoreState>((set) => ({
   setIsSocialFeedOpen: (isOpen) => set({ isSocialFeedOpen: isOpen }),
   isGamesOpen: false,
   setIsGamesOpen: (isOpen) => set({ isGamesOpen: isOpen }),
-  istrade: false,
-  setTradeOpen: (isOpen) => set({ istrade: isOpen }),
+  isTradeOpen: false,
+  setTradeOpen: (isOpen) => set({ isTradeOpen: isOpen }),
+  isUsernameModalOpen: false,
+  setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
+  isRewardsOpen: false,
+  setIsRewardsOpen: (isOpen) => set({ isRewardsOpen: isOpen }),
+
+  isWalletDrawerOpen: false,
+  setIsWalletDrawerOpen: (isOpen) => set({ isWalletDrawerOpen: isOpen }),
 
   // Market Data View
   marketDataView: 'overview',
   setMarketDataView: (view) => set({ marketDataView: view }),
 
+  widgetCommand: '',
+  setWidgetCommand(command) {
+    set({ widgetCommand: command });
+  },
+
   // Widgets
   widgets: [
     {
-      id: 'portfolio',
-      type: 'Portfolio Overview',
-      position: { x: 20, y: 20 },
-      size: { width: 360, height: 540 }
-    },
-    {
-      id: 'market-news',
-      type: 'Market News',
-      position: { x: 400, y: 20 },
-      size: { width: 360, height: 360 }
-    },
-    {
       id: 'market-pulse',
       type: 'Market Pulse',
-      position: { x: 20, y: 580 },
-      size: { width: 360, height: 486 }
+      position: { x: 10, y: 20 },
+      size: { width: 360, height: 490 }
     },
     {
       id: 'fear-greed',
       type: 'Fear & Greed Index',
-      position: { x: 400, y: 400 },
+      position: { x: 10, y: 520 },
       size: { width: 360, height: 270 }
     },
     {
-      id: 'quick-swap',
-      type: 'Quick Swap',
-      position: { x: 780, y: 20 },
-      size: { width: 324, height: 315 }
-    },
-    {
-      id: 'price-converter',
-      type: 'Price Converter',
-      position: { x: 780, y: 355 },
-      size: { width: 324, height: 360 }
-    },
-    {
-      id: 'trending',
-      type: 'Trending',
-      position: { x: 1124, y: 20 },
-      size: { width: 360, height: 315 }
+      id: 'market-news',
+      type: 'Market News',
+      position: { x: 380, y: 20 },
+      size: { width: 360, height: 360 }
     },
     {
       id: 'twitter',
       type: 'Twitter Feed',
-      position: { x: 1124, y: 355 },
-      size: { width: 360, height: 540 }
+      position: { x: 380, y: 390 },
+      size: { width: 360, height: 400 }
     },
     {
       id: 'direct-messages',
       type: 'Direct Messages',
-      position: { x: 780, y: 735 },
-      size: { width: 480, height: 560 }
-    }
+      position: { x: 750, y: 20 },
+      size: { width: 360, height: 480 }
+    },
+    {
+      id: 'trending',
+      type: 'Trending',
+      position: { x: 750, y: 510 },
+      size: { width: 360, height: 300 }
+    },
+    {
+      id: 'portfolio',
+      type: 'Portfolio Overview',
+      position: { x: 1120, y: 20 },
+      size: { width: 360, height: 500 }
+    },
+    {
+      id: 'price-converter',
+      type: 'Price Converter',
+      position: { x: 1120, y: 530 },
+      size: { width: 360, height: 280 }
+    },
+    {
+      id: 'quick-swap',
+      type: 'Quick Swap',
+      position: { x: 1490, y: 20 },
+      size: { width: 400, height: 'fit-content' }
+    },
   ],
   updateWidget: (id, updates) => set((state) => ({
     widgets: state.widgets.map((widget) =>
@@ -332,7 +430,7 @@ const useStore = create<StoreState>((set) => ({
     'Market Pulse': true,
     'Fear & Greed Index': true,
     'Quick Swap': true,
-    'Price Converter': true,
+    'Price Converter': false,
     'Trending': true,
     'Ask Anything': true,
     'Twitter Feed': true,
@@ -379,20 +477,28 @@ const useStore = create<StoreState>((set) => ({
   // Game Stats
   gameStats: {
     triviaStats: {
-      gamesPlayed: 15,
-      tokensEarned: 1850,
-      highScore: 9,
-      accuracy: 78,
-      bestStreak: 5
+      gamesPlayed: 0,
+      tokensEarned: 0,
+      highScore: 0,
+      accuracy: 0,
+      bestStreak: 0
     },
     arenaStats: {
-      battlesPlayed: 12,
-      tokensEarned: 1400,
-      wins: 8,
-      winRate: 66.7,
-      bestStreak: 3
+      battlesPlayed: 0,
+      tokensEarned: 0,
+      wins: 0,
+      winRate: 0,
+      bestStreak: 0
     },
-    totalTokens: 3250
+    huntStats: {
+      gamesPlayed: 0,
+      tokensEarned: 0,
+      words: 0,
+      bestScore: 0,
+      perfectStatus: 0
+    },
+
+    totalTokens: 0
   },
   updateGameStats: (stats) => set((state) => ({
     gameStats: {
@@ -400,6 +506,24 @@ const useStore = create<StoreState>((set) => ({
       ...stats
     }
   })),
+
+  setAllGameStats: (data) => set((state) => {
+    if (typeof data === 'number') {
+      return {
+        gameStats: {
+          ...state.gameStats,
+          totalTokens: data
+        }
+      };
+    }
+
+    return {
+      gameStats: {
+        ...state.gameStats,
+        totalTokens: 0
+      }
+    };
+  }),
 
   // Appearance
   currentWallpaper: wallpapersList[0],

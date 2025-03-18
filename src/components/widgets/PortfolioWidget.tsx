@@ -1,19 +1,13 @@
-import React, { useContext, useState } from "react"
-import { TrendingUp, Wallet, Landmark } from "lucide-react"
-import { useWalletBalance } from "../../hooks/useBalance"
-import { Web3AuthContext } from "../../providers/Web3AuthContext"
+import React, { useState } from "react"
+import { Wallet, Landmark } from "lucide-react"
 import { Skeleton } from "@chakra-ui/react"
-import { TokenChainIcon } from "../swap/components/TokenIcon"
+import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon"
 import { formatNumberByFrac } from "../../utils/common.util"
-
-interface Position {
-  protocol: string
-  type: "LENDING" | "STAKING"
-  amount: number
-  token: string
-  apy: number
-  logo: string
-}
+import PNL from "../common/PNL"
+import PNLPercent from "../common/PNLPercent"
+import useDefiStore from "../../store/useDefiStore"
+import useTokenBalanceStore from "../../store/useTokenBalanceStore"
+import { useWalletBalance } from "../../hooks/useBalance"
 
 interface AllocationData {
   type: string
@@ -25,44 +19,69 @@ type WalletTab = "assets" | "defi"
 
 export const PortfolioWidget: React.FC = () => {
   const [activeTab, setActiveTab] = useState<WalletTab>("assets")
-  const { chainId, address } = useContext(Web3AuthContext)
-  const { isLoading, data: balanceData } = useWalletBalance({
-    chainId: chainId,
-    address: address,
-  })
-  // Calculate total portfolio value from balance data
-  const portfolioValue = React.useMemo(() => {
-    if (!balanceData) return 0
-    return balanceData.reduce((sum, token) => sum + (token.usdValue || 0), 0)
-  }, [balanceData])
+
+  const { positions = [], totalLockedValue } = useDefiStore();
+  const { totalUsdValue, tokenBalances: balanceData, pnlUsd, pnlPercent } = useTokenBalanceStore()
+  const { isLoading } = useWalletBalance();
+
+  // Calculate combined portfolio value
+  const totalPortfolioValue = totalUsdValue + totalLockedValue;
 
   // Calculate allocation percentages based on real balances
   const allocation: AllocationData[] = React.useMemo(() => {
-    if (!balanceData) return []
 
-    const total = portfolioValue
-    const spotTokens = balanceData.filter((token) => !token.isStaked && !token.isLending)
-    const stakedTokens = balanceData.filter((token) => token.isStaked)
-    const lendingTokens = balanceData.filter((token) => token.isLending)
+    if (totalPortfolioValue === 0) {
+      return [
+        {
+          type: "Spot",
+          percentage: 100,
+          color: "#10B981",
+        }
+      ]
+    }
+
+    // Filter positions by type
+    const lendingPositions = Array.isArray(positions)
+      ? positions.filter(position => position?.type?.toLowerCase() === 'liquidity')
+      : []
+    const stakingPositions = Array.isArray(positions)
+      ? positions.filter(position => position?.type?.toLowerCase() === 'staking')
+      : []
+
+    // Calculate values for each category
+    const lendingValue = lendingPositions.reduce((sum, position) => {
+      const value = Number(position.amount) || 0
+      return sum + value
+    }, 0)
+    const stakingValue = stakingPositions.reduce((sum, position) => {
+      const value = Number(position.amount) || 0
+      return sum + value
+    }, 0)
+    const spotValue = totalUsdValue
+
+    // Calculate percentages (with safe division)
+    const spotPercentage = totalPortfolioValue > 0 ? Math.round((spotValue / totalPortfolioValue) * 100) : 0
+    const stakingPercentage = totalPortfolioValue > 0 ? Math.round((stakingValue / totalPortfolioValue) * 100) : 0
+    const lendingPercentage = totalPortfolioValue > 0 ? Math.round((lendingValue / totalPortfolioValue) * 100) : 0
 
     return [
       {
         type: "Spot",
-        percentage: Math.round((spotTokens.reduce((sum, t) => sum + t.usdValue, 0) / total) * 100),
+        percentage: spotPercentage,
         color: "#10B981",
       },
       {
         type: "Staked",
-        percentage: Math.round((stakedTokens.reduce((sum, t) => sum + t.usdValue, 0) / total) * 100),
+        percentage: stakingPercentage,
         color: "#3B82F6",
       },
       {
         type: "Lending",
-        percentage: Math.round((lendingTokens.reduce((sum, t) => sum + t.usdValue, 0) / total) * 100),
+        percentage: lendingPercentage,
         color: "#8B5CF6",
       },
     ].filter((item) => item.percentage > 0)
-  }, [balanceData, portfolioValue])
+  }, [totalLockedValue, positions, totalUsdValue, totalPortfolioValue])
 
   const createPieSegments = () => {
     const radius = 40
@@ -71,12 +90,12 @@ export const PortfolioWidget: React.FC = () => {
 
     return allocation.map((item) => {
       const angle = (item.percentage / 100) * 360
-      const length = (angle / 360) * circumference
       const gap = 1
+      const length = (angle / 360) * circumference - gap;
 
       const segment = {
         offset: currentAngle,
-        length: length - gap,
+        length: length,
         color: item.color,
       }
 
@@ -87,34 +106,12 @@ export const PortfolioWidget: React.FC = () => {
 
   const pieSegments = createPieSegments()
 
-  const positions: Position[] = [
-    {
-      protocol: "Aave",
-      type: "LENDING",
-      amount: 1000,
-      token: "USDC",
-      apy: 4.5,
-      logo: "https://cryptologos.cc/logos/aave-aave-logo.png",
-    },
-    {
-      protocol: "Lido",
-      type: "STAKING",
-      amount: 1.15,
-      token: "ETH",
-      apy: 3.8,
-      logo: "https://cryptologos.cc/logos/lido-dao-ldo-logo.png",
-    },
-    {
-      protocol: "Compound",
-      type: "LENDING",
-      amount: 750,
-      token: "USDT",
-      apy: 4.2,
-      logo: "https://cryptologos.cc/logos/compound-comp-logo.png",
-    },
-  ]
-
   const formatCurrency = (value: number) => {
+    // Handle potential NaN and undefined values
+    if (isNaN(value) || value === undefined) {
+      return "$0.00"
+    }
+
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
@@ -139,12 +136,9 @@ export const PortfolioWidget: React.FC = () => {
           <div className="p-4">
             <div className="text-sm">Total Balance</div>
             <div className="text-2xl font-bold mt-1">
-              {formatCurrency(portfolioValue)}
+              {formatCurrency(totalPortfolioValue)}
             </div>
-            <div className="flex items-center gap-1 mt-1 text-green-400 text-sm">
-              <TrendingUp className="w-4 h-4" />
-              <span>+1.57% TODAY</span>
-            </div>
+            <PNL pnlUsd={pnlUsd} pnlPercent={pnlPercent} label="Today" />
           </div>
 
           {/* Chart Section */}
@@ -161,7 +155,7 @@ export const PortfolioWidget: React.FC = () => {
                     stroke={segment.color}
                     strokeWidth="28"
                     strokeDasharray={`${segment.length} ${251.2 - segment.length}`}
-                    strokeDashoffset={-segment.offset}
+                    strokeDashoffset={segment.offset}
                     className="transition-all duration-1000 ease-out"
                   />
                 ))}
@@ -215,57 +209,78 @@ export const PortfolioWidget: React.FC = () => {
               <div className="space-y-2">
                 {isLoading ? (
                   <Skeleton startColor="#444" endColor="#1d2837" w={"100%"} h={"4rem"} />
+                ) : !balanceData || balanceData.length === 0 ? (
+                  <div className="text-center py-6 text-sm opacity-60">
+                    No assets found
+                  </div>
                 ) : (
-                  balanceData?.map((token, index) =>
-                  (
+                  balanceData.map((token, index) => (
                     <button
-                      key={token.chain + token.symbol}
+                      key={`${token.chain}-${token.symbol}-${index}`}
                       className="flex w-full items-center justify-between p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        {/* <TokenChainIcon src={token.logo} alt={token.name} size="lg" chainId={token?.network?.chainId} /> */}
+                        <TokenChainIcon
+                          src={token.logo}
+                          alt={token.name}
+                          size="lg"
+                          chainId={Number(token?.network?.chainId)}
+                        />
                         <div className="flex flex-col justify-start items-start">
                           <div className="font-medium">{token.symbol}</div>
                           <div className="text-sm">
-                            {`${formatNumberByFrac(token.balanceDecimal)} ${token.symbol}`}
+                            {`${formatNumberByFrac(token.balance || 0)} ${token.symbol}`}
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div>{formatCurrency(token.usdValue)}</div>
+                      <div className="text-right items-end justify-end flex flex-col">
+                        <div>{formatCurrency(Number(token.usdValue) || 0)}</div>
+                        <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / token.usdPrice} />
                       </div>
                     </button>
-                  )
-                  )
+                  ))
                 )}
               </div>
             ) : (
               // DeFi Tab
               <div className="space-y-2">
-                {positions.map((position, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={position.logo || "/placeholder.svg"}
-                        alt={position.protocol}
-                        className="w-8 h-8 rounded-full"
-                      />
-                      <div className="flex flex-col justify-start items-start">
-                        <div className="font-medium">{position.protocol}</div>
-                        <div className="text-sm">
-                          {position.amount.toLocaleString()} {position.token}
+                {isLoading ? (
+                  <Skeleton startColor="#444" endColor="#1d2837" w={"100%"} h={"4rem"} />
+                ) : !positions || positions.length === 0 ? (
+                  <div className="text-center py-6 text-sm opacity-60">
+                    No DeFi positions found
+                  </div>
+                ) : (
+                  positions.map((position, index) => (
+                    <div
+                      key={`${position.protocol}-${index}`}
+                      className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <TokenChainIcon src={position.logo || "/placeholder.svg"} alt={position.protocol} className="w-8 h-8 rounded-full" chainId={position.chainId} />
+                        <div className="flex flex-col justify-start items-start">
+                          <div className="font-medium">{position.protocol}</div>
+                          {position.tokens && position.tokens.length > 0 &&
+                            <div className="flex gap-1 mt-1">
+                              <div className="flex">
+                                {
+                                  position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" />)
+                                }
+                              </div>
+                              {
+                                position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : `${token?.symbol} `)
+                              }
+                            </div>
+                          }
                         </div>
                       </div>
+                      <div className="text-right">
+                        <div>{formatCurrency(Number(position.amount) || 0)}</div>
+                        <div className="text-xs text-green-400">{formatNumberByFrac(Number(position.apy) || 0)}% APY</div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div>{formatCurrency(position.amount)}</div>
-                      <div className="text-xs text-green-400">{position.apy}% APY</div>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
           </div>

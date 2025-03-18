@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Swords, Trophy } from 'lucide-react';
-import { Character, GameState, Action, BattleLog } from '../../types/memeArena';
-import { CharacterSelect } from './MemeArenaCharacterSelect';
+import React, {useState} from 'react';
+import {Action, BattleLog, Character, GameState} from '../../types/memeArena.type';
+import {CharacterSelect} from './MemeArenaCharacterSelect';
 import BattleArena from './MemeArenaBattle';
-import { characters, tournamentOpponents } from '../../data/memeArenaCharacters';
+import {characters, tournamentOpponents} from "../../constants/game.constants.ts";
 
-export const MemeArena: React.FC = () => {
+interface MemeArenaProps {
+  gameType?: string;
+}
+
+export const MemeArena: React.FC<MemeArenaProps> = () => {
   const [state, setState] = useState<GameState>({
     screen: 'character-select',
     playerCharacter: null,
@@ -123,7 +126,7 @@ export const MemeArena: React.FC = () => {
   const applyStatusEffects = () => {
     setState(prev => {
       const newState = { ...prev };
-      let logs: BattleLog[] = [];
+      const logs: BattleLog[] = [];
 
       // Process player status effects
       newState.playerStatusEffects = prev.playerStatusEffects.map(effect => {
@@ -167,12 +170,10 @@ export const MemeArena: React.FC = () => {
     const newState = { ...state };
     let damage = 0;
     let isCritical = false;
-    let isPerfectBlock = false;
     let comboMultiplier = 1;
 
     // Player's turn
     if (state.turn === 'player') {
-      // Update combo based on action type
       if (state.lastAction === action.type) {
         newState.combo = Math.min(state.combo + 1, 5);
       } else {
@@ -420,8 +421,6 @@ export const MemeArena: React.FC = () => {
     const action = actions[Math.floor(Math.random() * actions.length)];
     let damage = 0;
     let isCritical = false;
-    let isPerfectBlock = false;
-
     switch (action) {
       case 'QUICK_ATTACK': {
         const result = calculateDamage(state.aiCharacter, state.playerCharacter, 'quick', newState);
