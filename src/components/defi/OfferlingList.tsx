@@ -102,7 +102,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                     const poolInfo = getOfferingPoolByChainId(offering.chainId[0], offering.protocol_id, offering.apyToken);
                     return (
                         <div
-                            key={index}
+                            key={chainId + offering.protocol_id + offering.apyToken + index}
                             className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
                         >
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -134,8 +134,8 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                                 const isLoading = offeringLoadingList[id];
 
                                                 return isLoading
-                                                    ? <Skeleton startColor="#444" endColor="#1d2837" w={'8rem'} h={'2rem'}></Skeleton>
-                                                    : <div key={offering.address + poolInfo.chainId + index} className="flex gap-2">
+                                                    ? <Skeleton startColor="#444" endColor="#1d2837" w={'8rem'} h={'2rem'} key={"sk-" + id}></Skeleton>
+                                                    : <div key={id} className="flex gap-2">
                                                         <div>
                                                             <div className="flex text-sm text-white/60">
                                                                 {mapChainId2ChainName[poolInfo.chainId]} APY
