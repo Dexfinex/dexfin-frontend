@@ -110,7 +110,7 @@ export function CrossChainSwapBox({
             ? ((nativeTokenAddressFromChain !== fromToken?.address ? 0 : Number(fromAmount)) + Number(quoteResponse.feeAmount)) > Number(nativeBalance?.formatted)
             : false;
     const insufficientBalance =
-        !isNaN(Number(fromBalance?.formatted)) ? (Number(fromAmount) + Number(quoteResponse.feeAmount)) > Number(fromBalance?.formatted)
+        !isNaN(Number(fromBalance?.formatted)) ? Number(fromAmount) > Number(fromBalance?.formatted)
             : false;
     const isZeroAmount = !fromAmount || Number(fromAmount) <= 0 || Number(quoteResponse.outputAmount) <= 0
 
@@ -197,13 +197,15 @@ export function CrossChainSwapBox({
         }
     }, [onFromAmountChange, onToAmountChange, txModalOpen])
 
+    const spenderAddress = quoteResponse.tx?.allowanceTarget || quoteResponse.tx?.to
+
     const {
         isApproved: isEvmApproved,
         isLoading: isApproving,
         approve
     } = useTokenApprove({
         token: fromToken?.address as `0x${string}`,
-        spender: (quoteResponse.tx?.allowanceTarget) as `0x${string}`,
+        spender: spenderAddress as `0x${string}`,
         amount: new BigNumber(toFixedFloat(fromAmount, 4))
             .times(new BigNumber(10)
                 .pow(fromToken?.decimals ?? 1))
@@ -211,7 +213,10 @@ export function CrossChainSwapBox({
         chainId: fromToken?.chainId ?? 1
     });
 
-    const isApproved = fromToken?.chainId === SOLANA_CHAIN_ID ? true : isEvmApproved
+    const isApproved =
+        (fromToken?.chainId === SOLANA_CHAIN_ID || nativeTokenAddressFromChain === fromToken?.address || !spenderAddress) // chain is solana or native token or don't have spenderAddress
+            ? true
+            : isEvmApproved
 
     const handleSwap = async () => {
         if (!isApproved) {
@@ -267,7 +272,6 @@ export function CrossChainSwapBox({
                     </button>
                 </div>
             </div>
-
             <TokenSelector
                 className="relative z-10"
                 selectedToken={toToken}
@@ -322,6 +326,7 @@ export function CrossChainSwapBox({
                     )
                 }
             </div>
+
 
             {
                 (fromNetwork && toNetwork && !isZeroAmount) && (
@@ -429,7 +434,7 @@ export function CrossChainSwapBox({
                                 colorScheme="blue"
                                 isDisabled={true}
                             >
-                                Insufficient Balance
+                                Insufficient {insufficientNativeBalance ? 'Native' : ''} Balance
                             </Button>
                         ) : (
                             <Button
@@ -437,8 +442,11 @@ export function CrossChainSwapBox({
                                 loadingText={(isApproving ? 'Approving...' : 'Computing...')}
                                 width="full"
                                 colorScheme="blue"
-                                onClick={handleSwap}
-                                isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !isApproved || !!quoteResponse.errorMessage || Number(quoteResponse.outputAmount) <= 0}
+                                onClick={() => {
+                                    if (isApproved) handleSwap()
+                                    else approve?.()
+                                }}
+                                isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !!quoteResponse.errorMessage || Number(quoteResponse.outputAmount) <= 0}
                             >
                                 {isApproved ? 'Bridge' : 'Approve'}
                             </Button>

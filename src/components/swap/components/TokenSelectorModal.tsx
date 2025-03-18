@@ -5,7 +5,7 @@ import { TokenType } from "../../../types/swap.type.ts";
 import { mapPopularTokens, NETWORK, NETWORKS } from "../../../config/networks.ts";
 // import {coingeckoService} from "../../../services/coingecko.service.ts";
 import { isValidAddress, shrinkAddress } from "../../../utils/common.util.ts";
-import { savedTokens } from "../../../config/tokens.ts";
+// import { savedTokens } from "../../../config/tokens.ts";
 import { Button, HStack, Image, Text } from "@chakra-ui/react";
 import useLocalStorage from "../../../hooks/useLocalStorage.ts";
 import { useStore } from '../../../store/useStore.ts';
@@ -13,6 +13,8 @@ import { LOCAL_STORAGE_STARRED_TOKENS, LOCAL_STORAGE_ADDED_TOKENS } from "../../
 import { getTokenInfo } from '../../../utils/token.util.ts';
 import { mapChainId2ExplorerUrl } from '../../../config/networks.ts';
 import { SOLANA_CHAIN_ID } from '../../../constants/solana.constants.ts';
+import useTrendingTokensStore from '../../../store/useTrendingTokensStore.ts';
+import ErrorImg from "/images/token/error.svg"
 
 /*
 const CATEGORIES = [
@@ -111,27 +113,28 @@ export function TokenSelectorModal({
     const [loadingNewToken, setLoadingNewToken] = useState(false);
     const [newToken, setNewToken] = useState<TokenType | null>(null);
     const [approveModalActive, setApproveModalActive] = useState(false);
+    const { trendingTokens } = useTrendingTokensStore();
 
     const tokens = useMemo(() => {
         if (addedTokens && addedTokens.length > 0) {
             if (selectedNetwork?.id) {
                 const filtered = addedTokens.filter((token: TokenType) => token.chainId == selectedNetwork.chainId)
 
-                return [...(filtered.reverse()), ...savedTokens[selectedNetwork.id]]
+                return [...(filtered.reverse()), ...trendingTokens[selectedNetwork.id]]
             } else {
-                return [...(addedTokens.reverse()), ...savedTokens['all']]
+                return [...(addedTokens.reverse()), ...trendingTokens['all']]
             }
         }
 
-        return savedTokens[selectedNetwork?.id ?? 'all']
+        return trendingTokens[selectedNetwork?.id ?? 'all']
     }, [selectedNetwork])
 
     const filteredTokens = useMemo(() => {
         const filteredList = tokens.filter((token: TokenType) => {
             const matchesSearch =
-                token.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                token.address.toLowerCase().includes(searchQuery.toLowerCase());
+                (token?.symbol || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (token?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (token?.address || "").toLowerCase().includes(searchQuery.toLowerCase());
             // const matchesNetwork = !selectedNetwork || token.chainId.toString() === selectedNetwork;
             const matchesStarred = !showStarredOnly || starredTokenMap?.[`${token.chainId}:${token.address}`]
             const matchesCategory = selectedCategory === 'all' || token.category === selectedCategory;
@@ -361,7 +364,11 @@ export function TokenSelectorModal({
                                             <Star className="w-4 h-4"
                                                 fill={starredTokenMap?.[`${token.chainId}:${token.address}`] ? "currentColor" : "none"} />
                                         </div>
-                                        <img src={token.logoURI} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                                        {
+                                            token?.logoURI ?
+                                                <img src={token.logoURI} alt={token.symbol} className="w-8 h-8 rounded-full" /> :
+                                                <img src={ErrorImg} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                                        }
                                         <div>
                                             <div className="flex items-center gap-2 mb-0.5">
                                                 <span className="font-medium text-white">{token.symbol}</span>
