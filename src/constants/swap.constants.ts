@@ -1,0 +1,1 @@
+export const TRENDING_TOKEN_COUNT_PERPAGE = 30;
