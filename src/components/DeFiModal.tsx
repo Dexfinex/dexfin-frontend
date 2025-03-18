@@ -39,6 +39,13 @@ interface ModalState {
   supportedChains?: number[];
 }
 
+const DEFI_CHAIN_LIST = [
+  1, // Ethereum Mainnet (ETH)
+  56, // Binance Smart Chain (BNB)
+  137, // Polygon Mainnet (MATIC)
+  8453, // Base Mainnet (ETH placeholder)
+]
+
 export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'overview' | 'explore'>('explore');
@@ -62,12 +69,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation()
 
-  const positionHandlerList = [
-    1, // Ethereum Mainnet (ETH)
-    56, // Binance Smart Chain (BNB)
-    137, // Polygon Mainnet (MATIC)
-    8453, // Base Mainnet (ETH placeholder)
-  ].map(chainId => {
+  const positionHandlerList = DEFI_CHAIN_LIST.map(chainId => {
     const { isLoading, refetch } = useDefiPositionByWallet({ chainId: Number(chainId), walletAddress: address });
     return { isLoading, refetch, chainId: chainId }
   });
@@ -76,12 +78,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const isLoadingPosition = positionHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === positionHandlerList.length;
 
-  const protocolHandlerList = [
-    1, // Ethereum Mainnet (ETH)
-    56, // Binance Smart Chain (BNB)
-    137, // Polygon Mainnet (MATIC)
-    8453, // Base Mainnet (ETH placeholder)
-  ].map(chainId => {
+  const protocolHandlerList = DEFI_CHAIN_LIST.map(chainId => {
     const { isLoading, refetch } = useDefiProtocolsByWallet({ chainId: Number(chainId), walletAddress: address });
     return { isLoading, refetch, chainId: chainId }
   });

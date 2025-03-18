@@ -90,3 +90,34 @@ export function getChainIcon(chainId?: number) {
             return null;
     }
 }
+
+export const getAddActionName = ({ type }: { type: string }) => {
+    switch (type.toLowerCase()) {
+        case "staking":
+            return "stake";
+        case "liquidity":
+            return "deposit";
+        case "supplied":
+            return "deposit";
+        case "borrowing":
+            return "borrow";
+        case "lending":
+            return "lend";
+        default:
+            return "";
+    }
+}
+
+export const getApyTokenFromDefiPosition = (position: Position) => {
+    switch (position.protocol_id) {
+        case "pendle":
+            return "SUSDE";
+        case "lido":
+            return "stETH";
+        default:
+            const filteredTokens = position.tokens.filter(token => token.token_type !== "defi-token");
+            const apyTokens = filteredTokens.map(token => token.symbol);
+            const apyToken = apyTokens.join("-");
+            return apyToken;
+    }
+}
