@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import {
     useMediaQuery,
     Skeleton,
@@ -17,16 +17,16 @@ import {
     Landmark,
     Wallet,
 } from 'lucide-react';
-import {WalletTab} from '../../types/agent.type.ts';
-import {mockDeFiPositions} from "../../constants/defi.constants.ts";
-import {formatUsdValue} from "../../utils/defi.util.ts";
+import { WalletTab } from '../../types/agent.type.ts';
+import { mockDeFiPositions } from "../../constants/defi.constants.ts";
+import { formatUsdValue } from "../../utils/defi.util.ts";
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import {useWalletBalance} from '../../hooks/useBalance.tsx';
-import {TokenChainIcon} from './../swap/components/TokenIcon.tsx';
-import {PositionList} from '../wallet/PositionList.tsx';
+import { useWalletBalance } from '../../hooks/useBalance.tsx';
+import { TokenChainIcon } from './../swap/components/TokenIcon.tsx';
+import { PositionList } from '../wallet/PositionList.tsx';
 import PNL from '../common/PNL.tsx';
 import PNLPercent from '../common/PNLPercent.tsx';
-import {formatNumberByFrac} from '../../utils/common.util.ts';
+import { formatNumberByFrac } from '../../utils/common.util.ts';
 import useDefiStore from '../../store/useDefiStore.ts';
 
 interface WalletPanelProps {
@@ -34,17 +34,17 @@ interface WalletPanelProps {
     setIsWalletPanelOpen: (value: boolean) => void;
 }
 
-export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPanelProps) {
-    const {isLoading: isLoadingBalance} = useWalletBalance();
-    const {totalUsdValue, tokenBalances, pnlPercent, pnlUsd} = useTokenBalanceStore();
-    const {totalLockedValue} = useDefiStore();
+export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletPanelProps) {
+    const { isLoading: isLoadingBalance } = useWalletBalance();
+    const { totalUsdValue, tokenBalances, pnlPercent, pnlUsd } = useTokenBalanceStore();
+    const { totalLockedValue } = useDefiStore();
     const [activeWalletTab, setActiveWalletTab] = useState<WalletTab>('assets');
     const [isLargerThan962] = useMediaQuery('(min-width: 962px)');
 
     // Calculate combined portfolio value
     const totalPortfolioValue = totalUsdValue + totalLockedValue;
 
-    const {isOpen, onOpen, onClose} = useDisclosure();
+    const { isOpen, onOpen, onClose } = useDisclosure();
     // Filter positions correctly
     const defiPositions = mockDeFiPositions.filter(p => p.type === 'LENDING');
     // Handle window resize to hide panel on mobile
@@ -61,19 +61,19 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
             {isLargerThan962 ? (
                 <div
                     className={`right-0 top-[73px] bottom-[89px] border-l border-white/10 transition-all duration-300 ${isWalletPanelOpen ? 'w-80' : 'w-0'
-                    } overflow-hidden`}>
+                        } overflow-hidden`}>
                     <div className="h-full  w-80 flex flex-col glass">
                         {/* Total Balance */}
                         <div className="p-4 border-b border-white/10">
                             <div className="text-sm text-white/60">Total Balance</div>
                             <div className="text-2xl font-bold mt-1">
                                 {isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'}
-                                                              h={'2rem'}></Skeleton> : formatUsdValue(totalPortfolioValue)}
+                                    h={'2rem'}></Skeleton> : formatUsdValue(totalPortfolioValue)}
                             </div>
                             {
                                 isLoadingBalance ?
                                     <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'} h={'1rem'}></Skeleton> :
-                                    <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today"/>
+                                    <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
                             }
                         </div>
 
@@ -84,9 +84,9 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                 className={`flex items-center gap-2 flex-1 p-2 text-sm transition-colors ${activeWalletTab === 'assets'
                                     ? 'bg-white/10 font-medium'
                                     : 'hover:bg-white/5'
-                                }`}
+                                    }`}
                             >
-                                <Wallet className="w-4 h-4"/>
+                                <Wallet className="w-4 h-4" />
                                 Assets
                             </button>
                             <button
@@ -94,9 +94,9 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                 className={`flex items-center gap-2 flex-1 p-2 text-sm transition-colors ${activeWalletTab === 'defi'
                                     ? 'bg-white/10 font-medium'
                                     : 'hover:bg-white/5'
-                                }`}
+                                    }`}
                             >
-                                <Landmark className="w-4 h-4"/>
+                                <Landmark className="w-4 h-4" />
                                 DeFi
                             </button>
                         </div>
@@ -110,7 +110,7 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                         {
                                             isLoadingBalance ?
                                                 <Skeleton startColor="#444" endColor="#1d2837" w={'100%'}
-                                                          h={'4rem'}></Skeleton>
+                                                    h={'4rem'}></Skeleton>
                                                 : tokenBalances.map((position) => (
                                                     <button
                                                         key={position.chain + position.symbol}
@@ -118,7 +118,7 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <TokenChainIcon src={position.logo} alt={position.name}
-                                                                            size={"lg"} chainId={Number(position.chain)}/>
+                                                                size={"lg"} chainId={Number(position.chain)} />
                                                             <div className='flex flex-col justify-start items-start'>
                                                                 <div className="font-medium">{position.symbol}</div>
                                                                 <div className="text-sm text-white/60">
@@ -129,7 +129,7 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                                         <div className="text-right">
                                                             <span>{formatUsdValue(position.usdValue)}</span>
                                                             <PNLPercent
-                                                                pnlPercent={position.usdPrice24hrUsdChange * 100 / (position.usdPrice - position.usdPrice24hrUsdChange)}/>
+                                                                pnlPercent={position.usdPrice24hrUsdChange * 100 / position.usdPrice} />
                                                         </div>
                                                     </button>
                                                 ))
@@ -137,7 +137,7 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                     </div>
                                 ) : (
                                     // DeFi Tab
-                                    <PositionList isLoading={false}/>
+                                    <PositionList isLoading={false} />
                                 )}
                             </div>
                         </div>
@@ -149,9 +149,9 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                         className={`absolute top-1/2 ${isWalletPanelOpen ? '-left-6' : 'left-0'} p-1 bg-white/10 hover:bg-white/20 rounded-l-lg transition-colors`}
                     >
                         {isWalletPanelOpen ? (
-                            <ChevronRight className="w-4 h-4"/>
+                            <ChevronRight className="w-4 h-4" />
                         ) : (
-                            <ChevronLeft className="w-4 h-4"/>
+                            <ChevronLeft className="w-4 h-4" />
                         )}
                     </button>
                 </div>
@@ -161,12 +161,12 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                         onClick={onOpen}
                         className="fixed right-0 p-2 hover:bg-white/10 rounded-lg transition-colors"
                     >
-                        <Wallet className="w-5 h-5"/>
+                        <Wallet className="w-5 h-5" />
                     </button>
                     <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="xs">
                         <DrawerOverlay>
                             <DrawerContent className="glass">
-                                <DrawerCloseButton/>
+                                <DrawerCloseButton />
                                 <DrawerHeader>Wallet</DrawerHeader>
                                 <DrawerBody>
                                     <div className="h-full flex flex-col">
@@ -176,14 +176,14 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                             <div className="text-2xl font-bold mt-1">
                                                 {isLoadingBalance ?
                                                     <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'}
-                                                              h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)}
+                                                        h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)}
                                             </div>
 
                                             {
                                                 isLoadingBalance ?
                                                     <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'}
-                                                              h={'1rem'}></Skeleton> :
-                                                    <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today"/>
+                                                        h={'1rem'}></Skeleton> :
+                                                    <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
                                             }
                                         </div>
 
@@ -194,9 +194,9 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                                 className={`flex items-center gap-2 flex-1 p-2 text-sm transition-colors ${activeWalletTab === 'assets'
                                                     ? 'bg-white/10 font-medium'
                                                     : 'hover:bg-white/5'
-                                                }`}
+                                                    }`}
                                             >
-                                                <Wallet className="w-4 h-4"/>
+                                                <Wallet className="w-4 h-4" />
                                                 Assets
                                             </button>
                                             <button
@@ -204,9 +204,9 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                                 className={`flex items-center gap-2 flex-1 p-2 text-sm transition-colors ${activeWalletTab === 'defi'
                                                     ? 'bg-white/10 font-medium'
                                                     : 'hover:bg-white/5'
-                                                }`}
+                                                    }`}
                                             >
-                                                <Landmark className="w-4 h-4"/>
+                                                <Landmark className="w-4 h-4" />
                                                 DeFi
                                             </button>
                                         </div>
@@ -220,7 +220,7 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                                         {
                                                             isLoadingBalance ?
                                                                 <Skeleton startColor="#444" endColor="#1d2837"
-                                                                          w={'100%'} h={'4rem'}></Skeleton>
+                                                                    w={'100%'} h={'4rem'}></Skeleton>
                                                                 : tokenBalances.map((position) => (
                                                                     <button
                                                                         key={position.chain + position.symbol}
@@ -228,8 +228,8 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                                                     >
                                                                         <div className="flex items-center gap-3">
                                                                             <TokenChainIcon src={position.logo}
-                                                                                            alt={position.name} size={"lg"}
-                                                                                            chainId={Number(position.chain)}/>
+                                                                                alt={position.name} size={"lg"}
+                                                                                chainId={Number(position.chain)} />
                                                                             <div
                                                                                 className='flex flex-col justify-start items-start'>
                                                                                 <div
@@ -242,7 +242,7 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                                                         <div className="text-right">
                                                                             <div>{formatUsdValue(position.usdValue)}</div>
                                                                             <PNLPercent
-                                                                                pnlPercent={position.usdPrice24hrUsdChange * 100 / (position.usdPrice - position.usdPrice24hrUsdChange)}/>
+                                                                                pnlPercent={position.usdPrice24hrUsdChange * 100 / position.usdPrice} />
                                                                         </div>
                                                                     </button>
                                                                 ))
@@ -257,7 +257,7 @@ export function WalletPanel({isWalletPanelOpen, setIsWalletPanelOpen}: WalletPan
                                                         >
                                                             <div className="flex items-center gap-2">
                                                                 <img src={position.protocolLogo} alt={position.protocol}
-                                                                     className="w-6 h-6"/>
+                                                                    className="w-6 h-6" />
                                                                 <div>
                                                                     <div
                                                                         className="font-medium text-sm">{position.protocol}</div>

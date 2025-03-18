@@ -237,7 +237,7 @@ export const PortfolioWidget: React.FC = () => {
                       </div>
                       <div className="text-right items-end justify-end flex flex-col">
                         <div>{formatCurrency(Number(token.usdValue) || 0)}</div>
-                        <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / (token.usdPrice - token.usdPrice24hrUsdChange)} />
+                        <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / token.usdPrice} />
                       </div>
                     </button>
                   ))
