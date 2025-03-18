@@ -11,6 +11,7 @@ import { useGetDefillamaPoolByInfo } from "../../hooks/useDefillama";
 import useDefillamaStore from "../../store/useDefillamaStore";
 import { formatNumberByFrac, formatNumber } from "../../utils/common.util";
 import { mapChainId2ChainName } from "../../config/networks";
+import { getAddActionName } from "../../utils/defi.util";
 
 interface OfferingListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
@@ -44,23 +45,6 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
 
 
     const filteredOfferings = offerings.filter(o => selectedPositionType === 'ALL' || o.type.toLowerCase() === selectedPositionType.toLowerCase());
-
-    const getAddActionName = ({ type }: { type: string }) => {
-        switch (type.toLowerCase()) {
-            case "staking":
-                return "stake";
-            case "liquidity":
-                return "deposit";
-            case "supplied":
-                return "deposit";
-            case "borrowing":
-                return "borrow";
-            case "lending":
-                return "lend";
-            default:
-                return "";
-        }
-    }
 
 
     return (
@@ -99,7 +83,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                             poolInfo: getOfferingPoolByChainId(chainId, offering.protocol_id, offering.apyToken)
                         }
                     });
-                    const poolInfo = getOfferingPoolByChainId(offering.chainId[0], offering.protocol_id, offering.apyToken);
+                    const poolInfo = poolInfoList[0]?.poolInfo;
                     return (
                         <div
                             key={chainId + offering.protocol_id + offering.apyToken + index}
@@ -129,7 +113,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
 
                                     <div className="flex items-center gap-6">
                                         {
-                                            poolInfoList.map((poolInfo, index) => {
+                                            poolInfoList.map((poolInfo) => {
                                                 const id = `chain-id-${poolInfo.chainId}-protocol-${offering.protocol_id}-symbol-${offering.apyToken}`;
                                                 const isLoading = offeringLoadingList[id];
 
