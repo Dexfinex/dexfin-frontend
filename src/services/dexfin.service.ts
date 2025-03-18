@@ -8,6 +8,7 @@ import {
   SolanaWalletReponseType,
 } from "../types/dexfinv3.type.ts";
 import { birdeyeService } from "./birdeye.service.ts";
+import { coingeckoService } from "./coingecko.service.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.type.ts";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
 
@@ -194,8 +195,20 @@ export const dexfinv3Service = {
               tokenId: token.tokenId
             } as EvmWalletBalanceResponseType)
           } else {
+            const tokenId = token.tokenId === "ethereum" ? (Number(token.chain) === 1 ? token.tokenId : ("w" + token.symbol.toLowerCase())) : token.tokenId;
+            const data = await coingeckoService.getOHLCV(tokenId, "12H", fromTime, currentTime)
+            const priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
+            const usdPrice = Number(data[data.length - 1]?.close);
+            const usdValue = usdPrice * Number(token.balanceDecimal);
+
             result.push({
               ...token,
+              ...{
+                usdPrice24hrUsdChange: priceChange24h,
+                usdValue24hrUsdChange: Number(priceChange24h) * Number(token.balanceDecimal),
+                usdPrice,
+                usdValue,
+              }
             })
           }
         }
