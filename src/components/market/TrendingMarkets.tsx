@@ -42,6 +42,9 @@ export const TrendingMarkets: React.FC = () => {
         break;
     }
   };
+  const navigateToCoinGecko = (coinId: string) => {
+    window.open(`https://www.coingecko.com/en/coins/${coinId}`, '_blank', 'noopener,noreferrer');
+  };
 
   if (error) {
     return (
@@ -112,7 +115,9 @@ export const TrendingMarkets: React.FC = () => {
         {selectedTab === "Trending Tokens" && (coins || []).map((coin) => (
           <div
             key={coin.id}
-            className="p-3 sm:p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+            className="p-3 sm:p-4 rounded-xl bg-black/20 hover:bg-black/40 transition-all hover:scale-[1.02]  group cursor-pointer"
+            onClick={() => navigateToCoinGecko(coin.id)}
+
           >
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -176,7 +181,9 @@ export const TrendingMarkets: React.FC = () => {
         {selectedTab === "Top Gainers" && (gainers || []).map((gainer) => (
           <div
             key={gainer.id}
-            className="p-3 sm:p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+            className="p-3 sm:p-4 rounded-xl bg-black/20 hover:bg-black/40 transition-all hover:scale-[1.02] group cursor-pointer"
+            onClick={() => navigateToCoinGecko(gainer.id)}
+
           >
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -229,17 +236,19 @@ export const TrendingMarkets: React.FC = () => {
           </div>
         ))}
 
-        {selectedTab === "Top Losers" && (losers || []).map((gainer) => (
+        {selectedTab === "Top Losers" && (losers || []).map((loser) => (
           <div
-            key={gainer.id}
-            className="p-3 sm:p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+            key={loser.id}
+            className="p-3 sm:p-4 rounded-xl bg-black/20 hover:bg-black/40 transition-all hover:scale-[1.02] group cursor-pointer"
+            onClick={() => navigateToCoinGecko(loser.id)}
+
           >
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-blue-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all" />
                 <img
-                  src={gainer.thumb}
-                  alt={gainer.name}
+                  src={loser.thumb}
+                  alt={loser.name}
                   className="w-8 h-8 md:w-10 md:h-10 sm:w-12 sm:h-12  rounded-full relative"
                 />
               </div>
@@ -247,34 +256,34 @@ export const TrendingMarkets: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-md lg:text-lg  tracking-tight truncate w-[150px] sm:w-full">
-                      {gainer.name}
+                      {loser.name}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-sm text-white/80">{gainer.symbol}</span>
-                      {gainer.marketCapRank && (
+                      <span className="text-sm text-white/80">{loser.symbol}</span>
+                      {loser.marketCapRank && (
                         <span className="px-2 py-0.5 rounded-full bg-white/10 text-xs font-medium">
-                          Rank #{gainer.marketCapRank}
+                          Rank #{loser.marketCapRank}
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="text-right justify-items-end">
                     <div className="flex text-lg font-medium text-white">
-                      ${formatNumberByFrac(gainer.priceUsd)}
-                      <div className={`flex items-center ml-1 justify-end text-sm ${gainer.usd24hChange >= 0 ? 'text-emerald-400' : 'text-red-400'
+                      ${formatNumberByFrac(loser.priceUsd)}
+                      <div className={`flex items-center ml-1 justify-end text-sm ${loser.usd24hChange >= 0 ? 'text-emerald-400' : 'text-red-400'
                         }`}>
-                        {gainer.usd24hChange > 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
-                        {formatNumberByFrac(Math.abs(gainer.usd24hChange))} %
+                        {loser.usd24hChange > 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
+                        {formatNumberByFrac(Math.abs(loser.usd24hChange))} %
                       </div>
                     </div>
-                    {gainer.usd24hVol > 0 && (
+                    {loser.usd24hVol > 0 && (
                       <div className="text-sm mt-0.5">
                         <span className="text-white/60">24H Vol:</span>
                         <span className="text-white/80 ml-2">
                           ${new Intl.NumberFormat('en-US', {
                             notation: 'compact',
                             maximumFractionDigits: 1
-                          }).format(gainer.usd24hVol)}
+                          }).format(loser.usd24hVol)}
                         </span>
                       </div>
                     )}

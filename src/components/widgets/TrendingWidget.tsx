@@ -96,6 +96,11 @@ export const TrendingWidget = forwardRef<RefreshableWidget, {}>((props, ref) => 
     }
   };
 
+  // Function to navigate to CoinGecko
+  const navigateToCoinGecko = (coinId: string) => {
+    window.open(`https://www.coingecko.com/en/coins/${coinId}`, '_blank', 'noopener,noreferrer');
+  };
+
   if (isLoading()) {
     return (
       <div className="p-2 h-full">
@@ -160,7 +165,8 @@ export const TrendingWidget = forwardRef<RefreshableWidget, {}>((props, ref) => 
           {coins.map((coin) => (
             <div
               key={coin.id}
-              className="p-2.5 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+              className="p-2.5 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group cursor-pointer"
+              onClick={() => navigateToCoinGecko(coin.id)}
             >
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -227,7 +233,8 @@ export const TrendingWidget = forwardRef<RefreshableWidget, {}>((props, ref) => 
           {gainers.map((gainer) => (
             <div
               key={gainer.id}
-              className="p-2.5 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+              className="p-2.5 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group cursor-pointer"
+              onClick={() => navigateToCoinGecko(gainer.id)}
             >
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -289,7 +296,8 @@ export const TrendingWidget = forwardRef<RefreshableWidget, {}>((props, ref) => 
           {losers.map((loser) => (
             <div
               key={loser.id}
-              className="p-2.5 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group"
+              className="p-2.5 rounded-xl bg-black/20 hover:bg-black/30 transition-all hover:scale-[1.02] group cursor-pointer"
+              onClick={() => navigateToCoinGecko(loser.id)}
             >
               <div className="flex items-center gap-3">
                 <div className="relative">

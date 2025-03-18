@@ -1,4 +1,4 @@
-import  { useEffect, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useGetTwitterInfo } from '../../hooks/useGetTwitterInfo';
 import { getRelativeTime } from "../../utils/twitter-widget.util";
@@ -292,13 +292,13 @@ export const TwitterWidget = forwardRef<RefreshableWidget, {}>((props, ref) => {
                         <div className="w-1.5 h-1.5 bg-white rounded-full" />
                       </div>
                     )}
-                    <span className="text-[13px] text-white/60"> <a
-
-                      href={`https://x.com/@${tweet.author.handle}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:underline"
-                    >@{tweet.author.handle}</a>
+                    <span className="text-[13px] text-white/60">
+                      <a
+                        href={`https://x.com/@${tweet.author.handle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >@{tweet.author.handle}</a>
                     </span>
                     <span className="text-[13px] text-white/40">·</span>
                     <span className="text-[13px] text-white/60">{tweet.timestamp}</span>
