@@ -334,7 +334,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
     }
 
     const sol_response = await openaiService.getOpenAISolanaData(message);
-    
+    console.log(sol_response);
     if (sol_response && sol_response.type == "transfer_sol" && sol_response.args.chainName == "solana") {
       return sol_response;
     } else if (sol_response && sol_response.type == "swap_sol" && sol_response.args.chainName == "solana") {
@@ -362,7 +362,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
   const processCommand = async (text: string, address: string, chainId: number | undefined) => {
 
     try {
-
+      
       setIsProcessing(true);
       const normalizedText = text.trim();
       let response: any = null;
@@ -372,7 +372,10 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
 
       for (const command of commands) {
         const normalizedCommand = command.trim();
-
+        setMessages(prev => [...prev, {
+          role: 'user',
+          content: command
+        }]);
         response = await generateResponse(normalizedCommand, address, chainId);
         
         if (response.type == "action" && response.brianData.type == "write") {
@@ -607,15 +610,12 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
             }
           }
           else {
-            response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
+            response = { text: `transfer ${response.args.amount} ${response.args.inputSymbol} to ${response.args.outputMint} on ${fromNetwork.id}`, insufficient: 'Insufficient balance to perform the transaction.' };
           }
         }
 
         if (response) {
           setMessages(prev => [...prev, {
-            role: 'user',
-            content: command
-          }, {
             role: 'assistant',
             content: response.text,
             tip: response.insufficient,
