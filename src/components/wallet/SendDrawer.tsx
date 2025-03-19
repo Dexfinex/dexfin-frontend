@@ -36,6 +36,10 @@ interface FormValues extends FieldValues {
 }
 
 export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
+    const toast = useToast()
+    const { theme } = useStore();
+    const { mutate: sendTransactionMutate } = useSendTransactionMutation();
+    const { isChainSwitching, chainId, signer, isConnected, login, switchChain, walletType, transferSolToken } = useContext(Web3AuthContext);
     const { tokenBalances, setTokenBalances } = useTokenBalanceStore();
     const [showAssetSelector, setShowAssetSelector] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(tokenBalances[0] || {})
@@ -45,11 +49,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     const [showEnsList, setShowEnsList] = useState(true);
     const [address, setAddress] = useState("");
     const [showSelectedEnsInfo, setShowSelectedEnsInfo] = useState(false);
-    const { theme } = useStore();
     const [recentAddresses, setRecentAddresses] = useState<string[]>([]);
-    const { mutate: sendTransactionMutate } = useSendTransactionMutation();
-    const { isChainSwitching, chainId, signer, isConnected, login, switchChain, walletType, transferSolToken } = useContext(Web3AuthContext);
-    const toast = useToast()
 
     useEffect(() => {
         if (tokenBalances.length > 0 && Object.keys(selectedAsset).length === 0) {
