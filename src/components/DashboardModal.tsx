@@ -96,7 +96,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
 
   const performanceData = useMemo(() => {
     const labelData = (portfolioData || []).map((item) => item.time);
-    const priceData = (portfolioData || []).map((item) => item.price);
+    const priceData = (portfolioData || []).map((item) => formatNumberByFrac(item.price));
     return {
       labels: labelData,
       datasets: [
