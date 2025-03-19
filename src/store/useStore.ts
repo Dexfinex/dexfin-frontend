@@ -1,6 +1,5 @@
 
 import { create } from 'zustand';
-import { IUser } from '../types/chat.type';
 
 interface MenuItem {
   id: string;
@@ -332,8 +331,6 @@ interface StoreState {
   // Chat Message
   receivedMessage: any;
   setReceivedMessage: (message: any) => void;
-  selectedUserInChatModal: IUser | null;
-  setSelectedUserInChatModal: (user: IUser) => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -935,8 +932,6 @@ const useStore = create<StoreState>((set, get) => ({
   setChatUser: (user) => set({ chatUser: user }),
   receivedMessage: null,
   setReceivedMessage: message => set({ receivedMessage: message }),
-  selectedUserInChatModal: null,
-  setSelectedUserInChatModal: user => set({ selectedUserInChatModal: user })
 }));
 
 export { useStore };
