@@ -7,12 +7,11 @@ import {
   SolanaTokensType,
   SolanaWalletReponseType,
 } from "../types/dexfinv3.type.ts";
-import {birdeyeService} from "./birdeye.service.ts";
-import {coingeckoService} from "./coingecko.service.ts";
-import {TokenMetadata, Transfer} from "../types/wallet.type.ts";
-import {TokenType} from "../types/swap.type.ts";
-import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
-import {NETWORKS} from "../config/networks.ts";
+import { birdeyeService } from "./birdeye.service.ts";
+import { Transfer, TokenMetadata } from "../types/wallet.type.ts";
+import { TokenType } from "../types/swap.type.ts";
+import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
+import { NETWORKS } from "../config/networks.ts";
 
 export const dexfinv3Service = {
   getEvmWalletBalance: async ({
@@ -252,7 +251,9 @@ export const dexfinv3Service = {
     return [];
   },
 
-  getTrendingTokens: async (skip: number, take: number, chainId: number) => {
+  getTrendingTokens: async (skip: number, chainId?: number) => {
+    const take = 30;
+
     try {
       const { data } = await dexfinv3Api.get<any>(
         `/tokenlist?skip=${skip}&take=${take}&chainId=${chainId}`
@@ -306,7 +307,9 @@ export const dexfinv3Service = {
     return null;
   },
 
-  searchTrendingTokens: async (query: string, chainId: number, limit: number) => {
+  searchTrendingTokens: async (query: string, chainId?: number) => {
+    const limit = 10;
+
     try {
       const { data } = await dexfinv3Api.get<any>(
         `/tokenlist/search?query=${query}&chainId=${chainId}&limit=${limit}`
