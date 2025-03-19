@@ -7,6 +7,7 @@ import {
   SolanaTokensType,
   SolanaWalletReponseType,
 } from "../types/dexfinv3.type.ts";
+import {coingeckoService} from "./coingecko.service.ts";
 import { birdeyeService } from "./birdeye.service.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.type.ts";
 import { TokenType } from "../types/swap.type.ts";
