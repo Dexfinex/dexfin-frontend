@@ -234,7 +234,9 @@ export const dexfinv3Service = {
     return [];
   },
 
-  getTrendingTokens: async (skip: number, take: number, chainId?: number) => {
+  getTrendingTokens: async (skip: number, chainId?: number) => {
+    const take = 30;
+
     try {
       const { data } = await dexfinv3Api.get<any>(
         `/tokenlist?skip=${skip}&take=${take}&chainId=${chainId}`

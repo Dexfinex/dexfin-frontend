@@ -5,15 +5,6 @@ import useTrendingTokensStore from "../store/useTrendingTokensStore.ts";
 
 export const useTrendingTokens = (chainId: number) => {
     const fetchTokens = useCallback(async () => {
-        // if (!evmAddress && !solanaAddress) {
-        //     return [];
-        // }
-
-        // const data = await dexfinv3Service.getAllActivities(evmAddress, solanaAddress);
-        // if (data) {
-        //     return data;
-        // }
-
         if (chainId === -1) { // total
             const tokens = useTrendingTokensStore.getState().trendingTokens;
             if (tokens['all'].length > 0) {

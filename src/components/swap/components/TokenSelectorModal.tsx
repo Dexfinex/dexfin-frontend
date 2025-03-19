@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useInView } from 'react-intersection-observer';
 import ReactDOM from 'react-dom';
 import { Search, Star, X, ExternalLink, MessageSquareWarning } from 'lucide-react';
 import { TokenType } from "../../../types/swap.type.ts";
@@ -117,6 +118,22 @@ export function TokenSelectorModal({
     const [approveModalActive, setApproveModalActive] = useState(false);
     const [tokens, setTokens] = useState<Array<TokenType>>([]);
 
+    const { ref, inView } = useInView({
+        threshold: 0.1, // Trigger when 10% of the element is visible
+        triggerOnce: false, // Allow multiple triggers
+    });
+
+    useEffect(() => {
+        if (inView) {
+            loadMoreItems();
+        }
+    }, [inView]);
+
+
+    const loadMoreItems = async () => {
+        const result: TokenType[] = await dexfinv3Service.getTrendingTokens(tokens.length, selectedNetwork?.chainId)
+        setTokens([...tokens, ...result])
+    }
     // const tokens = useMemo(() => {
     //     if (addedTokens && addedTokens.length > 0) {
     //         if (selectedNetwork?.id) {
@@ -460,6 +477,7 @@ export function TokenSelectorModal({
                                     </div>
                                 </div>
                             ))}
+                            <div ref={ref} className="p-1"></div>
                         </div>
                     )}
                 </div> : <div>
