@@ -13,7 +13,10 @@ interface QuoteParam {
 
 const useGetTokenPrices = ({ chainId, tokenAddresses }: QuoteParam) => {
     const enabled = chainId !== undefined && !!tokenAddresses && tokenAddresses.length > 0;
-    const uniqueTokenAddresses = [...new Set(tokenAddresses.map(address => solToWSol(address!)))].filter(item => item != null)
+    const uniqueTokenAddresses =
+        [...new Set(tokenAddresses)]
+            .map(address => solToWSol(address!))
+            .filter(item => item != null)
 
     const fetchPrices = useCallback(async () => {
         if (chainId === SOLANA_CHAIN_ID) {

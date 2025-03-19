@@ -393,7 +393,7 @@ export function TokenSelectorModal({
                                             }}
                                         >
                                             <HStack>
-                                                <Image src={popularToken.logoURI} boxSize='24px' />
+                                                <Image src={popularToken.logoURI} boxSize='24px' className="rounded-full" />
                                                 <Text className="text-sm text-white">{popularToken.symbol}</Text>
                                             </HStack>
                                         </Button>
