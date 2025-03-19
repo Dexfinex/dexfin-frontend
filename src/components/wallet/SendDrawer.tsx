@@ -111,7 +111,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                 switchChain(Number(selectedAsset.chain));
             }
         }
-    }, [chainId, selectedAsset, switchChain])
+    }, [chainId, selectedAsset])
 
     const ensAddressDataResponse = useEnsAddress({
         name: normalizedAddress,
