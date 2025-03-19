@@ -19,6 +19,15 @@ export interface EIP712TypedData {
     primaryType: string;
 }
 
+export interface PreviewDetailItemProps {
+    title: string;
+    info: string;
+    value: string;
+    valueClassName?: string;
+    isFree?: boolean;
+    isLoading: boolean;
+}
+
 export type TokenType = {
     // symbol: string;
     // name: string;
