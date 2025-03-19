@@ -23,6 +23,7 @@ import { PageType } from '../WalletDrawer.tsx';
 import useTokenBalanceStore, { TokenBalance } from '../../store/useTokenBalanceStore.ts';
 import makeBlockie from 'ethereum-blockies-base64';
 import { SOLANA_CHAIN_ID } from "../../constants/solana.constants.ts";
+import { LOCAL_STORAGE_RECENT_ADDRESSES } from '../../constants/index.ts';
 
 interface SendDrawerProps {
     setPage: (type: PageType) => void;
@@ -57,7 +58,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     }, [tokenBalances, selectedAsset])
 
     useEffect(() => {
-        const item = localStorage.getItem("recentSendAddresses")
+        const item = localStorage.getItem(LOCAL_STORAGE_RECENT_ADDRESSES)
         if (item) {
             const addresses = JSON.parse(item)
             setRecentAddresses(addresses)
@@ -203,7 +204,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                     setValue("amount", "")
                     saveAddress(address)
                     setAddress("")
-                    setIsConfirming(false)
                 } else {
                     toast({
                         status: 'error',
@@ -211,6 +211,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                         duration: 4000
                     })
                 }
+                setIsConfirming(false)
             }
         } else {
             if (Number(chainId) !== Number(selectedAsset.chain)) {
@@ -254,11 +255,13 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
         }
     };
 
-    const filteredAssets = tokenBalances.filter(token =>
-        token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        token.address.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredAssets = useMemo(() => {
+        return tokenBalances.filter(token =>
+            token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            token.address.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [tokenBalances, searchQuery]);
 
     // if (!isOpen) return null;
     const renderUsdValue = () => {
@@ -283,13 +286,13 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     }
 
     const saveAddress = (address: string) => {
-        let addresses = JSON.parse(localStorage.getItem("recentSendAddresses") || "[]");
+        let addresses = JSON.parse(localStorage.getItem(LOCAL_STORAGE_RECENT_ADDRESSES) || "[]");
         if (!addresses.includes(address)) {
             addresses.unshift(address);
             addresses = addresses.slice(0, 5); // Keep only the last 5 addresses
         }
 
-        localStorage.setItem("recentSendAddresses", JSON.stringify(addresses));
+        localStorage.setItem(LOCAL_STORAGE_RECENT_ADDRESSES, JSON.stringify(addresses));
     }
 
     return (
