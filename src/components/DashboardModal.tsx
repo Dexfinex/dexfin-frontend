@@ -175,6 +175,40 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
     },
   }
 
+  const chartOptionsDistribute = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          maxRotation: 0,
+          autoSkipPadding: 15,
+          font: {
+            size: 11,
+          },
+        },
+      },
+      y: {
+        grid: {
+        },
+        ticks: {
+          callback: (value: number) => value.toLocaleString() + "%",
+          font: {
+            size: 11,
+          },
+        },
+      },
+    },
+  }
+
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -377,7 +411,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-12">
                   <div className="relative w-full h-[200px] sm:w-[50%] sm:h-[250px]">
-                    <Line data={distributionData} options={chartOptions as any} />
+                    <Line data={distributionData} options={chartOptionsDistribute as any} />
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       {
                         isBalanceLoading ?
