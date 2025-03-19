@@ -21,43 +21,43 @@ export const NETWORKS: NETWORK[] = [
     {
         id: 'ethereum',
         name: 'Ethereum',
-        icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/ethereum.svg',
         chainId: 1,
     },
     {
         id: 'base',
         name: 'Base',
-        icon: 'https://assets.coingecko.com/asset_platforms/images/131/small/base-network.png',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/base.svg',
         chainId: 8453,
     },
     {
         id: 'polygon',
         name: 'Polygon',
-        icon: 'https://cryptologos.cc/logos/polygon-matic-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/polygon.svg',
         chainId: 137,
     },
     {
         id: 'bsc',
         name: 'BSC',
-        icon: 'https://cryptologos.cc/logos/bnb-bnb-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/bsc.svg',
         chainId: 56,
     },
     {
         id: 'avalanche',
         name: 'Avalanche',
-        icon: 'https://cryptologos.cc/logos/avalanche-avax-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/avalanche.svg',
         chainId: 43114,
     },
     {
         id: 'optimism',
         name: 'Optimism',
-        icon: 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/optimism.svg',
         chainId: 10,
     },
     {
         id: 'arbitrum',
         name: 'Arbitrum',
-        icon: 'https://cryptologos.cc/logos/arbitrum-arb-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/arbitrum.svg',
         chainId: 42161,
     },
 /*
@@ -71,7 +71,7 @@ export const NETWORKS: NETWORK[] = [
     {
         id: 'solana',
         name: 'Solana',
-        icon: 'https://cryptologos.cc/logos/solana-sol-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/solana.svg',
         chainId: SOLANA_CHAIN_ID,
     },
 ] as const;

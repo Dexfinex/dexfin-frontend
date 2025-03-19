@@ -293,7 +293,7 @@ export function TokenSelectorModal({
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border ${selectedNetwork === network ? 'text-white' : 'border-transparent hover:text-white'
                                     }`}
                             >
-                                <img src={network.icon} alt={network.name} className="w-5 h-5" />
+                                <img src={network.icon} alt={network.name} className="w-5 h-5 rounded-full" />
                                 {/*<span>{network.name}</span>*/}
                             </button>
                         ))}
