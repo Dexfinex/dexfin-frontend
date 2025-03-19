@@ -607,7 +607,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
             }
           }
           else {
-            response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
+            response = { text: `transfer ${response.args.amount} ${response.args.inputSymbol} to ${response.args.outputMint} on ${fromNetwork.id}`, insufficient: 'Insufficient balance to perform the transaction.' };
           }
         }
 
