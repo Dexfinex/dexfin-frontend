@@ -3,8 +3,11 @@ import { Wallet, Landmark } from "lucide-react"
 import { Skeleton } from "@chakra-ui/react"
 import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon"
 import { formatNumberByFrac } from "../../utils/common.util"
+import PNL from "../common/PNL"
+import PNLPercent from "../common/PNLPercent"
 import useDefiStore from "../../store/useDefiStore"
 import useTokenBalanceStore from "../../store/useTokenBalanceStore"
+import { useWalletBalance } from "../../hooks/useBalance"
 
 interface AllocationData {
   type: string
@@ -18,11 +21,8 @@ export const PortfolioWidget: React.FC = () => {
   const [activeTab, setActiveTab] = useState<WalletTab>("assets")
 
   const { positions = [], totalLockedValue } = useDefiStore();
-  const { totalUsdValue, tokenBalances: balanceData } = useTokenBalanceStore()
-
-  const isLoading = false;
-  const isLoadingPositions = false
-
+  const { totalUsdValue, tokenBalances: balanceData, pnlUsd, pnlPercent } = useTokenBalanceStore()
+  const { isLoading } = useWalletBalance();
 
   // Calculate combined portfolio value
   const totalPortfolioValue = totalUsdValue + totalLockedValue;
@@ -120,7 +120,7 @@ export const PortfolioWidget: React.FC = () => {
     }).format(value)
   }
 
-  if (isLoading || isLoadingPositions) {
+  if (isLoading) {
     return (
       <div className="p-2 h-full flex flex-col">
         <Skeleton height="100px" />
@@ -138,6 +138,7 @@ export const PortfolioWidget: React.FC = () => {
             <div className="text-2xl font-bold mt-1">
               {formatCurrency(totalPortfolioValue)}
             </div>
+            <PNL pnlUsd={pnlUsd} pnlPercent={pnlPercent} label="Today" />
           </div>
 
           {/* Chart Section */}
@@ -232,8 +233,9 @@ export const PortfolioWidget: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right items-end justify-end flex flex-col">
                         <div>{formatCurrency(Number(token.usdValue) || 0)}</div>
+                        <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / token.usdPrice} />
                       </div>
                     </button>
                   ))
@@ -242,7 +244,7 @@ export const PortfolioWidget: React.FC = () => {
             ) : (
               // DeFi Tab
               <div className="space-y-2">
-                {isLoadingPositions ? (
+                {isLoading ? (
                   <Skeleton startColor="#444" endColor="#1d2837" w={"100%"} h={"4rem"} />
                 ) : !positions || positions.length === 0 ? (
                   <div className="text-center py-6 text-sm opacity-60">
@@ -255,11 +257,7 @@ export const PortfolioWidget: React.FC = () => {
                       className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <img
-                          src={position.logo || "/placeholder.svg"}
-                          alt={position.protocol}
-                          className="w-8 h-8 rounded-full"
-                        />
+                        <TokenChainIcon src={position.logo || "/placeholder.svg"} alt={position.protocol} className="w-8 h-8 rounded-full" chainId={position.chainId} />
                         <div className="flex flex-col justify-start items-start">
                           <div className="font-medium">{position.protocol}</div>
                           {position.tokens && position.tokens.length > 0 &&

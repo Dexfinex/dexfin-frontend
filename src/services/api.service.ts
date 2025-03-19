@@ -21,6 +21,7 @@ import {
     SWAPKIT_BASE_URL,
     NOTIFICATION_BASE_URL,
     REWARDS_BASE_URL,
+    DEBRIDGE_BASE_URL,
 } from "../constants";
 
 export const zeroxApi = axios.create({
@@ -29,6 +30,10 @@ export const zeroxApi = axios.create({
 
 export const swapkitApi = axios.create({
     baseURL: SWAPKIT_BASE_URL,
+});
+
+export const debridgeApi = axios.create({
+    baseURL: DEBRIDGE_BASE_URL,
 });
 
 export const coinGeckoApi = axios.create({
@@ -108,6 +113,7 @@ const authorizedApis: AxiosInstance[] = [
     TechnicalAnalysisApi,
     zeroxApi,
     swapkitApi,
+    debridgeApi,
     calendarApi,
     RewardsApi,
     openaiApi,

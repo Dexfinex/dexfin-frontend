@@ -4,7 +4,7 @@ import { Alert, AlertIcon, Button } from '@chakra-ui/react';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { CheckoutSectionProps } from '../../../types/cart.type';
 import { Web3AuthContext } from '../../../providers/Web3AuthContext';
-import { WalletTypeEnum } from '../../../types/wallet';
+import { WalletTypeEnum } from '../../../types/wallet.type';
 
 const OrderSummaryItem = React.memo(({
     item,
@@ -79,16 +79,11 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
     onExecuteBuy
 }) => {
     const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'card'>('wallet');
-    const { walletType, isConnected } = useContext(Web3AuthContext);
+    const { walletType } = useContext(Web3AuthContext);
 
     // Match the same wallet detection logic used in SwapBox
     const isEmbeddedWallet = walletType === WalletTypeEnum.EMBEDDED;
     
-    // console.log("walletType:", walletType);
-    // console.log("isEmbeddedWallet:", isEmbeddedWallet);
-    // console.log("WalletTypeEnum.EMBEDDED:", WalletTypeEnum.EMBEDDED);
-    // console.log("isConnected:", isConnected);
-
     const { subtotal, total, networkFee } = useMemo(() => {
         const subtotal = cartItems.reduce((total, item) => {
             const coinPrice = tokenPrices[`1:${item.id.toLowerCase()}`] || item.price;

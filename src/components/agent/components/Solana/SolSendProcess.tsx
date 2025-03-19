@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { ArrowRight, Wallet, X } from 'lucide-react';
 
 import { TokenType, Step } from '../../../../types/brian.type.ts';
-import { convertCryptoAmount } from '../../../../utils/agent.tsx';
+import { convertCryptoAmount } from '../../../../utils/agent.util.tsx';
 import { shrinkAddress } from '../../../../utils/common.util.ts';
 import { mapChainId2ViemChain } from '../../../../config/networks.ts';
 import { useSolanaAgentActionMutation } from '../../../../hooks/useSolanaAgentAction.ts';

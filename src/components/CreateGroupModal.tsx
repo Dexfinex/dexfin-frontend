@@ -4,7 +4,7 @@ import { Button, Switch, Spinner } from "@chakra-ui/react"
 import { shrinkAddress } from '../utils/common.util';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { useStore } from '../store/useStore';
-import { getWalletProfile } from '../utils/chatApi';
+import { getWalletProfile } from '../utils/chat.util';
 
 interface CreateGroupModalProps {
   isOpen: boolean;

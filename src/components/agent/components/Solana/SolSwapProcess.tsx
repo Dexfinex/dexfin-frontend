@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext,useMemo } from 'react';
 import { Button, Flex, Skeleton } from '@chakra-ui/react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
 import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
-import { convertCryptoAmount } from '../../../../utils/agent.tsx';
+import { convertCryptoAmount } from '../../../../utils/agent.util.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
 import useJupiterQuote from '../../../../hooks/useJupiterQuote.ts';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
@@ -25,7 +25,8 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
   const { mutate: sendTransactionMutate } = useSolanaAgentSwapActionMutation();
   const [scan, setScan] = useState<string>('https://solscan.io/');
-  
+  const [toAmount, setToAmount] = useState(0);
+
   const {
     isLoading: isQuoteLoading,
     data: quoteData,
@@ -39,20 +40,22 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
   const handleTransaction = async () => {
     try {
 
+      setToAmount(quoteData.formattedOutputAmount);
       setShowConfirmation(true);
+
       sendTransactionMutate(
         {
           transactions: quoteData
         },
         {
           onSuccess: (receipt) => {
-            if(receipt) {
+            if (receipt) {
               setTransactionProgress(100);
               setTransactionStatus('Transaction confirmed!');
-              setScan(receipt ?? ''); 
+              setScan(receipt ?? '');
             } else {
               setShowConfirmation(false);
-              setFailedTransaction(true);  
+              setFailedTransaction(true);
             }
           },
           onError: (error) => {
@@ -62,7 +65,7 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
           },
         },
       );
-      
+
     } catch (error) {
       console.error("Error executing transactions:", error);
       setShowConfirmation(false);
@@ -186,7 +189,7 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
                 <div className="text-sm text-white/60">You receive</div>
                 {isQuoteLoading
                   ? (<Skeleton startColor="#444" endColor="#1d2837" w={'7rem'} h={'1rem'}></Skeleton>) :
-                  (<div className="text-xl font-medium">{formatNumberByFrac(quoteData?.formattedOutputAmount)} {toToken.symbol}</div>)
+                  (<div className="text-xl font-medium">{formatNumberByFrac(quoteData?.formattedOutputAmount, 5)} {toToken.symbol}</div>)
                 }
               </div>
             </div>
@@ -245,11 +248,11 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
             />
           </div>
           <p className="mt-4 text-white/60">
-            Swapping {formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken.symbol} for {formatNumberByFrac(quoteData?.exchangeRate)} {toToken.symbol} via {protocol?.name}
+            Swapping {formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken.symbol} for {formatNumberByFrac(toAmount,5)} {toToken.symbol} via {protocol?.name}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken.symbol} for ${formatNumberByFrac(quoteData?.exchangeRate)} ${toToken.symbol}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken.symbol} for ${formatNumberByFrac(toAmount,5)} ${toToken.symbol}`} />
       )}
     </div>
   );
@@ -286,7 +289,7 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Swap ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken.symbol} for ${formatNumberByFrac(quoteData?.exchangeRate)} ${toToken.symbol} via ${protocol?.name}`}
+          description={`Swap ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken.symbol} for ${formatNumberByFrac(toAmount, 5)} ${toToken.symbol} via ${protocol?.name}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (

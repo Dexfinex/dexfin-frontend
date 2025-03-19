@@ -2,11 +2,14 @@ import { arbitrum, avalanche, base, bsc, linea, mainnet, optimism, polygon } fro
 import { baseSepolia, sepolia } from "viem/chains";
 import { ethers } from "ethers";
 
-export * from "./zerodev"
+export * from "./zerodev.constants.ts"
 
 export const LOCAL_STORAGE_WALLET_INFO = 'LIT-WALLET-INFO'
 export const LOCAL_STORAGE_STARRED_TOKENS = 'LOCAL_STORAGE_STARRED_TOKENS'
 export const LOCAL_STORAGE_AUTH_REDIRECT_TYPE = 'REDIRECT-TYPE'
+export const LOCAL_STORAGE_ADDED_TOKENS = 'LOCAL_STORAGE_ADDED_TOKENS'
+export const LOCAL_STORAGE_BRIDGE_RECENT_WALLETS = 'LOCAL_STORAGE_BRIDGE_RECENT_WALLETS'
+export const LOCAL_STORAGE_PUSH_KEY = 'PgpPK'
 
 export const mapRpcUrls: Record<number, string> = {
     [mainnet.id]: 'https://mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',
@@ -28,6 +31,8 @@ export const COINGECKO_BASE_URL = `${BASE_HOST_DOMAIN}/coingecko`
 // export const COINGECKO_BASE_URL = `http://localhost:3000/coingecko`
 
 export const SWAPKIT_BASE_URL = `${BASE_HOST_DOMAIN}/crosschain`
+
+export const DEBRIDGE_BASE_URL = `${BASE_HOST_DOMAIN}/debridge`
 
 export const BIRDEYE_BASE_URL = `${BASE_HOST_DOMAIN}/birdeye`
 
@@ -78,5 +83,6 @@ export const defaultMaxPriorityFee = ethers.utils.parseUnits('1.5', 'gwei');
 export const defaultGasLimit = 210000n;
 
 export const NULL_ADDRESS = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();

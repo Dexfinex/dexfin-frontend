@@ -1,6 +1,5 @@
 import { TechnicalAnalysisApi } from "./api.service";
-import { TwitterInfo } from "../types/twitterinfo";
-import { SignificantTransactions } from "../types/signitransactions";
+import {SignificantTransactions, TwitterInfo} from "../types";
 
 export const TechnicalAnalysisService = {
     getTwitterInfo: async (): Promise<TwitterInfo[]> => {

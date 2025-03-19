@@ -5,17 +5,20 @@ import { ArrowUp } from 'lucide-react';
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import useDefiStore, { Position } from '../../store/useDefiStore';
 import { getTypeIcon, getTypeColor } from "../../utils/defi.util";
-import { formatNumberByFrac, formatHealthFactor } from "../../utils/common.util";
+import { formatNumberByFrac, formatHealthFactor, formatNumber } from "../../utils/common.util";
 import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon";
 import { isEnabledPosition } from "../../constants/mock/defi";
-
+import { getAddActionName } from "../../utils/defi.util";
+import useDefillamaStore from "../../store/useDefillamaStore";
+import { useGetDefillamaPoolByInfo } from "../../hooks/useDefillama";
+import { getApyTokenFromDefiPosition } from "../../utils/defi.util";
 
 interface PositionListProps {
     setSelectedPositionType: (position: Position['type'] | 'ALL') => void,
     selectedPositionType: Position['type'] | 'ALL',
     isLoading: boolean,
     setShowPreview: (showPreview: boolean) => void;
-    handleAction: (type: string, position: Position) => void,
+    handleAction: (type: string, position: Position, apyToken: string, supportedChains: number[],) => void,
 
 }
 
@@ -23,6 +26,23 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
 
     const { chainId } = useContext(Web3AuthContext)
     const { positions, protocolTypes } = useDefiStore();
+    const { getOfferingPoolByChainId } = useDefillamaStore();
+
+    const positionLoading = positions.map((item) => {
+        const result: Record<string, boolean> = {};
+        const chainId = item.chainId;
+        const apyToken = getApyTokenFromDefiPosition(item);
+        const id = `chain-id-${chainId}-protocol-${item.protocol_id}-symbol-${apyToken}`;
+        const { isLoading } = useGetDefillamaPoolByInfo({
+            "chainId": chainId,
+            "protocol": item.protocol_id,
+            "symbol": apyToken
+        });
+        result[id] = isLoading;
+        return result;
+    });
+
+    const positionLoadingList = positionLoading.reduce((obj, current) => ({ ...obj, ...current }), {});
 
     const getAddLabelName = ({ type }: { type: string }) => {
         switch (type.toLowerCase()) {
@@ -45,19 +65,6 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                 return "Redeem";
             case "supplied":
                 return "";
-            default:
-                return "";
-        }
-    }
-
-    const getAddActionName = ({ type }: { type: string }) => {
-        switch (type.toLowerCase()) {
-            case "staking":
-                return "stake";
-            case "liquidity":
-                return "deposit";
-            case "supplied":
-                return "deposit";
             default:
                 return "";
         }
@@ -115,11 +122,13 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                     .filter(p => selectedPositionType === 'ALL' || p.type === selectedPositionType)
                     .map((position, index) => {
                         const tokenList = position.tokens.map((token) => token.symbol);
-                        const isEnabled = isEnabledPosition({ chainId: Number(chainId), protocol: position.protocol_id, tokenPair: tokenList.toString() || "", type: position.type })
+                        const isEnabled = isEnabledPosition({ chainId: position.chainId, protocol: position.protocol_id, tokenPair: tokenList.toString() || "", type: position.type })
+                        const apyToken = getApyTokenFromDefiPosition(position)
+                        const poolInfo = getOfferingPoolByChainId(position.chainId, position.protocol_id, apyToken);
                         return (
                             isLoading ? <Skeleton startColor="#444" className='rounded-xl' endColor="#1d2837" w={'100%'} h={'7rem'} key={`sk-${index}`}></Skeleton>
                                 : <div
-                                    key={index}
+                                    key={chainId + position.protocol_id + tokenList.toString() + position.type + index}
                                     className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
                                 >
                                     <div className="flex items-between sm:items-center justify-between flex-col sm:flex-row">
@@ -138,7 +147,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                     <span className="text-white/40 hidden sm:block">•</span>
                                                     <div className="flex">
                                                         {
-                                                            position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" />)
+                                                            position.tokens.map((token, index) => ((position.type === "Borrowed" || position.type === "Supplied") && index === 0) || ((position.type === "Liquidity") && index === 2) ? "" : <TokenIcon src={token.logo} alt={token.symbol} size="sm" key={token.symbol + index} />)
                                                         }
                                                     </div>
                                                     {
@@ -152,10 +161,18 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                         <div className="text-lg">${formatNumberByFrac(position.amount)}</div>
                                                     </div>
                                                     {
-                                                        position.apy ?
+                                                        poolInfo?.apy ?
                                                             <div>
                                                                 <span className="text-sm text-white/60">APY</span>
-                                                                <div className="text-emerald-400">{(formatNumberByFrac(position.apy) || "0")}%</div>
+                                                                <div className="text-emerald-400">{(formatNumberByFrac(poolInfo?.apy) || "0")}%</div>
+                                                            </div>
+                                                            : null
+                                                    }
+                                                    {
+                                                        poolInfo?.tvlUsd ?
+                                                            <div>
+                                                                <span className="text-sm text-white/60">TVL</span>
+                                                                <div className="text-emerald-400">{`$${formatNumber(Number(poolInfo?.tvlUsd) || 0)}`}</div>
                                                             </div>
                                                             : null
                                                     }
@@ -196,7 +213,12 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                 getAddLabelName({ type: position.type }) &&
                                                 <button
                                                     onClick={() => {
-                                                        handleAction(getAddActionName({ type: position.type }), position);
+                                                        handleAction(
+                                                            getAddActionName({ type: position.type }),
+                                                            { ...position, apy: Number(poolInfo?.apy) },
+                                                            apyToken,
+                                                            [position.chainId],
+                                                        );
                                                         setShowPreview(false);
                                                     }}
                                                     className={`px-3 py-1.5 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg text-sm ${isEnabled ? "" : "opacity-70"}`}
@@ -209,7 +231,12 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                                                 getRemoveLabelName({ type: position.type }) &&
                                                 <button
                                                     onClick={() => {
-                                                        handleAction(getRemoveActionName({ type: position.type }), position);
+                                                        handleAction(
+                                                            getRemoveActionName({ type: position.type }),
+                                                            { ...position, apy: Number(poolInfo?.apy) },
+                                                            apyToken,
+                                                            [position.chainId],
+                                                        );
                                                         setShowPreview(false);
                                                     }}
                                                     className={`px-3 py-1.5 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm ${isEnabled ? "" : "opacity-70"}`}

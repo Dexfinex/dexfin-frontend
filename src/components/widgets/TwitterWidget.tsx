@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useGetTwitterInfo } from '../../hooks/useGetTwitterInfo';
-import { getRelativeTime } from "../../utils/twitter-widget.util"
+import { getRelativeTime } from "../../utils/twitter-widget.util";
+import { RefreshableWidget } from '../ResizableWidget';
 
 interface Tweet {
   id: string;
@@ -21,11 +22,65 @@ interface Tweet {
   };
 }
 
-export const TwitterWidget: React.FC = () => {
+// Add a utility function to parse URLs in tweet content
+const parseLinks = (text: string) => {
+  // Regular expression to match t.co URLs (Twitter's URL shortener)
+  const urlRegex = /(https?:\/\/t\.co\/[a-zA-Z0-9]+)/g;
+
+  // Create array to hold resulting React elements
+  const result = [];
+
+  // Track the last index we've processed
+  let lastIndex = 0;
+
+  // Find all URLs in the content
+  let match;
+  let i = 0;
+
+  while ((match = urlRegex.exec(text)) !== null) {
+    // Add text before the URL
+    if (match.index > lastIndex) {
+      result.push(
+        <span key={`text-${i}`}>
+          {text.substring(lastIndex, match.index)}
+        </span>
+      );
+    }
+
+    // Add the URL as a link
+    result.push(
+      <a
+        key={`link-${i}`}
+        href={match[0]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-400 hover:underline"
+      >
+        {match[0]}
+      </a>
+    );
+
+    // Update the lastIndex to after this URL
+    lastIndex = match.index + match[0].length;
+    i++;
+  }
+
+  // Add any remaining text after the last URL
+  if (lastIndex < text.length) {
+    result.push(
+      <span key={`text-${i}`}>
+        {text.substring(lastIndex)}
+      </span>
+    );
+  }
+
+  return result;
+};
+
+export const TwitterWidget = forwardRef<RefreshableWidget, {}>((props, ref) => {
   // Get data from the hook with a refresh trigger
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { data: apiTweets, loading, error: apiError, refetch } = useGetTwitterInfo(refreshTrigger);
-  // console.log("twitter apiTweets : ", apiTweets);
 
   // State for the processed tweets
   const [tweets, setTweets] = useState<Tweet[]>([]);
@@ -179,6 +234,12 @@ export const TwitterWidget: React.FC = () => {
     }
   };
 
+  // Expose the refresh method and tweet count through the ref
+  useImperativeHandle(ref, () => ({
+    handleRefresh,
+    getTweetCount: () => tweets.length
+  }), [tweets.length]);
+
   // Show loading state when no data is available yet
   if (loading && !tweets.length) {
     return (
@@ -207,22 +268,6 @@ export const TwitterWidget: React.FC = () => {
 
   return (
     <div className="p-4 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-white/60">
-            {tweets.length > 0 ? `${tweets.length} tweets` : '-'}
-          </span>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing || loading}
-            className={`p-1 rounded-lg hover:bg-white/10 transition-colors ${(refreshing || loading) ? 'opacity-50 cursor-not-allowed' : ''}`}
-            title="Refresh tweets"
-          >
-            <RefreshCw className={`w-4 h-4 ${(refreshing || loading) ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
-
       {tweets.length > 0 ? (
         <div className="flex-1 space-y-3 overflow-y-auto ai-chat-scrollbar max-h-96">
           {tweets.map((tweet) => (
@@ -247,11 +292,20 @@ export const TwitterWidget: React.FC = () => {
                         <div className="w-1.5 h-1.5 bg-white rounded-full" />
                       </div>
                     )}
-                    <span className="text-[11px] text-white/60">@{tweet.author.handle}</span>
-                    <span className="text-[11px] text-white/40">·</span>
-                    <span className="text-[11px] text-white/60">{tweet.timestamp}</span>
+                    <span className="text-[13px] text-white/60">
+                      <a
+                        href={`https://x.com/@${tweet.author.handle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >@{tweet.author.handle}</a>
+                    </span>
+                    <span className="text-[13px] text-white/40">·</span>
+                    <span className="text-[13px] text-white/60">{tweet.timestamp}</span>
                   </div>
-                  <p className="text-xs text-white/90 mb-2">{tweet.content}</p>
+                  <div className="text-sm text-white/90 mb-2">
+                    {parseLinks(tweet.content)}
+                  </div>
                 </div>
               </div>
             </div>
@@ -264,4 +318,6 @@ export const TwitterWidget: React.FC = () => {
       )}
     </div>
   );
-};
+});
+
+TwitterWidget.displayName = 'TwitterWidget';

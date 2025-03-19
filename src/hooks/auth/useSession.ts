@@ -1,7 +1,7 @@
 import {useCallback, useState} from 'react';
 // import { LitAbility, LitActionResource } from '@lit-protocol/auth-helpers';
 import {AuthMethod, IRelayPKP, SessionSigs} from '@lit-protocol/types';
-import {getSessionSigs} from '../../utils/lit';
+import {getSessionSigs} from '../../utils/lit.util.ts';
 
 export default function useSession() {
     const [sessionSigs, setSessionSigs] = useState<SessionSigs>();

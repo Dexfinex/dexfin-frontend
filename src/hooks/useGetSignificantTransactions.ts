@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TechnicalAnalysisService } from "../services/technicalanalysis.service";
-import { SignificantTransactions } from '../types/signitransactions';
+import {SignificantTransactions} from "../types";
 
 export const useGetSignificantTransactions = () => {
     const [ethData, setEthData] = useState<SignificantTransactions[]>([]);

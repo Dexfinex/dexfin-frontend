@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import { mapChainId2NativeAddress } from "../config/networks.ts";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
 import { formatDistanceToNow } from 'date-fns';
+import { mainnet } from 'viem/chains';
 
 const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
 const solanaAddressRegex = /^[1-9A-HJ-NP-Za-km-zZ]{32,44}$/;
@@ -48,7 +49,7 @@ export const downloadBase64File = (base64Data: string, fileName: string, fileTyp
 };
 
 export const getEnsName = async (address: string): Promise<string> => {
-    const provider = new ethers.providers.JsonRpcProvider("https://eth-mainnet.g.alchemy.com/v2/YhklBkpnW3RdeoL0fw-I6CRkGG1cu2-z");
+    const provider = new ethers.providers.JsonRpcProvider(mainnet.rpcUrls.default.http[0]);
 
     try {
         const ensName = await provider.lookupAddress(address);
@@ -172,17 +173,18 @@ export const formatDate = (date: Date | string) => {
  * and replacing the middle with ellipses ('...').
  *
  * @param {string} address - The Ethereum address to shorten.
+ * @param length
  * @returns {string} - The shortened address, or the original address if it's less than 10 characters long.
  *
  * Example usage:
  * const fullAddress = "0x1234567890abcdef1234567890abcdef12345678";
  * console.log(shrinkAddress(fullAddress)); // Output: 0x1234...5678
  */
-export const shrinkAddress = (address: string): string => {
-    if (!address || address.length < 10) {
+export const shrinkAddress = (address: string, length: number = 5): string => {
+    if (!address || address.length < 12) {
         return address; // Return as-is if too short
     }
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+    return `${address.slice(0, length)}...${address.slice(-length + 1)}`;
 };
 
 /**

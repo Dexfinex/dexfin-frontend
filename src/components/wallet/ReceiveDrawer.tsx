@@ -5,7 +5,7 @@ import * as QRCode from 'qrcode';
 
 import { Web3AuthContext } from '../../providers/Web3AuthContext';
 import { TokenIcon } from '../swap/components/TokenIcon';
-import { getChainIcon } from '../../utils/getChainIcon';
+import { getChainIcon } from '../../utils/defi.util';
 import { SOLANA_CHAIN_ID } from '../../constants/solana.constants';
 import { useStore } from '../../store/useStore';
 import { PageType } from '../WalletDrawer';

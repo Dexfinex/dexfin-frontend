@@ -1,12 +1,12 @@
-import React, { useContext } from 'react';
-import { Skeleton } from '@chakra-ui/react';
-import { ArrowDown, CreditCard, Send, TrendingUp } from 'lucide-react';
-import { formatUsdValue, } from '../../lib/wallet';
-import { formatNumberByFrac } from '../../utils/common.util.ts';
-import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
-import { TokenChainIcon } from '../swap/components/TokenIcon.tsx';
+import React, {useContext} from 'react';
+import {Skeleton} from '@chakra-ui/react';
+import {ArrowDown, CreditCard, Send, TrendingUp} from 'lucide-react';
+import {formatUsdValue} from "../../utils/defi.util.ts";
+import {formatNumberByFrac} from '../../utils/common.util.ts';
+import {Web3AuthContext} from "../../providers/Web3AuthContext.tsx";
+import {TokenChainIcon} from '../swap/components/TokenIcon.tsx';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { useWalletBalance } from '../../hooks/useBalance.tsx';
+import {useWalletBalance} from '../../hooks/useBalance.tsx';
 
 interface RenderAssetsProps {
     setShowSendDrawer: (showSendDrawer: boolean) => void;
@@ -15,12 +15,17 @@ interface RenderAssetsProps {
     setSelectedBalanceIndex: (selectedBalanceIndex: number) => void;
 }
 
-const RenderAssets: React.FC<RenderAssetsProps> = ({ setShowSendDrawer, setShowReceiveDrawer, setShowBuyDrawer, setSelectedBalanceIndex }) => {
+const RenderAssets: React.FC<RenderAssetsProps> = ({
+                                                       setShowSendDrawer,
+                                                       setShowReceiveDrawer,
+                                                       setShowBuyDrawer,
+                                                       setSelectedBalanceIndex
+                                                   }) => {
 
-    const { isLoading: isLoadingBalance } = useWalletBalance();
-    const { totalUsdValue, tokenBalances } = useTokenBalanceStore();
+    const {isLoading: isLoadingBalance} = useWalletBalance();
+    const {totalUsdValue, tokenBalances} = useTokenBalanceStore();
 
-    const { chainId, switchChain } = useContext(Web3AuthContext);
+    const {chainId, switchChain} = useContext(Web3AuthContext);
 
     return (
         <div className="space-y-4">
@@ -29,11 +34,12 @@ const RenderAssets: React.FC<RenderAssetsProps> = ({ setShowSendDrawer, setShowR
                 <div className="text-sm text-white/60">Total Balance</div>
                 <div className="text-3xl font-bold mt-1">
                     {
-                        isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)
+                        isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'}
+                                                     h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue)
                     }
                 </div>
                 <div className="flex items-center gap-1 mt-1 text-green-400">
-                    <TrendingUp className="w-4 h-4" />
+                    <TrendingUp className="w-4 h-4"/>
                     <span>+1.57% TODAY</span>
                 </div>
             </div>
@@ -45,14 +51,14 @@ const RenderAssets: React.FC<RenderAssetsProps> = ({ setShowSendDrawer, setShowR
                     onClick={() => setShowSendDrawer(true)}
                     className={`flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors ${tokenBalances.length === 0 ? "opacity-[0.6] disabled:pointer-events-none disabled:cursor-default" : ""}`}
                 >
-                    <Send className="w-5 h-5" />
+                    <Send className="w-5 h-5"/>
                     <span>Send</span>
                 </button>
                 <button
                     onClick={() => setShowReceiveDrawer(true)}
                     className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
                 >
-                    <ArrowDown className="w-5 h-5" />
+                    <ArrowDown className="w-5 h-5"/>
                     <span>Receive</span>
                 </button>
                 <button
@@ -60,7 +66,7 @@ const RenderAssets: React.FC<RenderAssetsProps> = ({ setShowSendDrawer, setShowR
                     onClick={() => setShowBuyDrawer(true)}
                     className="flex items-center justify-center gap-2 p-3 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors opacity-[0.7]"
                 >
-                    <CreditCard className="w-5 h-5" />
+                    <CreditCard className="w-5 h-5"/>
                     <span>Buy</span>
                 </button>
             </div>
@@ -83,7 +89,8 @@ const RenderAssets: React.FC<RenderAssetsProps> = ({ setShowSendDrawer, setShowR
                                 }}
                             >
                                 <div className="flex items-center gap-3">
-                                    <TokenChainIcon src={position.logo} alt={position.name} size={"lg"} chainId={Number(position.chain)} />
+                                    <TokenChainIcon src={position.logo} alt={position.name} size={"lg"}
+                                                    chainId={Number(position.chain)}/>
                                     <div className='flex flex-col justify-start items-start'>
                                         <div className="font-medium">{position.symbol}</div>
                                         <div className="text-sm text-white/60">

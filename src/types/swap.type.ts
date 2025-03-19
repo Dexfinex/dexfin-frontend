@@ -354,3 +354,113 @@ export interface gaslessSubmitResponse {
     type: string
     zid: string
 }
+
+// ------------- begin of debridge type -----------
+interface DebridgeTokenInfo {
+    address: string;
+    chainId: number;
+    decimals: number;
+    name: string;
+    symbol: string;
+    amount: string;
+    approximateOperatingExpense?: string;
+    mutatedWithOperatingExpense?: boolean;
+    approximateUsdValue?: number;
+    originApproximateUsdValue?: number;
+    maxRefundAmount?: string;
+    recommendedAmount?: string;
+    maxTheoreticalAmount?: string;
+    recommendedApproximateUsdValue?: number;
+    maxTheoreticalApproximateUsdValue?: number;
+}
+
+interface DebridgeCostDetailPayload {
+    feeAmount: string;
+    feeBps?: string;
+    estimatedVolatilityBps?: string;
+    feeApproximateUsdValue?: string;
+    amountOutBeforeCorrection?: string;
+}
+
+interface DebridgeCostDetail {
+    chain: string;
+    tokenIn: string;
+    tokenOut: string;
+    amountIn: string;
+    amountOut: string;
+    type: string;
+    payload?: DebridgeCostDetailPayload;
+}
+
+interface Estimation {
+    srcChainTokenIn: DebridgeTokenInfo;
+    srcChainTokenOut: DebridgeTokenInfo;
+    dstChainTokenOut: DebridgeTokenInfo;
+    costsDetails: DebridgeCostDetail[];
+    recommendedSlippage: number;
+}
+
+export interface DebridgeTransaction {
+    allowanceTarget?: string;
+    allowanceValue?: string;
+    data?: string;
+    to?: string;
+    value?: string;
+}
+
+interface Order {
+    approximateFulfillmentDelay: number;
+    salt?: number;
+    metadata?: string;
+}
+
+export interface DebridgeQuoteResponseType {
+    estimation: Estimation;
+    tx: DebridgeTransaction;
+    prependedOperatingExpenseCost?: string;
+    order?: Order;
+    orderId?: string;
+    fixFee?: string;
+    userPoints?: number;
+    integratorPoints?: number;
+}
+
+export interface DebridgeQuoteRequestType {
+    srcChainId: number;
+    srcChainTokenIn: string;
+    dstChainId: number;
+    dstChainTokenOut: string;
+    dstChainTokenOutRecipient?: string;
+    senderAddress: string;
+    srcChainTokenInAmount: string;
+}
+
+export enum DebridgeOrderStatus {
+    Created = "Created",
+    Fulfilled = "Fulfilled",
+    SentUnlock = "SentUnlock",
+    ClaimedUnlock = "ClaimedUnlock",
+    OrderCancelled = "OrderCancelled",
+    SentOrderCancel = "SentOrderCancel",
+    ClaimedOrderCancel = "ClaimedOrderCancel",
+}
+
+interface BytesValue {
+    bytesValue: string;
+    bytesArrayValue: string;
+    stringValue: string;
+}
+
+interface FulfilledDstEventMetadata {
+    transactionHash: BytesValue;
+    blockNumber: number;
+    blockHash: BytesValue;
+    blockTimeStamp: number;
+    initiator: BytesValue;
+}
+
+export interface DebridgeTrackResponseType {
+    state: DebridgeOrderStatus
+    fulfilledDstEventMetadata: FulfilledDstEventMetadata
+}
+// ------------- end of debridge type -----------

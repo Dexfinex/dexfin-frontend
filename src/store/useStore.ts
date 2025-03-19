@@ -29,40 +29,71 @@ interface Widget {
 export interface Wallpaper {
   id: string;
   name: string;
-  type: 'CITY' | 'NATURE' | 'ABSTRACT';
+  type: 'CITY' | 'NATURE' | 'ABSTRACT' | 'DROPS';
   thumbnail: string;
   url: string;
 }
 
 const wallpapersList: Wallpaper[] = [
+  //City
   {
     id: 'city-1',
-    name: 'Night City',
+    name: 'Night City 1',
     type: 'CITY',
     thumbnail: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=400&q=80',
     url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&q=80'
   },
   {
     id: 'city-2',
-    name: 'Downtown',
+    name: 'Night City 2',
+    type: 'CITY',
+    thumbnail: 'https://images.unsplash.com/photo-1502754388-a9bce5374fb8?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1502754388-a9bce5374fb8?auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'city-3',
+    name: 'Downtown 1',
     type: 'CITY',
     thumbnail: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=400&q=80',
     url: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&q=80'
   },
   {
+    id: 'city-4',
+    name: 'Downtown 2',
+    type: 'CITY',
+    thumbnail: 'https://images.unsplash.com/photo-1429667947446-3c93a979b7e0?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1429667947446-3c93a979b7e0?auto=format&fit=crop&q=80'
+  },
+  //Nature
+  {
     id: 'nature-1',
-    name: 'Mountains',
+    name: 'Mountains 1',
     type: 'NATURE',
     thumbnail: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=80',
     url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80'
   },
   {
     id: 'nature-2',
-    name: 'Forest',
+    name: 'Mountains 2',
+    type: 'NATURE',
+    thumbnail: 'https://images.unsplash.com/photo-1500964757637-c85e8a162699?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1500964757637-c85e8a162699?auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'nature-3',
+    name: 'Forest 1',
     type: 'NATURE',
     thumbnail: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&q=80',
     url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80'
   },
+  {
+    id: 'nature-4',
+    name: 'Forest 2',
+    type: 'NATURE',
+    thumbnail: 'https://images.unsplash.com/photo-1672357867603-f829ed422847?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1672357867603-f829ed422847?auto=format&fit=crop&q=80'
+  },
+  //Abstract
   {
     id: 'abstract-1',
     name: 'Waves',
@@ -72,10 +103,68 @@ const wallpapersList: Wallpaper[] = [
   },
   {
     id: 'abstract-2',
-    name: 'Gradient',
+    name: 'Gradient 1',
     type: 'ABSTRACT',
     thumbnail: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&q=80',
     url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'abstract-3',
+    name: 'Gradient 2',
+    type: 'ABSTRACT',
+    thumbnail: 'https://images.unsplash.com/photo-1513715383826-b16aed5d8d54?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1513715383826-b16aed5d8d54?auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'abstract-4',
+    name: 'Gradient 3',
+    type: 'ABSTRACT',
+    thumbnail: 'https://images.unsplash.com/photo-1620121478247-ec786b9be2fa?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1620121478247-ec786b9be2fa?auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'abstract-5',
+    name: 'Gradient 4',
+    type: 'ABSTRACT',
+    thumbnail: 'https://images.unsplash.com/photo-1505778489066-159c5f4a6c0f?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1505778489066-159c5f4a6c0f?auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'abstract-6',
+    name: 'Shadow 1',
+    type: 'ABSTRACT',
+    thumbnail: 'https://images.unsplash.com/photo-1476445704028-a36e0c798192?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1476445704028-a36e0c798192?auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'abstract-7',
+    name: 'Shadow 2',
+    type: 'ABSTRACT',
+    thumbnail: 'https://images.unsplash.com/photo-1643228995868-bf698f67d053?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1643228995868-bf698f67d053?auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'abstract-8',
+    name: 'Shadow 1',
+    type: 'ABSTRACT',
+    thumbnail: 'https://images.unsplash.com/photo-1469719847081-4757697d117a?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1469719847081-4757697d117a?auto=format&fit=crop&q=80'
+  },
+
+  //Drops
+  {
+    id: 'drops-1',
+    name: 'Drops1',
+    type: 'DROPS',
+    thumbnail: 'https://images.unsplash.com/photo-1630387556680-64b279ff42fd?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1630387556680-64b279ff42fd?auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'drops-2',
+    name: 'Drops2',
+    type: 'DROPS',
+    thumbnail: 'https://images.unsplash.com/photo-1496715976403-7e36dc43f17b?w=400&q=80',
+    url: 'https://images.unsplash.com/photo-1496715976403-7e36dc43f17b?auto=format&fit=crop&q=80'
   }
 ];
 
@@ -158,7 +247,7 @@ interface StoreState {
   setIsGamesOpen: (isOpen: boolean) => void;
   isTradeOpen: boolean;
   setTradeOpen: (isOpen: boolean) => void;
-  isrewardsOpen: boolean;
+  isRewardsOpen: boolean;
   setIsRewardsOpen: (isOpen: boolean) => void;
 
   isUsernameModalOpen: boolean;
@@ -358,8 +447,8 @@ const useStore = create<StoreState>((set, get) => ({
   setTradeOpen: (isOpen) => set({ isTradeOpen: isOpen }),
   isUsernameModalOpen: false,
   setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
-  isrewardsOpen: false,
-  setIsRewardsOpen: (isOpen) => set({ isrewardsOpen: isOpen }),
+  isRewardsOpen: false,
+  setIsRewardsOpen: (isOpen) => set({ isRewardsOpen: isOpen }),
 
   isWalletDrawerOpen: false,
   setIsWalletDrawerOpen: (isOpen) => set({ isWalletDrawerOpen: isOpen }),

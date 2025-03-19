@@ -63,7 +63,7 @@ const useTokenBalanceStore = create<TokenBalanceStoreState>((set) => ({
     );
 
 
-    const pnlPercent = pnlUsd * 100 / (totalUsdValue - pnlUsd);
+    const pnlPercent = pnlUsd * 100 / totalUsdValue;
 
     const chainUsdValue = balances.reduce(
       (acc: Record<number, number>, current) => {

@@ -1,9 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import {
-    RefreshCw, ArrowRight, Wallet, ArrowUpDown, 
-    FileText, ExternalLink, Clock, X
-} from 'lucide-react';
-import { useGetSignificantTransactions } from '../../hooks/useGetSignificantTransactions';
+import React, {useEffect, useState} from 'react';
+import {ArrowRight, ExternalLink, RefreshCw, Wallet} from 'lucide-react';
+import {useGetSignificantTransactions} from '../../hooks/useGetSignificantTransactions';
 
 interface WhaleTransaction {
     hash: string;
@@ -56,14 +53,13 @@ const formatApiTransaction = (tx: any, blockchain: 'ethereum' | 'bitcoin'): Whal
 
 export const TransactionWidget: React.FC = () => {
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [_, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     
     const { ethData, btcData, topEthData, topBtcData } = useGetSignificantTransactions();
     
     const getTransactions = () => {
-        const allTransactions = [];
         const ethTransactions = [];
         const btcTransactions = [];
         

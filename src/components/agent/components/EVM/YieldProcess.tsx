@@ -3,10 +3,10 @@ import { Bot, Search, ArrowRight, CheckCircle2, X } from 'lucide-react';
 import { Yield } from '../../../../types/brian.type.ts';
 import { useAgentMutation } from '../../../../hooks/useAgentAction.ts';
 import { Web3AuthContext } from '../../../../providers/Web3AuthContext.tsx';
-import { formatVolume } from '../../../../utils/agent.tsx';
+import { formatVolume } from '../../../../utils/agent.util.tsx';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
-import {protocolLogos} from '../../../../constants/agent.constants.ts'
+import { protocolLogos } from '../../../../constants/agent.constants.ts'
 interface YieldProcessProps {
   onClose: () => void;
   yields: Yield[];
@@ -190,17 +190,17 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
               }`}
           >
             <div className="flex items-center gap-4 mb-2">
-              
-              {yieldItem.protocolLogo[0] &&
+
+              {yieldItem?.protocolLogo &&
                 <img
-                  src={protocolLogos[yieldItem?.protocolSlug] ? protocolLogos[yieldItem?.protocolSlug] : yieldItem?.protocolLogo[0] + '?raw=true'}
-                  alt={yieldItem?.protocolSlug}
+                  src={protocolLogos[yieldItem?.protocol] ? protocolLogos[yieldItem?.protocol] : yieldItem?.protocolLogo[0] + '?raw=true'}
+                  alt={yieldItem?.protocol}
                   className="w-8 h-8 object-contain rounded"
                 />
               }
               <div className="flex-1 flex items-center justify-between">
 
-                <h4 className="font-medium">{yieldItem.protocolSlug}</h4>
+                <h4 className="font-medium">{yieldItem.protocol}</h4>
                 <div className="text-lg font-semibold text-blue-400">
                   {yieldItem.apy.toFixed(2)}% APY
                 </div>
@@ -211,7 +211,7 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
                 <div>
                   <span className="text-white/40">TVL:</span>{' '}
                   <span className="text-white/80">
-                    {yieldItem.tvl>1000000000000000 ? formatVolume(yieldItem.tvl/100000000): formatVolume(yieldItem.tvl)}
+                    {yieldItem.tvl > 1000000000000000 ? formatVolume(yieldItem.tvl / 100000000) : formatVolume(yieldItem.tvl)}
                   </span>
                 </div>
                 <div className="text-lg font-semibold">
@@ -249,10 +249,16 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 mb-6">
         <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-
+        {selectedProtocol?.protocolLogo &&
+          <img
+            src={protocolLogos[selectedProtocol?.protocol] ? protocolLogos[selectedProtocol?.protocol] : selectedProtocol?.protocolLogo[0] + '?raw=true'}
+            alt={selectedProtocol?.protocol}
+            className="w-8 h-8 object-contain rounded"
+          />
+        }
         </div>
         <div>
-          <h3 className="text-xl font-medium">{selectedProtocol?.protocolSlug}</h3>
+          <h3 className="text-xl font-medium">{selectedProtocol?.protocol}</h3>
           <p className="text-white/60">Ready to execute yield strategy</p>
         </div>
       </div>
@@ -387,7 +393,7 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Deposit  ${amount} USDC for ${selectedProtocol?.name} via ${selectedProtocol?.protocolSlug}`}
+          description={`Deposit  ${amount} USDC for ${selectedProtocol?.name} via ${selectedProtocol?.protocol}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (

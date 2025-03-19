@@ -1,14 +1,17 @@
-import { dexfinv3Api } from "./api.service.ts";
+import {dexfinv3Api} from "./api.service.ts";
 import {
-  EvmWalletBalanceRequestType,
-  EvmWalletBalanceResponseType,
   EvmDefiPosition,
   EvmDefiProtocol,
+  EvmWalletBalanceRequestType,
+  EvmWalletBalanceResponseType,
   SolanaTokensType,
   SolanaWalletReponseType,
 } from "../types/dexfinv3.type.ts";
-import { Transfer, TokenMetadata } from "../types/wallet.ts";
+import { birdeyeService } from "./birdeye.service.ts";
+import { Transfer, TokenMetadata } from "../types/wallet.type.ts";
+import { TokenType } from "../types/swap.type.ts";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
+import { NETWORKS } from "../config/networks.ts";
 
 export const dexfinv3Service = {
   getEvmWalletBalance: async ({
@@ -155,7 +158,7 @@ export const dexfinv3Service = {
   },
 
   getAllWalletTokens: async (evmAddress: string, solAddress: string) => {
-    let result: EvmWalletBalanceResponseType[] = [];
+    const result: EvmWalletBalanceResponseType[] = [];
 
     try {
       const { data } = await dexfinv3Api.get<any[]>(
@@ -163,9 +166,15 @@ export const dexfinv3Service = {
       );
 
       if (data.length > 0) {
-        data.forEach(token => {
+        const currentTime = Math.round(Date.now() / 1000) - 60
+        const fromTime = currentTime - 24 * 3600;
+
+        for (const token of data) {
           if (token.network.id == "solana") {
-            const tokenAddress = (token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint)
+            const tokenAddress: string = (token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint)
+            const data = await birdeyeService.getOHLCV(tokenAddress, "12H", fromTime, currentTime)
+            const priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
+
             result.push({
               tokenAddress,
               symbol: token.symbol,
@@ -176,7 +185,9 @@ export const dexfinv3Service = {
               balance: token.amountRaw,
               balanceDecimal: Number(token.amount),
               usdPrice: token.usdPrice,
+              usdPrice24hrUsdChange: priceChange24h,
               usdValue: token.usdValue,
+              usdValue24hrUsdChange: Number(priceChange24h) * Number(token.amount),
               chain: `0x${SOLANA_CHAIN_ID.toString(16)}`,
               network: {
                 ...token.network,
@@ -185,11 +196,28 @@ export const dexfinv3Service = {
               tokenId: token.tokenId
             } as EvmWalletBalanceResponseType)
           } else {
+            const tokenId = token.tokenId === "ethereum" ? (Number(token.chain) === 1 ? token.tokenId : ("w" + token.symbol.toLowerCase())) : token.tokenId;
+            let priceChange24h = 0, usdPrice = 0, usdValue = 0
+            try {
+              const data = await coingeckoService.getOHLCV(tokenId, "12H", fromTime, currentTime)
+              priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
+              usdPrice = Number(data[data.length - 1]?.close);
+              usdValue = usdPrice * Number(token.balanceDecimal);
+            } catch(e) {
+              console.log(e)
+            }
+
             result.push({
               ...token,
+              ...{
+                usdPrice24hrUsdChange: priceChange24h,
+                usdValue24hrUsdChange: Number(priceChange24h) * Number(token.balanceDecimal),
+                usdPrice,
+                usdValue,
+              }
             })
           }
-        })
+        }
       }
 
       return result
@@ -207,25 +235,91 @@ export const dexfinv3Service = {
       );
 
       if (data.length > 0) {
-        let result: any = []
-        data.forEach((e: any) => {
-          if (e.summary.includes("1e-") && e.summary.includes("SOL")) return;
-
-          result.push({
-            ...e,
-            network: {
-              ...e.network,
-              chainId: e.network.id === "solana" ? SOLANA_CHAIN_ID : e.network.chainId
-            }
-          })
-        });
-
-        return result;
+        return data.map((e: any) => ({
+          ...e,
+          network: {
+            ...e.network,
+            chainId: e.network.id === "solana" ? SOLANA_CHAIN_ID : e.network.chainId
+          }
+        }
+        ));
       }
     } catch (error) {
       console.log("Failed to fetch evm wallet balance:", error);
     }
 
-    return []
+    return [];
+  },
+
+  getTrendingTokens: async (skip: number, chainId?: number) => {
+    const take = 30;
+
+    try {
+      const { data } = await dexfinv3Api.get<any>(
+        `/tokenlist?skip=${skip}&take=${take}&chainId=${chainId}`
+      );
+
+      return data;
+    } catch (error) {
+      console.log("Failed to fetch token list:", error);
+    }
+
+    return [];
+  },
+
+  getAllTrendingTokens: async () => {
+    const result = {
+      'all': [] as TokenType[],
+      'ethereum': [] as TokenType[],
+      'polygon': [] as TokenType[],
+      'base': [] as TokenType[],
+      'bsc': [] as TokenType[],
+      'avalanche': [] as TokenType[],
+      'optimism': [] as TokenType[],
+      'arbitrum': [] as TokenType[],
+      'bitcoin': [] as TokenType[],
+      'solana': [] as TokenType[]
+    };
+
+    try {
+      const { data } = await dexfinv3Api.get<TokenType[]>(
+        `/tokenlist?skip=${0}&take=${1600}&chainId=`
+      );
+
+      if (data && data.length > 0) {
+        const keys = Object.keys(result);
+        keys.forEach(key => {
+          if (key === "all") {
+            result[key] = data;
+          } else {
+            const network = NETWORKS.find(net => net.id == key);
+            const filtered: TokenType[] = data.filter((d: TokenType) => d.chainId == network?.chainId);
+            result[key as keyof typeof result] = filtered;
+          }
+        })
+      }
+
+      return result;
+    } catch (error) {
+      console.log("Failed to fetch token list:", error);
+    }
+
+    return null;
+  },
+
+  searchTrendingTokens: async (query: string, chainId?: number) => {
+    const limit = 10;
+
+    try {
+      const { data } = await dexfinv3Api.get<any>(
+        `/tokenlist/search?query=${query}&chainId=${chainId}&limit=${limit}`
+      );
+
+      return data;
+    } catch (error) {
+      console.log("Failed to search token:", error);
+    }
+
+    return [];
   }
 };
