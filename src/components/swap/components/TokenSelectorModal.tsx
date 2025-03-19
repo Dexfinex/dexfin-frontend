@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { Search, Star, X, ExternalLink, MessageSquareWarning } from 'lucide-react';
 import { TokenType } from "../../../types/swap.type.ts";
@@ -14,7 +14,9 @@ import { getTokenInfo } from '../../../utils/token.util.ts';
 import { mapChainId2ExplorerUrl } from '../../../config/networks.ts';
 import { SOLANA_CHAIN_ID } from '../../../constants/solana.constants.ts';
 import useTrendingTokensStore from '../../../store/useTrendingTokensStore.ts';
-import ErrorImg from "/images/token/error.svg"
+import ErrorImg from "/images/token/error.svg";
+import { debounce } from 'lodash';
+import { dexfinv3Service } from '../../../services/dexfin.service.ts';
 
 /*
 const CATEGORIES = [
@@ -101,8 +103,8 @@ export function TokenSelectorModal({
     onSelect,
     onClose,
 }: TokenSelectorModalProps) {
-
-    const [loading] = useState(false);
+    const { trendingTokens } = useTrendingTokensStore();
+    // const [loading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(null);
     const [starredTokenMap, setStarredTokenMap] = useLocalStorage<Record<string, boolean> | null>(LOCAL_STORAGE_STARRED_TOKENS, {})
@@ -110,38 +112,61 @@ export function TokenSelectorModal({
     const [showStarredOnly, setShowStarredOnly] = useState(false);
     const [selectedCategory] = useState<'all' | 'meme'>('all');
     const [isSearchToken, setIsSearchToken] = useState(false);
-    const [loadingNewToken, setLoadingNewToken] = useState(false);
+    const [loadingToken, setLoadingToken] = useState(false);
     const [newToken, setNewToken] = useState<TokenType | null>(null);
     const [approveModalActive, setApproveModalActive] = useState(false);
-    const { trendingTokens } = useTrendingTokensStore();
+    const [tokens, setTokens] = useState<Array<TokenType>>([]);
 
-    const tokens = useMemo(() => {
-        if (addedTokens && addedTokens.length > 0) {
-            if (selectedNetwork?.id) {
-                const filtered = addedTokens.filter((token: TokenType) => token.chainId == selectedNetwork.chainId)
+    // const tokens = useMemo(() => {
+    //     if (addedTokens && addedTokens.length > 0) {
+    //         if (selectedNetwork?.id) {
+    //             const filtered = addedTokens.filter((token: TokenType) => token.chainId == selectedNetwork.chainId)
 
-                return [...(filtered.reverse()), ...trendingTokens[selectedNetwork.id]]
-            } else {
-                return [...(addedTokens.reverse()), ...trendingTokens['all']]
-            }
+    //             return [...(filtered.reverse()), ...trendingTokens[selectedNetwork.id]]
+    //         } else {
+    //             return [...(addedTokens.reverse()), ...trendingTokens['all']]
+    //         }
+    //     }
+
+    //     return trendingTokens[selectedNetwork?.id ?? 'all']
+    // }, [selectedNetwork])
+
+    useEffect(() => {
+        if (searchQuery) {
+            handleSearchToken()
+        } else {
+            setTokenValues()
         }
-
-        return trendingTokens[selectedNetwork?.id ?? 'all']
     }, [selectedNetwork])
 
     const filteredTokens = useMemo(() => {
         const filteredList = tokens.filter((token: TokenType) => {
-            const matchesSearch =
-                (token?.symbol || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (token?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (token?.address || "").toLowerCase().includes(searchQuery.toLowerCase());
+            // const matchesSearch =
+            //     (token?.symbol || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+            //     (token?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+            //     (token?.address || "").toLowerCase().includes(searchQuery.toLowerCase());
             // const matchesNetwork = !selectedNetwork || token.chainId.toString() === selectedNetwork;
             const matchesStarred = !showStarredOnly || starredTokenMap?.[`${token.chainId}:${token.address}`]
             const matchesCategory = selectedCategory === 'all' || token.category === selectedCategory;
-            return matchesSearch && matchesStarred && matchesCategory;
+            // return matchesSearch && matchesStarred && matchesCategory;
+            return matchesStarred && matchesCategory;
         })
         return filteredList.length > 100 ? filteredList.slice(0, 100) : filteredList
-    }, [tokens, searchQuery, showStarredOnly, starredTokenMap, selectedCategory])
+    }, [tokens, showStarredOnly, starredTokenMap, selectedCategory])
+
+    const setTokenValues = () => {
+        if (addedTokens && addedTokens.length > 0) {
+            if (selectedNetwork?.id) {
+                const filtered = addedTokens.filter((token: TokenType) => token.chainId == selectedNetwork.chainId)
+
+                setTokens([...(filtered.reverse()), ...trendingTokens[selectedNetwork.id]])
+            } else {
+                setTokens([...(addedTokens.reverse()), ...trendingTokens['all']])
+            }
+        } else {
+            setTokens(trendingTokens[selectedNetwork?.id ?? 'all'])
+        }
+    }
 
     useEffect(() => {
         if (selectedChainId) {
@@ -150,14 +175,45 @@ export function TokenSelectorModal({
     }, [selectedChainId, isOpen])
 
     useEffect(() => {
-        if (isValidAddress(searchQuery, selectedNetwork?.chainId || 0) && filteredTokens.length == 0) {
+        const handler = debounce(() => {
+            handleSearchToken();
+        }, 500);
+
+        handler(); // Call the debounced function
+        return () => handler.cancel(); // Cleanup on unmount or text change
+    }, [searchQuery]); // Runs when text changes
+
+    const handleSearchToken = async () => {
+        if (!searchQuery) {
+            setTokenValues()
+            return
+        }
+
+        setLoadingToken(true)
+        let result: TokenType[] = []
+
+        if (selectedNetwork?.chainId) {
+            result = await dexfinv3Service.searchTrendingTokens(searchQuery, selectedNetwork?.chainId)
+        } else {
+            result = await dexfinv3Service.searchTrendingTokens(searchQuery)
+        }
+
+        setTokens(result)
+
+        // search new token in chain
+        if (result.length === 0 && isValidAddress(searchQuery, selectedNetwork?.chainId || 0)) {
             setNewToken(null)
             setIsSearchToken(true)
-            handleSearchToken()
+            const tokenInfo = await getTokenInfo(searchQuery, selectedNetwork?.chainId || 0)
+            if (tokenInfo) {
+                setNewToken(tokenInfo as TokenType);
+            }
         } else if (isSearchToken) {
             setIsSearchToken(false)
         }
-    }, [searchQuery, selectedNetwork])
+
+        setLoadingToken(false)
+    }
 
     /*
       useEffect(() => {
@@ -174,16 +230,6 @@ export function TokenSelectorModal({
         fetchTokens();
       }, []);
     */
-
-    const handleSearchToken = async () => {
-        setLoadingNewToken(true)
-        console.log('handle search token')
-        const tokenInfo = await getTokenInfo(searchQuery, selectedNetwork?.chainId || 0)
-        if (tokenInfo) {
-            setNewToken(tokenInfo as TokenType);
-        }
-        setLoadingNewToken(false)
-    }
 
     const toggleStar = (e: React.MouseEvent, chainId: number, address: string) => {
         e.stopPropagation();
@@ -222,6 +268,14 @@ export function TokenSelectorModal({
     const popularTokens = useMemo(() => {
         return (mapPopularTokens[selectedNetwork === null ? 1 : (selectedNetwork?.chainId ?? -1)]) ?? []
     }, [selectedNetwork])
+
+    // const handleSearchChange = useCallback(
+    //     debounce((value) => {
+    //         if (value) {
+    //             handleSearchFromApi(value)
+    //         }
+    //     }, 500),
+    //     []);
 
     return ReactDOM.createPortal(
         <div className={`fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-[10000] ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -332,13 +386,13 @@ export function TokenSelectorModal({
                             {!isSearchToken ? <div className="text-gray-400 text-sm px-4 mt-2">
                                 Trending
                             </div> : <div className="text-gray-400 text-sm px-4 mt-2">
-                                Tokens
+                                New Tokens
                             </div>}
                         </>
                     )
                 }
                 {!isSearchToken ? <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                    {loading ? (
+                    {loadingToken ? (
                         <div className="flex items-center justify-center p-8">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
                         </div>
@@ -410,7 +464,7 @@ export function TokenSelectorModal({
                     )}
                 </div> : <div>
                     {
-                        loadingNewToken ?
+                        loadingToken ?
                             <div className="flex items-center justify-center p-8">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
                             </div>

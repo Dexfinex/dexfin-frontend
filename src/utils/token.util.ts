@@ -32,7 +32,8 @@ export const formatNumber = (num: string | number, fixedCount = 2) => {
 export const getTokenInfo = async (address: string, chainId: number) => {
     if (chainId != SOLANA_CHAIN_ID) {
         const chain = mapChainId2ViemChain[chainId];
-        const provider = new ethers.providers.JsonRpcProvider(chain.rpcUrls.default.http[0]);
+        const rpcUrl = (chainId == 56 ? "https://binance.llamarpc.com" : chain.rpcUrls.default.http[0]);
+        const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 
         const contract = new ethers.Contract(address, erc20Abi, provider);
 
