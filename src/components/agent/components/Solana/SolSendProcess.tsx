@@ -1,16 +1,15 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowRight, Wallet, X } from 'lucide-react';
 
-import { TokenType, Step } from '../../../../types/brian.type.ts';
+import { TokenType } from '../../../../types/brian.type.ts';
 import { convertCryptoAmount } from '../../../../utils/agent.util.tsx';
 import { shrinkAddress } from '../../../../utils/common.util.ts';
-import { mapChainId2ViemChain } from '../../../../config/networks.ts';
+
 import { useSolanaAgentActionMutation } from '../../../../hooks/useSolanaAgentAction.ts';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
-import { Web3AuthContext } from "../../../../providers/Web3AuthContext.tsx";
-import { mapChainId2ExplorerUrl } from '../../../../config/networks.ts';
+
 interface SendProcessProps {
   onClose: () => void;
   fromToken: TokenType;
@@ -43,15 +42,15 @@ export const SolSendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmoun
         },
         {
           onSuccess: (receipt) => {
-            if(receipt) {
+            if (receipt) {
               setTransactionProgress(100);
               setTransactionStatus('Transaction confirmed!');
-              setScan(receipt ?? ''); 
+              setScan(receipt ?? '');
             } else {
               setShowConfirmation(false);
-              setFailedTransaction(true);  
+              setFailedTransaction(true);
             }
-            
+
           },
           onError: (error) => {
             console.log(error);

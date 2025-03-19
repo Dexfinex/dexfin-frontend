@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useContext,useMemo } from 'react';
-import { Button, Flex, Skeleton } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Skeleton } from '@chakra-ui/react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
-import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
+import { TokenType, Protocol } from '../../../../types/brian.type.ts';
 import { convertCryptoAmount } from '../../../../utils/agent.util.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
 import useJupiterQuote from '../../../../hooks/useJupiterQuote.ts';
@@ -248,11 +248,11 @@ export const SolSwapProcess: React.FC<SwapProcessProps> = ({ fromAmount, toToken
             />
           </div>
           <p className="mt-4 text-white/60">
-            Swapping {formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken.symbol} for {formatNumberByFrac(toAmount,5)} {toToken.symbol} via {protocol?.name}
+            Swapping {formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken.symbol} for {formatNumberByFrac(toAmount, 5)} {toToken.symbol} via {protocol?.name}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken.symbol} for ${formatNumberByFrac(toAmount,5)} ${toToken.symbol}`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`You've successfully swapped ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken.symbol} for ${formatNumberByFrac(toAmount, 5)} ${toToken.symbol}`} />
       )}
     </div>
   );
