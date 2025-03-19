@@ -15,7 +15,7 @@ import { getTokenInfo } from '../../../utils/token.util.ts';
 import { mapChainId2ExplorerUrl } from '../../../config/networks.ts';
 import { SOLANA_CHAIN_ID } from '../../../constants/solana.constants.ts';
 import useTrendingTokensStore from '../../../store/useTrendingTokensStore.ts';
-import ErrorImg from "/images/token/error.svg";
+import { TokenChainIcon } from './TokenIcon.tsx';
 import { debounce } from 'lodash';
 import { dexfinv3Service } from '../../../services/dexfin.service.ts';
 
@@ -435,11 +435,7 @@ export function TokenSelectorModal({
                                             <Star className="w-4 h-4"
                                                 fill={starredTokenMap?.[`${token.chainId}:${token.address}`] ? "currentColor" : "none"} />
                                         </div>
-                                        {
-                                            token?.logoURI ?
-                                                <img src={token.logoURI} alt={token.symbol} className="w-8 h-8 rounded-full" /> :
-                                                <img src={ErrorImg} alt={token.symbol} className="w-8 h-8 rounded-full" />
-                                        }
+                                        <TokenChainIcon src={token.logoURI} alt={token.name} size={"lg"} chainId={Number(token.chainId)} />
                                         <div>
                                             <div className="flex items-center gap-2 mb-0.5">
                                                 <span className="font-medium text-white">{token.symbol}</span>
