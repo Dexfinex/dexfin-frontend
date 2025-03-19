@@ -1,19 +1,18 @@
-import { dexfinv3Api } from "./api.service.ts";
+import {dexfinv3Api} from "./api.service.ts";
 import {
-  EvmWalletBalanceRequestType,
-  EvmWalletBalanceResponseType,
   EvmDefiPosition,
   EvmDefiProtocol,
+  EvmWalletBalanceRequestType,
+  EvmWalletBalanceResponseType,
   SolanaTokensType,
   SolanaWalletReponseType,
 } from "../types/dexfinv3.type.ts";
-import { birdeyeService } from "./birdeye.service.ts";
-import { coingeckoService } from "./coingecko.service.ts";
-import { Transfer, TokenMetadata } from "../types/wallet.type.ts";
-import { TokenType } from "../types/swap.type.ts";
-import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
-import { TRENDING_TOKEN_COUNT_PERPAGE } from "../constants/swap.constants.ts";
-import { NETWORKS } from "../config/networks.ts";
+import {birdeyeService} from "./birdeye.service.ts";
+import {coingeckoService} from "./coingecko.service.ts";
+import {TokenMetadata, Transfer} from "../types/wallet.type.ts";
+import {TokenType} from "../types/swap.type.ts";
+import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
+import {NETWORKS} from "../config/networks.ts";
 
 export const dexfinv3Service = {
   getEvmWalletBalance: async ({
@@ -160,7 +159,7 @@ export const dexfinv3Service = {
   },
 
   getAllWalletTokens: async (evmAddress: string, solAddress: string) => {
-    let result: EvmWalletBalanceResponseType[] = [];
+    const result: EvmWalletBalanceResponseType[] = [];
 
     try {
       const { data } = await dexfinv3Api.get<any[]>(
@@ -199,10 +198,15 @@ export const dexfinv3Service = {
             } as EvmWalletBalanceResponseType)
           } else {
             const tokenId = token.tokenId === "ethereum" ? (Number(token.chain) === 1 ? token.tokenId : ("w" + token.symbol.toLowerCase())) : token.tokenId;
-            const data = await coingeckoService.getOHLCV(tokenId, "12H", fromTime, currentTime)
-            const priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
-            const usdPrice = Number(data[data.length - 1]?.close);
-            const usdValue = usdPrice * Number(token.balanceDecimal);
+            let priceChange24h = 0, usdPrice = 0, usdValue = 0
+            try {
+              const data = await coingeckoService.getOHLCV(tokenId, "12H", fromTime, currentTime)
+              priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
+              usdPrice = Number(data[data.length - 1]?.close);
+              usdValue = usdPrice * Number(token.balanceDecimal);
+            } catch(e) {
+              console.log(e)
+            }
 
             result.push({
               ...token,

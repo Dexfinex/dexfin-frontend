@@ -1,51 +1,52 @@
-import { useContext, useEffect, useRef, useState } from 'react';
-import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
-import { coingeckoService } from '../../services/coingecko.service';
-import { cryptoNewsService } from '../../services/cryptonews.service.ts';
-import { isAddress } from "viem";
-import { brianService } from '../../services/brian.service';
-import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/agent.util.tsx';
+import {useContext, useEffect, useRef, useState} from 'react';
+import {Web3AuthContext} from '../../providers/Web3AuthContext.tsx';
+import {coingeckoService} from '../../services/coingecko.service';
+import {isAddress} from "viem";
+import {brianService} from '../../services/brian.service';
 import {
-  Mic,
-  Send,
-  Trash2,
-} from 'lucide-react';
-import { VoiceModal } from './VoiceModal.tsx';
-import { Message } from '../../types/index.ts';
-import { TrendingCoins } from './components/Analysis/TrendingCoins.tsx';
-import { TopCoins } from './components/Analysis/TopCoins.tsx'
-import { NewsWidget } from '../widgets/NewsWidget.tsx';
-import { YieldProcess } from './components/EVM/YieldProcess.tsx';
-import { SwapProcess } from './components/EVM/SwapProcess.tsx';
-import { SolSwapProcess } from './components/Solana/SolSwapProcess.tsx';
-import { BridgeProcess } from './components/EVM/BridgeProcess.tsx';
-import { PortfolioProcess } from '../PortfolioProcess.tsx';
-import { SendProcess } from './components/EVM/SendProcess.tsx';
-import { EVMSendProcess } from './components/EVM/EVMSendProcess.tsx';
-import { SolSendProcess } from './components/Solana/SolSendProcess.tsx';
-import { StakeProcess } from '../StakeProcess.tsx';
-import { ProjectAnalysisProcess } from '../ProjectAnalysisProcess.tsx';
-import { WalletPanel } from './WalletPanel.tsx';
-import { InitializeCommands } from './InitializeCommands.tsx';
-import { TopBar } from './TopBar.tsx';
-import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
+  convertBrianKnowledgeToPlainText,
+  convertCryptoAmount,
+  getSolAddressFromSNS,
+  isValidSolanaAddress,
+  parseChainedCommands,
+  resolveEnsToAddress,
+  symbolToToken
+} from '../../utils/agent.util.tsx';
+import {Mic, Send, Trash2,} from 'lucide-react';
+import {VoiceModal} from './VoiceModal.tsx';
+import {Message} from '../../types/index.ts';
+import {TrendingCoins} from './components/Analysis/TrendingCoins.tsx';
+import {TopCoins} from './components/Analysis/TopCoins.tsx'
+import {NewsWidget} from '../widgets/NewsWidget.tsx';
+import {YieldProcess} from './components/EVM/YieldProcess.tsx';
+import {SwapProcess} from './components/EVM/SwapProcess.tsx';
+import {SolSwapProcess} from './components/Solana/SolSwapProcess.tsx';
+import {BridgeProcess} from './components/EVM/BridgeProcess.tsx';
+import {PortfolioProcess} from '../PortfolioProcess.tsx';
+import {SendProcess} from './components/EVM/SendProcess.tsx';
+import {EVMSendProcess} from './components/EVM/EVMSendProcess.tsx';
+import {SolSendProcess} from './components/Solana/SolSendProcess.tsx';
+import {StakeProcess} from '../StakeProcess.tsx';
+import {ProjectAnalysisProcess} from '../ProjectAnalysisProcess.tsx';
+import {WalletPanel} from './WalletPanel.tsx';
+import {InitializeCommands} from './InitializeCommands.tsx';
+import {TopBar} from './TopBar.tsx';
+import {Protocol, Step, TokenType, Yield} from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { convertCryptoAmount, getSolAddressFromSNS, resolveEnsToAddress, isValidSolanaAddress, symbolToToken } from '../../utils/agent.util.tsx';
-import { DepositProcess } from './components/EVM/DepositProcess.tsx';
-import { WithdrawProcess } from './components/EVM/WithdrawProcess.tsx';
-import { BorrowProcess } from './components/EVM/BorrowProcess.tsx';
-import { RepayProcess } from './components/EVM/RepayProcess.tsx';
-import { ENSRegisterProcess } from './components/EVM/ENSRegisterProcess.tsx';
-import { ENSRenewProcess } from './components/EVM/ENSRenewProcess.tsx';
-import { openaiService } from '../../services/openai.services.ts';
-import { PriceCard } from './components/Analysis/PriceCard.tsx';
-import { TechnicalAnalysis } from './components/Analysis/TechnicalAnalysis.tsx';
-import { SentimentAnalysis } from './components/Analysis/SentimentAnalysis.tsx';
-import { PredictionAnalysis } from './components/Analysis/PredictionAnalysis.tsx';
-import { MarketOverview } from './components/Analysis/MarketOverview.tsx';
-import { yields_data } from '../../constants/mock/agent.ts';
-import { Yield } from '../../types/brian.type.ts';
-import { mapChainName2Network } from '../../config/networks.ts';
+import {DepositProcess} from './components/EVM/DepositProcess.tsx';
+import {WithdrawProcess} from './components/EVM/WithdrawProcess.tsx';
+import {BorrowProcess} from './components/EVM/BorrowProcess.tsx';
+import {RepayProcess} from './components/EVM/RepayProcess.tsx';
+import {ENSRegisterProcess} from './components/EVM/ENSRegisterProcess.tsx';
+import {ENSRenewProcess} from './components/EVM/ENSRenewProcess.tsx';
+import {openaiService} from '../../services/openai.services.ts';
+import {PriceCard} from './components/Analysis/PriceCard.tsx';
+import {TechnicalAnalysis} from './components/Analysis/TechnicalAnalysis.tsx';
+import {SentimentAnalysis} from './components/Analysis/SentimentAnalysis.tsx';
+import {PredictionAnalysis} from './components/Analysis/PredictionAnalysis.tsx';
+import {MarketOverview} from './components/Analysis/MarketOverview.tsx';
+import {mapChainName2Network} from '../../config/networks.ts';
+
 interface AIAgentModalProps {
   isOpen: boolean;
   widgetCommand: string;
@@ -76,7 +77,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
   const [showRepayProcess, setShowRepayProcess] = useState(false);
   const [showENSRegisterProcess, setShowENSRegisterProcess] = useState(false);
   const [showENSRenewProcess, setShowENSRenewProcess] = useState(false);
-  const { address, chainId, switchChain, solanaWalletInfo } = useContext(Web3AuthContext);
+  const { address, chainId, switchChain } = useContext(Web3AuthContext);
   const { tokenBalances } = useTokenBalanceStore();
 
   const [fromToken, setFromToken] = useState<TokenType>();
@@ -528,7 +529,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           setYields(response.yields);
           setShowYieldProcess(true);
         } else if (response.type == "transfer_sol") {
-          let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
+          const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
           if (token && token.balance > response.args.amount) {
             let address = response.args.outputMint;
             const snsToAddress = await getSolAddressFromSNS(address);
@@ -554,7 +555,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
             response = { text: `transfer ${response.args.amount} ${response.args.inputSymbol} to ${response.args.outputMint} on solana`, insufficient: 'Insufficient balance to perform the transaction.' };
           }
         } else if (response.type == "swap_sol") {
-          let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
+          const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
           if (token && token.balance > response.args.inAmount) {
             const toToken = symbolToToken(response.args.outputSymbol);
             const fromToken = symbolToToken(response.args.inputSymbol);
@@ -581,8 +582,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
             await switchChain(fromNetwork.chainId);
           }
           console.log(response);
-          console.log(tokenBalances);
-          let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === fromNetwork.id);
+          const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === fromNetwork.id);
           console.log(token);
           let address = response.args.outputMint;
           const ensAddress = await resolveEnsToAddress(address);

@@ -23,6 +23,9 @@ import BigNumber from "bignumber.js";
 import {toFixedFloat} from "../../../utils/trade.util.ts";
 import useDebridgeOrderStatus from "../../../hooks/useDebridgeOrderStatus.ts";
 import useDebridgeQuote from "../../../hooks/useDebridgeQuote.ts";
+import useLocalStorage from "../../../hooks/useLocalStorage.ts";
+import {BridgeRecentWalletType} from "../../../types/bridge.type.ts";
+import {LOCAL_STORAGE_BRIDGE_RECENT_WALLETS} from "../../../constants";
 
 interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
@@ -59,6 +62,7 @@ export function CrossChainSwapBox({
 
     const [destinationAddress, setDestinationAddress] = useState<string>('');
     const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
+    const [recentWallets, setRecentWallets] = useLocalStorage<Array<BridgeRecentWalletType> | null>(LOCAL_STORAGE_BRIDGE_RECENT_WALLETS, [])
     const [sendToAnotherAddress, setSendToAnotherAddress] = useState<boolean>(false);
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [countdown, setCountdown] = useState(0);
@@ -142,7 +146,18 @@ export function CrossChainSwapBox({
 
     useEffect(() => {
         if (orderStatus === DebridgeOrderStatus.Fulfilled) {
+            // open tx modal
             setTxModalOpen(true)
+            // save used wallet address
+            if ((recentWallets ?? []).filter(wallet => wallet.address === destinationAddress).length <= 0) {
+                setRecentWallets([
+                    ...(recentWallets ?? []),
+                    {
+                        chainId: toToken!.chainId,
+                        address: destinationAddress,
+                    }
+                ])
+            }
         }
     }, [orderStatus])
 
@@ -314,7 +329,7 @@ export function CrossChainSwapBox({
                         <div className="flex items-center">
                             {(destinationAddress && toNetwork) ? (
                                 <>
-                                    <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2"/>
+                                    <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2 rounded-full"/>
                                     <span className="font-medium">
                                 {shrinkAddress(destinationAddress)}
                             </span>
@@ -326,7 +341,6 @@ export function CrossChainSwapBox({
                     )
                 }
             </div>
-
 
             {
                 (fromNetwork && toNetwork && !isZeroAmount) && (
