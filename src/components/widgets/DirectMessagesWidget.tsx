@@ -13,7 +13,8 @@ import { ChatType, IChat, IUser } from '../../types/chat.type';
 import { downloadBase64File, extractAddress, getEnsName, getHourAndMinute, shrinkAddress } from '../../utils/common.util';
 import { ImageWithSkeleton } from '../common/ImageWithSkeleton';
 import { WalletTypeEnum } from "../../types/wallet.type";
-import { LOCAL_STORAGE_PUSH_KEY } from '../../constants';
+import { LOCAL_STORAGE_PUSH_KEY, LOCAL_STORAGE_LAST_CHAT_USER } from '../../constants';
+import useLocalStorage from '../../hooks/useLocalStorage.ts';
 
 interface OverlayProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchedUser, setSearchedUser] = useState<IUser | null>(null);
+  const [_, setLastChatUser] = useLocalStorage<IUser | null>(LOCAL_STORAGE_LAST_CHAT_USER, {} as IUser);
 
   const handleSearch = async () => {
     if (!searchQuery || searchQuery == address) return
@@ -55,6 +57,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
         } as IUser
 
         setSearchedUser(user)
+        setLastChatUser(user)
       }
     } catch (err) {
       console.log('get user profile err: ', err)
@@ -71,7 +74,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
   return (
     isOpen && (
       <motion.div
-        className="fixed inset-0 bg-black bg-opacity-90 flex justify-center items-center z-10"
+        className="fixed inset-0 bg-black bg-opacity-90 flex justify-center items-center z-10 rounded-lg"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -106,7 +109,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
             searchedUser && <div className={`${theme === "dark" ? "hover:bg-white/10" : "hover:bg-white/70"} p-2 my-2 cursor-pointer rounded-lg`} onClick={handleSelectUser}>
               <div className='flex items-center gap-4 text-black'>
                 <img src={searchedUser.profilePicture} className='rounded-full w-10 h-10' />
-                <div className={`${theme === "dark" ? "text-white" : ""} flex items-start flex-col`}>
+                <div className={`${theme === "dark" ? "text-white/80" : ""} text-sm flex items-start flex-col`}>
                   {searchedUser?.name && <div>{searchedUser?.name}</div>}
                   <div>{searchedUser?.ensName ? searchedUser?.ensName + " | " + shrinkAddress(searchedUser.address) : shrinkAddress(searchedUser.address)}</div>
                 </div>
@@ -120,7 +123,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
 };
 
 export const DirectMessagesWidget: React.FC = () => {
-  const { chatUser, setChatUser, receivedMessage, selectedUserInChatModal, isChatOpen, theme } = useStore();
+  const { chatUser, setChatUser, receivedMessage, isChatOpen, theme } = useStore();
   const { address, signer, walletType } = useContext(Web3AuthContext);
   const [isOverlay, setIsOverlay] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
@@ -135,6 +138,7 @@ export const DirectMessagesWidget: React.FC = () => {
   const [isGifOpen, setIsGifOpen] = useState(false);
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+  // const [lastChatUser, _] = useLocalStorage<IUser | null>(LOCAL_STORAGE_LAST_CHAT_USER, {} as IUser);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const emojiPickRef = useRef<HTMLDivElement>(null);
   const gifPickRef = useRef<HTMLDivElement>(null);
@@ -178,21 +182,23 @@ export const DirectMessagesWidget: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!isChatOpen) {
+    if (!isChatOpen && chatUser) {
+      const lastChatUser = JSON.parse(localStorage.getItem(LOCAL_STORAGE_LAST_CHAT_USER) || "")
+
       if (!selectedUser) {
-        setSelectedUser(selectedUserInChatModal)
-        handleSelectUser()
-      } else if (selectedUser.address != selectedUserInChatModal?.address) {
-        setSelectedUser(selectedUserInChatModal)
-        handleSelectUser()
+        setSelectedUser(lastChatUser)
+        // handleSelectUser()
+      } else if (selectedUser.address != lastChatUser?.address) {
+        setSelectedUser(lastChatUser)
+        // handleSelectUser()
       } else {
         handleSelectUser()
       }
     }
-  }, [selectedUserInChatModal, isChatOpen])
+  }, [isChatOpen, chatUser])
 
   useEffect(() => {
-    console.log('selectedUser = ', selectedUser)
+    // console.log('selectedUser = ', selectedUser)
     if (selectedUser) {
       handleSelectUser()
     }
