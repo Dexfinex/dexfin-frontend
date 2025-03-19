@@ -1,25 +1,26 @@
-import axios, {AxiosInstance} from "axios";
+import axios, { AxiosInstance } from "axios";
 
 import {
-  COINGECKO_BASE_URL,
-  ZEROX_BASE_URL,
-  CRYPTONEWS_BASE_URL,
-  DEFILLAMA_BASE_URL,
-  FEARGREED_BASE_URL,
-  GECKOTERMINAL_BASE_URL,
-  DEXFIN_BACKEND_BASE_URL,
-  BRIAN_BASE_URL,
-  ENSO_BASE_URL,
-  BIRDEYE_BASE_URL,
-  OPENAI_BASE_URL,
-  CALENDAR_BASE_URL,
-  USERAUTH_BASE_URL,
-  TECHNICALANALYSIS_BASE_URL,
-  GAME_SYSTEM_BASEURL,
-  WS_CONNECTION_URL,
-  ALERT_BASE_URL,
-  SWAPKIT_BASE_URL,
-  NOTIFICATION_BASE_URL
+    COINGECKO_BASE_URL,
+    ZEROX_BASE_URL,
+    CRYPTONEWS_BASE_URL,
+    DEFILLAMA_BASE_URL,
+    FEARGREED_BASE_URL,
+    GECKOTERMINAL_BASE_URL,
+    DEXFIN_BACKEND_BASE_URL,
+    BRIAN_BASE_URL,
+    ENSO_BASE_URL,
+    BIRDEYE_BASE_URL,
+    OPENAI_BASE_URL,
+    CALENDAR_BASE_URL,
+    USERAUTH_BASE_URL,
+    TECHNICALANALYSIS_BASE_URL,
+    GAME_SYSTEM_BASEURL,
+    WS_CONNECTION_URL,
+    ALERT_BASE_URL,
+    SWAPKIT_BASE_URL,
+    NOTIFICATION_BASE_URL,
+    REWARDS_BASE_URL,
 } from "../constants";
 
 export const zeroxApi = axios.create({
@@ -91,7 +92,11 @@ export const AlertBaseApi = axios.create({
 })
 
 export const NotificationApi = axios.create({
-  baseURL: NOTIFICATION_BASE_URL
+    baseURL: NOTIFICATION_BASE_URL
+})
+
+export const RewardsApi = axios.create({
+    baseURL: REWARDS_BASE_URL
 })
 
 // List of API instances that need authorization
@@ -104,6 +109,8 @@ const authorizedApis: AxiosInstance[] = [
     zeroxApi,
     swapkitApi,
     calendarApi,
+    RewardsApi,
+    openaiApi,
     // Add any other APIs that need authorization
 ];
 
