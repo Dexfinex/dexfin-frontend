@@ -288,7 +288,7 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
         </div>
       </div>
       {/* Active Perks */}
-      <div className="bg-white/5 rounded-xl p-6">
+      {/* <div className="bg-white/5 rounded-xl p-6">
         <h3 className="text-lg font-medium mb-4">Active Perks</h3>
         <div className="space-y-3">
           {rewards.perks.filter(perk => perk.isActive).map(perk => (
@@ -304,9 +304,9 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
       {/* Next XP Update */}
-      <div className="bg-white/5 rounded-xl p-6">
+      {/* <div className="bg-white/5 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-4">
           <Icons.Clock className="w-5 h-5 text-white/60" />
           <h3 className="text-lg font-medium">Next XP Update</h3>
@@ -337,7 +337,7 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 

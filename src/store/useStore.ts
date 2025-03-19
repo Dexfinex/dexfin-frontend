@@ -638,21 +638,21 @@ const useStore = create<StoreState>((set, get) => ({
   // Rewards
   rewards: {
     currentTier: 'Bronze',
-    xp: 15000,
+    xp: 0, // Changed from 15000 to 0
     xpToNextLevel: 10000,
-    weeklyXP: [1200, 800, 1500, 950, 1100, 750, 1400],
+    weeklyXP: [0, 0, 0, 0, 0, 0, 0], // Changed from [1200, 800, 1500, 950, 1100, 750, 1400] to all zeros
     badges: [
       {
         id: 'first-deposit',
         name: 'First Deposit',
-        description: 'First wallet deposit. ( min. 50 USDC)',
+        description: 'First wallet deposit. (min. 50 USDC)',
         image: 'https://api.dicebear.com/7.x/shapes/svg?seed=deposit&backgroundColor=0891b2',
         icon: {
           icon: 'Wallet',
           color: 'text-cyan-500'
         },
         xpAmount: 500,
-        earnedDate: '2024-03-15'
+        earnedDate: null // Changed from '2024-03-15' to null
       },
       {
         id: 'first-swap',
@@ -664,7 +664,7 @@ const useStore = create<StoreState>((set, get) => ({
           color: 'text-purple-500'
         },
         xpAmount: 300,
-        earnedDate: '2024-03-16'
+        earnedDate: null // Changed from '2024-03-16' to null
       },
       {
         id: 'daily-login',
@@ -676,7 +676,7 @@ const useStore = create<StoreState>((set, get) => ({
           color: 'text-emerald-500'
         },
         xpAmount: 1000,
-        earnedDate: '2024-03-18'
+        earnedDate: null // Changed from '2024-03-18' to null
       },
       {
         id: 'first-game',
@@ -688,7 +688,7 @@ const useStore = create<StoreState>((set, get) => ({
           color: 'text-pink-500'
         },
         xpAmount: 200,
-        earnedDate: null
+        earnedDate: null // Already null
       },
       {
         id: 'first-command',
@@ -700,7 +700,7 @@ const useStore = create<StoreState>((set, get) => ({
           color: 'text-indigo-500'
         },
         xpAmount: 250,
-        earnedDate: null
+        earnedDate: null // Already null
       },
       {
         id: 'first-alert',
@@ -712,7 +712,7 @@ const useStore = create<StoreState>((set, get) => ({
           color: 'text-rose-500'
         },
         xpAmount: 200,
-        earnedDate: null
+        earnedDate: null // Already null
       },
       {
         id: 'flash-multiply',
@@ -734,7 +734,7 @@ const useStore = create<StoreState>((set, get) => ({
         title: 'Trading Master',
         description: 'Complete 10 trades this week',
         xpReward: 500,
-        progress: 7,
+        progress: 0, // Changed from 7 to 0
         total: 10,
         endsIn: '2d 12h'
       },
@@ -743,18 +743,18 @@ const useStore = create<StoreState>((set, get) => ({
         title: 'Volume Champion',
         description: 'Reach $10,000 in trading volume',
         xpReward: 750,
-        progress: 6500,
+        progress: 0, // Changed from 6500 to 0
         total: 10000,
         endsIn: '3d'
       },
-      
+
       // Game Challenges
       {
         id: 'trivia-master',
         title: 'Trivia Master',
         description: 'Score 8/10 or higher in Crypto Trivia',
         xpReward: 400,
-        progress: 6,
+        progress: 0, // Changed from 6 to 0
         total: 8,
         endsIn: '1d 8h'
       },
@@ -763,18 +763,18 @@ const useStore = create<StoreState>((set, get) => ({
         title: 'Arena Warrior',
         description: 'Win 5 battles in Meme Arena',
         xpReward: 600,
-        progress: 3,
+        progress: 0, // Changed from 3 to 0
         total: 5,
         endsIn: '2d'
       },
-      
+
       // AI Agent Challenges
       {
         id: 'ai-commands',
         title: 'AI Commander',
         description: 'Use 5 different AI Agent commands',
         xpReward: 450,
-        progress: 2,
+        progress: 0, // Changed from 2 to 0
         total: 5,
         endsIn: '4d'
       },
@@ -783,18 +783,18 @@ const useStore = create<StoreState>((set, get) => ({
         title: 'Voice Master',
         description: 'Complete 3 voice commands successfully',
         xpReward: 300,
-        progress: 1,
+        progress: 0, // Changed from 1 to 0
         total: 3,
         endsIn: '3d'
       },
-      
+
       // Alert Challenges
       {
         id: 'alert-setup',
         title: 'Alert Sentinel',
         description: 'Set up 3 different types of alerts',
         xpReward: 350,
-        progress: 1,
+        progress: 0, // Changed from 1 to 0
         total: 3,
         endsIn: '5d'
       },
@@ -803,18 +803,18 @@ const useStore = create<StoreState>((set, get) => ({
         title: 'Price Guardian',
         description: 'Create price alerts for 5 different tokens',
         xpReward: 400,
-        progress: 2,
+        progress: 0, // Changed from 2 to 0
         total: 5,
         endsIn: '4d'
       },
-      
+
       // Social Challenges
       {
         id: 'social-engagement',
         title: 'Community Leader',
         description: 'Engage with 5 community posts',
         xpReward: 300,
-        progress: 3,
+        progress: 0, // Changed from 3 to 0
         total: 5,
         endsIn: '3d 8h'
       },
@@ -823,18 +823,18 @@ const useStore = create<StoreState>((set, get) => ({
         title: 'Network Builder',
         description: 'Follow 10 top traders',
         xpReward: 250,
-        progress: 4,
+        progress: 0, // Changed from 4 to 0
         total: 10,
         endsIn: '2d'
       },
-      
+
       // DeFi Challenges
       {
         id: 'defi-explorer',
         title: 'DeFi Explorer',
         description: 'Try 3 different DeFi protocols',
         xpReward: 800,
-        progress: 1,
+        progress: 0, // Changed from 1 to 0
         total: 3,
         endsIn: '5d'
       },
@@ -843,7 +843,7 @@ const useStore = create<StoreState>((set, get) => ({
         title: 'Yield Seeker',
         description: 'Find and stake in a pool with >5% APY',
         xpReward: 600,
-        progress: 0,
+        progress: 0, // Already 0
         total: 1,
         endsIn: '6d'
       }
@@ -884,7 +884,13 @@ const useStore = create<StoreState>((set, get) => ({
         tier: 'Diamond',
         isActive: false
       }
-    ]
+    ],
+    nextXpUpdate: {
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      xpAmount: 0
+    }
   },
 
   addXP: (amount) => set((state) => ({
