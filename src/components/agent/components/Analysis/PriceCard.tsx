@@ -36,7 +36,7 @@ const CustomTooltip: React.FC<ChartTooltipProps> = ({ active, payload }) => {
       >
         <VStack align="start" spacing={1}>
           <Text fontSize="sm">
-            Price: <Text as="span" fontWeight="bold" color="blue.300">${formatNumberByFrac(priceData?.value)}</Text>
+            Price: <Text as="span" fontWeight="bold" color="blue.300">${priceData?.value.toLocaleString()}</Text>
           </Text>
         </VStack>
       </Box>
@@ -66,7 +66,7 @@ export const PriceCard: React.FC<PriceCardProps> = ({ data, isLoading }) => {
         <Box>
           <Skeleton isLoaded={!isLoading}>
             <Text color="white" fontSize="2xl" fontWeight="bold">
-              {data ? `$${formatNumberByFrac(data.price)}` : '$0.00'}
+              {data ? `$${data.price.toLocaleString()}` : '$0.00'}
             </Text>
           </Skeleton>
           <Skeleton isLoaded={!isLoading}>
