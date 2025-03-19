@@ -12,42 +12,6 @@ interface YieldProcessProps {
   yields: Yield[];
 }
 
-interface Protocol {
-  name: string;
-  apy: number;
-  tvl: number;
-  risk: 'Low' | 'Medium' | 'High';
-  description: string;
-  logo: string;
-}
-
-const protocols: Protocol[] = [
-  {
-    name: 'Aave V3',
-    apy: 4.12,
-    tvl: 520000000,
-    risk: 'Low',
-    description: 'Leading lending protocol with strong security track record',
-    logo: 'https://cryptologos.cc/logos/aave-aave-logo.png'
-  },
-  {
-    name: 'Compound V3',
-    apy: 3.89,
-    tvl: 480000000,
-    risk: 'Low',
-    description: 'Established lending protocol with automated interest rates',
-    logo: 'https://cryptologos.cc/logos/compound-comp-logo.png'
-  },
-  {
-    name: 'Curve Finance',
-    apy: 5.34,
-    tvl: 320000000,
-    risk: 'Medium',
-    description: 'Efficient stablecoin exchange and yield farming',
-    logo: 'https://cryptologos.cc/logos/curve-dao-token-crv-logo.png'
-  }
-];
-
 export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) => {
   const [step, setStep] = useState(1);
   const [amount, setAmount] = useState(0);
@@ -249,13 +213,13 @@ export const YieldProcess: React.FC<YieldProcessProps> = ({ yields, onClose }) =
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 mb-6">
         <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-        {selectedProtocol?.protocolLogo &&
-          <img
-            src={protocolLogos[selectedProtocol?.protocol] ? protocolLogos[selectedProtocol?.protocol] : selectedProtocol?.protocolLogo[0] + '?raw=true'}
-            alt={selectedProtocol?.protocol}
-            className="w-8 h-8 object-contain rounded"
-          />
-        }
+          {selectedProtocol?.protocolLogo &&
+            <img
+              src={protocolLogos[selectedProtocol?.protocol] ? protocolLogos[selectedProtocol?.protocol] : selectedProtocol?.protocolLogo[0] + '?raw=true'}
+              alt={selectedProtocol?.protocol}
+              className="w-8 h-8 object-contain rounded"
+            />
+          }
         </div>
         <div>
           <h3 className="text-xl font-medium">{selectedProtocol?.protocol}</h3>
