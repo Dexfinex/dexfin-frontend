@@ -267,11 +267,26 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
         return <span className={`${amount !== selectedAsset.balance ? "right-14" : "right-3"} absolute  top-1/2 -translate-y-1/2 text-white/60 text-xs`}>${formatNumberByFrac(value)}</span>
     }
 
+    const renderRecent = () => {
+        let filtered: string[] = []
+
+        if (selectedAsset.network?.name === "Solana") {
+            filtered = recentAddresses.filter(address => /^[1-9A-HJ-NP-Za-km-zZ]{32,44}$/.test(address))
+        } else {
+            filtered = recentAddresses.filter(address => /^0x[a-fA-F0-9]{40}$/.test(address))
+        }
+
+        return filtered.map((address, index) => <div key={index} onClick={() => setAddress(address)} className='cursor-pointer text-sm py-2 px-1 rounded-md text-white/70 hover:bg-white/10 flex items-center gap-2'>
+            <img src={makeBlockie(address)} className='w-8 h-8 rounded-full' />
+            <span>{shrinkAddress(address)}</span>
+        </div>)
+    }
+
     const saveAddress = (address: string) => {
         let addresses = JSON.parse(localStorage.getItem("recentSendAddresses") || "[]");
         if (!addresses.includes(address)) {
             addresses.unshift(address);
-            addresses = addresses.slice(0, 3); // Keep only the last 3 addresses
+            addresses = addresses.slice(0, 5); // Keep only the last 5 addresses
         }
 
         localStorage.setItem("recentSendAddresses", JSON.stringify(addresses));
@@ -502,10 +517,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                 {recentAddresses.length > 0 && <div>
                     <label className="block text-sm text-white/60 mb-2">Recent</label>
                     {
-                        recentAddresses.map((address, index) => <div key={index} onClick={() => setAddress(address)} className='cursor-pointer text-sm py-2 px-1 rounded-md text-white/70 hover:bg-white/10 flex items-center gap-2'>
-                            <img src={makeBlockie(address)} className='w-8 h-8 rounded-full' />
-                            <span>{shrinkAddress(address)}</span>
-                        </div>)
+                        renderRecent()
                     }
                 </div>}
 
