@@ -1,21 +1,21 @@
 import React from "react";
-import {Skeleton} from '@chakra-ui/react';
+import { Skeleton } from '@chakra-ui/react';
 
-import {formatNumberByFrac} from "../../utils/common.util";
-import {formatUsdValue} from "../../utils/defi.util.ts";
-import {TokenChainIcon} from "../swap/components/TokenIcon";
+import { formatNumberByFrac } from "../../utils/common.util";
+import { formatUsdValue } from "../../utils/defi.util.ts";
+import { TokenChainIcon } from "../swap/components/TokenIcon";
 import PNLPercent from "../common/PNLPercent";
-import {useWalletBalance} from "../../hooks/useBalance";
-import useTokenBalanceStore, {TokenBalance} from "../../store/useTokenBalanceStore";
+import { useWalletBalance } from "../../hooks/useBalance";
+import useTokenBalanceStore, { TokenBalance } from "../../store/useTokenBalanceStore";
 
 
 interface RenderTokensProps {
     handleAsset: (token: TokenBalance) => void;
 }
 
-const RenderTokens: React.FC<RenderTokensProps> = ({handleAsset}) => {
-    const {isLoading: isLoadingBalance} = useWalletBalance();
-    const {tokenBalances} = useTokenBalanceStore();
+const RenderTokens: React.FC<RenderTokensProps> = ({ handleAsset }) => {
+    const { isLoading: isLoadingBalance } = useWalletBalance();
+    const { tokenBalances } = useTokenBalanceStore();
 
     return (
         <div
@@ -32,7 +32,7 @@ const RenderTokens: React.FC<RenderTokensProps> = ({handleAsset}) => {
                             <div className="flex justify-between items-center w-full">
                                 <div className="flex items-center gap-3">
                                     <TokenChainIcon src={token.logo} alt={token.name} size={"lg"}
-                                                    chainId={Number(token.chain)}/>
+                                        chainId={Number(token.chain)} />
                                     <div className='flex flex-col justify-start items-start'>
                                         <div className="font-medium text-sm sm:text-md">{token.symbol.toUpperCase()}</div>
                                         <div className="text-xs sm:text-sm text-white/60">
@@ -43,7 +43,7 @@ const RenderTokens: React.FC<RenderTokensProps> = ({handleAsset}) => {
                                 <div className="text-sm md:text-md">
                                     <span>{formatUsdValue(token.usdValue)}</span>
                                     <PNLPercent
-                                        pnlPercent={token.usdPrice24hrUsdChange * 100 / (token.usdPrice - token.usdPrice24hrUsdChange)}/>
+                                        pnlPercent={token.usdPrice24hrUsdChange * 100 / token.usdPrice} />
                                 </div>
                             </div>
                         </button>

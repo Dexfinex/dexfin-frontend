@@ -165,17 +165,7 @@ export type DebridgeQuoteResponse =  {
     errorMessage: string;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export interface BridgeRecentWalletType {
+    chainId: number
+    address: string
+}

@@ -23,6 +23,9 @@ import BigNumber from "bignumber.js";
 import {toFixedFloat} from "../../../utils/trade.util.ts";
 import useDebridgeOrderStatus from "../../../hooks/useDebridgeOrderStatus.ts";
 import useDebridgeQuote from "../../../hooks/useDebridgeQuote.ts";
+import useLocalStorage from "../../../hooks/useLocalStorage.ts";
+import {BridgeRecentWalletType} from "../../../types/bridge.type.ts";
+import {LOCAL_STORAGE_BRIDGE_RECENT_WALLETS} from "../../../constants";
 
 interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
@@ -59,6 +62,7 @@ export function CrossChainSwapBox({
 
     const [destinationAddress, setDestinationAddress] = useState<string>('');
     const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
+    const [recentWallets, setRecentWallets] = useLocalStorage<Array<BridgeRecentWalletType> | null>(LOCAL_STORAGE_BRIDGE_RECENT_WALLETS, [])
     const [sendToAnotherAddress, setSendToAnotherAddress] = useState<boolean>(false);
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [countdown, setCountdown] = useState(0);
@@ -110,7 +114,7 @@ export function CrossChainSwapBox({
             ? ((nativeTokenAddressFromChain !== fromToken?.address ? 0 : Number(fromAmount)) + Number(quoteResponse.feeAmount)) > Number(nativeBalance?.formatted)
             : false;
     const insufficientBalance =
-        !isNaN(Number(fromBalance?.formatted)) ? (Number(fromAmount) + Number(quoteResponse.feeAmount)) > Number(fromBalance?.formatted)
+        !isNaN(Number(fromBalance?.formatted)) ? Number(fromAmount) > Number(fromBalance?.formatted)
             : false;
     const isZeroAmount = !fromAmount || Number(fromAmount) <= 0 || Number(quoteResponse.outputAmount) <= 0
 
@@ -142,7 +146,18 @@ export function CrossChainSwapBox({
 
     useEffect(() => {
         if (orderStatus === DebridgeOrderStatus.Fulfilled) {
+            // open tx modal
             setTxModalOpen(true)
+            // save used wallet address
+            if ((recentWallets ?? []).filter(wallet => wallet.address === destinationAddress).length <= 0) {
+                setRecentWallets([
+                    ...(recentWallets ?? []),
+                    {
+                        chainId: toToken!.chainId,
+                        address: destinationAddress,
+                    }
+                ])
+            }
         }
     }, [orderStatus])
 
@@ -197,13 +212,15 @@ export function CrossChainSwapBox({
         }
     }, [onFromAmountChange, onToAmountChange, txModalOpen])
 
+    const spenderAddress = quoteResponse.tx?.allowanceTarget || quoteResponse.tx?.to
+
     const {
         isApproved: isEvmApproved,
         isLoading: isApproving,
         approve
     } = useTokenApprove({
         token: fromToken?.address as `0x${string}`,
-        spender: (quoteResponse.tx?.allowanceTarget) as `0x${string}`,
+        spender: spenderAddress as `0x${string}`,
         amount: new BigNumber(toFixedFloat(fromAmount, 4))
             .times(new BigNumber(10)
                 .pow(fromToken?.decimals ?? 1))
@@ -211,7 +228,10 @@ export function CrossChainSwapBox({
         chainId: fromToken?.chainId ?? 1
     });
 
-    const isApproved = fromToken?.chainId === SOLANA_CHAIN_ID ? true : isEvmApproved
+    const isApproved =
+        (fromToken?.chainId === SOLANA_CHAIN_ID || nativeTokenAddressFromChain === fromToken?.address || !spenderAddress) // chain is solana or native token or don't have spenderAddress
+            ? true
+            : isEvmApproved
 
     const handleSwap = async () => {
         if (!isApproved) {
@@ -267,7 +287,6 @@ export function CrossChainSwapBox({
                     </button>
                 </div>
             </div>
-
             <TokenSelector
                 className="relative z-10"
                 selectedToken={toToken}
@@ -310,7 +329,7 @@ export function CrossChainSwapBox({
                         <div className="flex items-center">
                             {(destinationAddress && toNetwork) ? (
                                 <>
-                                    <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2"/>
+                                    <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2 rounded-full"/>
                                     <span className="font-medium">
                                 {shrinkAddress(destinationAddress)}
                             </span>
@@ -429,7 +448,7 @@ export function CrossChainSwapBox({
                                 colorScheme="blue"
                                 isDisabled={true}
                             >
-                                Insufficient Balance
+                                Insufficient {insufficientNativeBalance ? 'Native' : ''} Balance
                             </Button>
                         ) : (
                             <Button
@@ -437,8 +456,11 @@ export function CrossChainSwapBox({
                                 loadingText={(isApproving ? 'Approving...' : 'Computing...')}
                                 width="full"
                                 colorScheme="blue"
-                                onClick={handleSwap}
-                                isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !isApproved || !!quoteResponse.errorMessage || Number(quoteResponse.outputAmount) <= 0}
+                                onClick={() => {
+                                    if (isApproved) handleSwap()
+                                    else approve?.()
+                                }}
+                                isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !!quoteResponse.errorMessage || Number(quoteResponse.outputAmount) <= 0}
                             >
                                 {isApproved ? 'Bridge' : 'Approve'}
                             </Button>

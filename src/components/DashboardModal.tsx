@@ -458,7 +458,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                           <div className="flex items-center justify-between sm:justify-end gap-4 flex-1">
                             <div className="text-right">
                               <div className="text-lg">${formatNumberByFrac(token.usdValue)}</div>
-                              <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / (token.usdPrice - token.usdPrice24hrUsdChange)} />
+                              <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / token.usdPrice} />
                             </div>
                             <div className="w-32">
                               <div className="flex items-center justify-between text-sm mb-1">
