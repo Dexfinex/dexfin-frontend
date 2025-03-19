@@ -169,13 +169,6 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
                       <Icons.Lock className="w-4 h-4" />
                       <span>Not Yet Earned</span>
                     </div>
-                    {/* Add a button to manually complete the badge (for testing) */}
-                    <button
-                      onClick={() => handleCompleteBadge(badge.id)}
-                      className="mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-md transition-colors"
-                    >
-                      Complete Badge (Test)
-                    </button>
                   </div>
                 )}
               </div>
