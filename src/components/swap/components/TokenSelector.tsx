@@ -18,6 +18,7 @@ interface TokenSelectorProps {
     className?: string;
     isLoading?: boolean;
     balance?: string;
+    deductionAmount?: number;
     isBalanceLoading?: boolean;
 }
 
@@ -32,6 +33,7 @@ export function TokenSelector({
                                   disabled = false,
                                   className = '',
                                   isLoading = false,
+                                  deductionAmount = 0,
                                   balance,
                                   isBalanceLoading = false,
                               }: TokenSelectorProps) {
@@ -71,9 +73,9 @@ export function TokenSelector({
                                         className="text-blue-400 hover:text-blue-300 font-semibold bg-blue-500/10 px-2 py-0.5 rounded-md hover:bg-blue-500/20 transition-all hover:scale-105 active:scale-95"
                                         onClick={() => {
                                             const multiplier = (10 ** Math.min(6, (selectedToken?.decimals ?? 0)))
-                                            const roundedBalance = (Number(balance ?? '0')) * multiplier;
-                                            const formattedBalance = (Math.floor(roundedBalance) / multiplier).toString();
-                                            onAmountChange(formattedBalance)
+                                            const roundedBalance = (Number(balance ?? '0')) * multiplier
+                                            const formattedBalance = Math.max(0, (Math.floor(roundedBalance) / multiplier) - deductionAmount)
+                                            onAmountChange(formattedBalance.toString())
                                         }}
                                     >
                                         MAX

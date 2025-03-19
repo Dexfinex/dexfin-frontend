@@ -1,5 +1,5 @@
 import {useContext, useEffect, useMemo, useState} from 'react';
-import {ArrowDownUp, ArrowRight, Clock, DollarSign} from 'lucide-react';
+import {ArrowDownUp} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
 import {DebridgeOrderStatus, SlippageOption, TokenType} from '../../../types/swap.type';
 import {formatNumberByFrac, isValidAddress, shrinkAddress} from '../../../utils/common.util';
@@ -14,7 +14,7 @@ import {
 } from "../../../config/networks.ts";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
-import {formatEstimatedTimeBySeconds, getBridgingSpendTime, getUSDAmount} from "../../../utils/swap.util.ts";
+import {getBridgingSpendTime, getUSDAmount} from "../../../utils/swap.util.ts";
 import {DestinationAddressInputModal} from "../modals/DestinationAddressInputModal.tsx";
 import {useAllBalance} from "../../../hooks/useAllBalance.tsx";
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
@@ -26,6 +26,7 @@ import useDebridgeQuote from "../../../hooks/useDebridgeQuote.ts";
 import useLocalStorage from "../../../hooks/useLocalStorage.ts";
 import {BridgeRecentWalletType} from "../../../types/bridge.type.ts";
 import {LOCAL_STORAGE_BRIDGE_RECENT_WALLETS} from "../../../constants";
+import {PreviewDetailItem} from "./SwapBox.tsx";
 
 interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
@@ -52,7 +53,6 @@ export function CrossChainSwapBox({
                                       onSwitch,
                                   }: CrossChainSwapBoxProps) {
     const {
-        chainId,
         solanaWalletInfo,
         signer,
         transferSolToken,
@@ -109,15 +109,6 @@ export function CrossChainSwapBox({
         data: nativeBalance
     } = useAllBalance({tokenOrMintAddress: nativeTokenAddressFromChain, chainId: fromToken?.chainId});
 
-    const insufficientNativeBalance =
-        !isNaN(Number(nativeBalance?.formatted))
-            ? ((nativeTokenAddressFromChain !== fromToken?.address ? 0 : Number(fromAmount)) + Number(quoteResponse.feeAmount)) > Number(nativeBalance?.formatted)
-            : false;
-    const insufficientBalance =
-        !isNaN(Number(fromBalance?.formatted)) ? Number(fromAmount) > Number(fromBalance?.formatted)
-            : false;
-    const isZeroAmount = !fromAmount || Number(fromAmount) <= 0 || Number(quoteResponse.outputAmount) <= 0
-
     // Update toAmount when calculation changes
     useEffect(() => {
         if (quoteResponse) {
@@ -166,7 +157,11 @@ export function CrossChainSwapBox({
         toUsdAmount,
         fromNetwork,
         toNetwork,
-        feeAmountInUsd,
+        solverGasCostAmount,
+        solverGasText,
+        debridgeFeeText,
+        totalSpentText,
+        priceImpact,
     } = useMemo(() => {
         const fromTokenPrice = fromToken ? getTokenPrice(fromToken?.address, fromToken?.chainId) : 0
         const toTokenPrice = toToken ? getTokenPrice(toToken?.address, toToken?.chainId) : 0
@@ -175,17 +170,29 @@ export function CrossChainSwapBox({
         const toUsdAmount = toToken ? getUSDAmount(toToken, toTokenPrice, toAmount) : 0
         const fromNetwork = fromToken ? mapChainId2Network[fromToken.chainId] : null
         const toNetwork = toToken ? mapChainId2Network[toToken.chainId] : null
+        const solverGasCostAmount = quoteResponse.solverGasCosts
+        const solverGasUsdAmount = fromTokenPrice * solverGasCostAmount
+        const priceImpact = fromUsdAmount > 0 ? ((toUsdAmount - fromUsdAmount) / fromUsdAmount) * 100 : 0
+
         let feeAmountInUsd = 0
         if (quoteResponse) {
             feeAmountInUsd = nativeTokenPrice * quoteResponse.feeAmount
         }
+
+        const solverGasText = `${formatNumberByFrac(solverGasCostAmount, 4)} ${fromToken?.symbol} ($${formatNumberByFrac(solverGasUsdAmount, 3)})`
+        const debridgeFeeText = `${formatNumberByFrac(quoteResponse.feeAmount, 4)} ${fromNetwork?.symbol} ($${formatNumberByFrac(feeAmountInUsd, 3)})`
+        const totalSpentText = `${formatNumberByFrac(solverGasCostAmount + Number(fromAmount), 4)} ${fromToken?.symbol}`
 
         return {
             fromUsdAmount,
             toUsdAmount,
             toNetwork,
             fromNetwork,
-            feeAmountInUsd,
+            solverGasCostAmount,
+            priceImpact,
+            solverGasText,
+            debridgeFeeText,
+            totalSpentText,
         }
     }, [nativeTokenAddressFromChain, fromToken, getTokenPrice, toToken, fromAmount, toAmount, quoteResponse])
 
@@ -202,6 +209,14 @@ export function CrossChainSwapBox({
         }
     }, [fromToken, walletChainId])
 
+    const insufficientNativeBalance =
+        !isNaN(Number(nativeBalance?.formatted))
+            ? ((nativeTokenAddressFromChain !== fromToken?.address ? 0 : Number(fromAmount)) + Number(quoteResponse.feeAmount)) > Number(nativeBalance?.formatted)
+            : false;
+    const insufficientBalance =
+        !isNaN(Number(fromBalance?.formatted)) ? (Number(fromAmount) + solverGasCostAmount) > Number(fromBalance?.formatted)
+            : false;
+    const isZeroAmount = !fromAmount || Number(fromAmount) <= 0 || Number(quoteResponse.outputAmount) <= 0
 
     useEffect(() => {
         if (!txModalOpen) {
@@ -271,6 +286,7 @@ export function CrossChainSwapBox({
                 selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onFromTokenSelect}
                 amount={fromAmount}
+                deductionAmount={solverGasCostAmount}
                 usdAmount={fromUsdAmount.toString()}
                 onAmountChange={onFromAmountChange}
                 balance={fromBalance?.formatted}
@@ -344,46 +360,88 @@ export function CrossChainSwapBox({
 
             {
                 (fromNetwork && toNetwork && !isZeroAmount) && (
-                    <div
-                        className={`rounded-xl p-4 border border-blue-500`}
-                    >
-                        {
-                            isQuoteLoading ? (
-                                <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'3rem'}></Skeleton>
-                            ) : (
-                                <>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div
-                                            className="bg-blue-500 text-xs font-medium text-white px-2 py-1 rounded-full inline-block mb-2">
-                                            Best Route
-                                        </div>
-                                        <div className="flex items-center">
-                                            <img src={fromNetwork.icon} alt={fromNetwork.name} className="w-5 h-5"/>
-                                            <ArrowRight size={14} className="mx-1 text-gray-400"/>
-                                            <img src={toNetwork.icon} alt={toNetwork.name}
-                                                 className="w-5 h-5"/>
-                                            <span className="ml-2 text-sm">Debridge</span>
-                                        </div>
-                                    </div>
+                    <div className="space-y-2.5 mt-4">
+                        {/* Exchange Rate */}
+                        <div
+                            className="px-4 py-3 text-sm rounded-lg border border-white/5 hover:border-blue-500/20 transition-all">
+                            {
+                                isQuoteLoading ? (
+                                    <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'3rem'}></Skeleton>
+                                ) : (
+                                    <>
+                                        {
+                                            solverGasCostAmount > 0 && (
+                                                <PreviewDetailItem
+                                                    title={'Solver gas fee'}
+                                                    info={'A fee paid to the solver who processes your cross-chain transaction and covers gas costs on both blockchains.'}
+                                                    value={solverGasText}
+                                                    isLoading={isQuoteLoading}
+                                                />
+                                            )
+                                        }
 
-                                    <div className="flex items-center justify-between mb-3">
+                                        <PreviewDetailItem
+                                            title={`deBridge Fee`}
+                                            info={'A small fee charged by deBridge for handling your cross-chain transaction and ensuring secure transfer between blockchains.'}
+                                            value={debridgeFeeText}
+                                            isLoading={isQuoteLoading}
+                                        />
+
+                                        <PreviewDetailItem
+                                            title={`Total spent`}
+                                            info={'The total amount deducted from your wallet, which includes the selling token amount plus the solver gas fee needed to process the cross-chain transaction.'}
+                                            value={totalSpentText}
+                                            isLoading={isQuoteLoading}
+                                        />
+
+                                        <PreviewDetailItem
+                                            title={'Price Impact'}
+                                            info={'The difference between market price and estimated price due to trade size'}
+                                            value={`${formatNumberByFrac(priceImpact, 2)}%`}
+                                            valueClassName={`${priceImpact < -5
+                                                ? 'text-red-500'
+                                                : priceImpact < -3
+                                                    ? 'text-yellow-500'
+                                                    : 'text-green-500'
+                                            }`}
+                                            isLoading={isQuoteLoading}
+                                        />
+
+                                        {/*
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div
+                                                className="bg-blue-500 text-xs font-medium text-white px-2 py-1 rounded-full inline-block mb-2">
+                                                Best Route
+                                            </div>
+                                            <div className="flex items-center">
+                                                <img src={fromNetwork.icon} alt={fromNetwork.name} className="w-5 h-5"/>
+                                                <ArrowRight size={14} className="mx-1 text-gray-400"/>
+                                                <img src={toNetwork.icon} alt={toNetwork.name}
+                                                     className="w-5 h-5"/>
+                                                <span className="ml-2 text-sm">Debridge</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between mb-3">
                                     <span
                                         className="text-sm text-gray-400">You receive: {formatNumberByFrac(Number(quoteResponse.outputAmount), 5)} {toToken?.symbol}</span>
-                                    </div>
+                                        </div>
 
-                                    <div className="flex justify-between text-xs text-gray-400">
-                                        <div className="flex items-center">
-                                            <Clock size={12} className="mr-1"/>
-                                            <span>{`estimated time: ${formatEstimatedTimeBySeconds(quoteResponse.estimatedTime)}`}</span>
+                                        <div className="flex justify-between text-xs text-gray-400">
+                                            <div className="flex items-center">
+                                                <Clock size={12} className="mr-1"/>
+                                                <span>{`estimated time: ${formatEstimatedTimeBySeconds(quoteResponse.estimatedTime)}`}</span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <span>Fee: {formatNumberByFrac(feeAmountInUsd, 5)}</span>
+                                                <DollarSign size={12} className="mr-1"/>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center">
-                                            <span>Fee: {formatNumberByFrac(feeAmountInUsd, 5)}</span>
-                                            <DollarSign size={12} className="mr-1"/>
-                                        </div>
-                                    </div>
-                                </>
-                            )
-                        }
+*/}
+                                    </>
+                                )
+                            }
+                        </div>
                     </div>
                 )
             }
@@ -396,7 +454,7 @@ export function CrossChainSwapBox({
                 )
             }
             {
-                (chainId === SOLANA_CHAIN_ID && !solanaWalletInfo) ? (
+                (walletChainId === SOLANA_CHAIN_ID && !solanaWalletInfo) ? (
                     <Button
                         width="full"
                         colorScheme="blue"
