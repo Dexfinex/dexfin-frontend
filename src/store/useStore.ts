@@ -180,6 +180,11 @@ interface RewardsState {
     image: string;
     earnedDate?: string;
     isFlashBadge?: boolean;
+    xpAmount: number;  // Add this property
+    icon: {           // Add icon property
+      icon: string;
+      color: string;
+    };
   }[];
   activeChallenges: {
     id: string;
@@ -197,6 +202,12 @@ interface RewardsState {
     tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond';
     isActive: boolean;
   }[];
+  nextXpUpdate: {    // Add this property
+    hours: number;
+    minutes: number;
+    seconds: number;
+    xpAmount: number;
+  };
 }
 
 interface StoreState {
@@ -632,41 +643,92 @@ const useStore = create<StoreState>((set, get) => ({
     weeklyXP: [1200, 800, 1500, 950, 1100, 750, 1400],
     badges: [
       {
-        id: 'first-trade',
-        name: 'First Trade',
-        description: 'Complete your first trade',
-        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=trade',
+        id: 'first-deposit',
+        name: 'First Deposit',
+        description: 'First wallet deposit. ( min. 50 USDC)',
+        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=deposit&backgroundColor=0891b2',
+        icon: {
+          icon: 'Wallet',
+          color: 'text-cyan-500'
+        },
+        xpAmount: 500,
         earnedDate: '2024-03-15'
       },
       {
-        id: 'early-bird',
-        name: 'Early Bird',
-        description: 'Join during beta phase',
-        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=bird',
-        earnedDate: '2024-03-10'
+        id: 'first-swap',
+        name: 'First Swap',
+        description: 'Complete your first token swap',
+        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=swap&backgroundColor=8b5cf6',
+        icon: {
+          icon: 'ArrowLeftRight',
+          color: 'text-purple-500'
+        },
+        xpAmount: 300,
+        earnedDate: '2024-03-16'
       },
       {
-        id: 'social-butterfly',
-        name: 'Social Butterfly',
-        description: 'Connect with 10 traders',
-        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=social',
+        id: 'daily-login',
+        name: '7-Day Streak',
+        description: 'Log in for 7 consecutive days',
+        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=streak&backgroundColor=059669',
+        icon: {
+          icon: 'Calendar',
+          color: 'text-emerald-500'
+        },
+        xpAmount: 1000,
         earnedDate: '2024-03-18'
       },
       {
-        id: 'diamond-hands',
-        name: 'Diamond Hands',
-        description: 'Hold assets for 30 days',
-        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=diamond'
+        id: 'first-game',
+        name: 'Game Master',
+        description: 'Play your first game',
+        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=game&backgroundColor=db2777',
+        icon: {
+          icon: 'Gamepad2',
+          color: 'text-pink-500'
+        },
+        xpAmount: 200,
+        earnedDate: null
+      },
+      {
+        id: 'first-command',
+        name: 'AI Explorer',
+        description: 'Use your first DeFi Agent command',
+        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=ai&backgroundColor=6366f1',
+        icon: {
+          icon: 'Bot',
+          color: 'text-indigo-500'
+        },
+        xpAmount: 250,
+        earnedDate: null
+      },
+      {
+        id: 'first-alert',
+        name: 'Alert Pioneer',
+        description: 'Set up your first market alert',
+        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=alert&backgroundColor=f43f5e',
+        icon: {
+          icon: 'Bell',
+          color: 'text-rose-500'
+        },
+        xpAmount: 200,
+        earnedDate: null
       },
       {
         id: 'flash-multiply',
-        name: 'Multiply It',
-        description: 'Play Multiplier game',
-        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=multiply',
+        name: 'Trivia Master',
+        description: 'Play Trivia game',
+        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=multiply&backgroundColor=f59e0b',
+        icon: {
+          icon: 'ArrowLeftRight',
+          color: 'text-amber-500'
+        },
+        xpAmount: 150,
         isFlashBadge: true
       }
     ],
     activeChallenges: [
+      // Trading Challenges
       {
         id: 'weekly-trades',
         title: 'Trading Master',
@@ -677,6 +739,77 @@ const useStore = create<StoreState>((set, get) => ({
         endsIn: '2d 12h'
       },
       {
+        id: 'trading-volume',
+        title: 'Volume Champion',
+        description: 'Reach $10,000 in trading volume',
+        xpReward: 750,
+        progress: 6500,
+        total: 10000,
+        endsIn: '3d'
+      },
+      
+      // Game Challenges
+      {
+        id: 'trivia-master',
+        title: 'Trivia Master',
+        description: 'Score 8/10 or higher in Crypto Trivia',
+        xpReward: 400,
+        progress: 6,
+        total: 8,
+        endsIn: '1d 8h'
+      },
+      {
+        id: 'arena-warrior',
+        title: 'Arena Warrior',
+        description: 'Win 5 battles in Meme Arena',
+        xpReward: 600,
+        progress: 3,
+        total: 5,
+        endsIn: '2d'
+      },
+      
+      // AI Agent Challenges
+      {
+        id: 'ai-commands',
+        title: 'AI Commander',
+        description: 'Use 5 different AI Agent commands',
+        xpReward: 450,
+        progress: 2,
+        total: 5,
+        endsIn: '4d'
+      },
+      {
+        id: 'voice-master',
+        title: 'Voice Master',
+        description: 'Complete 3 voice commands successfully',
+        xpReward: 300,
+        progress: 1,
+        total: 3,
+        endsIn: '3d'
+      },
+      
+      // Alert Challenges
+      {
+        id: 'alert-setup',
+        title: 'Alert Sentinel',
+        description: 'Set up 3 different types of alerts',
+        xpReward: 350,
+        progress: 1,
+        total: 3,
+        endsIn: '5d'
+      },
+      {
+        id: 'price-alerts',
+        title: 'Price Guardian',
+        description: 'Create price alerts for 5 different tokens',
+        xpReward: 400,
+        progress: 2,
+        total: 5,
+        endsIn: '4d'
+      },
+      
+      // Social Challenges
+      {
         id: 'social-engagement',
         title: 'Community Leader',
         description: 'Engage with 5 community posts',
@@ -686,6 +819,17 @@ const useStore = create<StoreState>((set, get) => ({
         endsIn: '3d 8h'
       },
       {
+        id: 'follow-traders',
+        title: 'Network Builder',
+        description: 'Follow 10 top traders',
+        xpReward: 250,
+        progress: 4,
+        total: 10,
+        endsIn: '2d'
+      },
+      
+      // DeFi Challenges
+      {
         id: 'defi-explorer',
         title: 'DeFi Explorer',
         description: 'Try 3 different DeFi protocols',
@@ -693,6 +837,15 @@ const useStore = create<StoreState>((set, get) => ({
         progress: 1,
         total: 3,
         endsIn: '5d'
+      },
+      {
+        id: 'yield-seeker',
+        title: 'Yield Seeker',
+        description: 'Find and stake in a pool with >5% APY',
+        xpReward: 600,
+        progress: 0,
+        total: 1,
+        endsIn: '6d'
       }
     ],
     perks: [

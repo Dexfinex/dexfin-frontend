@@ -1,4 +1,4 @@
-import axios, {AxiosInstance} from "axios";
+import axios, { AxiosInstance } from "axios";
 
 import {
     COINGECKO_BASE_URL,
@@ -19,7 +19,9 @@ import {
     WS_CONNECTION_URL,
     ALERT_BASE_URL,
     SWAPKIT_BASE_URL,
-    NOTIFICATION_BASE_URL, DEBRIDGE_BASE_URL
+    NOTIFICATION_BASE_URL,
+    REWARDS_BASE_URL,
+    DEBRIDGE_BASE_URL,
 } from "../constants";
 
 export const zeroxApi = axios.create({
@@ -95,7 +97,11 @@ export const AlertBaseApi = axios.create({
 })
 
 export const NotificationApi = axios.create({
-  baseURL: NOTIFICATION_BASE_URL
+    baseURL: NOTIFICATION_BASE_URL
+})
+
+export const RewardsApi = axios.create({
+    baseURL: REWARDS_BASE_URL
 })
 
 // List of API instances that need authorization
@@ -109,6 +115,8 @@ const authorizedApis: AxiosInstance[] = [
     swapkitApi,
     debridgeApi,
     calendarApi,
+    RewardsApi,
+    openaiApi,
     // Add any other APIs that need authorization
 ];
 
