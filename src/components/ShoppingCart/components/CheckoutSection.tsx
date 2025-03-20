@@ -1,10 +1,13 @@
 import React, { useState, useMemo, useContext } from 'react';
-import { ChevronDown, ShoppingCart, ArrowLeft } from 'lucide-react';
+import { ChevronDown, ShoppingCart, ArrowLeft, Info } from 'lucide-react';
 import { Alert, AlertIcon, Button } from '@chakra-ui/react';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { CheckoutSectionProps } from '../../../types/cart.type';
 import { Web3AuthContext } from '../../../providers/Web3AuthContext';
 import { WalletTypeEnum } from '../../../types/wallet.type';
+import useTokenStore from "../../../store/useTokenStore";
+import useGasEstimation from "../../../hooks/useGasEstimation";
+import { mapChainId2NativeAddress } from "../../../config/networks";
 
 const OrderSummaryItem = React.memo(({
     item,
@@ -79,26 +82,42 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
     onExecuteBuy
 }) => {
     const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'card'>('wallet');
-    const { walletType } = useContext(Web3AuthContext);
+    const { walletType, chainId } = useContext(Web3AuthContext);
+    const { getTokenPrice } = useTokenStore();
 
-    // Match the same wallet detection logic used in SwapBox
+    // Get native token address for the current chain
+    const tokenChainId = chainId || 8453; // Default to Base if chainId is undefined
+    const nativeTokenAddress = mapChainId2NativeAddress[tokenChainId];
+
+    // Fetch gas estimation data
+    const {
+        isLoading: isGasEstimationLoading,
+        data: gasData
+    } = useGasEstimation();
+
+    // Check if using embedded wallet
     const isEmbeddedWallet = walletType === WalletTypeEnum.EMBEDDED;
-    
-    const { subtotal, total, networkFee } = useMemo(() => {
+
+    // Get native token price for fee calculation
+    const nativeTokenPrice = getTokenPrice(nativeTokenAddress, tokenChainId) || 0;
+
+    // Calculate network fee in USD
+    const networkFeeUSD = useMemo(() => {
+        if (isEmbeddedWallet) return 0; // Free for embedded wallets
+        return nativeTokenPrice * gasData.gasEstimate;
+    }, [isEmbeddedWallet, nativeTokenPrice, gasData.gasEstimate]);
+
+    const { subtotal, total } = useMemo(() => {
         const subtotal = cartItems.reduce((total, item) => {
             const coinPrice = tokenPrices[`1:${item.id.toLowerCase()}`] || item.price;
             return total + (Number(coinPrice) * item.quantity);
         }, 0);
 
-        // Network fee is free for embedded wallets
-        const networkFee = isEmbeddedWallet ? 0 : 2.50;
-
         return {
             subtotal,
-            networkFee,
-            total: subtotal + networkFee
+            total: subtotal + networkFeeUSD
         };
-    }, [cartItems, tokenPrices, isEmbeddedWallet]);
+    }, [cartItems, tokenPrices, networkFeeUSD]);
 
     return (
         <>
@@ -136,16 +155,13 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                         </div>
 
                         {/* Wallet Type Information */}
-                        {/* <div className="p-3 bg-blue-500/20 rounded-lg text-sm">
-                            <p className="font-medium">
-                                Wallet Type: {isEmbeddedWallet ? 'EMBEDDED' : 'EOA'}
-                            </p>
-                            <p className="text-white/70">
-                                {isEmbeddedWallet
-                                    ? "You're using an embedded wallet. Network fees are free!"
-                                    : "You're using an external wallet. Network fees will apply."}
-                            </p>
-                        </div> */}
+                        {isEmbeddedWallet && (
+                            <div className="p-3 bg-blue-500/20 rounded-lg text-sm">
+                                <p className="font-medium">
+                                    You're using an embedded wallet. Network fees are free!
+                                </p>
+                            </div>
+                        )}
 
                         {/* Total Section */}
                         <div className="space-y-4 sticky bottom-0 bg-background pt-4">
@@ -155,14 +171,25 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                                     <span>${formatNumberByFrac(subtotal)}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-white/60">Network Fee</span>
-                                    {isEmbeddedWallet ? (
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-white/60">Network Fee</span>
+                                        <div className="group relative">
+                                            <Info className="w-3.5 h-3.5 text-gray-500" />
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 text-xs text-gray-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                Estimated network fees for processing the transaction
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {isGasEstimationLoading ? (
+                                        <span>Calculating...</span>
+                                    ) : isEmbeddedWallet ? (
                                         <div className="flex gap-2">
                                             <span className="text-green-500">Free!</span>
-                                            <span className="text-gray-500 line-through">~$2.50</span>
+                                            <span className="text-gray-500 line-through">${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate)}</span>
                                         </div>
                                     ) : (
-                                        <span>~$2.50</span>
+                                        <span>${formatNumberByFrac(networkFeeUSD)}</span>
                                     )}
                                 </div>
                                 <div className="h-px bg-white/10 my-2" />
@@ -183,15 +210,17 @@ const CheckoutSection: React.FC<CheckoutSectionProps> = React.memo(({
                                 width="full"
                                 colorScheme="blue"
                                 onClick={onExecuteBuy}
-                                isLoading={processingBuy || isBuyPending}
+                                isLoading={processingBuy || isBuyPending || isGasEstimationLoading}
                                 loadingText={
                                     isBuyPending
                                         ? "Confirming Transaction..."
                                         : processingBuy
                                             ? "Processing Purchase..."
-                                            : "Preparing Transaction..."
+                                            : isGasEstimationLoading
+                                                ? "Calculating Fee..."
+                                                : "Preparing Transaction..."
                                 }
-                                isDisabled={!walletAddress || processingBuy || isBuyPending}
+                                isDisabled={!walletAddress || processingBuy || isBuyPending || isGasEstimationLoading}
                             >
                                 {walletAddress ? "Confirm Payment" : "Connect Wallet to Continue"}
                             </Button>
