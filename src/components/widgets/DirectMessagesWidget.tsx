@@ -183,7 +183,7 @@ export const DirectMessagesWidget: React.FC = () => {
 
   useEffect(() => {
     if (!isChatOpen && chatUser) {
-      const lastChatUser = JSON.parse(localStorage.getItem(LOCAL_STORAGE_LAST_CHAT_USER) || "")
+      const lastChatUser = JSON.parse(localStorage.getItem(LOCAL_STORAGE_LAST_CHAT_USER) || "{}")
 
       if (!selectedUser) {
         setSelectedUser(lastChatUser)
