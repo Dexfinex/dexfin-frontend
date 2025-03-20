@@ -172,20 +172,20 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
             <MenuItem
               bgColor={'blackAlpha.50'}
               _hover={{ bg: 'whiteAlpha.100' }}
-              onClick={() => { setInput('Swap 1 ETH to USDC') }}
+              onClick={() => { setInput('Swap 1 USDC to ETH') }}
             >
               <Box>
-                <Text>Swap 1 ETH to USDC</Text>
+                <Text>Swap 1 USDC to ETH</Text>
                 <Text fontSize="xs" color="gray.500">Execute token swap</Text>
               </Box>
             </MenuItem>
             <MenuItem
               bgColor={'blackAlpha.50'}
               _hover={{ bg: 'whiteAlpha.100' }}
-              onClick={() => { setInput('Bridge 1 USDC from base to ethereum') }}
+              onClick={() => { setInput('Bridge 2 USDC from base to ethereum') }}
             >
               <Box>
-                <Text>Bridge 1 USDC from base to ethereum</Text>
+                <Text>Bridge 2 USDC from base to ethereum</Text>
                 <Text fontSize="xs" color="gray.500">Execute token bridge</Text>
               </Box>
             </MenuItem>
@@ -199,16 +199,7 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
                 <Text fontSize="xs" color="gray.500">Execute token transfer</Text>
               </Box>
             </MenuItem>
-            <MenuItem
-              bgColor={'blackAlpha.50'}
-              _hover={{ bg: 'whiteAlpha.100' }}
-              onClick={() => { setInput('Buy 100$ of BTC') }}
-            >
-              <Box>
-                <Text>Buy 100$ of BTC</Text>
-                <Text fontSize="xs" color="gray.500">Purchase Bitcoin</Text>
-              </Box>
-            </MenuItem>
+            
           </MenuList>
         </Menu>
 
@@ -315,32 +306,7 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
 
             {showStakingActions && (
               <>
-                <MenuItem
-                  rounded="md"
-                  px={4}
-                  py={2}
-                  bgColor={'blackAlpha.50'}
-                  _hover={{ bg: 'whiteAlpha.100' }}
-                  onClick={() => { setInput('Stake 0.1 ETH on Lido') }}
-                >
-                  <Box>
-                    <Text >Stake 0.1 ETH on Lido</Text>
-                    <Text fontSize="xs" color="gray.500">Earn staking rewards</Text>
-                  </Box>
-                </MenuItem>
-                <MenuItem
-                  rounded="md"
-                  px={4}
-                  py={2}
-                  bgColor={'blackAlpha.50'}
-                  _hover={{ bg: 'whiteAlpha.100' }}
-                  onClick={() => { setInput('Unstake 0.1 ETH from Lido') }}
-                >
-                  <Box>
-                    <Text >Unstake 0.1 ETH from Lido</Text>
-                    <Text fontSize="xs" color="gray.500">Withdraw staked tokens</Text>
-                  </Box>
-                </MenuItem>
+                
                 <MenuItem
                   rounded="md"
                   px={4}
@@ -559,20 +525,20 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
                   <MenuItem
                     bgColor={'blackAlpha.50'}
                     _hover={{ bg: 'whiteAlpha.100' }}
-                    onClick={() => { setInput('Swap 1 ETH to USDC'); onDrawerClose(); }}
+                    onClick={() => { setInput('Swap 1 USDC to ETH'); onDrawerClose(); }}
                   >
                     <Box>
-                      <Text>Swap 1 ETH to USDC</Text>
+                      <Text>Swap 1 USDC to ETH</Text>
                       <Text fontSize="xs" color="gray.500">Execute token swap</Text>
                     </Box>
                   </MenuItem>
                   <MenuItem
                     bgColor={'blackAlpha.50'}
                     _hover={{ bg: 'whiteAlpha.100' }}
-                    onClick={() => { setInput('Bridge 1 USDC from base to ethereum'); onDrawerClose(); }}
+                    onClick={() => { setInput('Bridge 2 USDC from base to ethereum'); onDrawerClose(); }}
                   >
                     <Box>
-                      <Text>Bridge 1 USDC from base to ethereum</Text>
+                      <Text>Bridge 2 USDC from base to ethereum</Text>
                       <Text fontSize="xs" color="gray.500">Execute token bridge</Text>
                     </Box>
                   </MenuItem>
@@ -586,16 +552,7 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
                       <Text fontSize="xs" color="gray.500">Execute token transfer</Text>
                     </Box>
                   </MenuItem>
-                  <MenuItem
-                    bgColor={'blackAlpha.50'}
-                    _hover={{ bg: 'whiteAlpha.100' }}
-                    onClick={() => { setInput('Buy 100$ of BTC'); onDrawerClose(); }}
-                  >
-                    <Box>
-                      <Text>Buy 100$ of BTC</Text>
-                      <Text fontSize="xs" color="gray.500">Purchase Bitcoin</Text>
-                    </Box>
-                  </MenuItem>
+                 
                 </MenuList>
               </Menu>
 
@@ -702,32 +659,7 @@ export function TopBar({ isFullscreen, setIsFullscreen, onClose, setInput }: Top
 
                   {showStakingActions && (
                     <>
-                      <MenuItem
-                        rounded="md"
-                        px={4}
-                        py={2}
-                        bgColor={'blackAlpha.50'}
-                        _hover={{ bg: 'whiteAlpha.100' }}
-                        onClick={() => { setInput('Stake 0.1 ETH on Lido'); onDrawerClose(); }}
-                      >
-                        <Box>
-                          <Text >Stake 0.1 ETH on Lido</Text>
-                          <Text fontSize="xs" color="gray.500">Earn staking rewards</Text>
-                        </Box>
-                      </MenuItem>
-                      <MenuItem
-                        rounded="md"
-                        px={4}
-                        py={2}
-                        bgColor={'blackAlpha.50'}
-                        _hover={{ bg: 'whiteAlpha.100' }}
-                        onClick={() => { setInput('Unstake 0.1 ETH from Lido'); onDrawerClose(); }}
-                      >
-                        <Box>
-                          <Text >Unstake 0.1 ETH from Lido</Text>
-                          <Text fontSize="xs" color="gray.500">Withdraw staked tokens</Text>
-                        </Box>
-                      </MenuItem>
+                      
                       <MenuItem
                         rounded="md"
                         px={4}
