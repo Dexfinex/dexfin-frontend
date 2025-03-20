@@ -76,53 +76,59 @@ export const ReferralSettings: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-h-screen overflow-y-auto px-2 py-4 md:px-4 md:py-6 space-y-4">
       {/* Referral Link */}
-      <div className="bg-white/5 rounded-xl p-6">
-        <h3 className="text-lg font-medium mb-4">Your Referral Link</h3>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 font-mono text-sm">
+      <div className="bg-white/5 rounded-xl p-4">
+        <h3 className="text-lg font-medium mb-3">Your Referral Link</h3>
+        <div className="flex flex-col sm:flex-row items-center gap-2">
+          <div className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 font-mono text-xs md:text-sm truncate">
             {referralLink}
           </div>
-          <button
-            onClick={handleCopy}
-            className="p-3 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            {copied ? (
-              <CheckCircle className="w-5 h-5 text-green-400" />
-            ) : (
-              <Copy className="w-5 h-5" />
-            )}
-          </button>
-          <button className="p-3 hover:bg-white/10 rounded-lg transition-colors">
-            <Share2 className="w-5 h-5" />
-          </button>
+          <div className="flex mt-2 sm:mt-0">
+            <button
+              onClick={handleCopy}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              aria-label="Copy referral link"
+            >
+              {copied ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <Copy className="w-5 h-5" />
+              )}
+            </button>
+            <button 
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              aria-label="Share referral link"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60 mb-1">Total Referrals</div>
-          <div className="text-2xl font-bold">{mockReferralStats.totalReferrals}</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+        <div className="bg-white/5 rounded-xl p-3 md:p-4">
+          <div className="text-xs md:text-sm text-white/60 mb-1">Total Referrals</div>
+          <div className="text-xl md:text-2xl font-bold">{mockReferralStats.totalReferrals}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60 mb-1">Active Referrals</div>
-          <div className="text-2xl font-bold text-green-400">
+        <div className="bg-white/5 rounded-xl p-3 md:p-4">
+          <div className="text-xs md:text-sm text-white/60 mb-1">Active Referrals</div>
+          <div className="text-xl md:text-2xl font-bold text-green-400">
             {mockReferralStats.activeReferrals}
           </div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60 mb-1">Pending Referrals</div>
-          <div className="text-2xl font-bold text-yellow-400">
+        <div className="bg-white/5 rounded-xl p-3 md:p-4">
+          <div className="text-xs md:text-sm text-white/60 mb-1">Pending Referrals</div>
+          <div className="text-xl md:text-2xl font-bold text-yellow-400">
             {mockReferralStats.pendingReferrals}
           </div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <div className="text-sm text-white/60 mb-1">Total Tokens Earned</div>
-          <div className="flex items-center gap-2">
-            <Coins className="w-6 h-6 text-blue-400" />
-            <span className="text-2xl font-bold text-blue-400">
+        <div className="bg-white/5 rounded-xl p-3 md:p-4">
+          <div className="text-xs md:text-sm text-white/60 mb-1">Total Tokens Earned</div>
+          <div className="flex items-center gap-1">
+            <Coins className="w-5 h-5 text-blue-400" />
+            <span className="text-xl md:text-2xl font-bold text-blue-400">
               {mockReferralStats.totalTokens}
             </span>
           </div>
@@ -130,35 +136,35 @@ export const ReferralSettings: React.FC = () => {
       </div>
 
       {/* Rewards Info */}
-      <div className="bg-white/5 rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Gift className="w-5 h-5 text-blue-400" />
-          <h3 className="text-lg font-medium">Rewards Structure</h3>
+      <div className="bg-white/5 rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Gift className="w-4 h-4 md:w-5 md:h-5 text-blue-400" />
+          <h3 className="text-base md:text-lg font-medium">Rewards Structure</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 bg-white/5 rounded-lg">
-            <div className="text-sm text-white/60 mb-1">You Earn</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="p-3 bg-white/5 rounded-lg">
+            <div className="text-xs md:text-sm text-white/60 mb-1">You Earn</div>
             <div className="flex items-center gap-2">
-              <Coins className="w-5 h-5 text-green-400" />
-              <span className="text-2xl font-bold text-green-400">
+              <Coins className="w-4 h-4 md:w-5 md:h-5 text-green-400" />
+              <span className="text-xl md:text-2xl font-bold text-green-400">
                 {mockReferralStats.rewardsRate.referrer}
               </span>
-              <span className="text-sm text-white/60">tokens</span>
+              <span className="text-xs md:text-sm text-white/60">tokens</span>
             </div>
-            <div className="text-sm text-white/60 mt-1">
+            <div className="text-xs md:text-sm text-white/60 mt-1">
               per successful referral
             </div>
           </div>
-          <div className="p-4 bg-white/5 rounded-lg">
-            <div className="text-sm text-white/60 mb-1">They Earn</div>
+          <div className="p-3 bg-white/5 rounded-lg">
+            <div className="text-xs md:text-sm text-white/60 mb-1">They Earn</div>
             <div className="flex items-center gap-2">
-              <Coins className="w-5 h-5 text-blue-400" />
-              <span className="text-2xl font-bold text-blue-400">
+              <Coins className="w-4 h-4 md:w-5 md:h-5 text-blue-400" />
+              <span className="text-xl md:text-2xl font-bold text-blue-400">
                 {mockReferralStats.rewardsRate.referee}
               </span>
-              <span className="text-sm text-white/60">tokens</span>
+              <span className="text-xs md:text-sm text-white/60">tokens</span>
             </div>
-            <div className="text-sm text-white/60 mt-1">
+            <div className="text-xs md:text-sm text-white/60 mt-1">
               welcome bonus
             </div>
           </div>
@@ -166,39 +172,40 @@ export const ReferralSettings: React.FC = () => {
       </div>
 
       {/* Recent Referrals */}
-      <div className="bg-white/5 rounded-xl p-6">
-        <h3 className="text-lg font-medium mb-4">Recent Referrals</h3>
+      <div className="bg-white/5 rounded-xl p-4">
+        <h3 className="text-base md:text-lg font-medium mb-3">Recent Referrals</h3>
         <div className="space-y-3">
           {mockReferralStats.recentReferrals.map((referral) => (
             <div
               key={referral.id}
-              className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-white/5 rounded-lg"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 mb-2 sm:mb-0">
                 <img
                   src={referral.avatar}
                   alt={referral.username}
-                  className="w-10 h-10 rounded-full"
+                  className="w-8 h-8 md:w-10 md:h-10 rounded-full"
                 />
                 <div>
-                  <div className="font-medium">{referral.username}</div>
-                  <div className="text-sm text-white/60">
+                  <div className="font-medium text-sm md:text-base">{referral.username}</div>
+                  <div className="text-xs text-white/60">
                     Joined {new Date(referral.joinedDate).toLocaleDateString()}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-4 h-4 text-blue-400" />
-                    <span className="font-medium">{referral.tokensEarned}</span>
+              <div className="flex items-center justify-between sm:justify-end sm:gap-4">
+                <div className="text-left sm:text-right">
+                  <div className="flex items-center gap-1">
+                    <Coins className="w-3 h-3 md:w-4 md:h-4 text-blue-400" />
+                    <span className="font-medium text-sm">{referral.tokensEarned}</span>
                   </div>
-                  <div className="text-sm text-white/60">Tokens Earned</div>
+                  <div className="text-xs text-white/60">Tokens Earned</div>
                 </div>
-                <div className={`px-2 py-1 rounded-full text-xs ${referral.status === 'active'
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-yellow-500/20 text-yellow-400'
-                  }`}>
+                <div className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                  referral.status === 'active'
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-yellow-500/20 text-yellow-400'
+                }`}>
                   {referral.status.toUpperCase()}
                 </div>
               </div>
@@ -207,12 +214,12 @@ export const ReferralSettings: React.FC = () => {
         </div>
 
         {/* Terms */}
-        <div className="mt-6 p-4 bg-white/5 rounded-lg">
+        <div className="mt-4 p-3 bg-white/5 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
-            <ExternalLink className="w-4 h-4 text-white/60" />
-            <span className="text-sm font-medium">Program Terms</span>
+            <ExternalLink className="w-3 h-3 md:w-4 md:h-4 text-white/60" />
+            <span className="text-xs md:text-sm font-medium">Program Terms</span>
           </div>
-          <ul className="space-y-2 text-sm text-white/60">
+          <ul className="space-y-1 text-xs md:text-sm text-white/60">
             <li>• Referral rewards are paid in platform tokens</li>
             <li>• Minimum trading volume of $100 required for activation</li>
             <li>• Rewards are distributed on a weekly basis</li>

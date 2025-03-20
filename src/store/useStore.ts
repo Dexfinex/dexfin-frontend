@@ -383,12 +383,12 @@ const useStore = create<StoreState>((set, get) => ({
       set((state) => ({
         menuItems: state.menuItems.map((item) => ({
           ...item,
-          isStarred: ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat'].includes(item.id)
+          isStarred: ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat', 'rewards'].includes(item.id)
         }))
       }));
 
       // Save default starred items
-      const defaultItems = ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat'];
+      const defaultItems = ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat', 'rewards'];
       localStorage.setItem('starredMenuItems', JSON.stringify(defaultItems));
     }
   },
