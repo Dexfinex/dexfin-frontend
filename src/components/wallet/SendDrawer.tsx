@@ -24,6 +24,7 @@ import useTokenBalanceStore, { TokenBalance } from '../../store/useTokenBalanceS
 import makeBlockie from 'ethereum-blockies-base64';
 import { SOLANA_CHAIN_ID } from "../../constants/solana.constants.ts";
 import { LOCAL_STORAGE_RECENT_ADDRESSES } from '../../constants/index.ts';
+import { getGasEstimation } from '../../utils/chains.util.tsx';
 
 interface SendDrawerProps {
     setPage: (type: PageType) => void;
@@ -193,10 +194,17 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     }
 
     const onSubmit = async () => {
-        setIsConfirming(true);
+        setIsConfirming(true)
         if (selectedAsset.network?.name === "Solana") {
             if (Number(amount) > 0) {
-                const signature = await transferSolToken(address, selectedAsset.address, Number(amount), selectedAsset.decimals)
+                let realAmount: number = Number(amount)
+
+                if (amount == selectedAsset.balance && selectedAsset.tokenId === "solana") {
+                    const gasFee = await getGasEstimation(selectedAsset.address, address, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
+                    realAmount -= gasFee
+                }
+console.log(amount, realAmount)
+                const signature = await transferSolToken(address, selectedAsset.address, realAmount, selectedAsset.decimals)
                 if (signature) {
                     updateBalance()
                     setHash(signature)
@@ -211,6 +219,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                         duration: 4000
                     })
                 }
+
                 setIsConfirming(false)
             }
         } else {
@@ -220,12 +229,18 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                 });
             }
             const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
+            let realAmount: number = Number(amount)
+
+            if (amount == selectedAsset.balance && nativeTokenAddress.toLowerCase() == selectedAsset.address) {
+                const gasFee = await getGasEstimation(selectedAsset.address, _address, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
+                realAmount -= gasFee
+            }
 
             sendTransactionMutate(
                 {
                     tokenAddress: selectedAsset.address,
                     sendAddress: _address,
-                    sendAmount: Number(amount),
+                    sendAmount: Number(realAmount),
                     signer,
                     gasLimit: gasData.gasLimit,
                     gasPrice: gasData.gasPrice,
@@ -335,8 +350,8 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                             <div className="flex-1 text-left">
                                 <div className="font-medium">
                                     {selectedAsset.name}
-                                    {!compareWalletAddresses(selectedAsset.address, mapChainId2NativeAddress[Number(selectedAsset.chain)]) &&
-                                        <span className='ml-1 text-sm font-light'>({shrinkAddress(selectedAsset.address || "", 4)})</span>}
+                                    {/* {!compareWalletAddresses(selectedAsset.address, mapChainId2NativeAddress[Number(selectedAsset.chain)]) &&
+                                        <span className='ml-1 text-sm font-light'>({shrinkAddress(selectedAsset.address || "", 4)})</span>} */}
                                 </div>
                                 <div className="text-sm text-white/60">
                                     Balance: {`${formatNumberByFrac(selectedAsset.balance, 5)} ${selectedAsset.symbol}`}
