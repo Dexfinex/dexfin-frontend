@@ -1,10 +1,11 @@
-import {useContext, useEffect} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {Modal, ModalContent, ModalOverlay,} from '@chakra-ui/react';
 import Loading from "./auth/Loading";
 import LoginMethods from "./auth/LoginMethods";
 // import AccountSelection from "./auth/AccountSelection";
 import CreateAccount from "./auth/CreateAccount";
 import {Web3AuthContext} from "../providers/Web3AuthContext";
+import { getReferralCodeFromStorage } from './ReferralHandler';
 
 interface SigninModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface SigninModalProps {
 }
 
 const SigninModal = ({ isOpen, onClose, goToSignUp }: SigninModalProps) => {
+  const [hasReferral, setHasReferral] = useState(false);
 
   const {
     authMethod,
@@ -53,6 +55,10 @@ const SigninModal = ({ isOpen, onClose, goToSignUp }: SigninModalProps) => {
     }
   }, [authMethod, currentAccount, initSession]);
 
+  useEffect(() => {
+    const referralCode = getReferralCodeFromStorage();
+    setHasReferral(!!referralCode);
+  }, []);
 
   const subComponent = () => {
     if (authLoading) {
@@ -109,6 +115,7 @@ const SigninModal = ({ isOpen, onClose, goToSignUp }: SigninModalProps) => {
             authWithWebAuthn={authWithWebAuthn}
             authWithStytch={authWithStytch}
             error={error}
+            hasReferral={hasReferral}
         />
     );
   }

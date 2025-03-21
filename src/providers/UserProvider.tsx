@@ -5,7 +5,7 @@ import { authService } from '../services/auth.service';
 import { Web3AuthContext } from './Web3AuthContext';
 import { useStore } from "../store/useStore.ts";
 import { setAuthToken } from '../services/api.service';
-import {WalletTypeEnum} from "../types/wallet.type.ts";
+import { WalletTypeEnum } from "../types/wallet.type.ts";
 
 interface UserContextType {
   userData: {
@@ -31,22 +31,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userData, setUserData] = useState<UserContextType['userData']>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  
+  const [isNewRegistration, setIsNewRegistration] = useState(false);
+
   const { address: wagmiAddress, isConnected: isWagmiWalletConnected } = useAccount();
-  const { 
+  const {
     solanaWalletInfo,
     currentAccount,
     address: kernelAddress,
     walletType,
     isConnected,
   } = useContext(Web3AuthContext);
+  
+  const setIsUsernameModalOpen = useStore(state => state.setIsUsernameModalOpen);
 
   const handleWalletAuth = async (walletType: WalletTypeEnum, evmAddress?: string, solAddress?: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      // Try to login first
+
       try {
         const loginResponse = await authService.login(evmAddress || '');
         if (loginResponse?.accessToken) {
@@ -56,17 +58,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             userId: loginResponse.userId,
             walletType
           });
+          setIsNewRegistration(false);
           return;
         }
       } catch (error) {
         console.log('Login failed, attempting registration...');
       }
 
-      // If login failed, attempt to register
       const registerResponse = await authService.register(
         walletType,
         evmAddress,
-        solAddress
+        solAddress,
       );
 
       if (registerResponse?.accessToken) {
@@ -77,8 +79,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           walletType
         });
         
-        // Open username modal for new users
-        useStore.getState().setIsUsernameModalOpen(true);
+        setIsNewRegistration(true);
       }
     } catch (error) {
       console.error("Error in wallet authentication:", error);
@@ -88,28 +89,33 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  useEffect(() => {
+    if (isNewRegistration && userData?.accessToken) {
+      setIsUsernameModalOpen(true);
+      setIsNewRegistration(false);
+    }
+  }, [isNewRegistration, userData, setIsUsernameModalOpen]);
+
   const initializeAllVariables = () => {
     setUserData(null);
     setIsLoading(false);
     setError(null);
-    setAuthToken(null); // Clear auth tokens from all API instances
+    setAuthToken(null);
+    setIsNewRegistration(false);
   };
 
-  // Handle Wagmi wallet connection
   useEffect(() => {
     if (isWagmiWalletConnected && wagmiAddress) {
       handleWalletAuth(walletType, wagmiAddress);
     }
   }, [isWagmiWalletConnected, wagmiAddress, walletType]);
 
-  // Handle Kernel Account and Solana wallet connection
   useEffect(() => {
     if (currentAccount && kernelAddress && solanaWalletInfo?.publicKey) {
-      handleWalletAuth(walletType, kernelAddress, solanaWalletInfo.publicKey );
+      handleWalletAuth(walletType, kernelAddress, solanaWalletInfo.publicKey);
     }
   }, [kernelAddress, currentAccount, solanaWalletInfo?.publicKey, walletType]);
 
-  // Reset user state when Web3Auth disconnects
   useEffect(() => {
     if (!isConnected) {
       initializeAllVariables();
@@ -120,7 +126,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     userData,
     isLoading,
     error,
-    solanaWalletInfo, // Pass through solanaWalletInfo from Web3AuthContext
+    solanaWalletInfo,
   };
 
   return (
