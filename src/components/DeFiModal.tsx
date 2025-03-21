@@ -14,7 +14,7 @@ import { PositionList } from './defi/PositionList.tsx';
 import ProtocolStatistic from './defi/ProtocolStatistic.tsx';
 
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
-import { STAKING_TOKENS, BORROWING_LIST, LENDING_LIST } from '../constants/mock/defi.ts';
+import { STAKING_TOKENS, BORROWING_LIST } from '../constants/mock/defi.ts';
 import { OfferingList } from './defi/OfferlingList.tsx';
 import GlobalMetric from './defi/GlobalMetric.tsx';
 import RedeemModal from './defi/RedeemModal.tsx';
@@ -136,61 +136,6 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               setSelectedTab('overview');
             }
 
-          }
-          setConfirming("");
-        },
-        onError: async (e) => {
-          console.error(e)
-          setConfirming("");
-        }
-      })
-    }
-  }
-
-  const lendHandler = async () => {
-    if (signer && Number(tokenAmount) > 0) {
-      setConfirming("Approving...");
-      const lendTokenInfo = LENDING_LIST.find((token) => {
-        return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
-      });
-      const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
-      const tokenOutInfo = lendTokenInfo?.tokenOut ? lendTokenInfo?.tokenOut : null;
-
-      enSoActionMutation({
-        chainId: Number(chainId),
-        fromAddress: address,
-        routingStrategy: "router",
-        action: "deposit",
-        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
-        tokenIn: [tokenInInfo?.contract_address || ""],
-        tokenOut: [tokenOutInfo?.contract_address || ""],
-        amountIn: [Number(tokenAmount)],
-        signer: signer,
-        receiver: address,
-        gasPrice: gasData.gasPrice,
-        gasLimit: gasData.gasLimit
-      }, {
-        onSuccess: async (txData) => {
-          if (signer) {
-            setConfirming("Executing...");
-            // execute defi action
-            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
-              setConfirming("")
-              return null;
-            });
-            if (transactionResponse) {
-              const receipt = await transactionResponse.wait();
-              setHash(receipt.transactionHash);
-              setTxModalOpen(true);
-              await refetchDefiPositionByWallet();
-              await refetchDefiProtocolByWallet();
-
-              setTokenAmount("");
-              setToken2Amount("");
-              setShowPreview(false);
-              setModalState({ type: null });
-              setSelectedTab('overview');
-            }
           }
           setConfirming("");
         },
@@ -570,13 +515,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       {modalState?.type === 'lend' && modalState.position && (
         <LendModal
           setModalState={setModalState}
-          showPreview={showPreview}
           modalState={modalState}
-          setShowPreview={setShowPreview}
-          tokenAmount={tokenAmount}
-          confirming={confirming}
-          lendHandler={lendHandler}
-          setTokenAmount={setTokenAmount}
+          refetchDefiPositionByWallet={refetchDefiPositionByWallet}
+          refetchDefiProtocolByWallet={refetchDefiProtocolByWallet}
+          setSelectedTab={setSelectedTab}
         />
       )}
 
