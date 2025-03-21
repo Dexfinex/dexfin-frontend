@@ -96,7 +96,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
 
   const performanceData = useMemo(() => {
     const labelData = (portfolioData || []).map((item) => item.time);
-    const priceData = (portfolioData || []).map((item) => item.price);
+    const priceData = (portfolioData || []).map((item) => formatNumberByFrac(item.price));
     return {
       labels: labelData,
       datasets: [
@@ -167,6 +167,40 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
         },
         ticks: {
           callback: (value: number) => "$" + value.toLocaleString(),
+          font: {
+            size: 11,
+          },
+        },
+      },
+    },
+  }
+
+  const chartOptionsDistribute = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          maxRotation: 0,
+          autoSkipPadding: 15,
+          font: {
+            size: 11,
+          },
+        },
+      },
+      y: {
+        grid: {
+        },
+        ticks: {
+          callback: (value: number) => value.toLocaleString() + "%",
           font: {
             size: 11,
           },
@@ -262,7 +296,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                     isBalanceLoading || isLoadingPortfolio ?
                       <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'2rem'}></Skeleton> :
                       <div className="text-xl sm:text-2xl font-bold">
-                        {pnlUsdByDate > 0 ? "$" : "-$"}{formatNumberByFrac(Math.abs(pnlUsdByDate))}
+                        {pnlUsdByDate >= 0 ? "$" : "-$"}{formatNumberByFrac(Math.abs(pnlUsdByDate))}
                       </div>
                   }
                   {
@@ -364,7 +398,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                 <div className="h-[250px] sm:h-[300px]">
                   {
                     isLoadingPortfolio ?
-                      <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'300px'}></Skeleton> :
+                      <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'100%'}></Skeleton> :
                       <Line data={performanceData} options={chartOptions as any} />
                   }
                 </div>
@@ -376,8 +410,8 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                   <h3 className="font-medium">Asset Distribution</h3>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-12">
-                  <div className="relative w-[200px] h-[200px] sm:w-[250px] sm:h-[250px]">
-                    <Line data={distributionData} options={chartOptions as any} />
+                  <div className="relative w-full h-[200px] sm:w-[50%] sm:h-[250px]">
+                    <Line data={distributionData} options={chartOptionsDistribute as any} />
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       {
                         isBalanceLoading ?

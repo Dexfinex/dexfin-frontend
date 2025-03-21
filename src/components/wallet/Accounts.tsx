@@ -4,6 +4,8 @@ import { CheckCircle, Copy } from "lucide-react";
 
 import { useStore } from "../../store/useStore";
 import { shrinkAddress } from "../../utils/common.util";
+import {mapChainId2Network} from "../../config/networks.ts";
+import {SOLANA_CHAIN_ID} from "../../constants/solana.constants.ts";
 
 const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAddress, solAddress }) => {
     const [evmCopied, setEvmCopied] = useState(false);
@@ -40,7 +42,7 @@ const Accounts: React.FC<{ evmAddress: string, solAddress: string }> = ({ evmAdd
                 </div>
                 {solAddress && <div className="flex items-center justify-between p-1 text-white/90 hover:text-white/70 cursor-pointer" onClick={handleSolCopy}>
                     <span className="flex items-center gap-1">
-                        <img src="https://assets.coingecko.com/coins/images/4128/small/solana.png" className="w-4 h-4 mr-1" />
+                        <img src={mapChainId2Network[SOLANA_CHAIN_ID].icon} className="w-4 h-4 mr-1" />
                         <span>Solana</span>
                     </span>
                     {solCopied ? <CheckCircle className="w-3 h-3 text-green-500" /> : <span>{shrinkAddress(solAddress)}</span>}

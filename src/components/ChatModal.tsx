@@ -38,7 +38,8 @@ import { ChatModeType, ChatType, IChat, IGroup, IUser, ProfileType, ReactionType
 import { WalletTypeEnum } from '../types/wallet.type';
 import { ChatMessages } from './ChatMessages';
 import { ChatHelpModal } from './ChatHelpModal';
-import { LOCAL_STORAGE_PUSH_KEY } from '../constants';
+import { LOCAL_STORAGE_PUSH_KEY, LOCAL_STORAGE_LAST_CHAT_USER } from '../constants';
+import useLocalStorage from '../hooks/useLocalStorage';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -59,7 +60,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [isSendModalActive, setIsSendModalActive] = useState(false);
   const [isHelpModalActive, setIsHelpModalActive] = useState(false);
   const { signer, address, walletType } = useContext(Web3AuthContext);
-  const { setChatUser, chatUser, receivedMessage, setSelectedUserInChatModal, theme } = useStore();
+  const { setChatUser, chatUser, receivedMessage, theme } = useStore();
+  const [_, setLastChatUser] = useLocalStorage<IUser | null>(LOCAL_STORAGE_LAST_CHAT_USER, {} as IUser);
   const toast = useToast()
 
   const [loading, setLoading] = useState(false);
@@ -791,7 +793,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setLoadingChatHistory(true)
     setChatHistory([])
     setSelectedUser(user)
-    setSelectedUserInChatModal(user)
+    setLastChatUser(user)
     console.log('user = ', user)
 
     try {

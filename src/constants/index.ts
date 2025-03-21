@@ -10,6 +10,8 @@ export const LOCAL_STORAGE_AUTH_REDIRECT_TYPE = 'REDIRECT-TYPE'
 export const LOCAL_STORAGE_ADDED_TOKENS = 'LOCAL_STORAGE_ADDED_TOKENS'
 export const LOCAL_STORAGE_BRIDGE_RECENT_WALLETS = 'LOCAL_STORAGE_BRIDGE_RECENT_WALLETS'
 export const LOCAL_STORAGE_PUSH_KEY = 'PgpPK'
+export const LOCAL_STORAGE_LAST_CHAT_USER = 'LOCAL_STORAGE_LAST_CHAT_USER'
+export const LOCAL_STORAGE_RECENT_ADDRESSES = 'recentSendAddresses'
 
 export const mapRpcUrls: Record<number, string> = {
     [mainnet.id]: 'https://mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',
@@ -91,3 +93,5 @@ export const NULL_ADDRESS = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
+
+export const SOL_TRANSFER_GAS_FEE = 0.000005;

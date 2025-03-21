@@ -111,7 +111,7 @@ export const ReferralSettings: React.FC = () => {
   const tokensReceivedFromReferrer = stats.wasReferred?.tokensReceived || 0;
   
   return (
-    <div className="space-y-6">
+    <div className="max-h-screen overflow-y-auto px-2 py-4 md:px-4 md:py-6 space-y-4">
       {/* Referral Link */}
       <div className="bg-white/5 rounded-xl p-6">
         <h3 className="text-lg font-medium mb-4">Your Referral Link</h3>
@@ -201,22 +201,22 @@ export const ReferralSettings: React.FC = () => {
       </div>
 
       {/* Rewards Info */}
-      <div className="bg-white/5 rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Gift className="w-5 h-5 text-blue-400" />
-          <h3 className="text-lg font-medium">Rewards Structure</h3>
+      <div className="bg-white/5 rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Gift className="w-4 h-4 md:w-5 md:h-5 text-blue-400" />
+          <h3 className="text-base md:text-lg font-medium">Rewards Structure</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 bg-white/5 rounded-lg">
-            <div className="text-sm text-white/60 mb-1">You Earn</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="p-3 bg-white/5 rounded-lg">
+            <div className="text-xs md:text-sm text-white/60 mb-1">You Earn</div>
             <div className="flex items-center gap-2">
               <Coins className="w-5 h-5 text-green-400" />
               <span className="text-2xl font-bold text-green-400">
                 {REFERRER_REWARD}
               </span>
-              <span className="text-sm text-white/60">tokens</span>
+              <span className="text-xs md:text-sm text-white/60">tokens</span>
             </div>
-            <div className="text-sm text-white/60 mt-1">
+            <div className="text-xs md:text-sm text-white/60 mt-1">
               per successful referral
             </div>
             <div className="mt-2 pt-2 border-t border-white/10">
@@ -226,16 +226,16 @@ export const ReferralSettings: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="p-4 bg-white/5 rounded-lg">
-            <div className="text-sm text-white/60 mb-1">They Earn</div>
+          <div className="p-3 bg-white/5 rounded-lg">
+            <div className="text-xs md:text-sm text-white/60 mb-1">They Earn</div>
             <div className="flex items-center gap-2">
               <Coins className="w-5 h-5 text-blue-400" />
               <span className="text-2xl font-bold text-blue-400">
                 {REFEREE_REWARD}
               </span>
-              <span className="text-sm text-white/60">tokens</span>
+              <span className="text-xs md:text-sm text-white/60">tokens</span>
             </div>
-            <div className="text-sm text-white/60 mt-1">
+            <div className="text-xs md:text-sm text-white/60 mt-1">
               welcome bonus
             </div>
             {stats.wasReferred ? (
@@ -332,12 +332,12 @@ export const ReferralSettings: React.FC = () => {
         )}
 
         {/* Terms */}
-        <div className="mt-6 p-4 bg-white/5 rounded-lg">
+        <div className="mt-4 p-3 bg-white/5 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
-            <ExternalLink className="w-4 h-4 text-white/60" />
-            <span className="text-sm font-medium">Program Terms</span>
+            <ExternalLink className="w-3 h-3 md:w-4 md:h-4 text-white/60" />
+            <span className="text-xs md:text-sm font-medium">Program Terms</span>
           </div>
-          <ul className="space-y-2 text-sm text-white/60">
+          <ul className="space-y-1 text-xs md:text-sm text-white/60">
             <li>• Referral rewards are paid in platform tokens</li>
             <li>• Minimum deposit amount of $50 required for activation</li>
             <li>• Rewards are distributed on a weekly basis</li>

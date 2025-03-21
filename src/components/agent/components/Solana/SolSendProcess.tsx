@@ -9,7 +9,7 @@ import { useSolanaAgentActionMutation } from '../../../../hooks/useSolanaAgentAc
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
-
+import { TokenChainIcon } from '../../../swap/components/TokenIcon.tsx';
 interface SendProcessProps {
   onClose: () => void;
   fromToken: TokenType;
@@ -107,11 +107,8 @@ export const SolSendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmoun
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3 mb-4 md:mb-0">
-              <img
-                src={fromToken.logoURI}
-                alt="USDC"
-                className="w-10 h-10"
-              />
+              <TokenChainIcon src={fromToken?.logoURI} alt={fromToken?.name}
+                size={"lg"} chainId={Number(fromToken?.chainId)} />
               <div>
                 <div className="text-sm text-white/60">Amount</div>
                 <div className="text-xl font-medium">{fromToken ? formatNumberByFrac(convertCryptoAmount(fromAmount, 0)) : ''} {fromToken?.symbol}</div>

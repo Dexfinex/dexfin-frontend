@@ -18,6 +18,7 @@ interface quoteParam {
 }
 
 const defaultQuoteResponse = {
+    solverGasCosts: 0,
     inputUsdAmount: 0,
     outputUsdAmount: 0,
     outputAmount: '0',
@@ -69,6 +70,10 @@ const useDebridgeQuote = ({
 
             if (data.order)
                 quoteResponse.estimatedTime = data.order.approximateFulfillmentDelay
+
+            if (data.prependedOperatingExpenseCost) {
+                quoteResponse.solverGasCosts = Number(ethers.utils.formatUnits(data.prependedOperatingExpenseCost, sellToken!.decimals))
+            }
 
             quoteResponse.orderId = data.orderId ?? ''
             quoteResponse.feeAmount = mapDebridgeFeeCosts[sellToken!.chainId] ?? 0

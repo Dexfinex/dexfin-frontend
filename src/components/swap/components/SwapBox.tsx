@@ -1,7 +1,13 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { ArrowDownUp, Info } from 'lucide-react';
 import { TokenSelector } from './TokenSelector';
-import { GaslessQuoteResponse, QuoteResponse, SlippageOption, TokenType } from '../../../types/swap.type';
+import {
+    GaslessQuoteResponse,
+    PreviewDetailItemProps,
+    QuoteResponse,
+    SlippageOption,
+    TokenType
+} from '../../../types/swap.type';
 import { formatNumberByFrac } from '../../../utils/common.util';
 import { Button, Flex, Skeleton } from '@chakra-ui/react';
 import { ZEROX_AFFILIATE_FEE } from "../../../constants";
@@ -34,15 +40,6 @@ interface SwapBoxProps {
     slippage: SlippageOption;
 }
 
-interface PreviewDetailItemProps {
-    title: string;
-    info: string;
-    value: string;
-    valueClassName?: string;
-    isFree?: boolean;
-    isLoading: boolean;
-}
-
 const getUSDAmount = (selectedToken: TokenType | undefined, price: number, amount: string): number => {
     if (selectedToken) {
         const numAmount = Number(amount)
@@ -51,7 +48,7 @@ const getUSDAmount = (selectedToken: TokenType | undefined, price: number, amoun
     return 0
 }
 
-const PreviewDetailItem = ({
+export const PreviewDetailItem = ({
     title,
     info,
     value,
@@ -416,7 +413,7 @@ export function SwapBox({
                 <div className="space-y-2.5 mt-4">
                     {/* Exchange Rate */}
                     <div
-                        className="px-4 py-3 text-sm bg-[#1d2837]/20 rounded-lg border border-white/5 hover:border-blue-500/20 transition-all">
+                        className="px-4 py-3 text-sm rounded-lg border border-white/5 hover:border-blue-500/20 transition-all">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-gray-400">Exchange Rate</span>
                             {

@@ -16,6 +16,7 @@ export interface NETWORK {
     name: string;
     icon: string;
     chainId: number;
+    symbol: string;
 }
 export const NETWORKS: NETWORK[] = [
     {
@@ -23,42 +24,49 @@ export const NETWORKS: NETWORK[] = [
         name: 'Ethereum',
         icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/ethereum.svg',
         chainId: 1,
+        symbol: 'ETH',
     },
     {
         id: 'base',
         name: 'Base',
         icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/base.svg',
         chainId: 8453,
+        symbol: 'ETH',
     },
     {
         id: 'polygon',
         name: 'Polygon',
         icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/polygon.svg',
         chainId: 137,
+        symbol: 'POL',
     },
     {
         id: 'bsc',
         name: 'BSC',
         icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/bsc.svg',
         chainId: 56,
+        symbol: 'BNB',
     },
     {
         id: 'avalanche',
         name: 'Avalanche',
         icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/avalanche.svg',
         chainId: 43114,
+        symbol: 'AVAX',
     },
     {
         id: 'optimism',
         name: 'Optimism',
         icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/optimism.svg',
         chainId: 10,
+        symbol: 'ETH',
     },
     {
         id: 'arbitrum',
         name: 'Arbitrum',
         icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/arbitrum.svg',
         chainId: 42161,
+        symbol: 'ETH',
     },
 /*
     {
@@ -73,6 +81,7 @@ export const NETWORKS: NETWORK[] = [
         name: 'Solana',
         icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/solana.svg',
         chainId: SOLANA_CHAIN_ID,
+        symbol: 'SOL',
     },
 ] as const;
 
