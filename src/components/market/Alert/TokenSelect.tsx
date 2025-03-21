@@ -2,21 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Loader2, ChevronDown } from 'lucide-react';
 import { coingeckoService } from '../../../services/coingecko.service';
 
-interface Token {
-    id: string;
-    symbol: string;
-    name: string;
-    platforms?: Record<string, string>;
-    thumb?: string;
-    logoURI?: string;
-}
-
-interface SearchableTokenSelectProps {
-    value: string | null;
-    onChange: (value: string) => void;
-    placeholder?: string;
-    className?: string;
-}
+import { Token } from '../../../types/marketsalert';
+import { SearchableTokenSelectProps } from '../../../types/marketsalert';
 
 export const SearchableTokenSelect: React.FC<SearchableTokenSelectProps> = ({
     value,
@@ -43,6 +30,7 @@ export const SearchableTokenSelect: React.FC<SearchableTokenSelectProps> = ({
                 setError(null);
 
                 const tokenIds = await coingeckoService.getTokenIds();
+                // console.log("tokenIds : ", tokenIds);
                 setAllTokens(tokenIds);
 
                 if (isOpen) {
@@ -190,6 +178,17 @@ export const SearchableTokenSelect: React.FC<SearchableTokenSelectProps> = ({
 
                 {selectedToken ? (
                     <div className="flex-1 flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0">
+                            <img
+                                src={selectedToken.logo}
+                                alt={selectedToken.symbol}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    // Fallback if image fails to load
+                                    (e.target as HTMLImageElement).src = "https://via.placeholder.com/20";
+                                }}
+                            />
+                        </div>
                         <span className="font-medium">{selectedToken.name}</span>
                         <span className="text-white/60 text-sm">({selectedToken.symbol})</span>
                         <button
@@ -258,13 +257,37 @@ export const SearchableTokenSelect: React.FC<SearchableTokenSelectProps> = ({
                     {filteredTokens.length > 0 && (
                         <ul className="py-1">
                             {filteredTokens.map((token) => (
+                                // <li
+                                //     key={token.id}
+                                //     onClick={() => handleTokenSelect(token)}
+                                //     className="flex flex-col px-3 py-2 hover:bg-white/5 cursor-pointer transition-colors"
+                                // >
+                                //     <div className="font-medium">{token.name}</div>
+                                //     <div className="text-xs text-white/60">{token.symbol}</div>
+                                // </li>
+
                                 <li
                                     key={token.id}
                                     onClick={() => handleTokenSelect(token)}
-                                    className="flex flex-col px-3 py-2 hover:bg-white/5 cursor-pointer transition-colors"
+                                    className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 cursor-pointer transition-colors"
                                 >
-                                    <div className="font-medium">{token.name}</div>
-                                    <div className="text-xs text-white/60">{token.symbol}</div>
+                                    {/* Display token logo in dropdown */}
+                                    <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-white/5">
+                                        <img
+                                            // src={getTokenLogo(token)}
+                                            src={token.logo}
+                                            alt={token.symbol}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback if image fails to load
+                                                (e.target as HTMLImageElement).src = "https://via.placeholder.com/24";
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <div className="font-medium">{token.name}</div>
+                                        <div className="text-xs text-white/60">{token.symbol.toUpperCase()}</div>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
