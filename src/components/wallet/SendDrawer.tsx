@@ -203,7 +203,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                     const gasFee = await getGasEstimation(selectedAsset.address, address, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
                     realAmount -= gasFee
                 }
-console.log(amount, realAmount)
+
                 const signature = await transferSolToken(address, selectedAsset.address, realAmount, selectedAsset.decimals)
                 if (signature) {
                     updateBalance()
