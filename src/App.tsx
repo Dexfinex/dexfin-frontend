@@ -22,6 +22,7 @@ import { initStream } from './utils/chat.util.ts';
 import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import UsernameModal from "./components/UsernameModal.tsx";
 import WalletDrawer from './components/WalletDrawer.tsx';
+import ReferralHandler from './components/ReferralHandler.tsx';
 
 export default function App() {
     const { theme } = useStore();
@@ -143,6 +144,7 @@ export default function App() {
 
     return (
         <div className="min-h-screen flex flex-col">
+            <ReferralHandler />
             <Header />
             <Workspace />
 
