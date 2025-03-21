@@ -5,7 +5,7 @@ import { Search, Star, X, ExternalLink, MessageSquareWarning } from 'lucide-reac
 import { TokenType } from "../../../types/swap.type.ts";
 import { mapPopularTokens, NETWORK, NETWORKS } from "../../../config/networks.ts";
 // import {coingeckoService} from "../../../services/coingecko.service.ts";
-import { isValidAddress, shrinkAddress } from "../../../utils/common.util.ts";
+import { isValidAddress, shrinkAddress, formatNumberByFrac } from "../../../utils/common.util.ts";
 // import { savedTokens } from "../../../config/tokens.ts";
 import { Button, HStack, Image, Text } from "@chakra-ui/react";
 import useLocalStorage from "../../../hooks/useLocalStorage.ts";
@@ -163,6 +163,8 @@ export function TokenSelectorModal({
                         chainId: cur.network?.chainId || 0,
                         decimals: cur.decimals,
                         logoURI: cur.logo,
+                        balance: cur.balance,
+                        usdValue: cur.usdValue
                     } as TokenType]
                 }
 
@@ -478,8 +480,12 @@ export function TokenSelectorModal({
                                                         <div className="text-sm text-gray-400">{token.name}</div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="text-right">
+                                                <div className="flex items-center gap-5">
+                                                    <div className='flex flex-col text-sm items-end text-gray-400'>
+                                                        <span>{`${formatNumberByFrac(token.balance, 5)} ${token?.symbol ? token.symbol.toUpperCase() : ""}`}</span>
+                                                        <span>${formatNumberByFrac(token.usdValue, 5)}</span>
+                                                    </div>
+                                                    <div className="text-right w-24">
                                                         <div className="text-sm text-gray-400">{shrinkAddress(token.address)}</div>
                                                     </div>
                                                 </div>
