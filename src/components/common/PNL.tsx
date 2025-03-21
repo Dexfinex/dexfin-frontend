@@ -16,7 +16,7 @@ const PNL: React.FC<PNLProps> = ({ pnlUsd, pnlPercent, label = "" }) => {
                 pnlUsd === 0 ? null : pnlUsd > 0 ? <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             }
             <span className="text-xs sm:text-sm">
-                {pnlUsd > 0 ? "$" : "-$"}{formatNumberByFrac(Math.abs(pnlUsd))} {`(${formatNumberByFrac(pnlPercent || 0)}%)`} {label}
+                {pnlUsd >= 0 ? "$" : "-$"}{formatNumberByFrac(Math.abs(pnlUsd))} {`(${formatNumberByFrac(pnlPercent || 0)}%)`} {label}
             </span>
         </div>
     )

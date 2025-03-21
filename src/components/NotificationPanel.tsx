@@ -480,9 +480,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-              className="flex items-center justify-between h-9 px-3 bg-black/40 hover:bg-black/60 rounded transition-colors"
+              className="flex items-center justify-between h-9 px-3 hover:bg-black/10 rounded transition-colors"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center  gap-2">
                 {selectedType === NOTIFICATION_TYPES.ALL ? (
                   <Filter className="w-4 h-4" />
                 ) : (
@@ -503,7 +503,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                   className="fixed inset-0 z-10"
                   onClick={() => setShowTypeDropdown(false)}
                 />
-                <div className="absolute top-full left-0 mt-0.5 py-0 rounded z-20 border border-white/10 min-w-full overflow-hidden">
+                <div className="absolute top-full left-0 mt-0.5 py-0 rounded z-20 glass border border-white/10 min-w-full overflow-hidden">
                   <button
                     onClick={() => {
                       setSelectedType(NOTIFICATION_TYPES.ALL);

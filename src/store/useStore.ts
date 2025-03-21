@@ -1,6 +1,5 @@
 
 import { create } from 'zustand';
-import { IUser } from '../types/chat.type';
 
 interface MenuItem {
   id: string;
@@ -332,8 +331,6 @@ interface StoreState {
   // Chat Message
   receivedMessage: any;
   setReceivedMessage: (message: any) => void;
-  selectedUserInChatModal: IUser | null;
-  setSelectedUserInChatModal: (user: IUser) => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -386,12 +383,12 @@ const useStore = create<StoreState>((set, get) => ({
       set((state) => ({
         menuItems: state.menuItems.map((item) => ({
           ...item,
-          isStarred: ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat'].includes(item.id)
+          isStarred: ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat', 'rewards'].includes(item.id)
         }))
       }));
 
       // Save default starred items
-      const defaultItems = ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat'];
+      const defaultItems = ['ai', 'swap', 'defi', 'cart', 'games', 'dashboard', 'market-data', 'chat', 'rewards'];
       localStorage.setItem('starredMenuItems', JSON.stringify(defaultItems));
     }
   },
@@ -645,7 +642,7 @@ const useStore = create<StoreState>((set, get) => ({
       {
         id: 'first-deposit',
         name: 'First Deposit',
-        description: 'First wallet deposit. (min. 50 USDC)',
+        description: 'First wallet deposit (min. 50 USDC)',
         image: 'https://api.dicebear.com/7.x/shapes/svg?seed=deposit&backgroundColor=0891b2',
         icon: {
           icon: 'Wallet',
@@ -657,7 +654,7 @@ const useStore = create<StoreState>((set, get) => ({
       {
         id: 'first-swap',
         name: 'First Swap',
-        description: 'Complete your first token swap',
+        description: 'First token swap (min. 50 USDC)',
         image: 'https://api.dicebear.com/7.x/shapes/svg?seed=swap&backgroundColor=8b5cf6',
         icon: {
           icon: 'ArrowLeftRight',
@@ -935,8 +932,6 @@ const useStore = create<StoreState>((set, get) => ({
   setChatUser: (user) => set({ chatUser: user }),
   receivedMessage: null,
   setReceivedMessage: message => set({ receivedMessage: message }),
-  selectedUserInChatModal: null,
-  setSelectedUserInChatModal: user => set({ selectedUserInChatModal: user })
 }));
 
 export { useStore };

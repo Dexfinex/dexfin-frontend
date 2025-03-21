@@ -10,6 +10,8 @@ export const LOCAL_STORAGE_AUTH_REDIRECT_TYPE = 'REDIRECT-TYPE'
 export const LOCAL_STORAGE_ADDED_TOKENS = 'LOCAL_STORAGE_ADDED_TOKENS'
 export const LOCAL_STORAGE_BRIDGE_RECENT_WALLETS = 'LOCAL_STORAGE_BRIDGE_RECENT_WALLETS'
 export const LOCAL_STORAGE_PUSH_KEY = 'PgpPK'
+export const LOCAL_STORAGE_LAST_CHAT_USER = 'LOCAL_STORAGE_LAST_CHAT_USER'
+export const LOCAL_STORAGE_RECENT_ADDRESSES = 'recentSendAddresses'
 
 export const mapRpcUrls: Record<number, string> = {
     [mainnet.id]: 'https://mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',
@@ -62,7 +64,12 @@ export const USERAUTH_BASE_URL = `${BASE_HOST_DOMAIN}/auth`;
 export const TECHNICALANALYSIS_BASE_URL = `${BASE_HOST_DOMAIN}/technical`;
 
 export const NOTIFICATION_BASE_URL = `${BASE_HOST_DOMAIN}/notifications`;
+
 export const REWARDS_BASE_URL = `${BASE_HOST_DOMAIN}`;
+
+export const REFERRAL_BASE_URL = `${BASE_HOST_DOMAIN}/referral`;
+// export const REFERRAL_BASE_URL = `http://localhost:3000/referral`;
+
 
 export const WS_CONNECTION_URL = `${BASE_HOST_DOMAIN}`;
 // export const WS_CONNECTION_URL = `http://127.0.0.1:3000`;
@@ -86,3 +93,5 @@ export const NULL_ADDRESS = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
+
+export const SOL_TRANSFER_GAS_FEE = 0.000005;

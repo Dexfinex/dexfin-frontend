@@ -40,8 +40,8 @@ const RenderTokens: React.FC<RenderTokensProps> = ({ handleAsset }) => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-sm md:text-md">
-                                    <span>{formatUsdValue(token.usdValue)}</span>
+                                <div className="text-sm md:text-md flex flex-col items-end">
+                                    <span>${formatNumberByFrac(token.usdValue, 5)}</span>
                                     <PNLPercent
                                         pnlPercent={token.usdPrice24hrUsdChange * 100 / token.usdPrice} />
                                 </div>
