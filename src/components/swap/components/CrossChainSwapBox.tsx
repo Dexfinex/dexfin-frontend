@@ -1,7 +1,7 @@
 import {useContext, useEffect, useMemo, useState} from 'react';
 import {ArrowDownUp} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
-import {DebridgeOrderStatus, SlippageOption, TokenType} from '../../../types/swap.type';
+import {DebridgeOrderStatus, TokenType} from '../../../types/swap.type';
 import {formatNumberByFrac, isValidAddress, shrinkAddress} from '../../../utils/common.util';
 import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
 import useTokenStore from "../../../store/useTokenStore.ts";
@@ -38,7 +38,6 @@ interface CrossChainSwapBoxProps {
     onFromAmountChange: (amount: string) => void;
     onToAmountChange: (amount: string) => void;
     onSwitch: () => void;
-    slippage: SlippageOption;
 }
 
 export function CrossChainSwapBox({
