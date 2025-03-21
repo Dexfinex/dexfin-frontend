@@ -8,7 +8,6 @@ import {
   Gift,
   Loader
 } from 'lucide-react';
-import axios from 'axios';
 import { useUserData } from '../providers/UserProvider';
 import { referralService, ReferralStats } from '../services/referral.service';
 
