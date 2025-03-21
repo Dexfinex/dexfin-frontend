@@ -1,22 +1,19 @@
-import React, { useState, useContext, useMemo, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { Maximize2, Minimize2, X, } from 'lucide-react';
 import { ethers } from 'ethers';
 import { erc20Abi } from "viem";
 
 import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useDefi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
-import useDefiStore, { Position } from '../store/useDefiStore';
+import { Position } from '../store/useDefiStore';
 import useTokenBalanceStore from '../store/useTokenBalanceStore';
 import { useEnSoActionMutation } from '../hooks/useActionEnSo.ts';
 import useGasEstimation from "../hooks/useGasEstimation.ts";
-import useGetTokenPrices from '../hooks/useGetTokenPrices';
-import useTokenStore from "../store/useTokenStore.ts";
 import { TransactionModal } from './swap/modals/TransactionModal.tsx';
 import { PositionList } from './defi/PositionList.tsx';
 import ProtocolStatistic from './defi/ProtocolStatistic.tsx';
 
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
-import { mapChainId2NativeAddress } from "../config/networks.ts";
 import { STAKING_TOKENS, BORROWING_LIST, LENDING_LIST } from '../constants/mock/defi.ts';
 import { OfferingList } from './defi/OfferlingList.tsx';
 import GlobalMetric from './defi/GlobalMetric.tsx';
@@ -64,7 +61,6 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { mutate: enSoActionMutation } = useEnSoActionMutation();
 
   const { chainId, address, signer, } = useContext(Web3AuthContext);
-  useDefiStore();
 
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation()
@@ -86,28 +82,6 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const isLoadingProtocol = protocolHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === protocolHandlerList.length;
 
   const refetchDefiProtocolByWallet = protocolHandlerList.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
-
-  const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
-
-  const { refetch: refetchNativeTokenPrice } = useGetTokenPrices({
-    tokenAddresses: [nativeTokenAddress],
-    chainId: Number(chainId),
-  })
-
-  const { getTokenPrice, tokenPrices } = useTokenStore()
-
-  const nativeTokenPrice = useMemo(() => {
-    if (chainId && nativeTokenAddress) {
-      return getTokenPrice(nativeTokenAddress, chainId)
-    }
-    return 0;
-  }, [getTokenPrice, nativeTokenAddress, chainId, tokenPrices])
-
-  useEffect(() => {
-    if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
-      refetchNativeTokenPrice()
-    }
-  }, [chainId, nativeTokenAddress, nativeTokenPrice])
 
   const isLoading = isLoadingPosition || isLoadingProtocol;
 
