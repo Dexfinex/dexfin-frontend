@@ -22,6 +22,7 @@ import {
     NOTIFICATION_BASE_URL,
     REWARDS_BASE_URL,
     DEBRIDGE_BASE_URL,
+    REFERRAL_BASE_URL,
 } from "../constants";
 
 export const zeroxApi = axios.create({
@@ -104,6 +105,10 @@ export const RewardsApi = axios.create({
     baseURL: REWARDS_BASE_URL
 })
 
+export const ReferralApi = axios.create({
+    baseURL: REFERRAL_BASE_URL
+})
+
 // List of API instances that need authorization
 const authorizedApis: AxiosInstance[] = [
     userAuthApi,
@@ -117,6 +122,7 @@ const authorizedApis: AxiosInstance[] = [
     calendarApi,
     RewardsApi,
     openaiApi,
+    ReferralApi,
     // Add any other APIs that need authorization
 ];
 

@@ -296,7 +296,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                     isBalanceLoading || isLoadingPortfolio ?
                       <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'2rem'}></Skeleton> :
                       <div className="text-xl sm:text-2xl font-bold">
-                        {pnlUsdByDate > 0 ? "$" : "-$"}{formatNumberByFrac(Math.abs(pnlUsdByDate))}
+                        {pnlUsdByDate >= 0 ? "$" : "-$"}{formatNumberByFrac(Math.abs(pnlUsdByDate))}
                       </div>
                   }
                   {

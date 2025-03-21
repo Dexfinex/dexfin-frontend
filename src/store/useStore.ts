@@ -642,7 +642,7 @@ const useStore = create<StoreState>((set, get) => ({
       {
         id: 'first-deposit',
         name: 'First Deposit',
-        description: 'First wallet deposit. (min. 50 USDC)',
+        description: 'First wallet deposit (min. 50 USDC)',
         image: 'https://api.dicebear.com/7.x/shapes/svg?seed=deposit&backgroundColor=0891b2',
         icon: {
           icon: 'Wallet',
@@ -654,7 +654,7 @@ const useStore = create<StoreState>((set, get) => ({
       {
         id: 'first-swap',
         name: 'First Swap',
-        description: 'Complete your first token swap',
+        description: 'First token swap (min. 50 USDC)',
         image: 'https://api.dicebear.com/7.x/shapes/svg?seed=swap&backgroundColor=8b5cf6',
         icon: {
           icon: 'ArrowLeftRight',
