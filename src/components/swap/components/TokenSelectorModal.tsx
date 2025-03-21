@@ -107,7 +107,7 @@ export function TokenSelectorModal({
     const { trendingTokens } = useTrendingTokensStore();
     // const [loading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(null);
+    const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(selectedChainId ? NETWORKS.filter(network => network.chainId === selectedChainId)[0] : null);
     const [starredTokenMap, setStarredTokenMap] = useLocalStorage<Record<string, boolean> | null>(LOCAL_STORAGE_STARRED_TOKENS, {})
     const [addedTokens, setAddedTokens] = useLocalStorage<Array<TokenType> | null>(LOCAL_STORAGE_ADDED_TOKENS, [])
     const [showStarredOnly, setShowStarredOnly] = useState(false);
@@ -185,11 +185,11 @@ export function TokenSelectorModal({
         }
     }
 
-    useEffect(() => {
-        if (selectedChainId) {
-            setSelectedNetwork(NETWORKS.filter(network => network.chainId === selectedChainId)[0] ?? null)
-        }
-    }, [selectedChainId, isOpen])
+    // useEffect(() => {
+    //     if (selectedChainId) {
+    //         setSelectedNetwork(NETWORKS.filter(network => network.chainId === selectedChainId)[0] ?? null)
+    //     }
+    // }, [selectedChainId, isOpen])
 
     useEffect(() => {
         const handler = debounce(() => {
