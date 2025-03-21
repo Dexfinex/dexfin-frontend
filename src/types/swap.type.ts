@@ -26,6 +26,8 @@ export interface PreviewDetailItemProps {
     valueClassName?: string;
     isFree?: boolean;
     isLoading: boolean;
+    isSlippageItem?: boolean;
+    openDialog?: (value: boolean) => void;
 }
 
 export type TokenType = {
