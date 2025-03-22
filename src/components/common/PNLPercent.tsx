@@ -1,6 +1,6 @@
 import React from "react";
 
-import { formatNumberByFrac } from "../../utils/common.util";
+import NumberFormat from "./NumberFormat";
 
 interface PNLPercentProps {
     pnlPercent: number;
@@ -9,7 +9,9 @@ interface PNLPercentProps {
 const PNLPercent: React.FC<PNLPercentProps> = ({ pnlPercent }) => {
     return (
         <div className={`flex items-center gap-1 mt-1 ${pnlPercent > 0 ? "text-green-400" : "text-red-400"}`}>
-            <span className="text-xs sm:text-sm">{`${formatNumberByFrac(pnlPercent || 0)}%`}</span>
+            <span className="text-xs sm:text-sm">
+                <NumberFormat number={pnlPercent || 0} suffix="%" />
+            </span>
         </div>
     )
 }

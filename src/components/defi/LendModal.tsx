@@ -2,6 +2,8 @@ import React, { useContext, useMemo, useEffect, useState } from "react";
 import { X, ArrowLeft, } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
+import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
+
 import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon";
 import { Position } from "../../store/useDefiStore";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
@@ -12,13 +14,14 @@ import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useDefillamaStore from "../../store/useDefillamaStore.ts";
+import { useEnSoActionMutation } from '../../hooks/useActionEnSo.ts';
 import { LENDING_LIST } from "../../constants/mock/defi.ts";
 import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 import SelectChain from "./SelectChain.tsx";
 import { getChainIcon } from "../../utils/defi.util.ts";
 import { getChainNameById } from "../../utils/defi.util.ts";
 
-
+import { mapChainId2ExplorerUrl } from '../../config/networks.ts';
 
 interface ModalState {
     type: string | null;
@@ -29,18 +32,28 @@ interface ModalState {
 
 interface LendModalProps {
     setModalState: (state: ModalState) => void,
-    showPreview: boolean,
     modalState: ModalState,
-    setShowPreview: (preview: boolean) => void,
-    tokenAmount: string,
-    confirming: string,
-    lendHandler: () => void,
-    setTokenAmount: (amount: string) => void,
+    setSelectedTab: (selectedTab: 'overview' | 'explore') => void,
+    refetchDefiPositionByWallet: () => void,
+    refetchDefiProtocolByWallet: () => void,
 }
 
-const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, lendHandler, setTokenAmount }) => {
+const LendModal: React.FC<LendModalProps> = ({
+    setModalState,
+    modalState,
+    setSelectedTab,
+    refetchDefiPositionByWallet,
+    refetchDefiProtocolByWallet
+}) => {
+    const [tokenAmount, setTokenAmount] = useState("");
+    const [confirming, setConfirming] = useState("");
+    const [hash, setHash] = useState("");
+    const [txModalOpen, setTxModalOpen] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
+
+    const { mutate: enSoActionMutation } = useEnSoActionMutation();
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId: connectedChainId, switchChain, isChainSwitching } = useContext(Web3AuthContext)
+    const { chainId: connectedChainId, switchChain, isChainSwitching, signer, address } = useContext(Web3AuthContext)
     const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
     const { getOfferingPoolByChainId } = useDefillamaStore();
     const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
@@ -115,8 +128,65 @@ const LendModal: React.FC<LendModalProps> = ({ setModalState, showPreview, modal
         }
     }, [chainId, tokenInInfo]);
 
+    const lendHandler = async () => {
+        if (signer && Number(tokenAmount) > 0) {
+            setConfirming("Approving...");
+            const lendTokenInfo = LENDING_LIST.find((token) => {
+                return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
+            });
+            const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
+            const tokenOutInfo = lendTokenInfo?.tokenOut ? lendTokenInfo?.tokenOut : null;
+
+            enSoActionMutation({
+                chainId: Number(chainId),
+                fromAddress: address,
+                routingStrategy: "router",
+                action: "deposit",
+                protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+                tokenIn: [tokenInInfo?.contract_address || ""],
+                tokenOut: [tokenOutInfo?.contract_address || ""],
+                amountIn: [Number(tokenAmount)],
+                signer: signer,
+                receiver: address,
+                gasPrice: gasData.gasPrice,
+                gasLimit: gasData.gasLimit
+            }, {
+                onSuccess: async (txData) => {
+                    if (signer) {
+                        setConfirming("Executing...");
+                        // execute defi action
+                        const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+                            setConfirming("")
+                            return null;
+                        });
+                        if (transactionResponse) {
+                            const receipt = await transactionResponse.wait();
+                            setHash(receipt.transactionHash);
+                            setTxModalOpen(true);
+                            await refetchDefiPositionByWallet();
+                            await refetchDefiProtocolByWallet();
+
+                            setTokenAmount("");
+                            setShowPreview(false);
+                            setModalState({ type: null });
+                            setSelectedTab('overview');
+                        }
+                    }
+                    setConfirming("");
+                },
+                onError: async (e) => {
+                    console.error(e)
+                    setConfirming("");
+                }
+            })
+        }
+    }
+
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
+            {
+                hash && <TransactionModal open={txModalOpen} setOpen={setTxModalOpen} link={`${mapChainId2ExplorerUrl[Number(chainId)]}/tx/${hash}`} checkBalance={true} />
+            }
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalState({ type: null })} />
             <div className="relative glass w-[400px] rounded-xl p-6">
                 <div className="flex items-center justify-between mb-6">

@@ -8,6 +8,7 @@ import PNLPercent from "../common/PNLPercent"
 import useDefiStore from "../../store/useDefiStore"
 import useTokenBalanceStore from "../../store/useTokenBalanceStore"
 import { useWalletBalance } from "../../hooks/useBalance"
+import NumberFormat from "../common/NumberFormat"
 
 interface AllocationData {
   type: string
@@ -229,12 +230,14 @@ export const PortfolioWidget: React.FC = () => {
                         <div className="flex flex-col justify-start items-start">
                           <div className="font-medium">{token.symbol}</div>
                           <div className="text-sm">
-                            {`${formatNumberByFrac(token.balance || 0)} ${token.symbol}`}
+                            <NumberFormat number={token.balance || 0} suffix={" " + token.symbol} />
                           </div>
                         </div>
                       </div>
                       <div className="text-right items-end justify-end flex flex-col">
-                        <div>{formatCurrency(Number(token.usdValue) || 0)}</div>
+                        <div>
+                          <NumberFormat number={token.usdValue || 0} prefix="$" />
+                        </div>
                         <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / token.usdPrice} />
                       </div>
                     </button>
