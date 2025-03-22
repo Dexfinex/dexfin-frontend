@@ -14,7 +14,7 @@ import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useDefillamaStore from "../../store/useDefillamaStore.ts";
-import { useEnSoActionMutation } from '../../hooks/useActionEnSo.ts';
+import { useEnSoActionMutation, useEmbeddedEnSoActionMutation } from '../../hooks/useActionEnSo.ts';
 import { LENDING_LIST } from "../../constants/mock/defi.ts";
 import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 import SelectChain from "./SelectChain.tsx";
@@ -22,6 +22,8 @@ import { getChainIcon } from "../../utils/defi.util.ts";
 import { getChainNameById } from "../../utils/defi.util.ts";
 
 import { mapChainId2ExplorerUrl } from '../../config/networks.ts';
+import { WalletTypeEnum } from "../../types/wallet.type.ts";
+import { EnSoResponse } from "../../services/enso.service.ts";
 
 interface ModalState {
     type: string | null;
@@ -52,8 +54,9 @@ const LendModal: React.FC<LendModalProps> = ({
     const [showPreview, setShowPreview] = useState(false);
 
     const { mutate: enSoActionMutation } = useEnSoActionMutation();
+    const { mutate: embeddedEnSoActionMutation } = useEmbeddedEnSoActionMutation();
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId: connectedChainId, switchChain, isChainSwitching, signer, address } = useContext(Web3AuthContext)
+    const { chainId: connectedChainId, switchChain, isChainSwitching, signer, address, walletType } = useContext(Web3AuthContext)
     const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
     const { getOfferingPoolByChainId } = useDefillamaStore();
     const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
@@ -128,6 +131,35 @@ const LendModal: React.FC<LendModalProps> = ({
         }
     }, [chainId, tokenInInfo]);
 
+    const onSuccessCallback = async (txData: EnSoResponse) => {
+        if (signer) {
+            setConfirming("Executing...");
+            // execute defi action
+            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+                setConfirming("")
+                return null;
+            });
+            if (transactionResponse) {
+                const receipt = await transactionResponse.wait();
+                setHash(receipt.transactionHash);
+                setTxModalOpen(true);
+                await refetchDefiPositionByWallet();
+                await refetchDefiProtocolByWallet();
+
+                setTokenAmount("");
+                setShowPreview(false);
+                setModalState({ type: null });
+                setSelectedTab('overview');
+            }
+        }
+        setConfirming("");
+    }
+
+    const onErrorCallback = async (e: Error) => {
+        console.error(e)
+        setConfirming("");
+    }
+
     const lendHandler = async () => {
         if (signer && Number(tokenAmount) > 0) {
             setConfirming("Approving...");
@@ -137,48 +169,47 @@ const LendModal: React.FC<LendModalProps> = ({
             const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
             const tokenOutInfo = lendTokenInfo?.tokenOut ? lendTokenInfo?.tokenOut : null;
 
-            enSoActionMutation({
-                chainId: Number(chainId),
-                fromAddress: address,
-                routingStrategy: "router",
-                action: "deposit",
-                protocol: (modalState.position?.protocol_id || "").toLowerCase(),
-                tokenIn: [tokenInInfo?.contract_address || ""],
-                tokenOut: [tokenOutInfo?.contract_address || ""],
-                amountIn: [Number(tokenAmount)],
-                signer: signer,
-                receiver: address,
-                gasPrice: gasData.gasPrice,
-                gasLimit: gasData.gasLimit
-            }, {
-                onSuccess: async (txData) => {
-                    if (signer) {
-                        setConfirming("Executing...");
-                        // execute defi action
-                        const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
-                            setConfirming("")
-                            return null;
-                        });
-                        if (transactionResponse) {
-                            const receipt = await transactionResponse.wait();
-                            setHash(receipt.transactionHash);
-                            setTxModalOpen(true);
-                            await refetchDefiPositionByWallet();
-                            await refetchDefiProtocolByWallet();
-
-                            setTokenAmount("");
-                            setShowPreview(false);
-                            setModalState({ type: null });
-                            setSelectedTab('overview');
-                        }
-                    }
-                    setConfirming("");
-                },
-                onError: async (e) => {
-                    console.error(e)
-                    setConfirming("");
-                }
-            })
+            switch (walletType) {
+                case WalletTypeEnum.EOA:
+                    enSoActionMutation({
+                        chainId: Number(chainId),
+                        fromAddress: address,
+                        routingStrategy: "router",
+                        action: "deposit",
+                        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+                        tokenIn: [tokenInInfo?.contract_address || ""],
+                        tokenOut: [tokenOutInfo?.contract_address || ""],
+                        amountIn: [Number(tokenAmount)],
+                        signer: signer,
+                        receiver: address,
+                        gasPrice: gasData.gasPrice,
+                        gasLimit: gasData.gasLimit
+                    }, {
+                        onSuccess: onSuccessCallback,
+                        onError: onErrorCallback
+                    })
+                    break;
+                case WalletTypeEnum.EMBEDDED:
+                    embeddedEnSoActionMutation({
+                        chainId: Number(chainId),
+                        fromAddress: address,
+                        action: "deposit",
+                        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+                        tokenIn: [tokenInInfo?.contract_address || ""],
+                        tokenOut: [tokenOutInfo?.contract_address || ""],
+                        amountIn: [Number(tokenAmount)],
+                        signer: signer,
+                        receiver: address,
+                        gasPrice: gasData.gasPrice,
+                        gasLimit: gasData.gasLimit
+                    }, {
+                        onSuccess: onSuccessCallback,
+                        onError: onErrorCallback
+                    })
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
