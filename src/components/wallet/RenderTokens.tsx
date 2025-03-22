@@ -2,11 +2,11 @@ import React from "react";
 import { Skeleton } from '@chakra-ui/react';
 
 import { formatNumberByFrac } from "../../utils/common.util";
-import { formatUsdValue } from "../../utils/defi.util.ts";
 import { TokenChainIcon } from "../swap/components/TokenIcon";
 import PNLPercent from "../common/PNLPercent";
 import { useWalletBalance } from "../../hooks/useBalance";
 import useTokenBalanceStore, { TokenBalance } from "../../store/useTokenBalanceStore";
+import NumberFormat from "../common/NumberFormat";
 
 
 interface RenderTokensProps {
@@ -36,14 +36,13 @@ const RenderTokens: React.FC<RenderTokensProps> = ({ handleAsset }) => {
                                     <div className='flex flex-col justify-start items-start'>
                                         <div className="font-medium text-sm sm:text-md">{token.symbol.toUpperCase()}</div>
                                         <div className="text-xs sm:text-sm text-white/60">
-                                            {`${formatNumberByFrac(token.balance, 5)} ${token.symbol.toUpperCase()}`}
+                                            <NumberFormat number={token.balance} suffix={" " + token.symbol.toUpperCase()} />
                                         </div>
                                     </div>
                                 </div>
                                 <div className="text-sm md:text-md flex flex-col items-end">
-                                    <span>${formatNumberByFrac(token.usdValue, 5)}</span>
-                                    <PNLPercent
-                                        pnlPercent={token.usdPrice24hrUsdChange * 100 / token.usdPrice} />
+                                    <NumberFormat number={token.usdValue} prefix="$" />
+                                    <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / token.usdPrice} />
                                 </div>
                             </div>
                         </button>

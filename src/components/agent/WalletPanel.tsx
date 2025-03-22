@@ -28,6 +28,7 @@ import PNL from '../common/PNL.tsx';
 import PNLPercent from '../common/PNLPercent.tsx';
 import { formatNumberByFrac } from '../../utils/common.util.ts';
 import useDefiStore from '../../store/useDefiStore.ts';
+import NumberFormat from '../common/NumberFormat.tsx';
 
 interface WalletPanelProps {
     isWalletPanelOpen: boolean;
@@ -122,14 +123,13 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                                                             <div className='flex flex-col justify-start items-start'>
                                                                 <div className="font-medium">{position.symbol}</div>
                                                                 <div className="text-sm text-white/60">
-                                                                    {`${formatNumberByFrac(position.balance, 5)} ${position.symbol}`}
+                                                                    <NumberFormat number={position.balance} suffix={position.symbol} />
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <span>{formatUsdValue(position.usdValue)}</span>
-                                                            <PNLPercent
-                                                                pnlPercent={position.usdPrice24hrUsdChange * 100 / position.usdPrice} />
+                                                        <div className="flex flex-col items-end text-right">
+                                                            <NumberFormat number={position.usdValue} prefix='$' />
+                                                            <PNLPercent pnlPercent={position.usdPrice24hrUsdChange * 100 / position.usdPrice} />
                                                         </div>
                                                     </button>
                                                 ))

@@ -8,11 +8,26 @@ import { generateEnSoExecuteAction } from "../utils/enso.util.ts";
 import { mapChainId2NativeAddress } from "../config/networks.ts";
 import { compareWalletAddresses } from "../utils/common.util.ts";
 import { ENSO_ROUTER_ADDRESS } from "../constants/enso.constants.ts";
+import { getTokenOutAmount, getTokenOutAmountByPercent } from "../utils/token.util.ts";
 
 interface mutationDataParams {
     chainId: number;
     fromAddress: string;
     routingStrategy: string;
+    action: "deposit" | "redeem" | "unstake";
+    protocol: string;
+    tokenIn: string[];
+    tokenOut: string[];
+    amountIn: number[];
+    signer: JsonRpcSigner | undefined;
+    receiver: string,
+    gasPrice: bigint;
+    gasLimit: bigint;
+}
+
+interface mutationEmbeddedDataParams {
+    chainId: number;
+    fromAddress: string;
     action: "deposit" | "redeem" | "unstake";
     protocol: string;
     tokenIn: string[];
@@ -94,6 +109,47 @@ export const useEnSoActionMutation = () => {
                 fromAddress: data.fromAddress,
                 chainId: data.chainId,
                 routingStrategy: data.routingStrategy,
+                actions: generateEnSoExecuteAction({ action: data.action, protocol: data.protocol, tokenIn: data.tokenIn, tokenOut: data.tokenOut, amountIn: amountIn, chainId: Number(data.chainId), receiver: data.receiver })
+            })
+
+            return actionBundle;
+        }
+    })
+}
+
+export const useEmbeddedEnSoActionMutation = () => {
+    return useMutation({
+        mutationFn: async (data: mutationEmbeddedDataParams) => {
+            const amountIn: string[] = [];
+
+            for (let i = 0; i < data.tokenIn.length; i++) {
+                switch (data.action) {
+                    case "redeem":
+                        amountIn.push((await getTokenOutAmountByPercent(data.amountIn[0], data.fromAddress, data.tokenIn[i], data.chainId, data.signer)).toString());
+                        break;
+                    default:
+                        amountIn.push((await getTokenOutAmount(data.amountIn[i], data.tokenIn[i], data.chainId, data.signer)).toString());
+                        break;
+                }
+            }
+
+            if (data.protocol === "lido" && data.action === "unstake") {
+                const actionBundle = await enSoService.getRouter({
+                    fromAddress: data.fromAddress,
+                    chainId: data.chainId,
+                    receiver: data.receiver,
+                    tokenIn: data.tokenIn,
+                    amountIn: amountIn,
+                    tokenOut: data.tokenOut
+                })
+
+                return actionBundle;
+            }
+
+            const actionBundle = await enSoService.sendBundle({
+                fromAddress: data.fromAddress,
+                chainId: data.chainId,
+                routingStrategy: "router",
                 actions: generateEnSoExecuteAction({ action: data.action, protocol: data.protocol, tokenIn: data.tokenIn, tokenOut: data.tokenOut, amountIn: amountIn, chainId: Number(data.chainId), receiver: data.receiver })
             })
 
