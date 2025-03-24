@@ -12,6 +12,7 @@ import {SolanaSwapBox} from "./components/SolanaSwapBox.tsx";
 import {ChartDrawer} from "./components/chart/ChartDrawer.tsx";
 import {CrossChainSwapBox} from "./components/CrossChainSwapBox.tsx";
 import {useTrendingTokens} from '../../hooks/useTrendingTokens.ts';
+import { SOLANA_CHAIN_ID } from '../../constants/solana.constants.ts';
 
 interface SwapModalProps {
     isOpen: boolean;
@@ -230,7 +231,7 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
                                             onSwitch={handleSwitch}
                                         />
                                     ) : (
-                                        fromToken?.chainId === 900 ? (
+                                        fromToken?.chainId === SOLANA_CHAIN_ID ? (
                                             <SolanaSwapBox
                                                 fromToken={fromToken}
                                                 toToken={toToken}
