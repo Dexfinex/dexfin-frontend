@@ -233,7 +233,7 @@ export const formatNumberByRepeat = (
 ): { prev: string, current: string, next: string } => {
     const string = formatNumberByFrac(num, fixedCount);
     const decimalIndex = string.indexOf('.');
-    const threshold = 0.01;
+    const threshold = 0.001;
 
     if (decimalIndex !== -1 && Math.abs(num) < threshold) {
         const decimalPart = string.slice(decimalIndex + 1); // Get the decimal part
