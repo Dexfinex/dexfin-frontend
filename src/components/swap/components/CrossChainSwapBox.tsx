@@ -27,6 +27,8 @@ import useLocalStorage from "../../../hooks/useLocalStorage.ts";
 import {BridgeRecentWalletType} from "../../../types/bridge.type.ts";
 import {LOCAL_STORAGE_BRIDGE_RECENT_WALLETS} from "../../../constants";
 import {PreviewDetailItem} from "./SwapBox.tsx";
+import {VersionedTransaction} from "@solana/web3.js";
+import {connection} from "../../../config/solana.ts";
 
 interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
@@ -54,7 +56,7 @@ export function CrossChainSwapBox({
     const {
         solanaWalletInfo,
         signer,
-        transferSolToken,
+        signSolanaTransaction,
         chainId: walletChainId,
         switchChain,
     } = useContext(Web3AuthContext);
@@ -199,7 +201,7 @@ export function CrossChainSwapBox({
         isRequireSwitchChain,
         textSwitchChain,
     } = useMemo(() => {
-        const isRequireSwitchChain = walletChainId !== fromToken?.chainId
+        const isRequireSwitchChain = fromToken?.chainId !== SOLANA_CHAIN_ID && walletChainId !== fromToken?.chainId
         const textSwitchChain = `Switch to ${mapChainId2ChainName[fromToken!.chainId]} network`
 
         return {
@@ -255,13 +257,27 @@ export function CrossChainSwapBox({
 
         try {
             setIsConfirming(true)
-            if (fromToken?.chainId === SOLANA_CHAIN_ID && destinationAddress) { // solana transaction
-                await transferSolToken(
-                    destinationAddress,
-                    fromToken.address,
-                    Number(fromAmount),
-                    fromToken.decimals
-                )
+            if (fromToken?.chainId === SOLANA_CHAIN_ID && quoteResponse.tx) { // solana transaction
+                const tx = VersionedTransaction.deserialize(Buffer.from(quoteResponse.tx.data!.slice(2), "hex"));
+                const { blockhash } = await connection.getLatestBlockhash();
+                tx.message.recentBlockhash = blockhash; // Update blockhash!
+
+                const signedTransaction = await signSolanaTransaction(tx)
+
+                try {
+                    const txid = await connection.sendRawTransaction(signedTransaction!.serialize(), {
+                        skipPreflight: false, // Set to true to skip validation checks
+                        preflightCommitment: "confirmed",
+                    });
+                    console.log(`✅ Transaction Sent! TXID: ${txid}`);
+                    // 5️⃣ Confirm the transaction
+                    await connection.confirmTransaction(txid, "confirmed");
+                    console.log("✅ Transaction Confirmed!");
+                } catch (error) {
+                    console.error("❌ Error Sending Transaction:", error);
+                }
+
+
             } else if (quoteResponse.tx) {
                 await signer!.sendTransaction(quoteResponse.tx)
             } else {
