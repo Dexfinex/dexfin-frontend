@@ -1,10 +1,10 @@
-import {useState} from 'react';
-import {ChevronDown, Search} from 'lucide-react';
-import {TokenType} from "../../../types/swap.type";
-import {TokenSelectorModal} from "./TokenSelectorModal.tsx";
-import {Skeleton} from "@chakra-ui/react";
-import {formatNumberByFrac} from "../../../utils/common.util.ts";
-
+import { useState } from 'react';
+import { ChevronDown, Search } from 'lucide-react';
+import { TokenType } from "../../../types/swap.type";
+import { TokenSelectorModal } from "./TokenSelectorModal.tsx";
+import { Skeleton } from "@chakra-ui/react";
+import { formatNumberByFrac } from "../../../utils/common.util.ts";
+import { TokenChainIcon } from './TokenIcon.tsx';
 
 interface TokenSelectorProps {
     selectedToken?: TokenType | null;
@@ -23,20 +23,20 @@ interface TokenSelectorProps {
 }
 
 export function TokenSelector({
-                                  selectedToken,
-                                  selectedChainId,
-                                  onSelect,
-                                  amount,
-                                  usdAmount,
-                                  onAmountChange,
-                                  label,
-                                  disabled = false,
-                                  className = '',
-                                  isLoading = false,
-                                  deductionAmount = 0,
-                                  balance,
-                                  isBalanceLoading = false,
-                              }: TokenSelectorProps) {
+    selectedToken,
+    selectedChainId,
+    onSelect,
+    amount,
+    usdAmount,
+    onAmountChange,
+    label,
+    disabled = false,
+    className = '',
+    isLoading = false,
+    deductionAmount = 0,
+    balance,
+    isBalanceLoading = false,
+}: TokenSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -50,8 +50,8 @@ export function TokenSelector({
                         {selectedToken?.price && (
                             <span
                                 className="text-[10px] text-blue-400/90 font-medium bg-blue-500/10 px-1.5 py-0.5 rounded-md">
-                ≈ ${(Number(amount || '0') * (selectedToken.price || 0)).toFixed(2)}
-              </span>
+                                ≈ ${(Number(amount || '0') * (selectedToken.price || 0)).toFixed(2)}
+                            </span>
                         )}
                     </div>
                     {
@@ -81,7 +81,7 @@ export function TokenSelector({
                                         MAX
                                     </button>
                                 )}
-                      </span>
+                            </span>
 
                         )
                     }
@@ -92,14 +92,10 @@ export function TokenSelector({
                         className="flex items-center gap-2 rounded-lg px-3 py-2 transition-all cursor-pointer w-[140px] shrink-0 group ring-1 ring-white/10 hover:ring-blue-500/20 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] hover-effect glass-effect relative overflow-hidden"
                     >
                         <div
-                            className="absolute inset-0 bg-gradient-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 group-hover:translate-x-full duration-1000 transition-transform ease-in-out"/>
+                            className="absolute inset-0 bg-gradient-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 group-hover:translate-x-full duration-1000 transition-transform ease-in-out" />
                         {selectedToken ? (
                             <>
-                                <img
-                                    src={selectedToken.logoURI}
-                                    alt={selectedToken.symbol}
-                                    className="w-7 h-7 rounded-full ring-1 ring-white/10 group-hover:ring-primary-500/20 transition-all duration-300 group-hover:scale-110"
-                                />
+                                <TokenChainIcon src={selectedToken.logoURI} alt={selectedToken.name} size={"lg"} chainId={Number(selectedToken.chainId)} />
                                 <div className="flex flex-col">
                                     <span
                                         className="font-semibold text-white tracking-wide text-sm whitespace-nowrap text-ellipsis overflow-hidden w-[60px]">{selectedToken.symbol}</span>
@@ -107,16 +103,16 @@ export function TokenSelector({
                                         className="text-xs text-gray-400 whitespace-nowrap text-ellipsis overflow-hidden w-[80px]">{selectedToken.name}</span>
                                 </div>
                                 <ChevronDown
-                                    className="w-4 h-4 text-gray-400 absolute right-2 top-2 group-hover:text-primary-400 transition-all duration-300"/>
+                                    className="w-4 h-4 text-gray-400 absolute right-2 top-2 group-hover:text-primary-400 transition-all duration-300" />
                             </>
                         ) : (
                             <div className="flex items-center gap-2">
                                 <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center">
-                                    <Search className="w-4 h-4 text-gray-400"/>
+                                    <Search className="w-4 h-4 text-gray-400" />
                                 </div>
                                 <span className="text-gray-300 font-medium">Select Token</span>
                                 <ChevronDown
-                                    className="w-4 h-4 text-gray-400 absolute right-2 top-2 group-hover:text-primary-400 transition-all duration-300"/>
+                                    className="w-4 h-4 text-gray-400 absolute right-2 top-2 group-hover:text-primary-400 transition-all duration-300" />
                             </div>
                         )}
                     </div>
@@ -140,9 +136,8 @@ export function TokenSelector({
                                 onChange={(e) => onAmountChange(e.target.value)}
                                 disabled={disabled}
                                 placeholder="0"
-                                className={`w-0 flex-1 bg-transparent text-white text-right text-2xl font-medium outline-none placeholder-gray-500 focus:placeholder-primary-400/50 transition-all group-focus-within/input:placeholder-primary-400/30 ${
-                                    disabled ? 'opacity-50 cursor-not-allowed' : ''
-                                }`}
+                                className={`w-0 flex-1 bg-transparent text-white text-right text-2xl font-medium outline-none placeholder-gray-500 focus:placeholder-primary-400/50 transition-all group-focus-within/input:placeholder-primary-400/30 ${disabled ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
                             />
                         )
                     }
@@ -161,8 +156,8 @@ export function TokenSelector({
                             </div>
                         ) : (
                             <span className={`text-xs px-2 py-0.5 rounded-full text-gray-400`}>
-                                    ${formatNumberByFrac(Number(usdAmount), 2)}
-                                </span>
+                                ${formatNumberByFrac(Number(usdAmount), 2)}
+                            </span>
                         )
                     )}
                 </div>
