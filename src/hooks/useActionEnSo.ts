@@ -25,24 +25,11 @@ interface mutationDataParams {
     gasLimit: bigint;
 }
 
-interface mutationEmbeddedDataParams {
-    chainId: number;
-    fromAddress: string;
-    action: "deposit" | "redeem" | "unstake";
-    protocol: string;
-    tokenIn: string[];
-    tokenOut: string[];
-    amountIn: number[];
-    signer: JsonRpcSigner | undefined;
-    receiver: string,
-    gasPrice: bigint;
-    gasLimit: bigint;
-}
 
 export const useEnSoActionMutation = () => {
     return useMutation({
         mutationFn: async (data: mutationDataParams) => {
-            const amountIn = [];
+            const amountIn: string[] = [];
 
             for (let i = 0; i < data.tokenIn.length; i++) {
                 const tokenContract = new ethers.Contract(
@@ -56,14 +43,9 @@ export const useEnSoActionMutation = () => {
                 const isNativeToken = compareWalletAddresses(nativeTokenAddress, data.tokenIn[i]);
 
                 if (data.action === "redeem") { // calc redeem amount by percent
-                    const balance = await tokenContract.balanceOf(data.fromAddress);
-                    amountValue = Math.ceil(Number(balance) * data.amountIn[0] / 100);
+                    amountValue = await getTokenOutAmountByPercent(data.amountIn[0], data.fromAddress, data.tokenIn[i], data.chainId, data.signer);
                 } else {
-                    const decimals = isNativeToken ? 18 : await tokenContract.decimals();
-                    amountValue = Number(ethers.utils.parseUnits(
-                        Number(data.amountIn[i]).toFixed(8).replace(/\.?0+$/, ""),
-                        decimals
-                    ));
+                    amountValue = await getTokenOutAmount(data.amountIn[i], data.tokenIn[i], data.chainId, data.signer)
                 }
 
                 if (!isNativeToken) {
@@ -109,47 +91,6 @@ export const useEnSoActionMutation = () => {
                 fromAddress: data.fromAddress,
                 chainId: data.chainId,
                 routingStrategy: data.routingStrategy,
-                actions: generateEnSoExecuteAction({ action: data.action, protocol: data.protocol, tokenIn: data.tokenIn, tokenOut: data.tokenOut, amountIn: amountIn, chainId: Number(data.chainId), receiver: data.receiver })
-            })
-
-            return actionBundle;
-        }
-    })
-}
-
-export const useEmbeddedEnSoActionMutation = () => {
-    return useMutation({
-        mutationFn: async (data: mutationEmbeddedDataParams) => {
-            const amountIn: string[] = [];
-
-            for (let i = 0; i < data.tokenIn.length; i++) {
-                switch (data.action) {
-                    case "redeem":
-                        amountIn.push((await getTokenOutAmountByPercent(data.amountIn[0], data.fromAddress, data.tokenIn[i], data.chainId, data.signer)).toString());
-                        break;
-                    default:
-                        amountIn.push((await getTokenOutAmount(data.amountIn[i], data.tokenIn[i], data.chainId, data.signer)).toString());
-                        break;
-                }
-            }
-
-            if (data.protocol === "lido" && data.action === "unstake") {
-                const actionBundle = await enSoService.getRouter({
-                    fromAddress: data.fromAddress,
-                    chainId: data.chainId,
-                    receiver: data.receiver,
-                    tokenIn: data.tokenIn,
-                    amountIn: amountIn,
-                    tokenOut: data.tokenOut
-                })
-
-                return actionBundle;
-            }
-
-            const actionBundle = await enSoService.sendBundle({
-                fromAddress: data.fromAddress,
-                chainId: data.chainId,
-                routingStrategy: "router",
                 actions: generateEnSoExecuteAction({ action: data.action, protocol: data.protocol, tokenIn: data.tokenIn, tokenOut: data.tokenOut, amountIn: amountIn, chainId: Number(data.chainId), receiver: data.receiver })
             })
 

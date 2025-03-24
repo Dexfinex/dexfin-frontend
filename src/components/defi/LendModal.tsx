@@ -14,7 +14,7 @@ import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useDefillamaStore from "../../store/useDefillamaStore.ts";
-import { useEnSoActionMutation, useEmbeddedEnSoActionMutation } from '../../hooks/useActionEnSo.ts';
+import { useEnSoActionMutation } from '../../hooks/useActionEnSo.ts';
 import { LENDING_LIST } from "../../constants/mock/defi.ts";
 import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
 import SelectChain from "./SelectChain.tsx";
@@ -54,7 +54,6 @@ const LendModal: React.FC<LendModalProps> = ({
     const [showPreview, setShowPreview] = useState(false);
 
     const { mutate: enSoActionMutation } = useEnSoActionMutation();
-    const { mutate: embeddedEnSoActionMutation } = useEmbeddedEnSoActionMutation();
     const { getTokenBalance } = useTokenBalanceStore();
     const { chainId: connectedChainId, switchChain, isChainSwitching, signer, address, walletType } = useContext(Web3AuthContext)
     const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
@@ -190,9 +189,10 @@ const LendModal: React.FC<LendModalProps> = ({
                     })
                     break;
                 case WalletTypeEnum.EMBEDDED:
-                    embeddedEnSoActionMutation({
+                    enSoActionMutation({
                         chainId: Number(chainId),
                         fromAddress: address,
+                        routingStrategy: "router",
                         action: "deposit",
                         protocol: (modalState.position?.protocol_id || "").toLowerCase(),
                         tokenIn: [tokenInInfo?.contract_address || ""],

@@ -62,9 +62,8 @@ const useDefiStore = create<DefiStoreState>((set, get) => ({
         const state = get();
 
         let totalPositions = [...state.positions];
-
         for (const position of evmPositions) {
-            const positionId = `chian-id-${chainId}-protocol-id-${position.protocol_id}-type-${capitalizeFirstLetter(position.position.label)}`;
+            const positionId = `chian-id-${chainId}-protocol-id-${position.protocol_id}-type-${capitalizeFirstLetter(position.position.label)}-address-${position.position.address}`;
             const index = totalPositions.findIndex((_) => positionId === _.id);
             if (index === -1) {
                 totalPositions.push({
