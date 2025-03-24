@@ -393,7 +393,7 @@ export function initProviderByMethod(authMethod: AuthMethod) {
 export const getWrappedKeyMetaDataList = async (sessionSigs: SessionSigs): Promise<StoredKeyMetadata[] | null> => {
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 10; attempt++) {
         try {
             return await listEncryptedKeyMetadata({
                 pkpSessionSigs: sessionSigs,
