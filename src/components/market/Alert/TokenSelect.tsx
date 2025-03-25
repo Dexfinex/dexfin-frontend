@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Loader2, ChevronDown } from 'lucide-react';
 import { coingeckoService } from '../../../services/coingecko.service';
 
-import { Token } from '../../../types/marketsalert';
-import { SearchableTokenSelectProps } from '../../../types/marketsalert';
+import { Token } from '../../../types/markets-alert.type';
+import { SearchableTokenSelectProps } from '../../../types/markets-alert.type';
 
 export const SearchableTokenSelect: React.FC<SearchableTokenSelectProps> = ({
     value,
