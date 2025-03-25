@@ -49,7 +49,7 @@ export interface Offering {
     maxBorrow?: number;
     collateralFactor?: number;
     factory?: string;
-    chainId: number[];
+    chainId: number;
     apyToken: string;
     disabled?: boolean;
 }
@@ -394,7 +394,7 @@ export const LENDING_LIST = [
 
 export const offerings: Offering[] = [
     {
-        "chainId": [1],
+        "chainId": 1,
         "apy": 3.1,
         "apyToken": "stETH",
         "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
@@ -422,7 +422,7 @@ export const offerings: Offering[] = [
         "logo": "https://cdn.moralis.io/defi/lido.png"
     },
     {
-        "chainId": [1, 8453],
+        "chainId": 1,
         "apy": 1.63,
         "apyToken": "USDC",
         "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
@@ -463,7 +463,48 @@ export const offerings: Offering[] = [
         "logo": "https://cdn.moralis.io/defi/aave.png"
     },
     {
-        "chainId": [1, 8453],
+        "chainId": 8453,
+        "apy": 1.63,
+        "apyToken": "USDC",
+        "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Borrowing",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "native",
+                "name": "ETH",
+                "symbol": "ETH",
+                "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": "18",
+                "logo": "/images/token/eth.png",
+                "thumbnail": "/images/token/eth.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            },
+            {
+                "token_type": "erc20",
+                "name": "USDC",
+                "symbol": "USDC",
+                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": "6",
+                "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 17.41,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": 1,
         "apy": 0,
         "apyToken": "wETH",
         "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
@@ -491,7 +532,35 @@ export const offerings: Offering[] = [
         "logo": "https://cdn.moralis.io/defi/aave.png"
     },
     {
-        "chainId": [1, 8453],
+        "chainId": 8453,
+        "apy": 0,
+        "apyToken": "wETH",
+        "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Lending",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "native",
+                "name": "ETH",
+                "symbol": "ETH",
+                "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": "18",
+                "logo": "/images/token/eth.png",
+                "thumbnail": "/images/token/eth.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 0,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": 1,
         "apy": 0,
         "apyToken": "USDC",
         "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
@@ -519,7 +588,35 @@ export const offerings: Offering[] = [
         "logo": "https://cdn.moralis.io/defi/aave.png"
     },
     {
-        "chainId": [1],
+        "chainId": 8453,
+        "apy": 0,
+        "apyToken": "USDC",
+        "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Lending",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "erc20",
+                "name": "USDC",
+                "symbol": "USDC",
+                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": "6",
+                "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 0,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": 1,
         "apy": 0,
         "apyToken": "USDT",
         "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
@@ -547,7 +644,7 @@ export const offerings: Offering[] = [
         "logo": "https://cdn.moralis.io/defi/aave.png"
     },
     {
-        "chainId": [1],
+        "chainId": 1,
         "apy": 0,
         "apyToken": "DAI",
         "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
@@ -575,7 +672,7 @@ export const offerings: Offering[] = [
         "logo": "https://cdn.moralis.io/defi/aave.png"
     },
     {
-        "chainId": [1],
+        "chainId": 1,
         "apy": 0,
         "apyToken": "SUSDE",
         "disabled": true,
@@ -604,7 +701,7 @@ export const offerings: Offering[] = [
         "logo": "https://cryptologos.cc/logos/pendle-pendle-logo.svg?v=040"
     },
     {
-        "chainId": [56],
+        "chainId": 56,
         "address": "0x6ab0ae46c4b450bc1b4ffcaa192b235134d584b2",
         "protocol": "Uniswap v2",
         "protocol_id": "uniswap-v2",
