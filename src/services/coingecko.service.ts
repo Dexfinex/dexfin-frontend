@@ -4,7 +4,7 @@ import {ChartDataPoint} from "../types/swap.type.ts";
 import {TokenTypeB} from "../types/cart.type.ts";
 import axios from "axios";
 import {MarketCapToken} from "../components/market/MarketCap.tsx";
-import {NULL_ADDRESS, ZERO_ADDRESS} from "../constants";
+import {getOriginTokenAddressFrom, getTokenAddressForTokenPrice} from "../utils/token.util.ts";
 
 interface CoinGeckoStableToken {
     id: string;
@@ -606,13 +606,13 @@ export const coingeckoService = {
     },
     getTokenPrices: async (chainId: number, addresses: (string | null)[]): Promise<Record<string, string>> => {
         try {
-            const modifiedAddresses = addresses.map(addr => addr?.toLowerCase() === NULL_ADDRESS ? ZERO_ADDRESS : addr);
+            const modifiedAddresses = addresses.map(addr => getTokenAddressForTokenPrice(addr ?? '', chainId));
             if (modifiedAddresses.length <= 0)
                 throw new Error('address not provided');
             const {data} = await coinGeckoApi.get<Record<string, string>>(`/prices/${chainId}?addresses=${modifiedAddresses}`);
             const updatedResponse: Record<string, string> = {};
             for (const [key, value] of Object.entries(data)) {
-                updatedResponse[key === ZERO_ADDRESS ? NULL_ADDRESS : key] = value;
+                updatedResponse[getOriginTokenAddressFrom(key, chainId)] = value;
             }
             return updatedResponse;
         } catch (e) {
