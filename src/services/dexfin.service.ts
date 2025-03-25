@@ -1,4 +1,4 @@
-import {dexfinv3Api} from "./api.service.ts";
+import { dexfinv3Api } from "./api.service.ts";
 import {
   EvmDefiPosition,
   EvmDefiProtocol,
@@ -7,7 +7,7 @@ import {
   SolanaTokensType,
   SolanaWalletReponseType,
 } from "../types/dexfinv3.type.ts";
-import {coingeckoService} from "./coingecko.service.ts";
+import { coingeckoService } from "./coingecko.service.ts";
 import { birdeyeService } from "./birdeye.service.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.type.ts";
 import { TokenType } from "../types/swap.type.ts";
@@ -204,7 +204,7 @@ export const dexfinv3Service = {
               priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
               usdPrice = Number(data[data.length - 1]?.close);
               usdValue = usdPrice * Number(token.balanceDecimal);
-            } catch(e) {
+            } catch (e) {
               console.log(e)
             }
 
@@ -322,5 +322,17 @@ export const dexfinv3Service = {
     }
 
     return [];
+  },
+
+  generate2FA: async () => {
+    return "test 2fa key";
+  },
+
+  verify2FA: async () => {
+    return true
+  },
+
+  generateBackupCodes: async () => {
+    return "55B0D135601B6B2263B93B41FBC02D1C8480F10E63B42D31BE1AF2AED98A1FE306EF6A5AB4001C56B046806774ED5DC6BBDF"
   }
 };

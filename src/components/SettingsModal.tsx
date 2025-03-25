@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  LayoutGrid, 
-  Palette, 
+import {
+  X,
+  LayoutGrid,
+  Palette,
   Users,
   Newspaper,
   LineChart,
@@ -12,18 +12,20 @@ import {
   MessageSquare,
   TrendingUp,
   Twitter,
-  MessageCircle
+  MessageCircle,
+  LockIcon
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { AppearanceSettings } from './AppearanceSettings';
 import { ReferralSettings } from './ReferralModal';
+import { SecuritySettings } from './SecurityModal';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type SettingsTab = 'widgets' | 'appearance' | 'referral';
+type SettingsTab = 'widgets' | 'appearance' | 'referral' | 'security';
 
 // Improved widget configurations with proper icons
 const widgetConfigs = [
@@ -65,7 +67,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const tabs = [
     { id: 'widgets', label: 'Widgets', icon: LayoutGrid },
     { id: 'appearance', label: 'Appearance', icon: Palette },
-    { id: 'referral', label: 'Referral', icon: Users }
+    { id: 'referral', label: 'Referral', icon: Users },
+    { id: 'security', label: 'Security', icon: LockIcon }
   ];
 
   return (
@@ -74,7 +77,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <h2 className="text-xl font-semibold">Settings</h2>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-white/10 transition-colors"
             aria-label="Close"
@@ -82,7 +85,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         {/* Content area */}
         <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
           {/* Sidebar - responsive for mobile */}
@@ -118,7 +121,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     Reset All
                   </button>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {widgetConfigs.map(({ type, icon: Icon, description }) => (
                     <div
@@ -136,15 +139,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       </div>
                       <button
                         onClick={() => toggleWidgetVisibility(type)}
-                        className={`w-12 h-6 rounded-full transition-colors ml-2 flex-shrink-0 ${
-                          widgetVisibility[type] ? 'bg-blue-500' : 'bg-white/10'
-                        } relative`}
+                        className={`w-12 h-6 rounded-full transition-colors ml-2 flex-shrink-0 ${widgetVisibility[type] ? 'bg-blue-500' : 'bg-white/10'
+                          } relative`}
                         aria-label={`Toggle ${type}`}
                       >
                         <div
-                          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                            widgetVisibility[type] ? 'left-7' : 'left-1'
-                          }`}
+                          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${widgetVisibility[type] ? 'left-7' : 'left-1'
+                            }`}
                         />
                       </button>
                     </div>
@@ -152,9 +153,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </div>
               </>
             )}
-            
+
             {activeTab === 'appearance' && <AppearanceSettings />}
             {activeTab === 'referral' && <ReferralSettings />}
+            {activeTab === 'security' && <SecuritySettings />}
           </div>
         </div>
       </div>
