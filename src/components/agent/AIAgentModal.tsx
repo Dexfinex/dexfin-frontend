@@ -47,7 +47,7 @@ import { TechnicalAnalysis } from './components/Analysis/TechnicalAnalysis.tsx';
 import { SentimentAnalysis } from './components/Analysis/SentimentAnalysis.tsx';
 import { PredictionAnalysis } from './components/Analysis/PredictionAnalysis.tsx';
 import { MarketOverview } from './components/Analysis/MarketOverview.tsx';
-import { mapChainName2Network, mapPopularTokens } from '../../config/networks.ts';
+import { mapChainName2Network, mapPopularTokens, mapChainId2NativeAddress } from '../../config/networks.ts';
 
 interface AIAgentModalProps {
   isOpen: boolean;
@@ -630,6 +630,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           }
 
           const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === fromNetwork.id);
+
           if (token && token.balance > response.args.inAmount) {
             let toToken = null;
             const popularTokens = mapPopularTokens[fromNetwork.chainId];
@@ -659,15 +660,28 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
               }
             }
             if (toToken) {
-              setFromToken({
-                symbol: token.symbol,
-                name: token.name,
-                address: token.address,
-                chainId: Number(token.chain),
-                decimals: token.decimals,
-                logoURI: token.logo,
-                priceUSD: token.usdPrice
-              });
+              if (token.symbol == 'POL') {
+                setFromToken({
+                  symbol: token.symbol,
+                  name: token.name,
+                  address: mapChainId2NativeAddress[Number(token.chain)],
+                  chainId: Number(token.chain),
+                  decimals: token.decimals,
+                  logoURI: token.logo,
+                  priceUSD: token.usdPrice
+                });
+              } else {
+                setFromToken({
+                  symbol: token.symbol,
+                  name: token.name,
+                  address: token.address,
+                  chainId: Number(token.chain),
+                  decimals: token.decimals,
+                  logoURI: token.logo,
+                  priceUSD: token.usdPrice
+                });
+              }
+
               setProtocol({
                 key: "",
                 logoURI: "",
