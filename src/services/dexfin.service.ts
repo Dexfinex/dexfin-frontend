@@ -13,6 +13,7 @@ import { Transfer, TokenMetadata } from "../types/wallet.type.ts";
 import { TokenType } from "../types/swap.type.ts";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
 import { NETWORKS } from "../config/networks.ts";
+import { EVM_MINIMUM_VALUE, SOL_MINIMUM_VALUE } from "../constants/index.ts";
 
 export const dexfinv3Service = {
   getEvmWalletBalance: async ({
@@ -172,31 +173,32 @@ export const dexfinv3Service = {
 
         for (const token of data) {
           if (token.network.id == "solana") {
-            const tokenAddress: string = (token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint)
-            const data = await birdeyeService.getOHLCV(tokenAddress, "12H", fromTime, currentTime)
-            const priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
-
-            result.push({
-              tokenAddress,
-              symbol: token.symbol,
-              name: token.name,
-              logo: token.logo,
-              thumbnail: "",
-              decimals: token.decimals,
-              balance: token.amountRaw,
-              balanceDecimal: Number(token.amount),
-              usdPrice: token.usdPrice,
-              usdPrice24hrUsdChange: priceChange24h,
-              usdValue: token.usdValue,
-              usdValue24hrUsdChange: Number(priceChange24h) * Number(token.amount),
-              chain: `0x${SOLANA_CHAIN_ID.toString(16)}`,
-              network: {
-                ...token.network,
-                chainId: SOLANA_CHAIN_ID
-              },
-              tokenId: token.tokenId
-            } as EvmWalletBalanceResponseType)
-          } else {
+            if (token.usdValue > SOL_MINIMUM_VALUE) {
+              const tokenAddress: string = (token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint)
+              const data = await birdeyeService.getOHLCV(tokenAddress, "12H", fromTime, currentTime)
+              const priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
+              result.push({
+                tokenAddress,
+                symbol: token.symbol,
+                name: token.name,
+                logo: token.logo,
+                thumbnail: "",
+                decimals: token.decimals,
+                balance: token.amountRaw,
+                balanceDecimal: Number(token.amount),
+                usdPrice: token.usdPrice,
+                usdPrice24hrUsdChange: priceChange24h,
+                usdValue: token.usdValue,
+                usdValue24hrUsdChange: Number(priceChange24h) * Number(token.amount),
+                chain: `0x${SOLANA_CHAIN_ID.toString(16)}`,
+                network: {
+                  ...token.network,
+                  chainId: SOLANA_CHAIN_ID
+                },
+                tokenId: token.tokenId
+              } as EvmWalletBalanceResponseType)
+            }
+          } else if (token.usdValue > EVM_MINIMUM_VALUE) {
             const tokenId = token.tokenId === "ethereum" ? (Number(token.chain) === 1 ? token.tokenId : ("w" + token.symbol.toLowerCase())) : token.tokenId;
             let priceChange24h = 0, usdPrice = 0, usdValue = 0
             try {
