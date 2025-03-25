@@ -106,7 +106,8 @@ export const mapChainId2NativeAddress: Record<number, string> = {
     900: '11111111111111111111111111111111', // Solana
 };
 
-export const NATIVE_MATIC_ADDRESS = '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'
+export const PRICE_MATIC_ADDRESS = '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'
+export const NATIVE_MATIC_ADDRESS = '0x0000000000000000000000000000000000001010'
 
 export const mapChainId2ChainName: Record<number, string> = {
     1: 'Ethereum', // Ethereum Mainnet (ETH)
