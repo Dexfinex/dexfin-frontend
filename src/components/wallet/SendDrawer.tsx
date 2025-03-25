@@ -282,7 +282,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
 
     // if (!isOpen) return null;
     const renderUsdValue = () => {
-        const price = tokenBalances.find(token => token.address === selectedAsset.address)?.usdPrice || 0
+        const price = tokenBalances.find(token => token.address === selectedAsset.address && token.tokenId === selectedAsset.tokenId)?.usdPrice || 0
         const value = amount ? amount * price : 0
         return <span className={`${amount !== selectedAsset.balance ? "right-14" : "right-3"} absolute  top-1/2 -translate-y-1/2 text-white/60 text-xs`}>${formatNumberByFrac(value)}</span>
     }
@@ -432,6 +432,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                 validate: (value) => Number(value) > 0,
 
                             })}
+                            disabled={isChainSwitching ? true : false}
                         />
 
                         {
@@ -448,6 +449,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                     })
                                 }
                                 className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-sm text-blue-400 hover:text-blue-300"
+                                disabled={isChainSwitching ? true : false}
                             >
                                 MAX
                             </button>
