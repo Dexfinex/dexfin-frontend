@@ -258,7 +258,7 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenInBalance?.logo || ""} alt={tokenInBalance?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenOutBalance?.logo || ""} alt={tokenOutBalance?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <div className='flex items-center ml-2'>
                                             {formatNumberByFrac(Number(tokenOutBalance?.balance || "0"))}
                                             <ArrowRight className="mr-1 ml-1 w-3 h-3" />
