@@ -1,10 +1,18 @@
-import {useContext, useEffect, useState} from 'react';
-import {Modal, ModalContent, ModalOverlay,} from '@chakra-ui/react';
+import React, { useContext, useEffect, useState } from "react";
+import {
+  X,
+  ChevronRight,
+  Loader2,
+  Mail,
+  LogIn,
+  AlertCircle,
+} from "lucide-react";
+import { Modal, ModalContent, ModalOverlay } from "@chakra-ui/react";
+import { AuthAlert } from "./AuthAlert.tsx";
 import Loading from "./auth/Loading";
 import LoginMethods from "./auth/LoginMethods";
-// import AccountSelection from "./auth/AccountSelection";
 import CreateAccount from "./auth/CreateAccount";
-import {Web3AuthContext} from "../providers/Web3AuthContext";
+import { Web3AuthContext } from "../providers/Web3AuthContext";
 import { getReferralCodeFromStorage } from './ReferralHandler';
 
 interface SigninModalProps {
@@ -13,8 +21,9 @@ interface SigninModalProps {
   goToSignUp: () => void;
 }
 
-const SigninModal = ({ isOpen, onClose, goToSignUp }: SigninModalProps) => {
+const SigninModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }) => {
   const [hasReferral, setHasReferral] = useState(false);
+  const [authView, setAuthView] = useState<string>("default");
 
   const {
     authMethod,
@@ -24,7 +33,6 @@ const SigninModal = ({ isOpen, onClose, goToSignUp }: SigninModalProps) => {
     authLoading,
     authError,
     fetchAccounts,
-    // setCurrentAccount,
     currentAccount,
     accounts,
     accountsLoading,
@@ -41,9 +49,15 @@ const SigninModal = ({ isOpen, onClose, goToSignUp }: SigninModalProps) => {
   const error = authError || accountsError || sessionError;
 
   useEffect(() => {
+    // Reset auth view when modal opens/closes
+    if (!isOpen) {
+      setAuthView("default");
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     // If user is authenticated, fetch accounts
     if (authMethod) {
-      // router.replace(window.location.pathname, undefined, { shallow: true });
       fetchAccounts(authMethod);
     }
   }, [authMethod, fetchAccounts]);
@@ -60,46 +74,22 @@ const SigninModal = ({ isOpen, onClose, goToSignUp }: SigninModalProps) => {
     setHasReferral(!!referralCode);
   }, []);
 
-  const subComponent = () => {
+  const renderContent = () => {
     if (authLoading) {
-      return (
-          <Loading copy={'Authenticating your credentials...'} error={error} />
-      );
+      return <Loading copy="Authenticating your credentials..." error={error} />;
     }
 
     if (accountsLoading) {
-      return <Loading copy={'Looking up your accounts...'} error={error} />;
+      return <Loading copy="Looking up your accounts..." error={error} />;
     }
 
     if (sessionLoading) {
-      return <Loading copy={'Securing your session...'} error={error} />;
+      return <Loading copy="Securing your session..." error={error} />;
     }
 
     if (isPreparingAccounts) {
-      return <Loading copy={'Preparing your account...'} error={error} />;
+      return <Loading copy="Preparing your account..." error={error} />;
     }
-
-    // If user is authenticated and has selected an account, initialize session
-    if (currentAccount && sessionSigs) {
-/*
-      return (
-          <Dashboard currentAccount={currentAccount} sessionSigs={sessionSigs} />
-      );
-*/
-    }
-
-    // If user is authenticated and has more than 1 account, show account selection
-/*
-    if (authMethod && accounts.length > 0) {
-      return (
-          <AccountSelection
-              accounts={accounts}
-              setCurrentAccount={setCurrentAccount}
-              error={error}
-          />
-      );
-    }
-*/
 
     // If user is authenticated but has no accounts, prompt to create an account
     if (authMethod && accounts.length === 0) {
@@ -108,32 +98,71 @@ const SigninModal = ({ isOpen, onClose, goToSignUp }: SigninModalProps) => {
 
     // If user is not authenticated, show login methods
     return (
-        <LoginMethods
-            handleGoogleLogin={handleGoogleLogin}
-            handleDiscordLogin={handleDiscordLogin}
-            authWithEthWallet={authWithEthWallet}
-            authWithWebAuthn={authWithWebAuthn}
-            authWithStytch={authWithStytch}
-            error={error}
-            hasReferral={hasReferral}
-        />
-    );
-  }
+      <>
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 rounded-full bg-blue-600/20 flex items-center justify-center mx-auto">
+            <LogIn className="w-8 h-8 text-blue-400" />
+          </div>
+        </div>
 
+        <AuthAlert error={error} />
+
+        <LoginMethods
+          handleGoogleLogin={handleGoogleLogin}
+          handleDiscordLogin={handleDiscordLogin}
+          authWithEthWallet={authWithEthWallet}
+          authWithWebAuthn={authWithWebAuthn}
+          authWithStytch={authWithStytch}
+          error={error}
+          hasReferral={hasReferral}
+        />
+        
+        <div className="mt-6 text-center">
+          <p className="text-white/60 mb-3">
+            Don't have an account yet?
+          </p>
+          <button
+            onClick={goToSignUp}
+            className="py-3 px-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors font-medium flex items-center justify-center gap-2 mx-auto"
+          >
+            <span>Create Account</span>
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </>
+    );
+  };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <ModalOverlay backdropFilter="blur(4px)" />
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      isCentered={true}
+      motionPreset="slideInBottom"
+      size="md"
+    >
+      <ModalOverlay 
+        backdropFilter="blur(8px)" 
+        backgroundColor="rgba(0, 0, 0, 0.75)" 
+      />
       <ModalContent
         bg="rgba(0, 0, 0, 0.95)"
         color="white"
         borderRadius="xl"
         p={6}
+        maxW="450px"
+        mx={4}
+        boxShadow="0 4px 30px rgba(0, 0, 0, 0.3)"
         border="1px solid rgba(255, 255, 255, 0.1)"
       >
-        {
-          subComponent()
-        }
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {renderContent()}
       </ModalContent>
     </Modal>
   );

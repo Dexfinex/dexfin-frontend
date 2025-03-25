@@ -5,8 +5,8 @@ import { JsonRpcSigner } from "@ethersproject/providers";
 import { erc20Abi } from "viem";
 
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
-import { mapChainId2NativeAddress } from "../config/networks.ts";
 import { compareWalletAddresses } from "../utils/common.util.ts";
+import {getRealNativeTokenAddress} from "../utils/token.util.ts";
 
 interface mutationDataParams {
   tokenAddress: string;
@@ -26,7 +26,7 @@ export const useSendTransactionMutation = () => {
         throw new Error("sendAddress, signer, sendAmount must be provided");
       }
 
-      const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)] || "";
+      const nativeTokenAddress = getRealNativeTokenAddress(Number(chainId)) || "";
 
       if (compareWalletAddresses(data.tokenAddress, nativeTokenAddress)) {
         const amountValue = ethers.utils.parseEther(Number(data.sendAmount).toFixed(8).replace(/\.?0+$/,""));

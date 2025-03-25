@@ -48,9 +48,9 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
     const IconComponent = Icons[iconData.icon as string];
 
     return (
-      <div className={`w-24 h-24 rounded-xl ${iconData.color} bg-opacity-20 flex items-center justify-center mx-auto`}>
+      <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-xl ${iconData.color} bg-opacity-20 flex items-center justify-center mx-auto`}>
         {/* Render the icon dynamically */}
-        {IconComponent && <IconComponent className={`w-12 h-12 ${iconData.color}`} />}
+        {IconComponent && <IconComponent className={`w-8 h-8 sm:w-12 sm:h-12 ${iconData.color}`} />}
       </div>
     );
   };
@@ -109,12 +109,12 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
   };
 
   const renderBadges = (): JSX.Element => (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {selectedBadge ? (
-        <div className="bg-white/5 rounded-xl p-6">
+        <div className="bg-white/5 rounded-xl p-4 sm:p-6">
           <button
             onClick={() => setSelectedBadge(null)}
-            className="flex items-center gap-2 text-white/60 hover:text-white mb-6"
+            className="flex items-center gap-2 text-white/60 hover:text-white mb-4 sm:mb-6"
           >
             <Icons.ChevronLeft className="w-4 h-4" />
             <span>Back to Badges</span>
@@ -124,7 +124,7 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
             if (!badge) return null;
             return (
               <div className="text-center">
-                <div className="w-48 h-48 mx-auto mb-6 relative">
+                <div className="w-24 h-24 sm:w-48 sm:h-48 mx-auto mb-4 sm:mb-6 relative">
                   {badge.isFlashBadge && (
                     <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-yellow-400/20 to-orange-500/20 rounded-full blur-xl" />
                   )}
@@ -132,41 +132,41 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
                     {getBadgeIcon(badge)}
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold mb-2">{badge.name}</h3>
-                <p className="text-white/60 mb-2">{badge.description}</p>
-                <p className="text-sm text-blue-400 mb-6">+{badge.xpAmount} XP</p>
+                <h3 className="text-xl sm:text-2xl font-bold mb-2">{badge.name}</h3>
+                <p className="text-sm sm:text-base text-white/60 mb-2">{badge.description}</p>
+                <p className="text-xs sm:text-sm text-blue-400 mb-4 sm:mb-6">+{badge.xpAmount} XP</p>
                 {badge.earnedDate ? (
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/20 text-green-400">
-                    <Icons.CheckCircle2 className="w-4 h-4" />
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/20 text-green-400 text-xs sm:text-sm">
+                    <Icons.CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span>Earned on {badge.earnedDate}</span>
                   </div>
                 ) : badge.isFlashBadge ? (
                   <div className="space-y-4">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/20 text-yellow-400">
-                      <Icons.Clock className="w-4 h-4" />
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs sm:text-sm">
+                      <Icons.Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                       <span>Limited Time Badge</span>
                     </div>
-                    <div className="flex items-center gap-4 justify-center">
+                    <div className="flex items-center gap-2 sm:gap-4 justify-center">
                       <div className="text-center">
-                        <div className="text-2xl font-bold">21</div>
-                        <div className="text-sm text-white/60">Hours</div>
+                        <div className="text-lg sm:text-2xl font-bold">21</div>
+                        <div className="text-xs sm:text-sm text-white/60">Hours</div>
                       </div>
-                      <div className="text-2xl">:</div>
+                      <div className="text-lg sm:text-2xl">:</div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold">45</div>
-                        <div className="text-sm text-white/60">Minutes</div>
+                        <div className="text-lg sm:text-2xl font-bold">45</div>
+                        <div className="text-xs sm:text-sm text-white/60">Minutes</div>
                       </div>
-                      <div className="text-2xl">:</div>
+                      <div className="text-lg sm:text-2xl">:</div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold">30</div>
-                        <div className="text-sm text-white/60">Seconds</div>
+                        <div className="text-lg sm:text-2xl font-bold">30</div>
+                        <div className="text-xs sm:text-sm text-white/60">Seconds</div>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/60">
-                      <Icons.Lock className="w-4 h-4" />
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/60 text-xs sm:text-sm">
+                      <Icons.Lock className="w-3 h-3 sm:w-4 sm:h-4" />
                       <span>Not Yet Earned</span>
                     </div>
                   </div>
@@ -178,29 +178,29 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
       ) : (
         <>
           {/* Flash Badges */}
-          <div className="bg-white/5 rounded-xl p-6">
+          <div className="bg-white/5 rounded-xl p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">Flash Badges</h3>
-              <div className="flex items-center gap-2 text-sm">
-                <Icons.Clock className="w-4 h-4 text-white/60" />
+              <h3 className="text-base sm:text-lg font-medium">Flash Badges</h3>
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
+                <Icons.Clock className="w-3 h-3 sm:w-4 sm:h-4 text-white/60" />
                 <span className="text-white/60">Limited time only!</span>
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
               {rewards.badges.filter(badge => badge.isFlashBadge).map(badge => (
                 <button
                   key={badge.id}
                   onClick={() => setSelectedBadge(badge.id)}
-                  className="p-6 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-center group relative"
+                  className="p-3 sm:p-6 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-center group relative"
                 >
                   <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-yellow-400/20 to-orange-500/20 rounded-xl blur-lg" />
                   <div className="relative flex flex-col items-center">
                     {getBadgeIcon(badge)}
-                    <div className="font-medium mt-4 mb-1">{badge.name}</div>
-                    <div className="text-sm text-white/60 truncate">
+                    <div className="font-medium mt-2 sm:mt-4 mb-1 text-sm sm:text-base">{badge.name}</div>
+                    <div className="text-xs sm:text-sm text-white/60 truncate max-w-full">
                       {badge.description}
                     </div>
-                    <div className="text-xs text-blue-400 mt-2">
+                    <div className="text-xs text-blue-400 mt-1 sm:mt-2">
                       +{badge.xpAmount} XP
                     </div>
                   </div>
@@ -209,31 +209,31 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
             </div>
           </div>
           {/* All Badges */}
-          <div className="bg-white/5 rounded-xl p-6">
-            <h3 className="text-lg font-medium mb-4">All Badges</h3>
-            <div className="grid grid-cols-4 gap-4">
+          <div className="bg-white/5 rounded-xl p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-medium mb-4">All Badges</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
               {rewards.badges.filter(badge => !badge.isFlashBadge).map(badge => (
                 <button
                   key={badge.id}
                   onClick={() => setSelectedBadge(badge.id)}
-                  className="p-6 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-center group"
+                  className="p-3 sm:p-6 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-center group"
                 >
-                  <div className={`mb-4 ${!badge.earnedDate && 'opacity-50'}`}>
+                  <div className={`mb-2 sm:mb-4 ${!badge.earnedDate && 'opacity-50'}`}>
                     {getBadgeIcon(badge)}
                   </div>
-                  <div className="font-medium mb-1">{badge.name}</div>
-                  <div className="text-sm text-white/60 truncate">
+                  <div className="font-medium mb-1 text-sm sm:text-base">{badge.name}</div>
+                  <div className="text-xs sm:text-sm text-white/60 truncate max-w-full">
                     {badge.description}
                   </div>
                   <div className="text-xs text-blue-400 mt-1">
                     +{badge.xpAmount} XP
                   </div>
                   {badge.earnedDate ? (
-                    <div className="mt-2 text-xs text-green-400">
+                    <div className="mt-1 sm:mt-2 text-xs text-green-400">
                       Earned {badge.earnedDate}
                     </div>
                   ) : (
-                    <div className="mt-2 text-xs text-white/40">
+                    <div className="mt-1 sm:mt-2 text-xs text-white/40">
                       Not earned yet
                     </div>
                   )}
@@ -247,28 +247,28 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
   );
 
   const renderStatus = (): JSX.Element => (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Current Tier */}
-      <div className="bg-white/5 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-700 to-amber-500 flex items-center justify-center">
-              <Icons.Trophy className="w-8 h-8 text-white" />
+      <div className="bg-white/5 rounded-xl p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-amber-700 to-amber-500 flex items-center justify-center">
+              <Icons.Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold">{rewards.currentTier} Tier</h3>
-              <p className="text-white/60">Level {Math.floor(rewards.xp / 10000)}</p>
+              <h3 className="text-xl sm:text-2xl font-bold">{rewards.currentTier} Tier</h3>
+              <p className="text-sm text-white/60">Level {Math.floor(rewards.xp / 10000)}</p>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-lg font-medium">{rewards.xp.toLocaleString()} XP</div>
-            <div className="text-sm text-white/60">
+          <div className="text-left sm:text-right w-full sm:w-auto">
+            <div className="text-base sm:text-lg font-medium">{rewards.xp.toLocaleString()} XP</div>
+            <div className="text-xs sm:text-sm text-white/60">
               {rewards.xpToNextLevel.toLocaleString()} XP to next level
             </div>
           </div>
         </div>
         <div className="space-y-2">
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-xs sm:text-sm">
             <span className="text-white/60">Progress to Next Level</span>
             <span>{Math.round((rewards.xp % 10000) / 100)}%</span>
           </div>
@@ -280,89 +280,38 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
           </div>
         </div>
       </div>
-      {/* Active Perks */}
-      {/* <div className="bg-white/5 rounded-xl p-6">
-        <h3 className="text-lg font-medium mb-4">Active Perks</h3>
-        <div className="space-y-3">
-          {rewards.perks.filter(perk => perk.isActive).map(perk => (
-            <div key={perk.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                <Icons.Gift className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <div className="font-medium">{perk.name}</div>
-                <div className="text-sm text-white/60">{perk.description}</div>
-              </div>
-              <Icons.CheckCircle2 className="w-5 h-5 text-green-400 ml-auto" />
-            </div>
-          ))}
-        </div>
-      </div> */}
-      {/* Next XP Update */}
-      {/* <div className="bg-white/5 rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Icons.Clock className="w-5 h-5 text-white/60" />
-          <h3 className="text-lg font-medium">Next XP Update</h3>
-        </div>
-        <div className="grid grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="bg-white/5 rounded-lg p-3">
-              <div className="text-2xl font-bold">{rewards.nextXpUpdate?.hours || 19}</div>
-              <div className="text-sm text-white/60">Hours</div>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="bg-white/5 rounded-lg p-3">
-              <div className="text-2xl font-bold">{rewards.nextXpUpdate?.minutes || 45}</div>
-              <div className="text-sm text-white/60">Minutes</div>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="bg-white/5 rounded-lg p-3">
-              <div className="text-2xl font-bold">{rewards.nextXpUpdate?.seconds || 30}</div>
-              <div className="text-sm text-white/60">Seconds</div>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="bg-white/5 rounded-lg p-3">
-              <div className="text-2xl font-bold">+{rewards.nextXpUpdate?.xpAmount || 150}</div>
-              <div className="text-sm text-white/60">XP</div>
-            </div>
-          </div>
-        </div>
-      </div> */}
     </div>
   );
 
   const renderProgress = (): JSX.Element => (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Weekly XP Chart */}
-      <div className="bg-white/5 rounded-xl p-6">
-        <h3 className="text-lg font-medium mb-4">Weekly XP Progress</h3>
-        <div className="h-[300px]">
+      <div className="bg-white/5 rounded-xl p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-medium mb-4">Weekly XP Progress</h3>
+        <div className="h-[200px] sm:h-[300px]">
           <Line data={weeklyXPChartData} options={chartOptions} />
         </div>
       </div>
       {/* Tier Progress */}
-      <div className="bg-white/5 rounded-xl p-6">
-        <h3 className="text-lg font-medium mb-4">Tier Progress</h3>
-        <div className="space-y-4">
+      <div className="bg-white/5 rounded-xl p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-medium mb-4">Tier Progress</h3>
+        <div className="space-y-3 sm:space-y-4">
           {(['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'] as const).map((tier, index) => {
             const isCurrentTier = tier === rewards.currentTier;
             const isPastTier = index < ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].indexOf(rewards.currentTier);
 
             return (
-              <div key={tier} className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isCurrentTier ? 'bg-blue-500' :
+              <div key={tier} className="flex items-center gap-3 sm:gap-4">
+                <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center ${isCurrentTier ? 'bg-blue-500' :
                   isPastTier ? 'bg-green-500/20' : 'bg-white/10'
                   }`}>
-                  <Icons.Trophy className={`w-6 h-6 ${isCurrentTier ? 'text-white' :
+                  <Icons.Trophy className={`w-4 h-4 sm:w-6 sm:h-6 ${isCurrentTier ? 'text-white' :
                     isPastTier ? 'text-green-400' : 'text-white/40'
                     }`} />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`font-medium ${getTierColor(tier)}`}>{tier}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`font-medium text-sm sm:text-base ${getTierColor(tier)}`}>{tier}</span>
                     {isCurrentTier && (
                       <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs">
                         Current
@@ -381,7 +330,7 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
                         }}
                       />
                     </div>
-                    <span className="text-sm text-white/60">
+                    <span className="text-xs sm:text-sm text-white/60 whitespace-nowrap">
                       {isPastTier ? '10,000' :
                         isCurrentTier ? `${rewards.xp % 10000}/10,000` : '0/10,000'}
                     </span>
@@ -396,35 +345,35 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
   );
 
   const renderChallenges = (): JSX.Element => (
-    <div className="space-y-6 relative">
+    <div className="space-y-4 sm:space-y-6 relative">
       {/* Coming Soon Overlay */}
       <div className="absolute top-0 right-0 bottom-0 left-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl">
-        <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm">
+        <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-xs sm:text-sm">
           Coming Soon
         </button>
       </div>
 
       {rewards.activeChallenges.map(challenge => (
-        <div key={challenge.id} className="bg-white/5 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                <Icons.Target className="w-6 h-6 text-blue-400" />
+        <div key={challenge.id} className="bg-white/5 rounded-xl p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3 sm:gap-0">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                <Icons.Target className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
               </div>
               <div>
-                <h3 className="font-medium">{challenge.title}</h3>
-                <p className="text-sm text-white/60">{challenge.description}</p>
+                <h3 className="text-sm sm:text-base font-medium">{challenge.title}</h3>
+                <p className="text-xs sm:text-sm text-white/60">{challenge.description}</p>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-blue-400">+{challenge.xpReward} XP</div>
-              <div className="text-sm text-white/60">
+            <div className="text-left sm:text-right w-full sm:w-auto">
+              <div className="text-sm sm:text-base text-blue-400">+{challenge.xpReward} XP</div>
+              <div className="text-xs sm:text-sm text-white/60">
                 Ends in {challenge.endsIn}
               </div>
             </div>
           </div>
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-xs sm:text-sm">
               <span className="text-white/60">Progress</span>
               <span>{challenge.progress}/{challenge.total}</span>
             </div>
@@ -437,16 +386,16 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
           </div>
 
           {/* Testing controls */}
-          <div className="mt-4 flex items-center gap-4">
+          <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-4">
             <button
               onClick={() => handleUpdateChallengeProgress(challenge.id, Math.min(challenge.progress + 1, challenge.total))}
-              className="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-md text-sm transition-colors"
+              className="px-2 sm:px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded-md text-xs sm:text-sm transition-colors"
             >
               Increase Progress
             </button>
             <button
               onClick={() => handleUpdateChallengeProgress(challenge.id, challenge.total)}
-              className="px-3 py-1 bg-green-500 hover:bg-green-600 rounded-md text-sm transition-colors"
+              className="px-2 sm:px-3 py-1 bg-green-500 hover:bg-green-600 rounded-md text-xs sm:text-sm transition-colors"
             >
               Complete Challenge
             </button>
@@ -457,10 +406,10 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
   );
 
   const renderPerks = (): JSX.Element => (
-    <div className="space-y-6 relative">
+    <div className="space-y-4 sm:space-y-6 relative">
       {/* Coming Soon Overlay */}
       <div className="absolute top-0 right-0 bottom-0 left-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl">
-        <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-sm">
+        <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium text-xs sm:text-sm">
           Coming Soon
         </button>
       </div>
@@ -471,11 +420,11 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
         const isUnlocked = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].indexOf(rewards.currentTier) >=
           ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].indexOf(tier);
         return (
-          <div key={tier} className="bg-white/5 rounded-xl p-6">
+          <div key={tier} className="bg-white/5 rounded-xl p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Icons.Trophy className={`w-5 h-5 ${getTierColor(tier)}`} />
-                <h3 className="font-medium">{tier} Tier</h3>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Icons.Trophy className={`w-4 h-4 sm:w-5 sm:h-5 ${getTierColor(tier)}`} />
+                <h3 className="text-sm sm:text-base font-medium">{tier} Tier</h3>
                 {isCurrent && (
                   <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs">
                     Current
@@ -483,35 +432,35 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
                 )}
               </div>
               {!isUnlocked && (
-                <div className="flex items-center gap-2 text-sm text-white/60">
-                  <Icons.Lock className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-white/60">
+                  <Icons.Lock className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>Locked</span>
                 </div>
               )}
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {tierPerks.map(perk => (
                 <div
                   key={perk.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg ${isUnlocked ? 'bg-white/10' : 'bg-white/5'
+                  className={`flex items-center gap-3 p-2 sm:p-3 rounded-lg ${isUnlocked ? 'bg-white/10' : 'bg-white/5'
                     }`}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isUnlocked ? 'bg-blue-500/20' : 'bg-white/10'
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${isUnlocked ? 'bg-blue-500/20' : 'bg-white/10'
                     }`}>
-                    <Icons.Gift className={`w-5 h-5 ${isUnlocked ? 'text-blue-400' : 'text-white/40'
+                    <Icons.Gift className={`w-4 h-4 sm:w-5 sm:h-5 ${isUnlocked ? 'text-blue-400' : 'text-white/40'
                       }`} />
                   </div>
                   <div>
-                    <div className={`font-medium ${!isUnlocked && 'text-white/40'}`}>
+                    <div className={`text-sm sm:text-base font-medium ${!isUnlocked && 'text-white/40'}`}>
                       {perk.name}
                     </div>
-                    <div className={`text-sm ${isUnlocked ? 'text-white/60' : 'text-white/40'
+                    <div className={`text-xs sm:text-sm ${isUnlocked ? 'text-white/60' : 'text-white/40'
                       }`}>
                       {perk.description}
                     </div>
                   </div>
                   {perk.isActive && (
-                    <Icons.CheckCircle2 className="w-5 h-5 text-green-400 ml-auto" />
+                    <Icons.CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 ml-auto" />
                   )}
                 </div>
               ))}
@@ -527,10 +476,10 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-        <div className="relative bg-gray-900 border border-white/10 shadow-lg p-8 rounded-xl">
+        <div className="relative bg-gray-900 border border-white/10 shadow-lg p-6 sm:p-8 rounded-xl max-w-md mx-auto">
           <div className="flex flex-col items-center">
-            <Icons.Loader className="w-10 h-10 text-blue-500 animate-spin" />
-            <p className="mt-4 text-lg">Loading rewards data...</p>
+            <Icons.Loader className="w-8 h-8 sm:w-10 sm:h-10 text-blue-500 animate-spin" />
+            <p className="mt-4 text-base sm:text-lg">Loading rewards data...</p>
           </div>
         </div>
       </div>
@@ -542,20 +491,20 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative bg-gray-900 border border-white/10 shadow-lg p-8 rounded-xl">
+        <div className="relative bg-gray-900 border border-white/10 shadow-lg p-6 sm:p-8 rounded-xl max-w-md mx-auto">
           <div className="flex flex-col items-center">
-            <Icons.AlertCircle className="w-10 h-10 text-red-500" />
-            <p className="mt-4 text-lg">{error}</p>
+            <Icons.AlertCircle className="w-8 h-8 sm:w-10 sm:h-10 text-red-500" />
+            <p className="mt-4 text-base sm:text-lg text-center">{error}</p>
             <div className="mt-6 flex gap-4">
               <button
                 onClick={() => fetchRewards()}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-md transition-colors"
+                className="px-3 sm:px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-md transition-colors text-sm sm:text-base"
               >
                 Retry
               </button>
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors"
+                className="px-3 sm:px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors text-sm sm:text-base"
               >
                 Close
               </button>
@@ -572,22 +521,22 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out ${isFullscreen
+        className={`relative glass border border-white/10 shadow-lg transition-all duration-300 ease-in-out overflow-hidden ${isFullscreen
           ? 'w-full h-full rounded-none'
-          : 'w-[90%] h-[90%] rounded-xl'
+          : 'w-[95%] sm:w-[90%] h-[90%] rounded-xl'
           }`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <Icons.Trophy className="w-5 h-5" />
-              <h2 className="text-xl font-semibold">Rewards</h2>
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Icons.Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
+              <h2 className="text-lg sm:text-xl font-semibold">Rewards</h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <button
                 onClick={toggleFullscreen}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
                 {isFullscreen ? (
                   <Icons.Minimize2 className="w-4 h-4" />
@@ -597,57 +546,57 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose }) =
               </button>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
                 <Icons.X className="w-4 h-4" />
               </button>
             </div>
           </div>
           {/* Navigation */}
-          <div className="flex items-center gap-2 p-4 border-b border-white/10">
+          <div className="flex items-center gap-1 sm:gap-2 p-2 sm:p-4 border-b border-white/10 overflow-x-auto">
             <button
               onClick={() => setActiveTab('status')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'status' ? 'bg-white/10' : 'hover:bg-white/5'
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors whitespace-nowrap ${activeTab === 'status' ? 'bg-white/10' : 'hover:bg-white/5'
                 }`}
             >
-              <Icons.Star className="w-4 h-4" />
-              <span>Status</span>
+              <Icons.Star className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm">Status</span>
             </button>
             <button
               onClick={() => setActiveTab('progress')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'progress' ? 'bg-white/10' : 'hover:bg-white/5'
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors whitespace-nowrap ${activeTab === 'progress' ? 'bg-white/10' : 'hover:bg-white/5'
                 }`}
             >
-              <Icons.TrendingUp className="w-4 h-4" />
-              <span>Progress</span>
+              <Icons.TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm">Progress</span>
             </button>
             <button
               onClick={() => setActiveTab('badges')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'badges' ? 'bg-white/10' : 'hover:bg-white/5'
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors whitespace-nowrap ${activeTab === 'badges' ? 'bg-white/10' : 'hover:bg-white/5'
                 }`}
             >
-              <Icons.Award className="w-4 h-4" />
-              <span>Badges</span>
+              <Icons.Award className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm">Badges</span>
             </button>
             <button
               onClick={() => setActiveTab('challenges')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'challenges' ? 'bg-white/10' : 'hover:bg-white/5'
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors whitespace-nowrap ${activeTab === 'challenges' ? 'bg-white/10' : 'hover:bg-white/5'
                 }`}
             >
-              <Icons.Target className="w-4 h-4" />
-              <span>Challenges</span>
+              <Icons.Target className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm">Challenges</span>
             </button>
             <button
               onClick={() => setActiveTab('perks')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'perks' ? 'bg-white/10' : 'hover:bg-white/5'
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors whitespace-nowrap ${activeTab === 'perks' ? 'bg-white/10' : 'hover:bg-white/5'
                 }`}
             >
-              <Icons.Gift className="w-4 h-4" />
-              <span>Perks</span>
+              <Icons.Gift className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm">Perks</span>
             </button>
           </div>
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             {activeTab === 'status' && renderStatus()}
             {activeTab === 'progress' && renderProgress()}
             {activeTab === 'badges' && renderBadges()}
