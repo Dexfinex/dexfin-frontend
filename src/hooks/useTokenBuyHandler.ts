@@ -67,6 +67,7 @@ export const useTokenBuyHandler = () => {
         
         try {
             // If using embedded wallet, try to refresh the session
+/*
             if (isEmbeddedWallet && authMethod && currentAccount) {
                 try {
                     console.log("Refreshing session before executing batch buy");
@@ -76,7 +77,8 @@ export const useTokenBuyHandler = () => {
                     console.warn("Session refresh failed, attempting transaction anyway:", refreshError);
                 }
             }
-            
+*/
+
             // Get ETH price once for all transactions
             const ETH_PRICE_USD = await getEthPrice();
 

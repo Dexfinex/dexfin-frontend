@@ -30,6 +30,71 @@ export const authService = {
         }
     },
 
+    checkCode: async (code: string) => {
+        try {
+            if (!code) {
+                throw new Error('Invitation code is required');
+            }
+            
+            console.log('Sending invitation code:', code);
+            
+            const response = await userAuthApi.post('/verify-invitation', {
+                invitationCode: code
+            });
+            
+            console.log('Response from server:', response);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error checking invitation code:', error);
+            
+            // Extract the error message from the server response
+            const errorMessage = 
+                error.response?.data?.message || 
+                'Failed to verify invitation code';
+            
+            const enhancedError = new Error(errorMessage) as EnhancedError;
+            enhancedError.original = error;
+            throw enhancedError;
+        }
+    },
+
+    checkUsername: async (username: string) => {
+        try {
+            if (!username) {
+                throw new Error('Username is required');
+            }
+            
+            if (username.length < 3) {
+                throw new Error('Username must be at least 3 characters');
+            }
+            
+            const usernameRegex = /^[a-z0-9_]+$/;
+            if (!usernameRegex.test(username)) {
+                throw new Error('Username can only contain letters, numbers, and underscores');
+            }
+            
+            console.log('Checking username availability:', username);
+            
+            const response = await userAuthApi.post('/verify-username', {
+                username: username
+            });
+            
+            console.log('Username check response:', response);
+            
+            return response.data;
+        } catch (error: any) {
+            console.error('Error checking username:', error);
+            
+            const errorMessage = 
+                error.response?.data?.message || 
+                'Failed to check username availability';
+            
+            const enhancedError = new Error(errorMessage) as EnhancedError;
+            enhancedError.original = error;
+            throw enhancedError;
+        }
+    },
+
     register: async (walletType: string, evmAddress?: string, solAddress?: string, btcAddress?: string) => {
         try {
             if (!walletType) {

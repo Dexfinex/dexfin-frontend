@@ -25,6 +25,7 @@ import makeBlockie from 'ethereum-blockies-base64';
 import { SOLANA_CHAIN_ID } from "../../constants/solana.constants.ts";
 import { LOCAL_STORAGE_RECENT_ADDRESSES } from '../../constants/index.ts';
 import { getGasEstimation } from '../../utils/chains.util.tsx';
+import {getRealNativeTokenAddress} from "../../utils/token.util.ts";
 
 interface SendDrawerProps {
     setPage: (type: PageType) => void;
@@ -152,25 +153,26 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     const { getTokenPrice } = useTokenStore()
 
     const tokenChainId = Number(chainId);
-    const nativeTokenAddress = mapChainId2NativeAddress[tokenChainId]
+    const priceNativeTokenAddress = mapChainId2NativeAddress[tokenChainId]
+    const nativeTokenAddress = getRealNativeTokenAddress(tokenChainId)
 
     const { refetch: refetchNativeTokenPrice } = useGetTokenPrices({
-        tokenAddresses: [nativeTokenAddress],
+        tokenAddresses: [priceNativeTokenAddress],
         chainId: tokenChainId,
     })
 
     const nativeTokenPrice = useMemo(() => {
-        if (tokenChainId && nativeTokenAddress) {
-            return getTokenPrice(nativeTokenAddress, tokenChainId)
+        if (tokenChainId && priceNativeTokenAddress) {
+            return getTokenPrice(priceNativeTokenAddress, tokenChainId)
         }
         return 0;
-    }, [getTokenPrice, nativeTokenAddress, tokenChainId])
+    }, [getTokenPrice, priceNativeTokenAddress, tokenChainId])
 
     useEffect(() => {
-        if (tokenChainId && nativeTokenAddress && nativeTokenPrice === 0) {
+        if (tokenChainId && priceNativeTokenAddress && nativeTokenPrice === 0) {
             refetchNativeTokenPrice()
         }
-    }, [tokenChainId, nativeTokenAddress, nativeTokenPrice])
+    }, [tokenChainId, priceNativeTokenAddress, nativeTokenPrice])
 
     const updateBalance = () => {
         const updated = tokenBalances.map(token => {
@@ -203,7 +205,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                     const gasFee = await getGasEstimation(selectedAsset.address, address, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
                     realAmount -= gasFee
                 }
-console.log(amount, realAmount)
+
                 const signature = await transferSolToken(address, selectedAsset.address, realAmount, selectedAsset.decimals)
                 if (signature) {
                     updateBalance()
