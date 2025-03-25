@@ -1,10 +1,10 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useAccount } from 'wagmi';
-import { type SolanaWalletInfoType } from '../types/auth.type';
-import { authService } from '../services/auth.service';
-import { Web3AuthContext } from './Web3AuthContext';
+import { createContext, useContext, useEffect, useState } from "react";
+import { useAccount } from "wagmi";
+import { type SolanaWalletInfoType } from "../types/auth.type";
+import { authService } from "../services/auth.service";
+import { Web3AuthContext } from "./Web3AuthContext";
 import { useStore } from "../store/useStore.ts";
-import { setAuthToken } from '../services/api.service';
+import { setAuthToken } from "../services/api.service";
 import { WalletTypeEnum } from "../types/wallet.type.ts";
 
 interface UserContextType {
@@ -27,13 +27,16 @@ const UserContext = createContext<UserContextType>({
 
 export const useUserData = () => useContext(UserContext);
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [userData, setUserData] = useState<UserContextType['userData']>(null);
+export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [userData, setUserData] = useState<UserContextType["userData"]>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isNewRegistration, setIsNewRegistration] = useState(false);
 
-  const { address: wagmiAddress, isConnected: isWagmiWalletConnected } = useAccount();
+  const { address: wagmiAddress, isConnected: isWagmiWalletConnected } =
+    useAccount();
   const {
     solanaWalletInfo,
     currentAccount,
@@ -41,34 +44,35 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     walletType,
     isConnected,
   } = useContext(Web3AuthContext);
-  
-  const setIsUsernameModalOpen = useStore(state => state.setIsUsernameModalOpen);
 
-  const handleWalletAuth = async (walletType: WalletTypeEnum, evmAddress?: string, solAddress?: string) => {
+  const handleWalletAuth = async (
+    walletType: WalletTypeEnum,
+    evmAddress?: string,
+    solAddress?: string
+  ) => {
     try {
       setIsLoading(true);
       setError(null);
-
       try {
-        const loginResponse = await authService.login(evmAddress || '');
+        const loginResponse = await authService.login(evmAddress || "");
         if (loginResponse?.accessToken) {
           setAuthToken(loginResponse.accessToken);
           setUserData({
             accessToken: loginResponse.accessToken,
             userId: loginResponse.userId,
-            walletType
+            walletType,
           });
           setIsNewRegistration(false);
           return;
         }
       } catch (error) {
-        console.log('Login failed, attempting registration...');
+        console.log("Login failed, attempting registration...");
       }
 
       const registerResponse = await authService.register(
         walletType,
         evmAddress,
-        solAddress,
+        solAddress
       );
 
       if (registerResponse?.accessToken) {
@@ -76,9 +80,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserData({
           accessToken: registerResponse.accessToken,
           userId: registerResponse.userId,
-          walletType
+          walletType,
         });
-        
+
         setIsNewRegistration(true);
       }
     } catch (error) {
@@ -90,11 +94,27 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    if (isNewRegistration && userData?.accessToken) {
-      setIsUsernameModalOpen(true);
-      setIsNewRegistration(false);
-    }
-  }, [isNewRegistration, userData, setIsUsernameModalOpen]);
+    const registerUsername = async () => {
+      if (isNewRegistration && userData?.accessToken) {
+        try {
+          const username = useStore.getState().username;
+          if (username) {
+            const response = await authService.registerUsername(username);
+
+            if (response) {
+              setIsNewRegistration(false);
+            }
+          } else {
+            setIsNewRegistration(false);
+          }
+        } catch (error) {
+          console.error("Error registering username:", error);
+        }
+      }
+    };
+
+    registerUsername();
+  }, [isNewRegistration, userData]);
 
   const initializeAllVariables = () => {
     setUserData(null);
@@ -129,9 +149,5 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     solanaWalletInfo,
   };
 
-  return (
-    <UserContext.Provider value={value}>
-      {children}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };

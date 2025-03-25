@@ -58,8 +58,8 @@ export const ENSO_BASE_URL = `${BASE_HOST_DOMAIN}/enso`;
 
 export const CALENDAR_BASE_URL = `${BASE_HOST_DOMAIN}/calendar`;
 
-export const USERAUTH_BASE_URL = `${BASE_HOST_DOMAIN}/auth`;
-// export const USERAUTH_BASE_URL = `http://localhost:3000/auth`;
+// export const USERAUTH_BASE_URL = `${BASE_HOST_DOMAIN}/auth`;
+export const USERAUTH_BASE_URL = `http://localhost:3000/auth`;
 
 export const TECHNICALANALYSIS_BASE_URL = `${BASE_HOST_DOMAIN}/technical`;
 
