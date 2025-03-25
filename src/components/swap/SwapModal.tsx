@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Flex, HStack, Modal, ModalContent, ModalOverlay, Text, useBreakpointValue, } from '@chakra-ui/react';
-import { Maximize2, X } from 'lucide-react';
-import { SellBox } from "./components/SellBox";
-import { BuyBox } from "./components/BuyBox";
-import { SwapBox } from "./components/SwapBox";
-import { ChartType, SlippageOption, TokenType, TransactionType } from "../../types/swap.type";
-import { SlippageSettings } from "./SlippageSettings";
-import { Chart } from "./components/chart/Chart.tsx";
-import { ConfirmSwapModal } from "./modals/ConfirmSwapModal.tsx";
-import { NULL_ADDRESS } from "../../constants";
-import { SolanaSwapBox } from "./components/SolanaSwapBox.tsx";
-import { ChartDrawer } from "./components/chart/ChartDrawer.tsx";
-import { CrossChainSwapBox } from "./components/CrossChainSwapBox.tsx";
-import { useTrendingTokens } from '../../hooks/useTrendingTokens.ts';
+import React, {useEffect, useState} from 'react';
+import {Box, Flex, HStack, Modal, ModalContent, ModalOverlay, Text, useBreakpointValue,} from '@chakra-ui/react';
+import {Maximize2, X} from 'lucide-react';
+import {SellBox} from "./components/SellBox";
+import {BuyBox} from "./components/BuyBox";
+import {SwapBox} from "./components/SwapBox";
+import {ChartType, TokenType, TransactionType} from "../../types/swap.type";
+import {Chart} from "./components/chart/Chart.tsx";
+import {ConfirmSwapModal} from "./modals/ConfirmSwapModal.tsx";
+import {NULL_ADDRESS} from "../../constants";
+import {SolanaSwapBox} from "./components/SolanaSwapBox.tsx";
+import {ChartDrawer} from "./components/chart/ChartDrawer.tsx";
+import {CrossChainSwapBox} from "./components/CrossChainSwapBox.tsx";
+import {useTrendingTokens} from '../../hooks/useTrendingTokens.ts';
+import { SOLANA_CHAIN_ID } from '../../constants/solana.constants.ts';
 
 interface SwapModalProps {
     isOpen: boolean;
@@ -43,7 +43,6 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
     const [fromAmount, setFromAmount] = useState('');
     const [toAmount, setToAmount] = useState('');
     const [usdAmount, setUsdAmount] = useState('');
-    const [slippage, setSlippage] = useState<SlippageOption>(0.5);
     const [chartType, setChartType] = useState<ChartType>('tradingview');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -73,7 +72,6 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
             toToken,
             fromAmount,
             toAmount,
-            slippage,
         });
         setShowConfirmModal(false);
     };
@@ -147,7 +145,6 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
                                 </Flex>
 
                                 <HStack spacing={2}>
-                                    <SlippageSettings value={slippage} onChange={setSlippage} />
                                     <button
                                         onClick={() => setIsMaximized(!isMaximized)}
                                         className="p-2 rounded-lg hover:bg-white/5 transition-all hover:scale-110 active:scale-95"
@@ -232,10 +229,9 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
                                             onFromAmountChange={setFromAmount}
                                             onToAmountChange={setToAmount}
                                             onSwitch={handleSwitch}
-                                            slippage={slippage}
                                         />
                                     ) : (
-                                        fromToken?.chainId === 900 ? (
+                                        fromToken?.chainId === SOLANA_CHAIN_ID ? (
                                             <SolanaSwapBox
                                                 fromToken={fromToken}
                                                 toToken={toToken}
@@ -246,7 +242,6 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
                                                 onFromAmountChange={setFromAmount}
                                                 onToAmountChange={setToAmount}
                                                 onSwitch={handleSwitch}
-                                                slippage={slippage}
                                             />
                                         ) : (
                                             <SwapBox
@@ -259,7 +254,6 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
                                                 onFromAmountChange={setFromAmount}
                                                 onToAmountChange={setToAmount}
                                                 onSwitch={handleSwitch}
-                                                slippage={slippage}
                                             />
                                         )
 
@@ -277,7 +271,6 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
                             fromAmount={fromAmount}
                             toAmount={toAmount}
                             priceImpact={-0.5} // TODO: Calculate actual price impact
-                            slippage={slippage}
                             onConfirm={handleConfirmSwap}
                             onClose={() => setShowConfirmModal(false)}
                         />

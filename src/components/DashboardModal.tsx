@@ -1,4 +1,4 @@
-import { useState, useContext, useMemo, useEffect } from "react"
+import { useState, useContext, useMemo } from "react"
 import { X, Maximize2, Minimize2, TrendingUp, ArrowUp } from "lucide-react"
 import { Line } from "react-chartjs-2"
 import {
@@ -17,11 +17,12 @@ import { Skeleton } from '@chakra-ui/react';
 import { Web3AuthContext } from "../providers/Web3AuthContext"
 import { useWalletBalance } from "../hooks/useBalance"
 import { TokenChainIcon, TokenIcon } from "./swap/components/TokenIcon"
-import { formatNumberByFrac } from "../utils/common.util"
+import { formatNumberByFrac, formatNumberByRepeat } from "../utils/common.util"
 import useTokenBalanceStore from "../store/useTokenBalanceStore"
 import useDefiStore from "../store/useDefiStore"
 import PNL from "./common/PNL"
 import PNLPercent from "./common/PNLPercent"
+import NumberFormat from "./common/NumberFormat";
 
 import { usePortfolioPerformance } from "../hooks/usePortfolioPerformance";
 
@@ -482,22 +483,24 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                               <div className="font-medium text-sm sm:text-md">{token.symbol}</div>
                               <div className="flex items-center gap-2 text-sm">
                                 <span>
-                                  {formatNumberByFrac(token.balance)} {token.symbol}
+                                  <NumberFormat number={token.balance} suffix={" " + token.symbol} />
                                 </span>
                                 <span className="text-black/40 dark:text-white/40">•</span>
-                                <span>${formatNumberByFrac(token.usdValue)}</span>
+                                <NumberFormat number={token.usdValue} prefix="$" />
                               </div>
                             </div>
                           </div>
                           <div className="flex items-center justify-between sm:justify-end gap-4 flex-1">
-                            <div className="text-right">
-                              <div className="text-lg">${formatNumberByFrac(token.usdValue)}</div>
+                            <div className="flex flex-col items-end text-right">
+                              <div className="text-lg">
+                                <NumberFormat number={token.usdValue} prefix="$" />
+                              </div>
                               <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / token.usdPrice} />
                             </div>
-                            <div className="w-32">
+                            <div className="w-48">
                               <div className="flex items-center justify-between text-sm mb-1">
                                 <span className="">Allocation</span>
-                                <span>{formatNumberByFrac(allocationPercent)}%</span>
+                                <NumberFormat number={allocationPercent} suffix="%" />
                               </div>
                               <div className="h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
                                 <div

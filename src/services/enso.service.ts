@@ -1,5 +1,4 @@
 import { enSoApi } from "./api.service.ts";
-import axios, { AxiosInstance } from "axios";
 export interface EnSoResponse {
     createdAt: number;
     tx: {

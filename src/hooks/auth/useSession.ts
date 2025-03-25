@@ -33,6 +33,17 @@ export default function useSession() {
         []
     );
 
+    const initSessionRepeatedly = useCallback(
+        async (authMethod: AuthMethod, pkp: IRelayPKP): Promise<void> => {
+            const sessionSigs = await getSessionSigs({
+                pkpPublicKey: pkp.publicKey,
+                authMethod,
+            });
+            setSessionSigs(sessionSigs);
+        },
+        []
+    );
+
     /**
      * Generate session sigs and store new session data
      */
@@ -63,6 +74,7 @@ export default function useSession() {
 
     return {
         initSession,
+        initSessionRepeatedly,
         initSessionUnSafe,
         sessionSigs,
         loading,

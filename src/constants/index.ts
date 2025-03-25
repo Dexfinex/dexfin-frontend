@@ -13,6 +13,8 @@ export const LOCAL_STORAGE_PUSH_KEY = 'PgpPK'
 export const LOCAL_STORAGE_LAST_CHAT_USER = 'LOCAL_STORAGE_LAST_CHAT_USER'
 export const LOCAL_STORAGE_RECENT_ADDRESSES = 'recentSendAddresses'
 
+export const LIT_SESSION_UPDATE_INTERVAL = 580 * 1000
+
 export const mapRpcUrls: Record<number, string> = {
     [mainnet.id]: 'https://mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',
     [sepolia.id]: 'https://sepolia.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',

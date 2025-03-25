@@ -26,6 +26,8 @@ export interface PreviewDetailItemProps {
     valueClassName?: string;
     isFree?: boolean;
     isLoading: boolean;
+    isSlippageItem?: boolean;
+    openDialog?: (value: boolean) => void;
 }
 
 export type TokenType = {
@@ -66,7 +68,8 @@ export type TokenType = {
     sparkline_in_7d?: { price: number[] };
     categories?: string;
     platforms?: string[];
-
+    balance?: number;
+    usdValue?: number;
 };
 
 export type AssetPlatformType = {

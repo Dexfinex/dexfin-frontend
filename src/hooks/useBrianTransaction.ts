@@ -33,7 +33,7 @@ export const useBrianTransactionMutation = () => {
           
           const tx = await signer?.sendTransaction({ ...transactionParams }); 
           const receipt = await tx.wait();
-          scan = `${mapChainId2ViemChain[transactionStep.chainId].blockExplorers?.default.url}/tx/${receipt.transactionHash}`;;
+          scan = `${mapChainId2ViemChain[transactionStep.chainId].blockExplorers?.default.url}/tx/${receipt.transactionHash}`;
           console.log("Transaction successful:", receipt);
           if (index < data.transactions.length - 1) {
             await new Promise((resolve) => setTimeout(resolve, data.duration));

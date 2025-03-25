@@ -1,9 +1,9 @@
 import {useContext, useEffect, useMemo, useState} from 'react';
-import {ArrowDownUp, Info} from 'lucide-react';
+import {ArrowDownUp} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
 import {SlippageOption, TokenType} from '../../../types/swap.type';
 import {formatNumberByFrac} from '../../../utils/common.util';
-import {Button, Flex, Skeleton} from '@chakra-ui/react';
+import {Button, Skeleton} from '@chakra-ui/react';
 import {ZEROX_AFFILIATE_FEE} from "../../../constants";
 import useTokenStore from "../../../store/useTokenStore.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
@@ -16,6 +16,8 @@ import {connection} from "../../../config/solana.ts";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
 import {getUSDAmount} from "../../../utils/swap.util.ts";
+import {SlippageDialog} from "../SlippageSettings.tsx";
+import {PreviewDetailItem} from "./SwapBox.tsx";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -27,53 +29,6 @@ interface SwapBoxProps {
     onFromAmountChange: (amount: string) => void;
     onToAmountChange: (amount: string) => void;
     onSwitch: () => void;
-    slippage: SlippageOption;
-}
-
-interface PreviewDetailItemProps {
-    title: string;
-    info: string;
-    value: string;
-    valueClassName?: string;
-    isFree?: boolean;
-    isLoading: boolean;
-}
-
-const PreviewDetailItem = ({
-                               title,
-                               info,
-                               value,
-                               valueClassName,
-                               isFree,
-                               isLoading,
-                           }: PreviewDetailItemProps) => {
-    return (
-        <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1">
-                <span className="text-gray-400">{title}</span>
-                <div className="group relative">
-                    <Info className="w-3.5 h-3.5 text-gray-500"/>
-                    <div
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 text-xs text-gray-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        {info}
-                    </div>
-                </div>
-            </div>
-            {
-                isLoading ? (
-                    <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
-                ) : isFree ? (
-                    <Flex gap={2}>
-                        <span className={'text-green-500'}>Free!</span>
-                        <span
-                            className={(valueClassName ? valueClassName : "text-white") + ' line-through'}>{value}</span>
-                    </Flex>
-                ) : (
-                    <span className={valueClassName ? valueClassName : "text-white"}>{value}</span>
-                )
-            }
-        </div>
-    )
 }
 
 export function SolanaSwapBox({
@@ -86,9 +41,10 @@ export function SolanaSwapBox({
                                   onFromAmountChange,
                                   onToAmountChange,
                                   onSwitch,
-                                  slippage,
                               }: SwapBoxProps) {
 
+    const [isOpenSlippageDialog, setIsOpenSlippageDialog] = useState<boolean>(false);
+    const [slippage, setSlippage] = useState<SlippageOption>(0.5);
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [transactionHash, setTransactionHash] = useState<string | undefined>(undefined);
     const [confirmationLoading, setConfirmationLoading] = useState(false);
@@ -320,133 +276,136 @@ export function SolanaSwapBox({
     }
 
     return (
-        <div className="space-y-2.5">
-            <TokenSelector
-                className="relative z-20 mb-2"
-                selectedToken={fromToken}
-                selectedChainId={fromToken?.chainId ?? toToken?.chainId}
-                onSelect={onFromTokenSelect}
-                amount={fromAmount}
-                usdAmount={fromUsdAmount.toString()}
-                onAmountChange={onFromAmountChange}
-                balance={fromBalance?.formatted}
-                isBalanceLoading={isFromBalanceLoading}
-                label="You sell"
-            />
-            <div className="relative h-8 flex items-center justify-center">
-                <div className="z-30">
-                    <button
-                        onClick={onSwitch}
-                        className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
-                    >
-                        <ArrowDownUp className="w-4 h-4"/>
-                    </button>
-                </div>
-            </div>
-
-            <TokenSelector
-                className="relative z-10"
-                selectedToken={toToken}
-                selectedChainId={fromToken?.chainId ?? toToken?.chainId}
-                onSelect={onToTokenSelect}
-                amount={toAmount}
-                usdAmount={toUsdAmount.toString()}
-                onAmountChange={() => {
-                }} // Disabled for now - only calculate based on fromAmount
-                label="You buy"
-                disabled={true}
-                isLoading={isQuoteLoading}
-                balance={toBalance?.formatted}
-                isBalanceLoading={isToBalanceLoading}
-            />
-
-            {fromToken && toToken && fromAmount && Number(fromAmount) > 0 && (
-                <div className="space-y-2.5 mt-4">
-                    {/* Exchange Rate */}
-                    <div
-                        className="px-4 py-3 text-sm bg-[#1d2837]/20 rounded-lg border border-white/5 hover:border-blue-500/20 transition-all">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-gray-400">Exchange Rate</span>
-                            {
-                                isQuoteLoading ? (
-                                    <Skeleton startColor="#444" endColor="#1d2837" w={'7rem'} h={'1rem'}></Skeleton>
-                                ) : (
-                                    <span className="text-white font-mono">
-                                        1 {fromToken?.symbol} = {formatNumberByFrac(Number(quoteData?.exchangeRate), 2)} {toToken?.symbol}
-                                    </span>
-                                )
-                            }
-                        </div>
-
-                        {/* Price Impact */}
-                        <PreviewDetailItem
-                            title={'Price Impact'}
-                            info={'The difference between market price and estimated price due to trade size'}
-                            value={`${formatNumberByFrac(priceImpact, 2)}%`}
-                            valueClassName={`${
-                                priceImpact < -5
-                                    ? 'text-red-500'
-                                    : priceImpact < -3
-                                        ? 'text-yellow-500'
-                                        : 'text-green-500'
-                            }`}
-                            isLoading={isQuoteLoading}
-                        />
-
-                        {/* Affiliate Fee */}
-                        {
-                            quoteData?.affiliateFee && (
-                                <PreviewDetailItem
-                                    title={`Affiliate Fee (${ZEROX_AFFILIATE_FEE / 100}%)`}
-                                    info={'A small percentage of the transaction fee shared with affiliates who bring users to the platform'}
-                                    value={`$${formatNumberByFrac(affiliateFeeUsdAmount, 2)}`}
-                                    isLoading={isQuoteLoading}
-                                />
-                            )
-                        }
-                        {/* Sell Tax */}
-                        {
-                            quoteData?.sellTax && (
-                                <PreviewDetailItem
-                                    title={`Sell Fee (${sellTaxPercentage}%)`}
-                                    info={`${fromToken?.symbol} charges a ${sellTaxPercentage}% fee when bought. Swapping it may result in a loss of funds. Dexfin does not receive any of these fees.`}
-                                    value={`$${sellTaxUsdAmount}`}
-                                    isLoading={isQuoteLoading}
-                                />
-                            )
-                        }
-                        {/* Buy Tax */}
-                        {
-                            quoteData?.buyTax && (
-                                <PreviewDetailItem
-                                    title={`Buy Fee (${buyTaxPercentage}%)`}
-                                    info={`${toToken?.symbol} charges a ${buyTaxPercentage}% fee when bought. Swapping it may result in a loss of funds. Dexfin does not receive any of these fees.`}
-                                    value={`$${buyTaxUsdAmount}`}
-                                    isLoading={isQuoteLoading}
-                                />
-                            )
-                        }
-
-                        {/* Network Fee */}
-                        <PreviewDetailItem
-                            title={'Network Fee'}
-                            info={'Estimated network fees for processing the transaction'}
-                            value={`0.00000 SOL`}
-                            isLoading={false}
-                        />
-
-                        {/* slippage */}
-                        <PreviewDetailItem
-                            title={'Max. slippage'}
-                            info={'Allowable difference between the expected and executed prices of a trade. Your transaction will revert if price changes unfavorably by more than this percentage'}
-                            value={`${slippage}%`}
-                            isLoading={false}
-                        />
+        <>
+            <div className="space-y-2.5">
+                <TokenSelector
+                    className="relative z-20 mb-2"
+                    selectedToken={fromToken}
+                    selectedChainId={fromToken?.chainId ?? toToken?.chainId}
+                    onSelect={onFromTokenSelect}
+                    amount={fromAmount}
+                    usdAmount={fromUsdAmount.toString()}
+                    onAmountChange={onFromAmountChange}
+                    balance={fromBalance?.formatted}
+                    isBalanceLoading={isFromBalanceLoading}
+                    label="You sell"
+                />
+                <div className="relative h-8 flex items-center justify-center">
+                    <div className="z-30">
+                        <button
+                            onClick={onSwitch}
+                            className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
+                        >
+                            <ArrowDownUp className="w-4 h-4"/>
+                        </button>
                     </div>
                 </div>
-            )}
 
-            {/*
+                <TokenSelector
+                    className="relative z-10"
+                    selectedToken={toToken}
+                    selectedChainId={fromToken?.chainId ?? toToken?.chainId}
+                    onSelect={onToTokenSelect}
+                    amount={toAmount}
+                    usdAmount={toUsdAmount.toString()}
+                    onAmountChange={() => {
+                    }} // Disabled for now - only calculate based on fromAmount
+                    label="You buy"
+                    disabled={true}
+                    isLoading={isQuoteLoading}
+                    balance={toBalance?.formatted}
+                    isBalanceLoading={isToBalanceLoading}
+                />
+
+                {fromToken && toToken && fromAmount && Number(fromAmount) > 0 && (
+                    <div className="space-y-2.5 mt-4">
+                        {/* Exchange Rate */}
+                        <div
+                            className="px-4 py-3 text-sm bg-[#1d2837]/20 rounded-lg border border-white/5 hover:border-blue-500/20 transition-all">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-gray-400">Exchange Rate</span>
+                                {
+                                    isQuoteLoading ? (
+                                        <Skeleton startColor="#444" endColor="#1d2837" w={'7rem'} h={'1rem'}></Skeleton>
+                                    ) : (
+                                        <span className="text-white font-mono">
+                                        1 {fromToken?.symbol} = {formatNumberByFrac(Number(quoteData?.exchangeRate), 2)} {toToken?.symbol}
+                                    </span>
+                                    )
+                                }
+                            </div>
+
+                            {/* Price Impact */}
+                            <PreviewDetailItem
+                                title={'Price Impact'}
+                                info={'The difference between market price and estimated price due to trade size'}
+                                value={`${formatNumberByFrac(priceImpact, 2)}%`}
+                                valueClassName={`${
+                                    priceImpact < -5
+                                        ? 'text-red-500'
+                                        : priceImpact < -3
+                                            ? 'text-yellow-500'
+                                            : 'text-green-500'
+                                }`}
+                                isLoading={isQuoteLoading}
+                            />
+
+                            {/* Affiliate Fee */}
+                            {
+                                quoteData?.affiliateFee && (
+                                    <PreviewDetailItem
+                                        title={`Affiliate Fee (${ZEROX_AFFILIATE_FEE / 100}%)`}
+                                        info={'A small percentage of the transaction fee shared with affiliates who bring users to the platform'}
+                                        value={`$${formatNumberByFrac(affiliateFeeUsdAmount, 2)}`}
+                                        isLoading={isQuoteLoading}
+                                    />
+                                )
+                            }
+                            {/* Sell Tax */}
+                            {
+                                quoteData?.sellTax && (
+                                    <PreviewDetailItem
+                                        title={`Sell Fee (${sellTaxPercentage}%)`}
+                                        info={`${fromToken?.symbol} charges a ${sellTaxPercentage}% fee when bought. Swapping it may result in a loss of funds. Dexfin does not receive any of these fees.`}
+                                        value={`$${sellTaxUsdAmount}`}
+                                        isLoading={isQuoteLoading}
+                                    />
+                                )
+                            }
+                            {/* Buy Tax */}
+                            {
+                                quoteData?.buyTax && (
+                                    <PreviewDetailItem
+                                        title={`Buy Fee (${buyTaxPercentage}%)`}
+                                        info={`${toToken?.symbol} charges a ${buyTaxPercentage}% fee when bought. Swapping it may result in a loss of funds. Dexfin does not receive any of these fees.`}
+                                        value={`$${buyTaxUsdAmount}`}
+                                        isLoading={isQuoteLoading}
+                                    />
+                                )
+                            }
+
+                            {/* Network Fee */}
+                            <PreviewDetailItem
+                                title={'Network Fee'}
+                                info={'Estimated network fees for processing the transaction'}
+                                value={`0.00000 SOL`}
+                                isLoading={false}
+                            />
+
+                            {/* slippage */}
+                            <PreviewDetailItem
+                                title={'Max. slippage'}
+                                info={'Allowable difference between the expected and executed prices of a trade. Your transaction will revert if price changes unfavorably by more than this percentage'}
+                                value={`${slippage}%`}
+                                isLoading={false}
+                                isSlippageItem={true}
+                                openDialog={setIsOpenSlippageDialog}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/*
             {
                 error && (
                     <Alert status="error" variant="subtle" bg={'#511414'} borderRadius="md">
@@ -457,46 +416,54 @@ export function SolanaSwapBox({
             }
 */}
 
-            {
-                !solanaWalletInfo ? (
-                    <Button
-                        width="full"
-                        colorScheme="blue"
-                        onClick={() => {
-                        }}
-                        isDisabled={true}
-                    >
-                        Please Use Embedded Wallet
-                    </Button>
-                ) : (
-                    insufficientBalance ? (
+                {
+                    !solanaWalletInfo ? (
                         <Button
                             width="full"
                             colorScheme="blue"
+                            onClick={() => {
+                            }}
                             isDisabled={true}
                         >
-                            Insufficient Balance
+                            Please Use Embedded Wallet
                         </Button>
-
                     ) : (
-                        <Button
-                            isLoading={confirmationLoading || isQuoteLoading}
-                            loadingText={confirmationLoading ? 'Confirming...' : 'Computing...'}
-                            width="full"
-                            colorScheme="blue"
-                            onClick={handleSwap}
-                            isDisabled={!(Number(fromAmount) > 0) || confirmationLoading || isQuoteLoading}
-                        >
-                            Swap
-                        </Button>
+                        insufficientBalance ? (
+                            <Button
+                                width="full"
+                                colorScheme="blue"
+                                isDisabled={true}
+                            >
+                                Insufficient Balance
+                            </Button>
+
+                        ) : (
+                            <Button
+                                isLoading={confirmationLoading || isQuoteLoading}
+                                loadingText={confirmationLoading ? 'Confirming...' : 'Computing...'}
+                                width="full"
+                                colorScheme="blue"
+                                onClick={handleSwap}
+                                isDisabled={!(Number(fromAmount) > 0) || confirmationLoading || isQuoteLoading}
+                            >
+                                Swap
+                            </Button>
+                        )
                     )
-                )
-            }
-            {
-                <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
-                                  link={`${mapChainId2ExplorerUrl[SOLANA_CHAIN_ID]}/tx/${transactionHash}`} checkBalance={true}/>
-            }
-        </div>
+                }
+                {
+                    <TransactionModal open={txModalOpen} setOpen={setTxModalOpen}
+                                      link={`${mapChainId2ExplorerUrl[SOLANA_CHAIN_ID]}/tx/${transactionHash}`}
+                                      checkBalance={true}/>
+                }
+            </div>
+            <SlippageDialog
+                isOpen={isOpenSlippageDialog}
+                setIsOpen={setIsOpenSlippageDialog}
+                value={slippage}
+                onChange={setSlippage}
+            />
+        </>
     )
         ;
 }

@@ -227,6 +227,33 @@ export const formatNumberByFrac = (
     return getFixedNum(num, fixedCount);
 };
 
+export const formatNumberByRepeat = (
+    num: number,
+    fixedCount: number = 2,
+): { prev: string, current: string, next: string } => {
+    const string = formatNumberByFrac(num, fixedCount);
+    const decimalIndex = string.indexOf('.');
+    const threshold = 0.001;
+
+    if (decimalIndex !== -1 && Math.abs(num) < threshold) {
+        const decimalPart = string.slice(decimalIndex + 1); // Get the decimal part
+
+        let significantDigitPosition = decimalPart.search(/[1-9]/); // Find the first non-zero digit
+
+        if (significantDigitPosition === -1) {
+            // Handle case when there's no significant digit
+            return { prev: string, current: "", next: "" };
+        }
+
+        const leadingZeros = decimalPart.slice(0, significantDigitPosition); // Leading zeros before the significant digit
+        const significantDigit = decimalPart.charAt(significantDigitPosition); // The significant digit itself
+        const remainingDigits = decimalPart.slice(significantDigitPosition + 1); // Any remaining digits after the significant digit
+        // return `0.0(${leadingZeros.length})${significantDigit}${remainingDigits}`; // Return the formatted string
+        return { prev: "0.0", current: leadingZeros.length + "", next: `${significantDigit}${remainingDigits}` };
+    }
+    return { prev: string, current: "", next: "" };
+};
+
 export const formatNumber = (num: number): string => {
     if (num >= 1e12) return (num / 1e12).toFixed(2) + "T"; // Trillion
     if (num >= 1e9) return (num / 1e9).toFixed(2) + "B"; // Billion
