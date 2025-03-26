@@ -481,13 +481,15 @@ export function TokenSelectorModal({
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-5">
-                                                    <div className='flex flex-col text-sm items-end text-gray-400'>
-                                                        <span>{`${formatNumberByFrac(token.balance, 5)} ${token?.symbol ? token.symbol.toUpperCase() : ""}`}</span>
-                                                        <span>${formatNumberByFrac(token.usdValue, 5)}</span>
+                                                    <div className='flex flex-col text-sm items-end'>
+                                                        <span className="text-white">{`${formatNumberByFrac(token.balance, 5)} ${token?.symbol ? token.symbol.toUpperCase() : ""}`}</span>
+                                                        <span className="text-gray-400">${formatNumberByFrac(token.usdValue, 5)}</span>
                                                     </div>
+{/*
                                                     <div className="text-right w-24">
                                                         <div className="text-sm text-gray-400">{shrinkAddress(token.address)}</div>
                                                     </div>
+*/}
                                                 </div>
                                             </div>
                                         ))}
