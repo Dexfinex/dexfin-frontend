@@ -73,7 +73,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
             </div>
 
             <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center text-white">
+                <div className="flex-row hidden md:flex items-start text-white">
                     <div className="flex w-full">Assets</div>
                     <div className="flex w-full">Yield Type</div>
                     <div className="flex w-full">Tokens</div>
@@ -93,13 +93,13 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                             key={chainId + offering.protocol_id + offering.apyToken + index}
                             className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
                         >
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                            <div className="md:flex md:flex-row grid grid-cols-2 sm:grid-cols-3 items-start items-center gap-4">
                                 <div className="flex w-full items-center gap-2">
                                     <TokenChainListIcon src={offering.logo || ""} alt={offering.protocol || ""} size={"lg"} chainIds={[offering.chainId]} />
                                     <h3 className="font-medium">{offering.protocol}</h3>
                                 </div>
                                 <div className="flex w-full items-center gap-2">
-                                    <span className={`text-sm ${getTypeColor(offering.type)} hidden sm:block`}>
+                                    <span className={`text-sm ${getTypeColor(offering.type)}`}>
                                         {offering.type}
                                     </span>
                                 </div>
@@ -118,7 +118,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                         }`}>
                                         {
                                             isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
-                                                : `$${formatNumber(Number(poolInfo?.tvlUsd) || 0)}`
+                                                : <div className="flex gap-1"><span className="block md:hidden">TVL</span>{`$${formatNumber(Number(poolInfo?.tvlUsd) || 0)}`}</div>
                                         }
                                     </div>
                                 </div>
@@ -126,12 +126,12 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                     <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
                                         }`}>
                                         {isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
-                                            : `${formatNumberByFrac(poolInfo?.apy) || "0"}%`
+                                            : <div className="flex gap-1"><span className="block md:hidden">APY</span> {`${formatNumberByFrac(poolInfo?.apy) || "0"}%`}</div>
                                         }
                                     </div>
                                 </div>
 
-                                <div className="flex w-full items-center gap-2">
+                                <div className="flex w-full items-center">
                                     <button
                                         onClick={async () => {
                                             const position = positions.find(position => position.address === offering.address && position.protocol === offering.protocol);
@@ -146,7 +146,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                                 supportedChains,
                                             );
                                         }}
-                                        className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg ${isEnabled ? "" : "opacity-70"}`}
+                                        className={`truncate text-sm px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg ${isEnabled ? "" : "opacity-70"}`}
                                         disabled={!isEnabled}
                                     >
                                         Get Started
