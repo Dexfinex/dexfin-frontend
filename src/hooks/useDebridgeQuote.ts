@@ -102,6 +102,7 @@ const useDebridgeQuote = ({
     return {
         isLoading,
         refetch,
+        targetDestinationAddress: dstAddress,
         quoteResponse: data ?? {
             ...defaultQuoteResponse,
             errorMessage,
