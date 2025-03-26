@@ -77,14 +77,6 @@ export default function App() {
 
   const { authMethod, initializeErrors, address, isConnected, logout } =
     useContext(Web3AuthContext);
-    
-  // Save auth state when connected
-  useEffect(() => {
-    // logout()
-    if (isConnected) {
-      localStorage.setItem(AUTH_TOKEN_KEY, "true");
-    }
-  }, [isConnected]);
 
   // Apply theme and global styles
   useEffect(() => {

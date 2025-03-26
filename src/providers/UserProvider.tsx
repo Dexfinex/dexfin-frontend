@@ -93,29 +93,37 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  useEffect(() => {
-    const registerUsername = async () => {
-      console.log(useStore.getState().username);
-      if (isNewRegistration && userData?.accessToken) {
-        try {
-          const username = useStore.getState().username;
-          if (username) {
-            const response = await authService.registerUsername(username);
-
-            if (response) {
-              setIsNewRegistration(false);
-            }
-          } else {
-            setIsNewRegistration(false);
-          }
-        } catch (error) {
-          console.error("Error registering username:", error);
+  const registerUsername = async () => {
+    console.log(isNewRegistration, userData?.accessToken, currentAccount);
+    if (isNewRegistration && userData?.accessToken) {
+      try {
+        let username = localStorage.getItem("username");
+        console.log(username);
+        if (!username) {
+          username = useStore.getState().username;
         }
-      }
-    };
 
+        if (username) {
+          const response = await authService.registerUsername(username);
+
+          if (response) {
+            setIsNewRegistration(false);
+            localStorage.removeItem("username");
+            useStore.getState().setUserName("");
+          }
+        } else {
+          console.log("No username found to register");
+          setIsNewRegistration(false);
+        }
+      } catch (error) {
+        console.error("Error registering username:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
     registerUsername();
-  }, [isNewRegistration, userData]);
+  }, [isNewRegistration, userData, currentAccount]);
 
   const initializeAllVariables = () => {
     setUserData(null);
