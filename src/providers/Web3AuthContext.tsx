@@ -481,6 +481,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [currentAccount, initSessionUnSafe, sessionSigs, setAuthMethod, setCurrentAccount, storedWalletInfo])
 
     useEffect(() => {
+        const AUTH_TOKEN_KEY = "auth_token";
         if (currentAccount && sessionSigs && !solanaWalletInfo) {
             if (hasGetSolanaWalletInfo.current)
                 return
@@ -489,6 +490,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     setIsPreparingAccounts(true)
                     await setProviderByPKPWallet(chainId ?? 1)
                     setIsConnected(true)
+                    localStorage.setItem(AUTH_TOKEN_KEY, "true");
                     // store variables to localstorage
                     setStoredWalletInfo({
                         authMethod: authMethod!,

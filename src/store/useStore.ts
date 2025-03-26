@@ -526,8 +526,11 @@ const useStore = create<StoreState>((set, get) => ({
   setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
   isRewardsOpen: false,
   setIsRewardsOpen: (isOpen) => set({ isRewardsOpen: isOpen }),
-  username: "",
-  setUserName: (username: string) => set({ username: username }),
+  username: localStorage.getItem("username") || "",
+  setUserName: (username: string) => {
+    localStorage.setItem("username", username);
+    set({ username });
+  },
   isWalletDrawerOpen: false,
   setIsWalletDrawerOpen: (isOpen) => set({ isWalletDrawerOpen: isOpen }),
 

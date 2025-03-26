@@ -2,7 +2,10 @@ import React, { useContext, useEffect, useState } from "react";
 import {
   X,
   ChevronRight,
+  Loader2,
+  Mail,
   LogIn,
+  AlertCircle,
 } from "lucide-react";
 import { Modal, ModalContent, ModalOverlay } from "@chakra-ui/react";
 import { AuthAlert } from "./AuthAlert.tsx";
@@ -42,7 +45,6 @@ const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
   } = useContext(Web3AuthContext);
 
   const error = authError || accountsError || sessionError;
-  const isLoading = authLoading || accountsLoading || sessionLoading || isPreparingAccounts;
 
   useEffect(() => {
     // If user is authenticated, fetch accounts
@@ -64,7 +66,6 @@ const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
   }, []);
 
   const renderContent = () => {
-    // Show proper loading states in sequence
     if (authLoading) {
       return <Loading copy="Authenticating your credentials..." error={error} />;
     }
@@ -130,8 +131,6 @@ const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
       isCentered={true}
       motionPreset="slideInBottom"
       size="md"
-      closeOnOverlayClick={!isLoading}
-      closeOnEsc={!isLoading}
     >
       <ModalOverlay 
         backdropFilter="blur(8px)" 
@@ -147,14 +146,12 @@ const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
         boxShadow="0 4px 30px rgba(0, 0, 0, 0.3)"
         border="1px solid rgba(255, 255, 255, 0.1)"
       >
-        {!isLoading && (
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
         {renderContent()}
       </ModalContent>

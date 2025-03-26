@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { Box } from "@chakra-ui/react";
 import { useStore } from "./store/useStore";
-import { Header } from "./components/Header";
-import { Workspace } from "./components/Workspace";
 import AIAgentModal from "./components/agent/AIAgentModal.tsx";
 import SwapModal from "./components/swap/SwapModal";
 import { DeFiModal } from "./components/DeFiModal";
@@ -25,18 +25,20 @@ import { initStream } from "./utils/chat.util.ts";
 import { PushAPI, CONSTANTS } from "@pushprotocol/restapi";
 import UsernameModal from "./components/UsernameModal.tsx";
 import WalletDrawer from "./components/WalletDrawer.tsx";
-import ReferralHandler from "./components/ReferralHandler.tsx";
 import LandingPage from "./components/mainpage/LandingPage.tsx";
 import Privacy from "./components/Privacy.tsx";
 import Terms from "./components/Terms.tsx";
+import AppPage from "./AppPage";
+
+// Simple auth persistence key
+const AUTH_TOKEN_KEY = "auth_token";
 
 export default function App() {
   const { theme } = useStore();
   const [isSignupTriggered, setIsSignupTriggered] = useState(false);
   const [isStylesApplied, setIsStylesApplied] = useState(false);
-  const [currentView, setCurrentView] = useState<
-    "landing" | "app" | "privacy" | "terms"
-  >("landing");
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const {
     isAIAgentOpen,
@@ -73,7 +75,7 @@ export default function App() {
     setIsWalletDrawerOpen,
   } = useStore();
 
-  const { authMethod, initializeErrors, address, isConnected } =
+  const { authMethod, initializeErrors, address, isConnected, logout } =
     useContext(Web3AuthContext);
 
   // Apply theme and global styles
@@ -100,18 +102,21 @@ export default function App() {
       document.head.appendChild(style);
       setIsStylesApplied(true);
     }
-
-    window.scrollTo(0, 0);
   }, [theme, isStylesApplied]);
 
-  // Show modal if redirect from social login
+  useEffect(() => {
+    if (location.pathname === '/') {
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [location.pathname]);
+
   useEffect(() => {
     if (
       authMethod?.authMethodType === AUTH_METHOD_TYPE.GoogleJwt ||
       authMethod?.authMethodType === AUTH_METHOD_TYPE.Discord ||
       authMethod?.authMethodType === AUTH_METHOD_TYPE.AppleJwt
     ) {
-      // get whether this is from signin or sign-up
       const redirectType = localStorage.getItem(
         LOCAL_STORAGE_AUTH_REDIRECT_TYPE
       );
@@ -126,11 +131,14 @@ export default function App() {
       setIsSignupModalOpen(false);
 
       if (!chatUser) {
-        // Unlock chat profile
         unlockProfile();
       }
+      
+      if (location.pathname === '/') {
+        navigate("/app");
+      }
     }
-  }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen, chatUser]);
+  }, [isConnected, navigate, setIsSigninModalOpen, setIsSignupModalOpen, chatUser, location.pathname]);
 
   const unlockProfile = async () => {
     const chatKey = localStorage.getItem(LOCAL_STORAGE_PUSH_KEY);
@@ -164,29 +172,26 @@ export default function App() {
     }
   }, [authMethod, initializeErrors, isSignupTriggered, setIsSignupModalOpen]);
 
-  useEffect(() => {
-    if (isConnected) {
-      setCurrentView("app");
-    } else if (!isConnected) {
-      setCurrentView("landing");
-    }
-  }, [isConnected]);
+  // Check if user is authenticated (either currently connected or has valid token)
+  const isAuthenticated = () => {
+    return isConnected || localStorage.getItem(AUTH_TOKEN_KEY) === "true";
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {currentView === "privacy" ? (
-        <Privacy />
-      ) : currentView === "terms" ? (
-        <Terms />
-      ) : currentView === "landing" || !isConnected ? (
-        <LandingPage />
-      ) : (
-        <>
-          <ReferralHandler />
-          <Header />
-          <Workspace />
-        </>
-      )}
+    <Box className="min-h-screen flex flex-col">
+      <Routes>
+        <Route 
+          path="/" 
+          element={isAuthenticated() ? <Navigate to="/app" replace /> : <LandingPage />} 
+        />
+        <Route 
+          path="/app" 
+          element={isAuthenticated() ? <AppPage /> : <Navigate to="/" replace />} 
+        />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
 
       {/* Modals - these are conditionally rendered based on their open state */}
       {isSignupModalOpen && (
@@ -261,6 +266,6 @@ export default function App() {
         isOpen={isWalletDrawerOpen}
         onClose={() => setIsWalletDrawerOpen(false)}
       />
-    </div>
+    </Box>
   );
 }

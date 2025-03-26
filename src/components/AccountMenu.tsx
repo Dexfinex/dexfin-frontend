@@ -4,19 +4,17 @@ import { useStore } from '../store/useStore';
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
 import { shrinkAddress } from "../utils/common.util.ts";
 
+interface AccountMenuProps {
+    onSignOut: () => void;
+}
 
-export const AccountMenu: React.FC = () => {
+export const AccountMenu: React.FC<AccountMenuProps> = ({ onSignOut }) => {
     const [isOpen, setIsOpen] = useState(false);
     const setIsSettingsOpen = useStore((state) => state.setIsSettingsOpen);
     const isTopbarBottom = useStore((state) => state.isTopbarBottom);
     const setIsWalletDrawerOpen = useStore((state) => state.setIsWalletDrawerOpen);
 
     const {
-        /*
-            isSignupModalOpen,
-            setIsSignupModalOpen,
-            isSigninModalOpen,
-        */
         setIsSigninModalOpen,
     } = useStore();
 
@@ -26,6 +24,12 @@ export const AccountMenu: React.FC = () => {
         logout,
     } = useContext(Web3AuthContext);
 
+    // Handle sign out with redirect
+    const handleSignOut = () => {
+        logout();
+        onSignOut(); // Call the parent's onSignOut callback to handle navigation
+        setIsOpen(false);
+    };
 
     const menuItems = useMemo(() => {
         const items = [
@@ -45,13 +49,12 @@ export const AccountMenu: React.FC = () => {
                 label: shrinkAddress(address),
                 onClick: () => {
                     setIsWalletDrawerOpen(true);
+                    setIsOpen(false);
                 },
             }, {
                 icon: LogOut,
                 label: 'Sign Out',
-                onClick: () => {
-                    logout()
-                },
+                onClick: handleSignOut,
             })
         } else {
             items.push({
@@ -65,7 +68,7 @@ export const AccountMenu: React.FC = () => {
         }
 
         return items
-    }, [isConnected, setIsSettingsOpen, address, logout, setIsSigninModalOpen]);
+    }, [isConnected, setIsSettingsOpen, address, setIsWalletDrawerOpen, setIsSigninModalOpen, handleSignOut]);
 
     return (
         <div className="relative">
@@ -99,13 +102,6 @@ export const AccountMenu: React.FC = () => {
                     </div>
                 </>
             )}
-
-            {/*
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-      />
-*/}
         </div>
     );
 };

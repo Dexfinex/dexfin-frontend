@@ -96,6 +96,7 @@ export const authService = {
     },
 
     register: async (walletType: string, evmAddress?: string, solAddress?: string, btcAddress?: string) => {
+        console.log("New Registeration")
         try {
             if (!walletType) {
                 throw new Error('Wallet type is required');
