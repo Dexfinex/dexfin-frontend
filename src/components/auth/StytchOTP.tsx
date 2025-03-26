@@ -1,6 +1,6 @@
-import  {FormEvent, useState} from 'react';
+import {FormEvent, useState} from 'react';
 import {useStytch} from '@stytch/react';
-import {Alert, AlertIcon, Button, Input, InputGroup, InputLeftElement, Text, VStack} from "@chakra-ui/react";
+import {Button, Input, InputGroup, InputLeftElement, Text, VStack} from "@chakra-ui/react";
 import {Mail, Phone} from "lucide-react";
 import {AuthAlert} from "../AuthAlert.tsx";
 

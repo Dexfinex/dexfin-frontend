@@ -191,7 +191,7 @@ export async function authenticateWithStytch(
     if (method === 'email') {
         provider = new StytchOtpProvider({relay: litRelay, litNodeClient,}, {
             appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
-            userId: PROVIDER_TYPE.StytchEmailFactorOtp
+            userId: userId,
         })
         /*
                 provider = litAuthClient.initProvider(PROVIDER_TYPE.StytchEmailFactorOtp, {
@@ -201,7 +201,7 @@ export async function authenticateWithStytch(
     } else {
         provider = new StytchOtpProvider({relay: litRelay, litNodeClient,}, {
             appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
-            userId: PROVIDER_TYPE.StytchSmsFactorOtp
+            userId: userId,
         })
         /*
                 provider = litAuthClient.initProvider(PROVIDER_TYPE.StytchSmsFactorOtp, {

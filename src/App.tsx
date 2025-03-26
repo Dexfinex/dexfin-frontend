@@ -75,7 +75,7 @@ export default function App() {
     setIsWalletDrawerOpen,
   } = useStore();
 
-  const { authMethod, initializeErrors, address, isConnected, logout } =
+  const { authMethod, initializeErrors, address, isConnected } =
     useContext(Web3AuthContext);
 
   // Apply theme and global styles
@@ -105,8 +105,7 @@ export default function App() {
   }, [theme, isStylesApplied]);
 
   useEffect(() => {
-    if (location.pathname === '/') {
-    } else {
+    if (location.pathname === '/') { /* empty */ } else {
       window.scrollTo(0, 0);
     }
   }, [location.pathname]);
