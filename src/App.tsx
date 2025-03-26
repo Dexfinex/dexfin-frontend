@@ -30,6 +30,9 @@ import Privacy from "./components/Privacy.tsx";
 import Terms from "./components/Terms.tsx";
 import AppPage from "./AppPage";
 
+// Simple auth persistence key
+const AUTH_TOKEN_KEY = "auth_token";
+
 export default function App() {
   const { theme } = useStore();
   const [isSignupTriggered, setIsSignupTriggered] = useState(false);
@@ -74,6 +77,13 @@ export default function App() {
 
   const { authMethod, initializeErrors, address, isConnected, logout } =
     useContext(Web3AuthContext);
+    
+  // Save auth state when connected
+  useEffect(() => {
+    if (isConnected) {
+      localStorage.setItem(AUTH_TOKEN_KEY, "true");
+    }
+  }, [isConnected]);
 
   // Apply theme and global styles
   useEffect(() => {
@@ -122,7 +132,6 @@ export default function App() {
   }, [authMethod, setIsSigninModalOpen, setIsSignupModalOpen]);
 
   useEffect(() => {
-    console.log(isUsernameModalOpen);
     if (isConnected) {
       setIsSigninModalOpen(false);
       setIsSignupModalOpen(false);
@@ -169,13 +178,21 @@ export default function App() {
     }
   }, [authMethod, initializeErrors, isSignupTriggered, setIsSignupModalOpen]);
 
+  // Check if user is authenticated (either currently connected or has valid token)
+  const isAuthenticated = () => {
+    return isConnected || localStorage.getItem(AUTH_TOKEN_KEY) === "true";
+  };
+
   return (
     <Box className="min-h-screen flex flex-col">
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route 
+          path="/" 
+          element={isAuthenticated() ? <Navigate to="/app" replace /> : <LandingPage />} 
+        />
         <Route 
           path="/app" 
-          element={isConnected ? <AppPage /> : <Navigate to="/" replace />} 
+          element={isAuthenticated() ? <AppPage /> : <Navigate to="/" replace />} 
         />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
