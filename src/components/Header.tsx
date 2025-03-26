@@ -1,4 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Maximize2, Minimize2, Wallet, ArrowUp, ArrowDown, Sun, Moon, Menu, X } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
 import { StarMenu } from './StarMenu';
@@ -11,7 +12,11 @@ import { Web3AuthContext } from "../providers/Web3AuthContext";
 import { useWebSocket } from '../providers/WebSocketProvider';
 import { useToast } from '@chakra-ui/react';
 
+// Auth token key - must match the one in App.js
+const AUTH_TOKEN_KEY = "auth_token";
+
 export const Header: React.FC = () => {
+  const navigate = useNavigate();
   const { isConnected } = useContext(Web3AuthContext);
   const isSettingsOpen = useStore((state) => state.isSettingsOpen);
   const setIsSettingsOpen = useStore((state) => state.setIsSettingsOpen);
@@ -28,6 +33,11 @@ export const Header: React.FC = () => {
   const toast = useToast();
 
   const { unreadCount } = useWebSocket();
+
+  const handleSignOut = () => {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    navigate("/");
+  };
 
   // Load starred items from localStorage when the component mounts
   useEffect(() => {
@@ -202,7 +212,7 @@ export const Header: React.FC = () => {
               )}
             </button>
 
-            <AccountMenu />
+            <AccountMenu onSignOut={handleSignOut} />
           </div>
         </div>
       </header>

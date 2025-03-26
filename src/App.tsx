@@ -80,6 +80,7 @@ export default function App() {
     
   // Save auth state when connected
   useEffect(() => {
+    // logout()
     if (isConnected) {
       localStorage.setItem(AUTH_TOKEN_KEY, "true");
     }
