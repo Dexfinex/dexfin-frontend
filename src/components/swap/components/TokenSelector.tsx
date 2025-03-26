@@ -74,7 +74,7 @@ export function TokenSelector({
                                         onClick={() => {
                                             const multiplier = (10 ** Math.min(6, (selectedToken?.decimals ?? 0)))
                                             const roundedBalance = (Number(balance ?? '0')) * multiplier
-                                            const formattedBalance = Math.max(0, (Math.floor(roundedBalance) / multiplier) - deductionAmount)
+                                            const formattedBalance = Math.max(0, Number(formatNumberByFrac(Math.floor(roundedBalance) / multiplier - deductionAmount, 4)))
                                             onAmountChange(formattedBalance.toString())
                                         }}
                                     >
