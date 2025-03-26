@@ -147,7 +147,7 @@ export function SwapBox({
     const {
         isLoading: isGasEstimationLoading,
         data: gasData
-    } = useGasEstimation()
+    } = useGasEstimation(fromToken?.chainId)
 
     const {
         isLoading: isFromBalanceLoading,
