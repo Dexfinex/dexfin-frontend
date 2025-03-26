@@ -160,6 +160,7 @@ export function CrossChainSwapBox({
         fromNetwork,
         toNetwork,
         solverGasCostAmount,
+        deductionAmount,
         solverGasText,
         debridgeFeeText,
         totalSpentText,
@@ -175,6 +176,7 @@ export function CrossChainSwapBox({
         const solverGasCostAmount = quoteResponse.solverGasCosts
         const solverGasUsdAmount = fromTokenPrice * solverGasCostAmount
         const priceImpact = fromUsdAmount > 0 ? ((toUsdAmount - fromUsdAmount) / fromUsdAmount) * 100 : 0
+        const deductionAmount = solverGasCostAmount + (compareWalletAddresses(nativeTokenAddressFromChain, fromToken!.address) ? quoteResponse.feeAmount : 0)
 
         let feeAmountInUsd = 0
         if (quoteResponse) {
@@ -183,7 +185,7 @@ export function CrossChainSwapBox({
 
         const solverGasText = `${formatNumberByFrac(solverGasCostAmount, 4)} ${fromToken?.symbol} ($${formatNumberByFrac(solverGasUsdAmount, 3)})`
         const debridgeFeeText = `${formatNumberByFrac(quoteResponse.feeAmount, 4)} ${fromNetwork?.symbol} ($${formatNumberByFrac(feeAmountInUsd, 3)})`
-        const totalSpentText = `${formatNumberByFrac(solverGasCostAmount + Number(fromAmount), 4)} ${fromToken?.symbol}`
+        const totalSpentText = `${formatNumberByFrac(deductionAmount + Number(fromAmount), 4)} ${fromToken?.symbol}`
 
         return {
             fromUsdAmount,
@@ -195,6 +197,7 @@ export function CrossChainSwapBox({
             solverGasText,
             debridgeFeeText,
             totalSpentText,
+            deductionAmount,
         }
     }, [nativeTokenAddressFromChain, fromToken, getTokenPrice, toToken, fromAmount, toAmount, quoteResponse])
 
@@ -302,7 +305,7 @@ export function CrossChainSwapBox({
                 selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onFromTokenSelect}
                 amount={fromAmount}
-                deductionAmount={solverGasCostAmount}
+                deductionAmount={deductionAmount}
                 usdAmount={fromUsdAmount.toString()}
                 onAmountChange={onFromAmountChange}
                 balance={fromBalance?.formatted}

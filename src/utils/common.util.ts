@@ -138,8 +138,8 @@ export const getFullDate = (timestamp: number) => {
  * @returns boolean - Returns true if the addresses are the same (case-insensitive), otherwise false.
  */
 export const compareWalletAddresses = (
-    address1: string,
-    address2: string,
+    address1: string | undefined,
+    address2: string | undefined,
 ): boolean => {
     // if (!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
     //     return false;
