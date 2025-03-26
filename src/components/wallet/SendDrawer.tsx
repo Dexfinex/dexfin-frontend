@@ -119,8 +119,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
             const nativeTokenAddress = getRealNativeTokenAddress(tokenChainId)
             if (Number(chainId) !== targetChainId) {
                 switchToken(nativeTokenAddress)
-            } else {
-                setNativeTokenGasFee(nativeTokenAddress)
             }
         }
     }, [chainId, selectedAsset])
