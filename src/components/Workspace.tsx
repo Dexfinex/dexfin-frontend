@@ -115,7 +115,7 @@ export const Workspace: React.FC = () => {
         {isMobile ? (
           // Mobile Grid Layout
           <div className="p-4">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3 absolute bottom-24 left-0 right-0 p-4">
               {menuItems.map((item) => {
                 const IconComponent = Icons[item.icon as keyof typeof Icons];
                 return (
@@ -124,7 +124,7 @@ export const Workspace: React.FC = () => {
                     className="flex flex-col glass items-center text-center p-2 rounded-lg hover:bg-white/10 transition-colors"
                     onClick={() => handleMenuItemClick(item.id)}
                   >
-                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mb-1">
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-1">
                       {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
                       {/* @ts-expect-error */}
                       <IconComponent className="w-4 h-4" />
