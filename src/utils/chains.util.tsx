@@ -91,16 +91,18 @@ export const normalizeTokens = (
     : [token1, token0];
 };
 
-export const getGasEstimation = async (tokenAddress: string, recipientAddress: string, balance: string, decimals: number, chainId: number) => {
+export const getGasEstimationForNativeTokenTransfer = async (recipientAddress: string, balance: string, decimals: number, chainId: number) => {
   try {
     if (chainId != SOLANA_CHAIN_ID) {
       const chain = mapChainId2ViemChain[chainId];
-      const rpcUrl = (chainId == 56 ? "https://binance.llamarpc.com" : chain.rpcUrls.default.http[0]);
+      const rpcUrl = (chainId == 56 ? "https://bsc-rpc.publicnode.com" : chain.rpcUrls.default.http[0]);
       const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-      const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, provider);
       console.log('calculate gas limit')
       const amount = ethers.utils.parseUnits(balance, decimals);  // Amount to transfer (adjust decimals)
-      const gasLimit = await tokenContract.estimateGas.transfer(recipientAddress, amount);
+      const gasLimit = await provider.estimateGas({
+        to: recipientAddress,
+        value: amount
+      })
       console.log('gas limit = ', gasLimit)
       const gasPrice = await provider.getGasPrice();
 

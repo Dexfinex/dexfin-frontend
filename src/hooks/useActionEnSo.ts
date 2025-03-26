@@ -43,7 +43,7 @@ export const useEnSoActionMutation = () => {
                 const isNativeToken = compareWalletAddresses(nativeTokenAddress, data.tokenIn[i]);
 
                 if (data.action === "redeem") { // calc redeem amount by percent
-                    amountValue = await getTokenOutAmountByPercent(data.amountIn[0], data.fromAddress, data.tokenIn[i], data.chainId, data.signer);
+                    amountValue = await getTokenOutAmountByPercent(data.amountIn[0], data.fromAddress, data.tokenIn[i], data.signer);
                 } else {
                     amountValue = await getTokenOutAmount(data.amountIn[i], data.tokenIn[i], data.chainId, data.signer)
                 }

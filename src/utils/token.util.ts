@@ -43,7 +43,7 @@ export const formatNumber = (num: string | number, fixedCount = 2) => {
 export const getTokenInfo = async (address: string, chainId: number) => {
     if (chainId != SOLANA_CHAIN_ID) {
         const chain = mapChainId2ViemChain[chainId];
-        const rpcUrl = (chainId == 56 ? "https://binance.llamarpc.com" : chain.rpcUrls.default.http[0]);
+        const rpcUrl = (chainId == 56 ? "https://bsc-rpc.publicnode.com" : chain.rpcUrls.default.http[0]);
         const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 
         const contract = new ethers.Contract(address, erc20Abi, provider);
@@ -107,7 +107,7 @@ export const getTokenOutAmount = async (amount: number, address: string, chainId
     }
 }
 
-export const getTokenOutAmountByPercent = async (percent: number, fromAddress: string, address: string, chainId: number, signer: JsonRpcSigner | undefined) => {
+export const getTokenOutAmountByPercent = async (percent: number, fromAddress: string, address: string, signer: JsonRpcSigner | undefined) => {
     const contract = new ethers.Contract(address, erc20Abi, signer);
     try {
         const balance = await contract.balanceOf(fromAddress);
