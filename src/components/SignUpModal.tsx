@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Modal, ModalContent, ModalOverlay } from "@chakra-ui/react";
 import { AuthAlert } from "./AuthAlert";
-import { AuthMethodType } from "@lit-protocol/constants";
+import {AUTH_METHOD_TYPE} from '@lit-protocol/constants';
 import { registerWebAuthn } from "../utils/lit.util";
 import Loading from "./auth/Loading";
 import AuthMethods from "./auth/AuthMethods";
@@ -46,7 +46,7 @@ const initialFormData: FormData = {
   confirmPassword: "",
 };
 
-const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
+const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState<Step>("beta-code");
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loading, setLoading] = useState(false);
@@ -102,7 +102,7 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
   }, [isOpen]);
 
   useEffect(() => {
-    if (authMethod && authMethod.authMethodType !== AuthMethodType.WebAuthn) {
+    if (authMethod && authMethod.authMethodType !== AUTH_METHOD_TYPE.WebAuthn) {
       createAccount(authMethod);
     }
   }, [authMethod, createAccount]);
@@ -590,4 +590,4 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
   );
 };
 
-export default SignupModal;
+export default SignUpModal;

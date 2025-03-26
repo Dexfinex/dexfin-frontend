@@ -9,7 +9,7 @@ import {AuthAlert} from "../AuthAlert.tsx";
 
 interface SignUpProps {
     handleGoogleLogin: (isSignIn: boolean) => Promise<void>;
-    handleDiscordLogin: () => Promise<void>;
+    handleDiscordLogin: (isSignIn: boolean) => Promise<void>;
     authWithEthWallet: (connector: any) => Promise<void>;
     registerWithWebAuthn: () => Promise<void>;
     authWithWebAuthn: () => Promise<void>;

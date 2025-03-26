@@ -87,7 +87,7 @@ interface Web3AuthContextType {
     sessionLoading: boolean;
     sessionError: Error | undefined;
     handleGoogleLogin: (isSignIn: boolean) => Promise<void>;
-    handleDiscordLogin: () => Promise<void>;
+    handleDiscordLogin: (isSignIn: boolean) => Promise<void>;
     createAccount: (authMethod: AuthMethod) => Promise<void>;
     initializeErrors: () => void;
     isConnected: boolean,
@@ -526,7 +526,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await signInWithGoogle(redirectUri);
     }
 
-    async function handleDiscordLogin() {
+    async function handleDiscordLogin(isSignIn: boolean) {
+        localStorage.setItem(LOCAL_STORAGE_AUTH_REDIRECT_TYPE, isSignIn ? 'sign-in' : 'sign-up')
         await signInWithDiscord(redirectUri);
     }
 

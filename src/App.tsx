@@ -12,9 +12,9 @@ import CartModal from "./components/ShoppingCart/CartModal.tsx";
 import { SocialFeedModal } from "./components/SocialFeedModal";
 import { GamesModal } from "./components/GamesModal";
 import { RewardsModal } from "./components/RewardsModal";
-import SignupModal from "./components/SignupModal.tsx";
-import SigninModal from "./components/SigninModal.tsx";
-import { AuthMethodType } from "@lit-protocol/constants";
+import SignUpModal from "./components/SignUpModal.tsx";
+import SignInModal from "./components/SignInModal.tsx";
+import {AUTH_METHOD_TYPE} from '@lit-protocol/constants';
 import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
 import {
   LOCAL_STORAGE_AUTH_REDIRECT_TYPE,
@@ -107,8 +107,9 @@ export default function App() {
   // Show modal if redirect from social login
   useEffect(() => {
     if (
-      authMethod?.authMethodType === AuthMethodType.GoogleJwt ||
-      authMethod?.authMethodType === AuthMethodType.AppleJwt
+      authMethod?.authMethodType === AUTH_METHOD_TYPE.GoogleJwt ||
+      authMethod?.authMethodType === AUTH_METHOD_TYPE.Discord ||
+      authMethod?.authMethodType === AUTH_METHOD_TYPE.AppleJwt
     ) {
       // get whether this is from signin or sign-up
       const redirectType = localStorage.getItem(
@@ -189,14 +190,14 @@ export default function App() {
 
       {/* Modals - these are conditionally rendered based on their open state */}
       {isSignupModalOpen && (
-        <SignupModal
+        <SignUpModal
           isOpen={true}
           onClose={() => setIsSignupModalOpen(false)}
         />
       )}
 
       {isSigninModalOpen && (
-        <SigninModal
+        <SignInModal
           isOpen={true}
           onClose={() => setIsSigninModalOpen(false)}
           goToSignUp={() => {

@@ -3,7 +3,7 @@ import {Apple, Bot, Chrome, Mail, Smartphone, Wallet,} from 'lucide-react';
 
 interface AuthMethodsProps {
     handleGoogleLogin: (isSignIn: boolean) => Promise<void>;
-    handleDiscordLogin: () => Promise<void>;
+    handleDiscordLogin: (isSignIn: boolean) => Promise<void>;
     setView: React.Dispatch<React.SetStateAction<string>>;
     isSignIn: boolean;
 }
@@ -36,7 +36,7 @@ const AuthMethods = ({
                     color="white"
                     borderColor="whiteAlpha.200"
                     _hover={{bg: 'whiteAlpha.100'}}
-                    onClick={handleDiscordLogin}
+                    onClick={() => handleDiscordLogin(isSignIn)}
                 >
                     Continue with Discord
                 </Button>
