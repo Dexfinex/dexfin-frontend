@@ -88,9 +88,9 @@ export async function authenticateWithGoogle(
  */
 export async function signInWithDiscord(redirectUri: string): Promise<void> {
     const discordProvider = new DiscordProvider({relay: litRelay, litNodeClient, redirectUri});
-    await discordProvider.signIn(/*(loginUrl) => {
-        window.location.href = loginUrl.replace('https://login.litgateway.com', 'http://localhost:3300');
-    }*/);
+    await discordProvider.signIn((loginUrl) => {
+        window.location.href = loginUrl.replace('https://login.litgateway.com', 'https://defi-os-lit-login-server-production.up.railway.app');
+    });
 }
 
 /**

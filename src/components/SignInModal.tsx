@@ -1,19 +1,12 @@
-import React, { useContext, useEffect, useState } from "react";
-import {
-  X,
-  ChevronRight,
-  Loader2,
-  Mail,
-  LogIn,
-  AlertCircle,
-} from "lucide-react";
-import { Modal, ModalContent, ModalOverlay } from "@chakra-ui/react";
-import { AuthAlert } from "./AuthAlert.tsx";
+import React, {useContext, useEffect, useState} from "react";
+import {ChevronRight, LogIn, X,} from "lucide-react";
+import {Modal, ModalContent, ModalOverlay} from "@chakra-ui/react";
+import {AuthAlert} from "./AuthAlert.tsx";
 import Loading from "./auth/Loading";
 import LoginMethods from "./auth/LoginMethods";
 import CreateAccount from "./auth/CreateAccount";
-import { Web3AuthContext } from "../providers/Web3AuthContext";
-import { getReferralCodeFromStorage } from './ReferralHandler';
+import {Web3AuthContext} from "../providers/Web3AuthContext";
+import {getReferralCodeFromStorage} from './ReferralHandler';
 
 interface SigninModalProps {
   isOpen: boolean;
