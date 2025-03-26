@@ -7,7 +7,7 @@ import { formatNumberByFrac } from '../../../../utils/common.util.ts';
 import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
-
+import { TokenChainIcon } from '../../../swap/components/TokenIcon.tsx';
 interface BridgeProcessProps {
   onClose: () => void;
   fromToken: TokenType;
@@ -156,11 +156,8 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
-              <img
-                src={fromToken.logoURI}
-                alt={fromToken.symbol}
-                className="w-10 h-10"
-              />
+              <TokenChainIcon src={fromToken?.logoURI} alt={fromToken?.name}
+                size={"lg"} chainId={Number(fromToken?.chainId)} />
               <div>
                 <div className="text-sm text-white/60">You send</div>
                 <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol}</div>
@@ -168,11 +165,8 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
             <div className="flex items-center gap-3">
-              <img
-                src={toToken.logoURI}
-                alt={toToken.symbol}
-                className="w-10 h-10"
-              />
+              <TokenChainIcon src={toToken?.logoURI} alt={toToken?.name}
+                size={"lg"} chainId={Number(toToken?.chainId)} />
               <div>
                 <div className="text-sm text-white/60">You receive</div>
                 <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol}</div>
