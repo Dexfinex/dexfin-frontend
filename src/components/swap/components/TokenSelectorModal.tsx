@@ -100,17 +100,17 @@ const ApproveModal: React.FC<ApproveModalProps> = ({ isOpen, onClose, onContinue
 
 export function TokenSelectorModal({
     isOpen,
-    // selectedToken,
+    selectedToken,
     selectedChainId,
     onSelect,
     onClose,
 }: TokenSelectorModalProps) {
     useWalletBalance()
-
+    const initialChainId = selectedToken?.chainId ?? selectedChainId
     const { trendingTokens } = useTrendingTokensStore();
     const { tokenBalances } = useTokenBalanceStore();
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(selectedChainId ? NETWORKS.filter(network => network.chainId === selectedChainId)[0] : null);
+    const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(initialChainId ? NETWORKS.filter(network => network.chainId === initialChainId)[0] : null);
     const [starredTokenMap, setStarredTokenMap] = useLocalStorage<Record<string, boolean> | null>(LOCAL_STORAGE_STARRED_TOKENS, {})
     const [addedTokens, setAddedTokens] = useLocalStorage<Array<TokenType> | null>(LOCAL_STORAGE_ADDED_TOKENS, [])
     const [showStarredOnly, setShowStarredOnly] = useState(false);
