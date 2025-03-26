@@ -63,7 +63,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { chainId, address, signer, } = useContext(Web3AuthContext);
 
   const { getTokenBalance } = useTokenBalanceStore();
-  const { data: gasData } = useGasEstimation()
+  const { data: gasData } = useGasEstimation(chainId)
 
   const positionHandlerList = DEFI_CHAIN_LIST.map(chainId => {
     const { isLoading, refetch } = useDefiPositionByWallet({ chainId: Number(chainId), walletAddress: address });
