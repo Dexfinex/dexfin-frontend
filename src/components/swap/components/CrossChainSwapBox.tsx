@@ -2,7 +2,7 @@ import {useContext, useEffect, useMemo, useState} from 'react';
 import {ArrowDownUp} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
 import {DebridgeOrderStatus, TokenType} from '../../../types/swap.type';
-import {formatNumberByFrac, isValidAddress, shrinkAddress} from '../../../utils/common.util';
+import {compareWalletAddresses, formatNumberByFrac, isValidAddress, shrinkAddress} from '../../../utils/common.util';
 import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
 import useTokenStore from "../../../store/useTokenStore.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
@@ -74,6 +74,7 @@ export function CrossChainSwapBox({
     const {
         isLoading: isQuoteLoading,
         quoteResponse,
+        targetDestinationAddress,
     } = useDebridgeQuote({
         sellToken: fromToken,
         buyToken: toToken,
@@ -141,12 +142,12 @@ export function CrossChainSwapBox({
             // open tx modal
             setTxModalOpen(true)
             // save used wallet address
-            if ((recentWallets ?? []).filter(wallet => wallet.address === destinationAddress).length <= 0) {
+            if (targetDestinationAddress && (recentWallets ?? []).filter(wallet => compareWalletAddresses(wallet.address, targetDestinationAddress!)).length <= 0) {
                 setRecentWallets([
                     ...(recentWallets ?? []),
                     {
                         chainId: toToken!.chainId,
-                        address: destinationAddress,
+                        address: targetDestinationAddress!,
                     }
                 ])
             }

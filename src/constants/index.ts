@@ -97,3 +97,6 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 export const nativeAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase();
 
 export const SOL_TRANSFER_GAS_FEE = 0.000005;
+
+export const EVM_MINIMUM_VALUE = 0.01;
+export const SOL_MINIMUM_VALUE = 0.001;
