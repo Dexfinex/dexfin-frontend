@@ -1,11 +1,4 @@
 import { useContext, useEffect, useState } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-} from "react-router-dom";
 import { useStore } from "./store/useStore";
 import { Header } from "./components/Header";
 import { Workspace } from "./components/Workspace";
@@ -30,13 +23,21 @@ import {
 import { TradingViewModal } from "./components/TradingViewModal.tsx";
 import { initStream } from "./utils/chat.util.ts";
 import { PushAPI, CONSTANTS } from "@pushprotocol/restapi";
+import UsernameModal from "./components/UsernameModal.tsx";
 import WalletDrawer from "./components/WalletDrawer.tsx";
 import ReferralHandler from "./components/ReferralHandler.tsx";
 import LandingPage from "./components/mainpage/LandingPage.tsx";
 import Privacy from "./components/Privacy.tsx";
 import Terms from "./components/Terms.tsx";
 
-const MainApp: React.FC = () => {
+export default function App() {
+  const { theme } = useStore();
+  const [isSignupTriggered, setIsSignupTriggered] = useState(false);
+  const [isStylesApplied, setIsStylesApplied] = useState(false);
+  const [currentView, setCurrentView] = useState<
+    "landing" | "app" | "privacy" | "terms"
+  >("landing");
+
   const {
     isAIAgentOpen,
     setIsAIAgentOpen,
@@ -66,6 +67,7 @@ const MainApp: React.FC = () => {
     setChatUser,
     isRewardsOpen,
     setIsRewardsOpen,
+    isUsernameModalOpen,
     widgetCommand,
     isWalletDrawerOpen,
     setIsWalletDrawerOpen,
@@ -74,15 +76,35 @@ const MainApp: React.FC = () => {
   const { authMethod, initializeErrors, address, isConnected } =
     useContext(Web3AuthContext);
 
-  const [isSignupTriggered, setIsSignupTriggered] = useState(false);
-  const navigate = useNavigate();
-
+  // Apply theme and global styles
   useEffect(() => {
-    if (!isConnected) {
-      navigate("/", { replace: true });
-    }
-  }, [isConnected, navigate]);
+    document.body.setAttribute("data-theme", theme);
 
+    if (!isStylesApplied) {
+      const style = document.createElement("style");
+      style.innerHTML = `
+                html, body {
+                    overflow-x: hidden;
+                    scroll-behavior: smooth;
+                }
+                body {
+                    position: relative;
+                    width: 100%;
+                }
+                #sections-container > div {
+                    min-height: 300px;
+                    position: relative;
+                    width: 100%;
+                }
+            `;
+      document.head.appendChild(style);
+      setIsStylesApplied(true);
+    }
+
+    window.scrollTo(0, 0);
+  }, [theme, isStylesApplied]);
+
+  // Show modal if redirect from social login
   useEffect(() => {
     if (
       authMethod?.authMethodType === AuthMethodType.GoogleJwt ||
@@ -103,6 +125,7 @@ const MainApp: React.FC = () => {
       setIsSignupModalOpen(false);
 
       if (!chatUser) {
+        // Unlock chat profile
         unlockProfile();
       }
     }
@@ -132,7 +155,6 @@ const MainApp: React.FC = () => {
     }
   };
 
-  // Handle signup trigger
   useEffect(() => {
     if (isSignupTriggered) {
       initializeErrors();
@@ -141,18 +163,38 @@ const MainApp: React.FC = () => {
     }
   }, [authMethod, initializeErrors, isSignupTriggered, setIsSignupModalOpen]);
 
+  useEffect(() => {
+    if (isConnected) {
+      setCurrentView("app");
+    } else if (!isConnected) {
+      setCurrentView("landing");
+    }
+  }, [isConnected]);
+
   return (
     <div className="min-h-screen flex flex-col">
-      <ReferralHandler />
-      <Header />
-      <Workspace />
+      {currentView === "privacy" ? (
+        <Privacy />
+      ) : currentView === "terms" ? (
+        <Terms />
+      ) : currentView === "landing" || !isConnected ? (
+        <LandingPage />
+      ) : (
+        <>
+          <ReferralHandler />
+          <Header />
+          <Workspace />
+        </>
+      )}
 
+      {/* Modals - these are conditionally rendered based on their open state */}
       {isSignupModalOpen && (
         <SignupModal
           isOpen={true}
           onClose={() => setIsSignupModalOpen(false)}
         />
       )}
+
       {isSigninModalOpen && (
         <SigninModal
           isOpen={true}
@@ -169,110 +211,55 @@ const MainApp: React.FC = () => {
         widgetCommand={widgetCommand}
         onClose={() => setIsAIAgentOpen(false)}
       />
+      
       <SwapModal isOpen={isSwapOpen} onClose={() => setIsSwapOpen(false)} />
+      
       <DeFiModal isOpen={isDefiOpen} onClose={() => setIsDefiOpen(false)} />
+      
       <DashboardModal
         isOpen={isDashboardOpen}
         onClose={() => setIsDashboardOpen(false)}
       />
+      
       <MarketDataModal
         isOpen={isMarketDataOpen}
         onClose={() => setIsMarketDataOpen(false)}
       />
+      
       <ChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      
       <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      
       <SocialFeedModal
         isOpen={isSocialFeedOpen}
         onClose={() => setIsSocialFeedOpen(false)}
       />
+      
       <GamesModal isOpen={isGamesOpen} onClose={() => setIsGamesOpen(false)} />
+      
       <RewardsModal
         isOpen={isRewardsOpen}
         onClose={() => setIsRewardsOpen(false)}
       />
+      
       {isTradeOpen && (
         <TradingViewModal
           isOpen={isTradeOpen}
           onClose={() => setTradeOpen(false)}
         />
       )}
+      
+      {isUsernameModalOpen && (
+        <UsernameModal
+          isOpen={true}
+          onClose={() => useStore.getState().setIsUsernameModalOpen(false)}
+        />
+      )}
+      
       <WalletDrawer
         isOpen={isWalletDrawerOpen}
         onClose={() => setIsWalletDrawerOpen(false)}
       />
     </div>
   );
-};
-
-const LandingWithRedirect: React.FC = () => {
-  const { isConnected, isLoadingStoredWallet } = useContext(Web3AuthContext);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isConnected) {
-      navigate("/app", { replace: true });
-    }
-    window.scrollTo(0, 0);
-  }, [isConnected, navigate]);
-
-  if (isLoadingStoredWallet) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
-
-  return (
-    <LandingPage
-    />
-  );
-};
-
-const AppWrapper = () => {
-  const { theme } = useStore();
-  const [isStylesApplied, setIsStylesApplied] = useState(false);
-
-  useEffect(() => {
-    document.body.setAttribute("data-theme", theme);
-    
-    if (!isStylesApplied) {
-      const style = document.createElement("style");
-      style.innerHTML = `
-        html, body {
-          overflow-x: hidden;
-          scroll-behavior: smooth;
-        }
-        body {
-          position: relative;
-          width: 100%;
-        }
-        #sections-container > div {
-          min-height: 300px;
-          position: relative;
-          width: 100%;
-        }
-      `;
-      document.head.appendChild(style);
-      setIsStylesApplied(true);
-    }
-    
-    window.scrollTo(0, 0);
-  }, [theme, isStylesApplied]);
-
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LandingWithRedirect />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/app" element={<MainApp />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
-  );
-};
-
-export default function App() {
-  return <AppWrapper />;
 }
