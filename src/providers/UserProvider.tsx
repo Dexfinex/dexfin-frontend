@@ -95,6 +95,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const registerUsername = async () => {
+      console.log(useStore.getState().username);
       if (isNewRegistration && userData?.accessToken) {
         try {
           const username = useStore.getState().username;

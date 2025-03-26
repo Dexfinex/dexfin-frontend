@@ -112,10 +112,7 @@ export const Header: React.FC = () => {
         <div className="h-full flex items-center justify-between px-2">
           {/* Left section */}
           <div className="flex items-center gap-1 sm:gap-3">
-            {/* Only show MainMenu on non-mobile screens */}
-            <div className="hidden sm:block">
-              <MainMenu />
-            </div>
+            <MainMenu />
 
             {!isSmallScreen && (
               <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
