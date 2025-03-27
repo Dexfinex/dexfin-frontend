@@ -8,18 +8,12 @@ import {
     WebAuthnProvider,
 } from '@lit-protocol/lit-auth-client';
 import {LitNodeClient} from '@lit-protocol/lit-node-client';
-import {AUTH_METHOD_SCOPE, AUTH_METHOD_TYPE, LIT_ABILITY, LIT_NETWORK, PROVIDER_TYPE} from '@lit-protocol/constants';
-import {
-    AuthMethod,
-    GetSessionSigsProps,
-    ILitNodeClient,
-    IRelayPKP,
-    LIT_NETWORKS_KEYS,
-    SessionSigs,
-} from '@lit-protocol/types';
+import {AUTH_METHOD_SCOPE, AUTH_METHOD_TYPE, LIT_ABILITY, LIT_NETWORK} from '@lit-protocol/constants';
+import {GetSessionSigsProps, ILitNodeClient, IRelayPKP, LIT_NETWORKS_KEYS, SessionSigs,} from '@lit-protocol/types';
 import {LitActionResource, LitPKPResource} from '@lit-protocol/auth-helpers';
 import {StoredKeyMetadata} from "@lit-protocol/wrapped-keys";
 import {listEncryptedKeyMetadata} from "@lit-protocol/wrapped-keys/src/lib/api";
+import {ExAuthType} from '../types/auth.type';
 
 export const DOMAIN = import.meta.env.VITE_PUBLIC_DOMAIN || 'localhost';
 export const ORIGIN =
@@ -72,7 +66,7 @@ export async function signInWithGoogle(redirectUri: string): Promise<void> {
  */
 export async function authenticateWithGoogle(
     redirectUri: string
-): Promise<AuthMethod | undefined> {
+): Promise<ExAuthType | undefined> {
     const googleProvider = new GoogleProvider({relay: litRelay, litNodeClient, redirectUri});
     /*
       const googleProvider = litAuthClient.initProvider<GoogleProvider>(
@@ -98,7 +92,7 @@ export async function signInWithDiscord(redirectUri: string): Promise<void> {
  */
 export async function authenticateWithDiscord(
     redirectUri: string
-): Promise<AuthMethod | undefined> {
+): Promise<ExAuthType | undefined> {
     const discordProvider = new DiscordProvider({relay: litRelay, litNodeClient, redirectUri});
     /*
       const discordProvider = litAuthClient.initProvider<DiscordProvider>(
@@ -115,7 +109,7 @@ export async function authenticateWithDiscord(
 export async function authenticateWithEthWallet(
     address?: string,
     signMessage?: (message: string) => Promise<string>
-): Promise<AuthMethod | undefined> {
+): Promise<ExAuthType | undefined> {
     const ethWalletProvider = new EthWalletProvider({
         relay: litRelay, litNodeClient, domain: DOMAIN, origin: ORIGIN,
     });
@@ -165,7 +159,7 @@ export async function registerWebAuthn(): Promise<IRelayPKP> {
  * Get auth method object by authenticating with a WebAuthn credential
  */
 export async function authenticateWithWebAuthn(): Promise<
-    AuthMethod | undefined
+    ExAuthType | undefined
 > {
     const provider = new WebAuthnProvider({relay: litRelay, litNodeClient});
     /*
@@ -222,7 +216,7 @@ export async function getSessionSigs({
                                          // sessionSigsParams,
                                      }: {
     pkpPublicKey: string;
-    authMethod: AuthMethod;
+    authMethod: ExAuthType;
     // sessionSigsParams: GetSessionSigsProps;
 }): Promise<SessionSigs> {
     // const provider = getProviderByAuthMethod(authMethod);
@@ -261,7 +255,7 @@ export async function updateSessionSigs(
 /**
  * Fetch PKPs associated with given auth method
  */
-export async function getPKPs(authMethod: AuthMethod): Promise<IRelayPKP[]> {
+export async function getPKPs(authMethod: ExAuthType): Promise<IRelayPKP[]> {
     const provider = getProviderByAuthMethod(authMethod);
     if (provider) {
         return await provider.fetchPKPsThroughRelayer(authMethod);
@@ -273,7 +267,7 @@ export async function getPKPs(authMethod: AuthMethod): Promise<IRelayPKP[]> {
 /**
  * Mint a new PKP for current auth method
  */
-export async function mintPKP(authMethod: AuthMethod): Promise<IRelayPKP> {
+export async function mintPKP(authMethod: ExAuthType): Promise<IRelayPKP> {
     const provider = getProviderByAuthMethod(authMethod);
 
     if (!provider)
@@ -330,7 +324,7 @@ export async function mintPKP(authMethod: AuthMethod): Promise<IRelayPKP> {
 /**
  * Get provider for given auth method
  */
-function getProviderByAuthMethod(authMethod: AuthMethod) {
+function getProviderByAuthMethod(authMethod: ExAuthType) {
     switch (authMethod.authMethodType) {
         case AUTH_METHOD_TYPE.GoogleJwt:
             return new GoogleProvider({relay: litRelay, litNodeClient});
@@ -340,15 +334,15 @@ function getProviderByAuthMethod(authMethod: AuthMethod) {
             return new EthWalletProvider({relay: litRelay, litNodeClient});
         case AUTH_METHOD_TYPE.WebAuthn:
             return new WebAuthnProvider({relay: litRelay, litNodeClient});
-        case AUTH_METHOD_TYPE.StytchEmailFactorOtp:
+        case AUTH_METHOD_TYPE.StytchOtp:
             return new StytchOtpProvider({relay: litRelay, litNodeClient,}, {
                 appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
-                userId: PROVIDER_TYPE.StytchEmailFactorOtp
+                userId: authMethod.userId
             })
         case AUTH_METHOD_TYPE.StytchSmsFactorOtp:
             return new StytchOtpProvider({relay: litRelay, litNodeClient,}, {
                 appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
-                userId: PROVIDER_TYPE.StytchSmsFactorOtp
+                userId: authMethod.userId
             })
         default:
             return;
@@ -356,7 +350,7 @@ function getProviderByAuthMethod(authMethod: AuthMethod) {
 }
 
 /*
-export function initProviderByMethod(authMethod: AuthMethod) {
+export function initProviderByMethod(authMethod: ExAuthType) {
     switch (authMethod.authMethodType) {
         case AUTH_METHOD_TYPE.GoogleJwt:
             litAuthClient.initProvider<GoogleProvider>(

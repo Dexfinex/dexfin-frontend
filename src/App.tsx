@@ -77,9 +77,7 @@ export default function App() {
     setIsSocialFeedOpen,
     isGamesOpen,
     setIsGamesOpen,
-    isSignupModalOpen,
     setIsSignupModalOpen,
-    isSigninModalOpen,
     setIsSigninModalOpen,
     isTradeOpen,
     setTradeOpen,
@@ -184,8 +182,7 @@ export default function App() {
   }, [theme, isStylesApplied]);
 
   useEffect(() => {
-    if (location.pathname === "/") {
-    } else {
+    if (location.pathname === "/") { /* empty */ } else {
       window.scrollTo(0, 0);
     }
   }, [location.pathname]);
