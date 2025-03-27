@@ -60,7 +60,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const { mutate: enSoActionMutation } = useEnSoActionMutation();
 
-  const { chainId, address, signer, } = useContext(Web3AuthContext);
+  const { chainId, address, signer, switchChain} = useContext(Web3AuthContext);
 
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation(chainId);
@@ -96,6 +96,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleAction = (type: string, position: Position, apyToken: string, supportedChains: number[]) => {
+    switchChain(supportedChains[0]);
     setModalState({ type, position, apyToken, supportedChains });
   };
 
@@ -225,7 +226,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           if (signer) {
             setConfirming("Executing...");
             // execute defi action
-            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+            const transactionResponse = await signer.sendTransaction(txData.tx).catch((e) => {
+              console.error(e)
               setConfirming("")
               return null;
             });
