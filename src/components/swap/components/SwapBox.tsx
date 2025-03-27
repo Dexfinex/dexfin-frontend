@@ -63,9 +63,9 @@ export const PreviewDetailItem = ({
             <div className="flex items-center gap-2">
                 <span className="text-gray-400">{title}</span>
                 <div className="group relative">
-                    <Info className="w-3.5 h-3.5 text-gray-500"/>
+                    <Info className="peer w-3.5 h-3.5 text-gray-500 cursor-pointer"/>
                     <div
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 text-xs text-gray-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 text-xs text-gray-300 rounded-lg opacity-0 peer-hover:opacity-100 transition-opacity pointer-events-none">
                         {info}
                     </div>
                 </div>
