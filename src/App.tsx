@@ -1,34 +1,34 @@
-import { useContext, useEffect, useState } from "react";
+import {useContext, useEffect, useState} from "react";
 import {
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-  useLocation,
+    Routes,
+    Route,
+    Navigate,
+    useNavigate,
+    useLocation,
 } from "react-router-dom";
-import { Box } from "@chakra-ui/react";
-import { useStore } from "./store/useStore";
+import {Box} from "@chakra-ui/react";
+import {useStore} from "./store/useStore";
 import AIAgentModal from "./components/agent/AIAgentModal.tsx";
 import SwapModal from "./components/swap/SwapModal";
-import { DeFiModal } from "./components/DeFiModal";
-import { DashboardModal } from "./components/DashboardModal";
-import { MarketDataModal } from "./components/MarketDataModal";
-import { ChatModal } from "./components/ChatModal";
+import {DeFiModal} from "./components/DeFiModal";
+import {DashboardModal} from "./components/DashboardModal";
+import {MarketDataModal} from "./components/MarketDataModal";
+import {ChatModal} from "./components/ChatModal";
 import CartModal from "./components/ShoppingCart/CartModal.tsx";
-import { SocialFeedModal } from "./components/SocialFeedModal";
-import { GamesModal } from "./components/GamesModal";
-import { RewardsModal } from "./components/RewardsModal";
+import {SocialFeedModal} from "./components/SocialFeedModal";
+import {GamesModal} from "./components/GamesModal";
+import {RewardsModal} from "./components/RewardsModal";
 // import SignUpModal from "./components/SignupModal.tsx";
 // import SignInModal from "./components/SignInModal.tsx";
-import { AUTH_METHOD_TYPE } from "@lit-protocol/constants";
-import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
+import {AUTH_METHOD_TYPE} from "@lit-protocol/constants";
+import {Web3AuthContext} from "./providers/Web3AuthContext.tsx";
 import {
-  LOCAL_STORAGE_AUTH_REDIRECT_TYPE,
-  LOCAL_STORAGE_PUSH_KEY,
+    LOCAL_STORAGE_AUTH_REDIRECT_TYPE,
+    LOCAL_STORAGE_PUSH_KEY,
 } from "./constants";
-import { TradingViewModal } from "./components/TradingViewModal.tsx";
-import { initStream } from "./utils/chat.util.ts";
-import { PushAPI, CONSTANTS } from "@pushprotocol/restapi";
+import {TradingViewModal} from "./components/TradingViewModal.tsx";
+import {initStream} from "./utils/chat.util.ts";
+import {PushAPI, CONSTANTS} from "@pushprotocol/restapi";
 import UsernameModal from "./components/UsernameModal.tsx";
 import WalletDrawer from "./components/WalletDrawer.tsx";
 import LandingPage from "./components/mainpage/LandingPage.tsx";
@@ -37,14 +37,14 @@ import Terms from "./components/Terms.tsx";
 import AppPage from "./AppPage";
 import GlobalLoading from "./components/GlobalLoading.tsx";
 import {
-  initializeGA,
-  trackPageView,
-  trackModalInteraction,
+    initializeGA,
+    trackPageView,
+    trackModalInteraction,
 } from "./services/analytics";
 import {
-  initializeMouseflow,
-  trackMouseflowPageView,
-  addMouseflowTag,
+    initializeMouseflow,
+    trackMouseflowPageView,
+    addMouseflowTag,
 } from "./services/mouseflow";
 import ReferralHandler from "./components/ReferralHandler.tsx";
 
@@ -52,116 +52,118 @@ import ReferralHandler from "./components/ReferralHandler.tsx";
 const AUTH_TOKEN_KEY = "auth_token";
 
 export default function App() {
-  const { theme } = useStore();
-  const [isSignupTriggered, setIsSignupTriggered] = useState(false);
-  const [isStylesApplied, setIsStylesApplied] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
+    const {theme} = useStore();
+    const [isSignupTriggered, setIsSignupTriggered] = useState(false);
+    const [isStylesApplied, setIsStylesApplied] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
 
-  const {
-    isAIAgentOpen,
-    setIsAIAgentOpen,
-    isSwapOpen,
-    setIsSwapOpen,
-    isDefiOpen,
-    setIsDefiOpen,
-    isDashboardOpen,
-    setIsDashboardOpen,
-    isMarketDataOpen,
-    setIsMarketDataOpen,
-    isChatOpen,
-    setIsChatOpen,
-    isCartOpen,
-    setIsCartOpen,
-    isSocialFeedOpen,
-    setIsSocialFeedOpen,
-    isGamesOpen,
-    setIsGamesOpen,
-    setIsSignupModalOpen,
-    setIsSigninModalOpen,
-    isTradeOpen,
-    setTradeOpen,
-    chatUser,
-    setChatUser,
-    isRewardsOpen,
-    setIsRewardsOpen,
-    isUsernameModalOpen,
-    widgetCommand,
-    isWalletDrawerOpen,
-    setIsWalletDrawerOpen,
-  } = useStore();
+    const {
+        isAIAgentOpen,
+        setIsAIAgentOpen,
+        isSwapOpen,
+        setIsSwapOpen,
+        isDefiOpen,
+        setIsDefiOpen,
+        isDashboardOpen,
+        setIsDashboardOpen,
+        isMarketDataOpen,
+        setIsMarketDataOpen,
+        isChatOpen,
+        setIsChatOpen,
+        isCartOpen,
+        setIsCartOpen,
+        isSocialFeedOpen,
+        setIsSocialFeedOpen,
+        isGamesOpen,
+        setIsGamesOpen,
+        isSigninModalOpen,
+        isSignupModalOpen,
+        setIsSignupModalOpen,
+        setIsSigninModalOpen,
+        isTradeOpen,
+        setTradeOpen,
+        chatUser,
+        setChatUser,
+        isRewardsOpen,
+        setIsRewardsOpen,
+        isUsernameModalOpen,
+        widgetCommand,
+        isWalletDrawerOpen,
+        setIsWalletDrawerOpen,
+    } = useStore();
 
-  const {
-    authMethod,
-    initializeErrors,
-    address,
-    isConnected,
-    authLoading,
-    authError,
-    accountsLoading,
-    accountsError,
-    sessionLoading,
-    sessionError,
-    isPreparingAccounts,
-  } = useContext(Web3AuthContext);
+    const {
+        authMethod,
+        initializeErrors,
+        address,
+        isConnected,
+        authLoading,
+        authError,
+        accountsLoading,
+        accountsError,
+        sessionLoading,
+        sessionError,
+        isPreparingAccounts,
+    } = useContext(Web3AuthContext);
 
-  // Initialize tracking services
-  useEffect(() => {
-    // Initialize Google Analytics
-    initializeGA();
-
-    // Initialize Mouseflow
-    initializeMouseflow();
-  }, []);
-
-  // Track page views
-  useEffect(() => {
-    // Track in Google Analytics
-    trackPageView(location.pathname);
-
-    // Track in Mouseflow
-    trackMouseflowPageView(location.pathname);
-
-    // Add page path as a tag in Mouseflow
-    addMouseflowTag(`page_${location.pathname.replace(/\//g, "_") || "home"}`);
-  }, [location.pathname]);
-
-  // Custom hook to track modal state changes in both GA and Mouseflow
-  const useTrackModalState = (isOpen: boolean, modalName: string) => {
+    // Initialize tracking services
     useEffect(() => {
-      if (isOpen) {
+        // Initialize Google Analytics
+        initializeGA();
+
+        // Initialize Mouseflow
+        initializeMouseflow();
+    }, []);
+
+    // Track page views
+    useEffect(() => {
         // Track in Google Analytics
-        trackModalInteraction(modalName, "open");
+        trackPageView(location.pathname);
 
         // Track in Mouseflow
-        addMouseflowTag(`modal_open_${modalName}`);
-      }
-    }, [isOpen]);
-  };
+        trackMouseflowPageView(location.pathname);
 
-  // Track all modals
-  useTrackModalState(isAIAgentOpen, "AIAgent");
-  useTrackModalState(isSwapOpen, "Swap");
-  useTrackModalState(isDefiOpen, "DeFi");
-  useTrackModalState(isDashboardOpen, "Dashboard");
-  useTrackModalState(isMarketDataOpen, "MarketData");
-  useTrackModalState(isChatOpen, "Chat");
-  useTrackModalState(isCartOpen, "Cart");
-  useTrackModalState(isSocialFeedOpen, "SocialFeed");
-  useTrackModalState(isGamesOpen, "Games");
-  useTrackModalState(isRewardsOpen, "Rewards");
-  useTrackModalState(isSignupModalOpen, "Signup");
-  useTrackModalState(isSigninModalOpen, "Signin");
-  useTrackModalState(isTradeOpen, "Trade");
-  useTrackModalState(isUsernameModalOpen, "Username");
-  useTrackModalState(isWalletDrawerOpen, "WalletDrawer");
+        // Add page path as a tag in Mouseflow
+        addMouseflowTag(`page_${location.pathname.replace(/\//g, "_") || "home"}`);
+    }, [location.pathname]);
 
-  useEffect(() => {
-    document.body.setAttribute("data-theme", theme);
+    // Custom hook to track modal state changes in both GA and Mouseflow
+    const useTrackModalState = (isOpen: boolean, modalName: string) => {
+        useEffect(() => {
+            if (isOpen) {
+                // Track in Google Analytics
+                trackModalInteraction(modalName, "open");
 
-    if (!isStylesApplied) {
-      const style = document.createElement("style");
-      style.innerHTML = `
+                // Track in Mouseflow
+                addMouseflowTag(`modal_open_${modalName}`);
+            }
+        }, [isOpen]);
+    };
+
+    // Track all modals
+    useTrackModalState(isAIAgentOpen, "AIAgent");
+    useTrackModalState(isSwapOpen, "Swap");
+    useTrackModalState(isDefiOpen, "DeFi");
+    useTrackModalState(isDashboardOpen, "Dashboard");
+    useTrackModalState(isMarketDataOpen, "MarketData");
+    useTrackModalState(isChatOpen, "Chat");
+    useTrackModalState(isCartOpen, "Cart");
+    useTrackModalState(isSocialFeedOpen, "SocialFeed");
+    useTrackModalState(isGamesOpen, "Games");
+    useTrackModalState(isRewardsOpen, "Rewards");
+    useTrackModalState(isSignupModalOpen, "Signup");
+    useTrackModalState(isSigninModalOpen, "Signin");
+    useTrackModalState(isTradeOpen, "Trade");
+    useTrackModalState(isUsernameModalOpen, "Username");
+    useTrackModalState(isWalletDrawerOpen, "WalletDrawer");
+
+    useEffect(() => {
+        document.body.setAttribute("data-theme", theme);
+
+        if (!isStylesApplied) {
+            const style = document.createElement("style");
+            style.innerHTML = `
                 html, body {
                     overflow-x: hidden;
                     scroll-behavior: smooth;
@@ -176,265 +178,266 @@ export default function App() {
                     width: 100%;
                 }
             `;
-      document.head.appendChild(style);
-      setIsStylesApplied(true);
-    }
-  }, [theme, isStylesApplied]);
-
-  useEffect(() => {
-    if (location.pathname === "/") { /* empty */ } else {
-      window.scrollTo(0, 0);
-    }
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (
-      authMethod?.authMethodType === AUTH_METHOD_TYPE.GoogleJwt ||
-      authMethod?.authMethodType === AUTH_METHOD_TYPE.Discord ||
-      authMethod?.authMethodType === AUTH_METHOD_TYPE.AppleJwt
-    ) {
-      const redirectType = localStorage.getItem(
-        LOCAL_STORAGE_AUTH_REDIRECT_TYPE
-      );
-      if (redirectType === "sign-up") {
-        setIsSignupModalOpen(false);
-        setIsSigninModalOpen(false);
-        // Track in Mouseflow
-        addMouseflowTag(`auth_signup_${authMethod.authMethodType}`);
-      } else {
-        setIsSigninModalOpen(false);
-        // Track in Mouseflow
-        addMouseflowTag(`auth_signin_${authMethod.authMethodType}`);
-      }
-    }
-  }, [authMethod, setIsSigninModalOpen, setIsSignupModalOpen]);
-
-  useEffect(() => {
-    if (isConnected) {
-      setIsSigninModalOpen(false);
-      setIsSignupModalOpen(false);
-
-      if (!chatUser) {
-        unlockProfile();
-      }
-
-      if (location.pathname === "/") {
-        navigate("/app");
-      }
-
-      // Track connection in Mouseflow
-      addMouseflowTag("user_connected");
-    }
-  }, [
-    isConnected,
-    navigate,
-    setIsSigninModalOpen,
-    setIsSignupModalOpen,
-    chatUser,
-    location.pathname,
-  ]);
-
-  const unlockProfile = async () => {
-    const chatKey = localStorage.getItem(LOCAL_STORAGE_PUSH_KEY);
-
-    if (chatKey) {
-      try {
-        const key = JSON.parse(chatKey);
-
-        if (address === key.account) {
-          console.log("Auto initializing push user");
-          const pushUser = await PushAPI.initialize({
-            decryptedPGPPrivateKey: key.decryptedPgpPrivateKey,
-            env: CONSTANTS.ENV.PROD,
-            account: key.account,
-          });
-
-          setChatUser(pushUser);
-          initStream(pushUser);
-
-          // Track in Mouseflow
-          addMouseflowTag("chat_user_initialized");
+            document.head.appendChild(style);
+            setIsStylesApplied(true);
         }
-      } catch (error) {
-        console.error("Error initializing chat profile:", error);
-      }
-    }
-  };
+    }, [theme, isStylesApplied]);
 
-  useEffect(() => {
-    if (isSignupTriggered) {
-      initializeErrors();
-      setIsSignupModalOpen(true);
-      setIsSignupTriggered(false);
-    }
-  }, [authMethod, initializeErrors, isSignupTriggered, setIsSignupModalOpen]);
+    useEffect(() => {
+        if (location.pathname === "/") { /* empty */
+        } else {
+            window.scrollTo(0, 0);
+        }
+    }, [location.pathname]);
 
-  const isAuthenticated = () => {
-    return isConnected || localStorage.getItem(AUTH_TOKEN_KEY) === "true";
-  };
+    useEffect(() => {
+        if (
+            authMethod?.authMethodType === AUTH_METHOD_TYPE.GoogleJwt ||
+            authMethod?.authMethodType === AUTH_METHOD_TYPE.Discord ||
+            authMethod?.authMethodType === AUTH_METHOD_TYPE.AppleJwt
+        ) {
+            const redirectType = localStorage.getItem(
+                LOCAL_STORAGE_AUTH_REDIRECT_TYPE
+            );
+            if (redirectType === "sign-up") {
+                setIsSignupModalOpen(false);
+                setIsSigninModalOpen(false);
+                // Track in Mouseflow
+                addMouseflowTag(`auth_signup_${authMethod.authMethodType}`);
+            } else {
+                setIsSigninModalOpen(false);
+                // Track in Mouseflow
+                addMouseflowTag(`auth_signin_${authMethod.authMethodType}`);
+            }
+        }
+    }, [authMethod, setIsSigninModalOpen, setIsSignupModalOpen]);
 
-  const isLoading =
-    authLoading || accountsLoading || sessionLoading || isPreparingAccounts;
-  const loadingMessage = authLoading
-    ? "Authenticating your credentials..."
-    : accountsLoading
-    ? "Looking up your accounts..."
-    : sessionLoading
-    ? "Securing your session..."
-    : isPreparingAccounts
-    ? "Preparing your account..."
-    : "";
+    useEffect(() => {
+        if (isConnected) {
+            setIsSigninModalOpen(false);
+            setIsSignupModalOpen(false);
 
-  const loadingError = authError || accountsError || sessionError;
+            if (!chatUser) {
+                unlockProfile();
+            }
 
-  // Custom wrappers for setting modal states with analytics tracking
-  const closeAIAgentModal = () => {
-    trackModalInteraction("AIAgent", "close");
-    addMouseflowTag("modal_close_AIAgent");
-    setIsAIAgentOpen(false);
-  };
+            if (location.pathname === "/") {
+                navigate("/app");
+            }
 
-  const closeSwapModal = () => {
-    trackModalInteraction("Swap", "close");
-    addMouseflowTag("modal_close_Swap");
-    setIsSwapOpen(false);
-  };
+            // Track connection in Mouseflow
+            addMouseflowTag("user_connected");
+        }
+    }, [
+        isConnected,
+        navigate,
+        setIsSigninModalOpen,
+        setIsSignupModalOpen,
+        chatUser,
+        location.pathname,
+    ]);
 
-  const closeDefiModal = () => {
-    trackModalInteraction("DeFi", "close");
-    addMouseflowTag("modal_close_DeFi");
-    setIsDefiOpen(false);
-  };
+    const unlockProfile = async () => {
+        const chatKey = localStorage.getItem(LOCAL_STORAGE_PUSH_KEY);
 
-  const closeDashboardModal = () => {
-    trackModalInteraction("Dashboard", "close");
-    addMouseflowTag("modal_close_Dashboard");
-    setIsDashboardOpen(false);
-  };
+        if (chatKey) {
+            try {
+                const key = JSON.parse(chatKey);
 
-  const closeMarketDataModal = () => {
-    trackModalInteraction("MarketData", "close");
-    addMouseflowTag("modal_close_MarketData");
-    setIsMarketDataOpen(false);
-  };
+                if (address === key.account) {
+                    console.log("Auto initializing push user");
+                    const pushUser = await PushAPI.initialize({
+                        decryptedPGPPrivateKey: key.decryptedPgpPrivateKey,
+                        env: CONSTANTS.ENV.PROD,
+                        account: key.account,
+                    });
 
-  const closeChatModal = () => {
-    trackModalInteraction("Chat", "close");
-    addMouseflowTag("modal_close_Chat");
-    setIsChatOpen(false);
-  };
+                    setChatUser(pushUser);
+                    initStream(pushUser);
 
-  const closeCartModal = () => {
-    trackModalInteraction("Cart", "close");
-    addMouseflowTag("modal_close_Cart");
-    setIsCartOpen(false);
-  };
+                    // Track in Mouseflow
+                    addMouseflowTag("chat_user_initialized");
+                }
+            } catch (error) {
+                console.error("Error initializing chat profile:", error);
+            }
+        }
+    };
 
-  const closeSocialFeedModal = () => {
-    trackModalInteraction("SocialFeed", "close");
-    addMouseflowTag("modal_close_SocialFeed");
-    setIsSocialFeedOpen(false);
-  };
+    useEffect(() => {
+        if (isSignupTriggered) {
+            initializeErrors();
+            setIsSignupModalOpen(true);
+            setIsSignupTriggered(false);
+        }
+    }, [authMethod, initializeErrors, isSignupTriggered, setIsSignupModalOpen]);
 
-  const closeGamesModal = () => {
-    trackModalInteraction("Games", "close");
-    addMouseflowTag("modal_close_Games");
-    setIsGamesOpen(false);
-  };
+    const isAuthenticated = () => {
+        return isConnected || localStorage.getItem(AUTH_TOKEN_KEY) === "true";
+    };
 
-  const closeRewardsModal = () => {
-    trackModalInteraction("Rewards", "close");
-    addMouseflowTag("modal_close_Rewards");
-    setIsRewardsOpen(false);
-  };
+    const isLoading =
+        authLoading || accountsLoading || sessionLoading || isPreparingAccounts;
+    const loadingMessage = authLoading
+        ? "Authenticating your credentials..."
+        : accountsLoading
+            ? "Looking up your accounts..."
+            : sessionLoading
+                ? "Securing your session..."
+                : isPreparingAccounts
+                    ? "Preparing your account..."
+                    : "";
 
-  const closeTradeModal = () => {
-    trackModalInteraction("Trade", "close");
-    addMouseflowTag("modal_close_Trade");
-    setTradeOpen(false);
-  };
+    const loadingError = authError || accountsError || sessionError;
 
-  const closeWalletDrawer = () => {
-    trackModalInteraction("WalletDrawer", "close");
-    addMouseflowTag("modal_close_WalletDrawer");
-    setIsWalletDrawerOpen(false);
-  };
+    // Custom wrappers for setting modal states with analytics tracking
+    const closeAIAgentModal = () => {
+        trackModalInteraction("AIAgent", "close");
+        addMouseflowTag("modal_close_AIAgent");
+        setIsAIAgentOpen(false);
+    };
 
-  return (
-    <Box className="min-h-screen flex flex-col">
-      <ReferralHandler />
-      {/* Global loading overlay */}
-      <GlobalLoading
-        isOpen={isLoading}
-        message={loadingMessage}
-        error={loadingError}
-      />
+    const closeSwapModal = () => {
+        trackModalInteraction("Swap", "close");
+        addMouseflowTag("modal_close_Swap");
+        setIsSwapOpen(false);
+    };
 
-      <Routes>
-        <Route path="/ref/:referralCode/*" element={<ReferralHandler />} />
-        <Route
-          path="/"
-          element={
-            isAuthenticated() ? <Navigate to="/app" replace /> : <LandingPage />
-          }
-        />
-        <Route
-          path="/app"
-          element={
-            isAuthenticated() ? <AppPage /> : <Navigate to="/" replace />
-          }
-        />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+    const closeDefiModal = () => {
+        trackModalInteraction("DeFi", "close");
+        addMouseflowTag("modal_close_DeFi");
+        setIsDefiOpen(false);
+    };
 
-      <AIAgentModal
-        isOpen={isAIAgentOpen}
-        widgetCommand={widgetCommand}
-        onClose={closeAIAgentModal}
-      />
+    const closeDashboardModal = () => {
+        trackModalInteraction("Dashboard", "close");
+        addMouseflowTag("modal_close_Dashboard");
+        setIsDashboardOpen(false);
+    };
 
-      <SwapModal isOpen={isSwapOpen} onClose={closeSwapModal} />
+    const closeMarketDataModal = () => {
+        trackModalInteraction("MarketData", "close");
+        addMouseflowTag("modal_close_MarketData");
+        setIsMarketDataOpen(false);
+    };
 
-      <DeFiModal isOpen={isDefiOpen} onClose={closeDefiModal} />
+    const closeChatModal = () => {
+        trackModalInteraction("Chat", "close");
+        addMouseflowTag("modal_close_Chat");
+        setIsChatOpen(false);
+    };
 
-      <DashboardModal isOpen={isDashboardOpen} onClose={closeDashboardModal} />
+    const closeCartModal = () => {
+        trackModalInteraction("Cart", "close");
+        addMouseflowTag("modal_close_Cart");
+        setIsCartOpen(false);
+    };
 
-      <MarketDataModal
-        isOpen={isMarketDataOpen}
-        onClose={closeMarketDataModal}
-      />
+    const closeSocialFeedModal = () => {
+        trackModalInteraction("SocialFeed", "close");
+        addMouseflowTag("modal_close_SocialFeed");
+        setIsSocialFeedOpen(false);
+    };
 
-      <ChatModal isOpen={isChatOpen} onClose={closeChatModal} />
+    const closeGamesModal = () => {
+        trackModalInteraction("Games", "close");
+        addMouseflowTag("modal_close_Games");
+        setIsGamesOpen(false);
+    };
 
-      <CartModal isOpen={isCartOpen} onClose={closeCartModal} />
+    const closeRewardsModal = () => {
+        trackModalInteraction("Rewards", "close");
+        addMouseflowTag("modal_close_Rewards");
+        setIsRewardsOpen(false);
+    };
 
-      <SocialFeedModal
-        isOpen={isSocialFeedOpen}
-        onClose={closeSocialFeedModal}
-      />
+    const closeTradeModal = () => {
+        trackModalInteraction("Trade", "close");
+        addMouseflowTag("modal_close_Trade");
+        setTradeOpen(false);
+    };
 
-      <GamesModal isOpen={isGamesOpen} onClose={closeGamesModal} />
+    const closeWalletDrawer = () => {
+        trackModalInteraction("WalletDrawer", "close");
+        addMouseflowTag("modal_close_WalletDrawer");
+        setIsWalletDrawerOpen(false);
+    };
 
-      <RewardsModal isOpen={isRewardsOpen} onClose={closeRewardsModal} />
+    return (
+        <Box className="min-h-screen flex flex-col">
+            <ReferralHandler/>
+            {/* Global loading overlay */}
+            <GlobalLoading
+                isOpen={isLoading}
+                message={loadingMessage}
+                error={loadingError}
+            />
 
-      {isTradeOpen && (
-        <TradingViewModal isOpen={isTradeOpen} onClose={closeTradeModal} />
-      )}
+            <Routes>
+                <Route path="/ref/:referralCode/*" element={<ReferralHandler/>}/>
+                <Route
+                    path="/"
+                    element={
+                        isAuthenticated() ? <Navigate to="/app" replace/> : <LandingPage/>
+                    }
+                />
+                <Route
+                    path="/app"
+                    element={
+                        isAuthenticated() ? <AppPage/> : <Navigate to="/" replace/>
+                    }
+                />
+                <Route path="/privacy" element={<Privacy/>}/>
+                <Route path="/terms" element={<Terms/>}/>
+                <Route path="*" element={<Navigate to="/" replace/>}/>
+            </Routes>
 
-      {isUsernameModalOpen && (
-        <UsernameModal
-          isOpen={true}
-          onClose={() => {
-            trackModalInteraction("Username", "close");
-            addMouseflowTag("modal_close_Username");
-            useStore.getState().setIsUsernameModalOpen(false);
-          }}
-        />
-      )}
+            <AIAgentModal
+                isOpen={isAIAgentOpen}
+                widgetCommand={widgetCommand}
+                onClose={closeAIAgentModal}
+            />
 
-      <WalletDrawer isOpen={isWalletDrawerOpen} onClose={closeWalletDrawer} />
-    </Box>
-  );
+            <SwapModal isOpen={isSwapOpen} onClose={closeSwapModal}/>
+
+            <DeFiModal isOpen={isDefiOpen} onClose={closeDefiModal}/>
+
+            <DashboardModal isOpen={isDashboardOpen} onClose={closeDashboardModal}/>
+
+            <MarketDataModal
+                isOpen={isMarketDataOpen}
+                onClose={closeMarketDataModal}
+            />
+
+            <ChatModal isOpen={isChatOpen} onClose={closeChatModal}/>
+
+            <CartModal isOpen={isCartOpen} onClose={closeCartModal}/>
+
+            <SocialFeedModal
+                isOpen={isSocialFeedOpen}
+                onClose={closeSocialFeedModal}
+            />
+
+            <GamesModal isOpen={isGamesOpen} onClose={closeGamesModal}/>
+
+            <RewardsModal isOpen={isRewardsOpen} onClose={closeRewardsModal}/>
+
+            {isTradeOpen && (
+                <TradingViewModal isOpen={isTradeOpen} onClose={closeTradeModal}/>
+            )}
+
+            {isUsernameModalOpen && (
+                <UsernameModal
+                    isOpen={true}
+                    onClose={() => {
+                        trackModalInteraction("Username", "close");
+                        addMouseflowTag("modal_close_Username");
+                        useStore.getState().setIsUsernameModalOpen(false);
+                    }}
+                />
+            )}
+
+            <WalletDrawer isOpen={isWalletDrawerOpen} onClose={closeWalletDrawer}/>
+        </Box>
+    );
 }
