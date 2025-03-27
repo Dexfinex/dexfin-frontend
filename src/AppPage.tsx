@@ -1,9 +1,10 @@
-import React, { useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import { Box } from "@chakra-ui/react";
 import { Header } from "./components/Header";
 import { Workspace } from "./components/Workspace";
 import ReferralHandler from "./components/ReferralHandler.tsx";
 import { useStore } from "./store/useStore";
+import { trackEvent } from "./services/analytics";
 
 const AppPage: React.FC = () => {
   const { theme } = useStore();
@@ -33,6 +34,30 @@ const AppPage: React.FC = () => {
       setIsStylesApplied(true);
     }
   }, [theme, isStylesApplied]);
+
+  // Track app page view with session duration
+  useEffect(() => {
+    const startTime = new Date().getTime();
+    
+    // Track that user entered the main app
+    trackEvent('app_entry', 'Application', 'Main App');
+    
+    // Setup session duration tracking
+    return () => {
+      const endTime = new Date().getTime();
+      const durationInSeconds = Math.floor((endTime - startTime) / 1000);
+      
+      // Only track if the session was meaningful (longer than 5 seconds)
+      if (durationInSeconds > 5) {
+        trackEvent('session_duration', 'Engagement', 'App Session', durationInSeconds);
+      }
+    };
+  }, []);
+
+  // Track theme changes
+  useEffect(() => {
+    trackEvent('theme_change', 'User Preferences', theme);
+  }, [theme]);
 
   return (
     <Box minH="100vh" width="100%">

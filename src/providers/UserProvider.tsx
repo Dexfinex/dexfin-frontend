@@ -94,11 +94,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const registerUsername = async () => {
-    console.log(isNewRegistration, userData?.accessToken, currentAccount);
     if (isNewRegistration && userData?.accessToken) {
       try {
         let username = localStorage.getItem("username");
-        console.log(username);
         if (!username) {
           username = useStore.getState().username;
         }

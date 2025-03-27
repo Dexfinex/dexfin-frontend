@@ -193,6 +193,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [walletType, setWalletType] = useState<WalletTypeEnum>(WalletTypeEnum.UNKNOWN);
     const pkpWalletRef = useRef<PKPEthersWallet | null>(null);
     const hasGetSolanaWalletInfo = useRef(false);
+    const AUTH_TOKEN_KEY = "auth_token";
 
 
     const {
@@ -512,6 +513,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setWalletClient(undefined)
         setIsLoadingStoredWallet(false)
         hasGetSolanaWalletInfo.current = false
+        localStorage.removeItem(AUTH_TOKEN_KEY);
 
         setWalletType(WalletTypeEnum.UNKNOWN)
         delete axios.defaults.headers.common['Authorization'];

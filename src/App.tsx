@@ -18,8 +18,8 @@ import CartModal from "./components/ShoppingCart/CartModal.tsx";
 import { SocialFeedModal } from "./components/SocialFeedModal";
 import { GamesModal } from "./components/GamesModal";
 import { RewardsModal } from "./components/RewardsModal";
-import SignUpModal from "./components/SignupModal.tsx";
-import SignInModal from "./components/SignInModal.tsx";
+// import SignUpModal from "./components/SignupModal.tsx";
+// import SignInModal from "./components/SignInModal.tsx";
 import { AUTH_METHOD_TYPE } from "@lit-protocol/constants";
 import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
 import {
@@ -36,6 +36,7 @@ import Privacy from "./components/Privacy.tsx";
 import Terms from "./components/Terms.tsx";
 import AppPage from "./AppPage";
 import GlobalLoading from "./components/GlobalLoading.tsx";
+import { initializeGA, trackPageView, trackModalInteraction } from "./services/analytics";
 
 // Simple auth persistence key
 const AUTH_TOKEN_KEY = "auth_token";
@@ -96,6 +97,42 @@ export default function App() {
     isPreparingAccounts,
   } = useContext(Web3AuthContext);
 
+  // Initialize Google Analytics
+  useEffect(() => {
+    initializeGA();
+  }, []);
+
+  // Track page views
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+
+  // Custom hook to track modal state changes
+  const useTrackModalState = (isOpen: boolean, modalName: string) => {
+    useEffect(() => {
+      if (isOpen) {
+        trackModalInteraction(modalName, 'open');
+      }
+    }, [isOpen]);
+  };
+
+  // Track all modals
+  useTrackModalState(isAIAgentOpen, 'AIAgent');
+  useTrackModalState(isSwapOpen, 'Swap');
+  useTrackModalState(isDefiOpen, 'DeFi');
+  useTrackModalState(isDashboardOpen, 'Dashboard');
+  useTrackModalState(isMarketDataOpen, 'MarketData');
+  useTrackModalState(isChatOpen, 'Chat');
+  useTrackModalState(isCartOpen, 'Cart');
+  useTrackModalState(isSocialFeedOpen, 'SocialFeed');
+  useTrackModalState(isGamesOpen, 'Games');
+  useTrackModalState(isRewardsOpen, 'Rewards');
+  useTrackModalState(isSignupModalOpen, 'Signup');
+  useTrackModalState(isSigninModalOpen, 'Signin');
+  useTrackModalState(isTradeOpen, 'Trade');
+  useTrackModalState(isUsernameModalOpen, 'Username');
+  useTrackModalState(isWalletDrawerOpen, 'WalletDrawer');
+
   useEffect(() => {
     document.body.setAttribute("data-theme", theme);
 
@@ -140,7 +177,9 @@ export default function App() {
       if (redirectType === "sign-up") {
         setIsSignupModalOpen(false);
         setIsSigninModalOpen(false);
-      } else setIsSigninModalOpen(false);
+      } else {
+        setIsSigninModalOpen(false);
+      }
     }
   }, [authMethod, setIsSigninModalOpen, setIsSignupModalOpen]);
 
@@ -214,9 +253,68 @@ export default function App() {
     ? "Preparing your account..."
     : "";
 
-  console.log(isLoading)
-
   const loadingError = authError || accountsError || sessionError;
+
+  // Custom wrappers for setting modal states with analytics tracking
+  const closeAIAgentModal = () => {
+    trackModalInteraction('AIAgent', 'close');
+    setIsAIAgentOpen(false);
+  };
+
+  const closeSwapModal = () => {
+    trackModalInteraction('Swap', 'close');
+    setIsSwapOpen(false);
+  };
+
+  const closeDefiModal = () => {
+    trackModalInteraction('DeFi', 'close');
+    setIsDefiOpen(false);
+  };
+
+  const closeDashboardModal = () => {
+    trackModalInteraction('Dashboard', 'close');
+    setIsDashboardOpen(false);
+  };
+
+  const closeMarketDataModal = () => {
+    trackModalInteraction('MarketData', 'close');
+    setIsMarketDataOpen(false);
+  };
+
+  const closeChatModal = () => {
+    trackModalInteraction('Chat', 'close');
+    setIsChatOpen(false);
+  };
+
+  const closeCartModal = () => {
+    trackModalInteraction('Cart', 'close');
+    setIsCartOpen(false);
+  };
+
+  const closeSocialFeedModal = () => {
+    trackModalInteraction('SocialFeed', 'close');
+    setIsSocialFeedOpen(false);
+  };
+
+  const closeGamesModal = () => {
+    trackModalInteraction('Games', 'close');
+    setIsGamesOpen(false);
+  };
+
+  const closeRewardsModal = () => {
+    trackModalInteraction('Rewards', 'close');
+    setIsRewardsOpen(false);
+  };
+
+  const closeTradeModal = () => {
+    trackModalInteraction('Trade', 'close');
+    setTradeOpen(false);
+  };
+
+  const closeWalletDrawer = () => {
+    trackModalInteraction('WalletDrawer', 'close');
+    setIsWalletDrawerOpen(false);
+  };
 
   return (
     <Box className="min-h-screen flex flex-col">
@@ -249,15 +347,22 @@ export default function App() {
       {/* {isSignupModalOpen && (
         <SignUpModal
           isOpen={true}
-          onClose={() => setIsSignupModalOpen(false)}
+          onClose={() => {
+            trackModalInteraction('Signup', 'close');
+            setIsSignupModalOpen(false);
+          }}
         />
       )}
 
       {isSigninModalOpen && (
         <SignInModal
           isOpen={true}
-          onClose={() => setIsSigninModalOpen(false)}
+          onClose={() => {
+            trackModalInteraction('Signin', 'close');
+            setIsSigninModalOpen(false);
+          }}
           goToSignUp={() => {
+            trackModalInteraction('Signin', 'close');
             setIsSigninModalOpen(false);
             setIsSignupTriggered(true);
           }}
@@ -267,56 +372,59 @@ export default function App() {
       <AIAgentModal
         isOpen={isAIAgentOpen}
         widgetCommand={widgetCommand}
-        onClose={() => setIsAIAgentOpen(false)}
+        onClose={closeAIAgentModal}
       />
 
-      <SwapModal isOpen={isSwapOpen} onClose={() => setIsSwapOpen(false)} />
+      <SwapModal isOpen={isSwapOpen} onClose={closeSwapModal} />
 
-      <DeFiModal isOpen={isDefiOpen} onClose={() => setIsDefiOpen(false)} />
+      <DeFiModal isOpen={isDefiOpen} onClose={closeDefiModal} />
 
       <DashboardModal
         isOpen={isDashboardOpen}
-        onClose={() => setIsDashboardOpen(false)}
+        onClose={closeDashboardModal}
       />
 
       <MarketDataModal
         isOpen={isMarketDataOpen}
-        onClose={() => setIsMarketDataOpen(false)}
+        onClose={closeMarketDataModal}
       />
 
-      <ChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      <ChatModal isOpen={isChatOpen} onClose={closeChatModal} />
 
-      <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <CartModal isOpen={isCartOpen} onClose={closeCartModal} />
 
       <SocialFeedModal
         isOpen={isSocialFeedOpen}
-        onClose={() => setIsSocialFeedOpen(false)}
+        onClose={closeSocialFeedModal}
       />
 
-      <GamesModal isOpen={isGamesOpen} onClose={() => setIsGamesOpen(false)} />
+      <GamesModal isOpen={isGamesOpen} onClose={closeGamesModal} />
 
       <RewardsModal
         isOpen={isRewardsOpen}
-        onClose={() => setIsRewardsOpen(false)}
+        onClose={closeRewardsModal}
       />
 
       {isTradeOpen && (
         <TradingViewModal
           isOpen={isTradeOpen}
-          onClose={() => setTradeOpen(false)}
+          onClose={closeTradeModal}
         />
       )}
 
       {isUsernameModalOpen && (
         <UsernameModal
           isOpen={true}
-          onClose={() => useStore.getState().setIsUsernameModalOpen(false)}
+          onClose={() => {
+            trackModalInteraction('Username', 'close');
+            useStore.getState().setIsUsernameModalOpen(false);
+          }}
         />
       )}
 
       <WalletDrawer
         isOpen={isWalletDrawerOpen}
-        onClose={() => setIsWalletDrawerOpen(false)}
+        onClose={closeWalletDrawer}
       />
     </Box>
   );

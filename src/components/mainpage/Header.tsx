@@ -13,7 +13,6 @@ import {
 import { Twitter, Send, BookOpen } from "lucide-react";
 import Logo from "./Logo";
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
-import { useStore } from "../../store/useStore";
 import SignupModal from "../SignupModal";
 import SignInModal from "../SignInModal";
 
