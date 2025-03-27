@@ -24,7 +24,7 @@ import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {use0xTokenApprove} from "../../../hooks/use0xTokenApprove.ts";
 import {zeroxService} from "../../../services/0x.service.ts";
 import use0xGaslessSwapStatus from "../../../hooks/use0xGaslessSwapStatus.ts";
-import {signTradeObject, tradeSplitSigDataToSubmit} from "../../../utils/swap.util.ts";
+import {getSlippageBigNumber, signTradeObject, tradeSplitSigDataToSubmit} from "../../../utils/swap.util.ts";
 import {WalletTypeEnum} from "../../../types/wallet.type.ts";
 import {SlippageDialog} from "../SlippageSettings.tsx";
 
@@ -164,11 +164,10 @@ export function SwapBox({
     const amountToApprove =
         fromToken && fromAmount !== ''
             ? ethers.BigNumber.from(ethers.utils.parseUnits(fromAmount, fromToken!.decimals))
-                .mul(100 + Number(slippage) * 2)
-                .div(100)
+                .mul(ethers.BigNumber.from(10000).add(getSlippageBigNumber(slippage)))
+                .div(10000)
                 .toString()
             : '0';
-
     const {
         approve,
         approvalDataToSubmit,
