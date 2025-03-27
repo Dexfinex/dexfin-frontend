@@ -98,7 +98,7 @@ export const getTokenOutAmount = async (amount: number, address: string, chainId
         const decimals = isNativeToken ? 18 : await contract.decimals();
 
         return Number(ethers.utils.parseUnits(
-            Number(amount).toFixed(8).replace(/\.?0+$/, ""),
+            amount + "",
             decimals
         ));
     } catch (err) {
