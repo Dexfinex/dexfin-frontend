@@ -15,6 +15,7 @@ import { getTokenInfo } from '../../../utils/token.util.ts';
 import { mapChainId2ExplorerUrl } from '../../../config/networks.ts';
 import { SOLANA_CHAIN_ID } from '../../../constants/solana.constants.ts';
 import useTrendingTokensStore from '../../../store/useTrendingTokensStore.ts';
+import { useTrendingTokens } from '../../../hooks/useTrendingTokens.ts';
 import { TokenChainIcon } from './TokenIcon.tsx';
 import { debounce } from 'lodash';
 import { dexfinv3Service } from '../../../services/dexfin.service.ts';
@@ -120,6 +121,8 @@ export function TokenSelectorModal({
     const [newToken, setNewToken] = useState<TokenType | null>(null);
     const [approveModalActive, setApproveModalActive] = useState(false);
     const [tokens, setTokens] = useState<Array<TokenType>>([]);
+
+    const { isLoading } = useTrendingTokens(-1);
 
     const { ref, inView } = useInView({
         threshold: 0.1, // Trigger when 10% of the element is visible
@@ -440,7 +443,7 @@ export function TokenSelectorModal({
                             </>
                         )
                     }
-
+                    
                     {!isSearchNewToken ? <>
                         {
                             myTokens.length > 0 && (
@@ -488,7 +491,7 @@ export function TokenSelectorModal({
                                                         <span className="text-white">{`${formatNumberByFrac(token.balance, 5)} ${token?.symbol ? token.symbol.toUpperCase() : ""}`}</span>
                                                         <span className="text-gray-400">${formatNumberByFrac(token.usdValue, 5)}</span>
                                                     </div>
-{/*
+                                                    {/*
                                                     <div className="text-right w-24">
                                                         <div className="text-sm text-gray-400">{shrinkAddress(token.address)}</div>
                                                     </div>
@@ -504,7 +507,7 @@ export function TokenSelectorModal({
                         <div className="text-gray-400 text-sm px-4 mt-2">
                             Trending
                         </div>
-                        {loadingToken ? (
+                        {(loadingToken || isLoading) ? (
                             <div className="flex items-center justify-center p-8">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
                             </div>
