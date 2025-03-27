@@ -6,6 +6,7 @@ import { Web3AuthContext } from "./Web3AuthContext";
 import { useStore } from "../store/useStore.ts";
 import { setAuthToken } from "../services/api.service";
 import { WalletTypeEnum } from "../types/wallet.type.ts";
+import { clearReferralCode, getReferralCodeFromStorage } from '../components/ReferralHandler.tsx';
 
 interface UserContextType {
   userData: {
@@ -34,6 +35,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isNewRegistration, setIsNewRegistration] = useState(false);
+  const [authenticatedWallets, setAuthenticatedWallets] = useState<Set<string>>(new Set());
 
   const { address: wagmiAddress, isConnected: isWagmiWalletConnected } =
     useAccount();
@@ -50,40 +52,89 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     evmAddress?: string,
     solAddress?: string
   ) => {
+    // Skip if already authenticated with this wallet
+    if (evmAddress && authenticatedWallets.has(evmAddress.toLowerCase())) {
+      console.log("Wallet already authenticated:", evmAddress);
+      return;
+    }
+
+    if (solAddress && authenticatedWallets.has(solAddress)) {
+      console.log("Solana wallet already authenticated:", solAddress);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
+
+      let authResponse;
       try {
-        const loginResponse = await authService.login(evmAddress || "");
-        if (loginResponse?.accessToken) {
-          setAuthToken(loginResponse.accessToken);
+        // Attempt login first
+        authResponse = await authService.login(evmAddress || "");
+        if (authResponse?.accessToken) {
+          console.log("Login successful");
+          setAuthToken(authResponse.accessToken);
           setUserData({
-            accessToken: loginResponse.accessToken,
-            userId: loginResponse.userId,
+            accessToken: authResponse.accessToken,
+            userId: authResponse.userId,
             walletType,
           });
           setIsNewRegistration(false);
+          
+          // Track the authenticated wallet
+          if (evmAddress) {
+            setAuthenticatedWallets(prev => {
+              const updated = new Set(prev);
+              updated.add(evmAddress.toLowerCase());
+              return updated;
+            });
+          }
+          if (solAddress) {
+            setAuthenticatedWallets(prev => {
+              const updated = new Set(prev);
+              updated.add(solAddress);
+              return updated;
+            });
+          }
+          
           return;
         }
-      } catch (error) {
-        console.log("Login failed, attempting registration...");
+      } catch (loginError) {
+        console.log("Login failed, attempting registration...", loginError);
       }
 
-      const registerResponse = await authService.register(
+      // If login fails, attempt registration
+      authResponse = await authService.register(
         walletType,
         evmAddress,
         solAddress
       );
 
-      if (registerResponse?.accessToken) {
-        setAuthToken(registerResponse.accessToken);
+      if (authResponse?.accessToken) {
+        console.log("Registration successful");
+        setAuthToken(authResponse.accessToken);
         setUserData({
-          accessToken: registerResponse.accessToken,
-          userId: registerResponse.userId,
+          accessToken: authResponse.accessToken,
+          userId: authResponse.userId,
           walletType,
         });
-
         setIsNewRegistration(true);
+        
+        // Track the authenticated wallet
+        if (evmAddress) {
+          setAuthenticatedWallets(prev => {
+            const updated = new Set(prev);
+            updated.add(evmAddress.toLowerCase());
+            return updated;
+          });
+        }
+        if (solAddress) {
+          setAuthenticatedWallets(prev => {
+            const updated = new Set(prev);
+            updated.add(solAddress);
+            return updated;
+          });
+        }
       }
     } catch (error) {
       console.error("Error in wallet authentication:", error);
@@ -100,12 +151,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!username) {
           username = useStore.getState().username;
         }
-
+        const referralCode = getReferralCodeFromStorage();
+        const referralCodeOrUndefined =
+          referralCode === null ? undefined : referralCode;
         if (username) {
-          const response = await authService.registerUsername(username);
+          const response = await authService.registerUsername(
+            username,
+            referralCodeOrUndefined
+          );
 
           if (response) {
             setIsNewRegistration(false);
+            clearReferralCode();
             localStorage.removeItem("username");
             useStore.getState().setUserName("");
           }
@@ -129,6 +186,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setError(null);
     setAuthToken(null);
     setIsNewRegistration(false);
+    setAuthenticatedWallets(new Set());
   };
 
   useEffect(() => {

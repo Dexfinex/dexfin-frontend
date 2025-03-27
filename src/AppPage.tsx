@@ -5,6 +5,7 @@ import { Workspace } from "./components/Workspace";
 import ReferralHandler from "./components/ReferralHandler.tsx";
 import { useStore } from "./store/useStore";
 import { trackEvent } from "./services/analytics";
+import { addMouseflowTag, setMouseflowVariable } from "./services/mouseflow";
 
 const AppPage: React.FC = () => {
   const { theme } = useStore();
@@ -42,6 +43,9 @@ const AppPage: React.FC = () => {
     // Track that user entered the main app
     trackEvent('app_entry', 'Application', 'Main App');
     
+    // Track in Mouseflow
+    addMouseflowTag('app_entry');
+    
     // Setup session duration tracking
     return () => {
       const endTime = new Date().getTime();
@@ -50,6 +54,9 @@ const AppPage: React.FC = () => {
       // Only track if the session was meaningful (longer than 5 seconds)
       if (durationInSeconds > 5) {
         trackEvent('session_duration', 'Engagement', 'App Session', durationInSeconds);
+        
+        // Track in Mouseflow
+        setMouseflowVariable('session_duration', durationInSeconds.toString());
       }
     };
   }, []);
@@ -57,6 +64,9 @@ const AppPage: React.FC = () => {
   // Track theme changes
   useEffect(() => {
     trackEvent('theme_change', 'User Preferences', theme);
+    
+    // Track in Mouseflow
+    setMouseflowVariable('theme', theme);
   }, [theme]);
 
   return (

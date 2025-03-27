@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -23,6 +23,7 @@ import CTASection from './CTASection';
 import Footer from './Footer';
 import axios from "axios";
 import { trackEvent, trackFormSubmission, trackButtonClick } from '../../services/analytics';
+import { addMouseflowTag, setMouseflowVariable } from '../../services/mouseflow';
 
 const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,6 +34,11 @@ const LandingPage: React.FC<{}> = () => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
+
+  // Mark landing page visit in Mouseflow when component mounts
+  useEffect(() => {
+    addMouseflowTag('landing_page_view');
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,11 +51,17 @@ const LandingPage: React.FC<{}> = () => {
         duration: 3000,
       });
       trackFormSubmission('waitlist-email', false);
+      addMouseflowTag('form_error_invalid_email');
       return;
     }
 
     setIsSubmitting(true);
-    // Simulate API call
+    // Record the domain of the email in Mouseflow
+    if (email) {
+      const domain = email.split('@')[1];
+      setMouseflowVariable('email_domain', domain);
+    }
+    
     try {
       const response = await axios.post('https://dexfin-email-backend-production.up.railway.app/api/submit-email', { email },{
         headers: {
@@ -67,6 +79,9 @@ const LandingPage: React.FC<{}> = () => {
       // Track successful form submission
       trackFormSubmission('waitlist-email', true);
       trackEvent('waitlist_signup', 'Lead Generation', email.split('@')[1], 1);
+      
+      // Track in Mouseflow
+      addMouseflowTag('form_submitted_success');
 
     } catch(e) {
       // Handle error
@@ -77,19 +92,28 @@ const LandingPage: React.FC<{}> = () => {
         duration: 5000,
       });
       trackFormSubmission('waitlist-email', false);
+      
+      // Track in Mouseflow
+      addMouseflowTag('form_submitted_error');
     }
 
     setEmail('');
     setIsSubmitting(false);
   };
 
+  // Track email input focus
+  const handleEmailFocus = () => {
+    addMouseflowTag('email_input_focus');
+  };
+
   // Track scrolling to specific sections
   const trackSectionView = (sectionId: string) => {
     trackEvent('section_view', 'Landing Page', sectionId);
+    addMouseflowTag(`section_view_${sectionId}`);
   };
 
   // Setup intersection observers for section tracking
-  React.useEffect(() => {
+  useEffect(() => {
     const sections = [
       'hero-section',
       'onboarding-section',
@@ -215,6 +239,7 @@ const LandingPage: React.FC<{}> = () => {
                       placeholder="Enter your email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      onFocus={handleEmailFocus}
                       bg="whiteAlpha.200"
                       border="none"
                       _focus={{
@@ -236,7 +261,10 @@ const LandingPage: React.FC<{}> = () => {
                         type="submit"
                         isLoading={isSubmitting}
                         rightIcon={<ArrowRight size={16} />}
-                        onClick={() => trackButtonClick('join-waitlist', 'hero-section')}
+                        onClick={() => {
+                          trackButtonClick('join-waitlist', 'hero-section');
+                          addMouseflowTag('button_click_join_waitlist');
+                        }}
                       >
                         Join Waitlist
                       </Button>

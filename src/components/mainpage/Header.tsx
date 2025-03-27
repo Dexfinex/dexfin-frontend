@@ -14,7 +14,7 @@ import { Twitter, Send, BookOpen } from "lucide-react";
 import Logo from "./Logo";
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import SignInModal from "../SignInModal";
-import SignUpModal from "../SignupModal";
+import SignUpModal from "../SignUpModal";
 
 const Header = () => {
   // Create dynamic colors for hover effects
