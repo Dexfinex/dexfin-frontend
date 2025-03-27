@@ -134,9 +134,12 @@ export function TokenSelectorModal({
 
 
     const loadMoreItems = async () => {
-        const result: TokenType[] = await dexfinv3Service.getTrendingTokens(tokens.length, selectedNetwork?.chainId)
-        setTokens([...tokens, ...result])
+        if (!searchQuery) {
+            const result: TokenType[] = await dexfinv3Service.getTrendingTokens(tokens.length, selectedNetwork?.chainId)
+            setTokens([...tokens, ...result])
+        }
     }
+
     // const tokens = useMemo(() => {
     //     if (addedTokens && addedTokens.length > 0) {
     //         if (selectedNetwork?.id) {

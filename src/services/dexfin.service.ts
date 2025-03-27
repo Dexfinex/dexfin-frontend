@@ -326,15 +326,73 @@ export const dexfinv3Service = {
     return [];
   },
 
-  generate2FA: async () => {
-    return "test 2fa key";
+  get2FAStatus: async (accessToken: string) => {
+    try {
+      const { data } = await dexfinv3Api.post(`/auth/gauth/is-enabled`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return data;
+    } catch (error) {
+      console.log('get2FAStatus error: ', error);
+    }
   },
 
-  verify2FA: async () => {
-    return true
+  generate2FA: async (accessToken: string) => {
+    try {
+      const { data } = await dexfinv3Api.post(`/auth/gauth/setup`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return data;
+    } catch (error) {
+      console.log('generate2FA error: ', error);
+    }
   },
 
-  generateBackupCodes: async () => {
-    return "55B0D135601B6B2263B93B41FBC02D1C8480F10E63B42D31BE1AF2AED98A1FE306EF6A5AB4001C56B046806774ED5DC6BBDF"
-  }
+  enable2FA: async (accessToken: string, token: string) => {
+    try {
+      const { data } = await dexfinv3Api.post(`/auth/gauth/enable`, { token }, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return data;
+    } catch (error) {
+      console.log('enable2FA error: ', error);
+    }
+  },
+
+  verify2FA: async (accessToken: string, token: string) => {
+    try {
+      const { data } = await dexfinv3Api.post(`/auth/gauth/verify`, { token }, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return data;
+    } catch (error) {
+      console.log('verify2FA error: ', error);
+    }
+  },
+
+  remove2FA: async (accessToken: string, token: string) => {
+    try {
+      const { data } = await dexfinv3Api.post(`/auth/gauth/remove`, { token }, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return data;
+    } catch (error) {
+      console.log('remove2FA error: ', error);
+    }
+  },
 };
