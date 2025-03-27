@@ -2,7 +2,7 @@ import {useContext, useEffect, useMemo, useState} from 'react';
 import {ArrowDownUp} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
 import {DebridgeOrderStatus, TokenType} from '../../../types/swap.type';
-import {formatNumberByFrac, isValidAddress, shrinkAddress} from '../../../utils/common.util';
+import {compareWalletAddresses, formatNumberByFrac, isValidAddress, shrinkAddress} from '../../../utils/common.util';
 import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
 import useTokenStore from "../../../store/useTokenStore.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
@@ -74,6 +74,7 @@ export function CrossChainSwapBox({
     const {
         isLoading: isQuoteLoading,
         quoteResponse,
+        targetDestinationAddress,
     } = useDebridgeQuote({
         sellToken: fromToken,
         buyToken: toToken,
@@ -141,12 +142,12 @@ export function CrossChainSwapBox({
             // open tx modal
             setTxModalOpen(true)
             // save used wallet address
-            if ((recentWallets ?? []).filter(wallet => wallet.address === destinationAddress).length <= 0) {
+            if (targetDestinationAddress && (recentWallets ?? []).filter(wallet => compareWalletAddresses(wallet.address, targetDestinationAddress!)).length <= 0) {
                 setRecentWallets([
                     ...(recentWallets ?? []),
                     {
                         chainId: toToken!.chainId,
-                        address: destinationAddress,
+                        address: targetDestinationAddress!,
                     }
                 ])
             }
@@ -159,6 +160,7 @@ export function CrossChainSwapBox({
         fromNetwork,
         toNetwork,
         solverGasCostAmount,
+        deductionAmount,
         solverGasText,
         debridgeFeeText,
         totalSpentText,
@@ -174,6 +176,7 @@ export function CrossChainSwapBox({
         const solverGasCostAmount = quoteResponse.solverGasCosts
         const solverGasUsdAmount = fromTokenPrice * solverGasCostAmount
         const priceImpact = fromUsdAmount > 0 ? ((toUsdAmount - fromUsdAmount) / fromUsdAmount) * 100 : 0
+        const deductionAmount = solverGasCostAmount + (compareWalletAddresses(nativeTokenAddressFromChain, fromToken!.address) ? quoteResponse.feeAmount : 0)
 
         let feeAmountInUsd = 0
         if (quoteResponse) {
@@ -182,7 +185,7 @@ export function CrossChainSwapBox({
 
         const solverGasText = `${formatNumberByFrac(solverGasCostAmount, 4)} ${fromToken?.symbol} ($${formatNumberByFrac(solverGasUsdAmount, 3)})`
         const debridgeFeeText = `${formatNumberByFrac(quoteResponse.feeAmount, 4)} ${fromNetwork?.symbol} ($${formatNumberByFrac(feeAmountInUsd, 3)})`
-        const totalSpentText = `${formatNumberByFrac(solverGasCostAmount + Number(fromAmount), 4)} ${fromToken?.symbol}`
+        const totalSpentText = `${formatNumberByFrac(deductionAmount + Number(fromAmount), 4)} ${fromToken?.symbol}`
 
         return {
             fromUsdAmount,
@@ -194,6 +197,7 @@ export function CrossChainSwapBox({
             solverGasText,
             debridgeFeeText,
             totalSpentText,
+            deductionAmount,
         }
     }, [nativeTokenAddressFromChain, fromToken, getTokenPrice, toToken, fromAmount, toAmount, quoteResponse])
 
@@ -301,7 +305,7 @@ export function CrossChainSwapBox({
                 selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onFromTokenSelect}
                 amount={fromAmount}
-                deductionAmount={solverGasCostAmount}
+                deductionAmount={deductionAmount}
                 usdAmount={fromUsdAmount.toString()}
                 onAmountChange={onFromAmountChange}
                 balance={fromBalance?.formatted}

@@ -11,17 +11,17 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Modal, ModalContent, ModalOverlay } from "@chakra-ui/react";
-import { AuthAlert } from "./AuthAlert.tsx";
-import { AuthMethodType } from "@lit-protocol/constants";
-import { registerWebAuthn } from "../utils/lit.util.ts";
+import { AuthAlert } from "./AuthAlert";
+import {AUTH_METHOD_TYPE} from '@lit-protocol/constants';
+import { registerWebAuthn } from "../utils/lit.util";
 import Loading from "./auth/Loading";
 import AuthMethods from "./auth/AuthMethods";
 import WalletMethods from "./auth/WalletMethods";
 import WebAuthn from "./auth/WebAuthn";
 import StytchOTP from "./auth/StytchOTP";
-import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
-import { authService } from "../services/auth.service.ts";
-import { useStore } from "../store/useStore.ts";
+import { Web3AuthContext } from "../providers/Web3AuthContext";
+import { authService } from "../services/auth.service";
+import { useStore } from "../store/useStore";
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -46,7 +46,7 @@ const initialFormData: FormData = {
   confirmPassword: "",
 };
 
-const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
+const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState<Step>("beta-code");
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loading, setLoading] = useState(false);
@@ -54,7 +54,6 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
     null
   );
-
   const [authView, setAuthView] = useState<string>("default");
 
   const {
@@ -72,6 +71,7 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
     initSession,
     sessionLoading,
     sessionError,
+    sessionSigs,
     handleGoogleLogin,
     handleDiscordLogin,
     isPreparingAccounts,
@@ -82,6 +82,13 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
     null
   );
   const [registeringUsername, setRegisteringUsername] = useState(false);
+
+  const isAnyLoading =
+    authLoading ||
+    accountsLoading ||
+    sessionLoading ||
+    isPreparingAccounts ||
+    registeringUsername;
 
   useEffect(() => {
     if (!isOpen) {
@@ -95,7 +102,7 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
   }, [isOpen]);
 
   useEffect(() => {
-    if (authMethod && authMethod.authMethodType !== AuthMethodType.WebAuthn) {
+    if (authMethod && authMethod.authMethodType !== AUTH_METHOD_TYPE.WebAuthn) {
       createAccount(authMethod);
     }
   }, [authMethod, createAccount]);
@@ -429,12 +436,10 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
     </>
   );
 
-  // Loading state
   const renderLoading = (message: string) => (
     <Loading copy={message} error={error} />
   );
 
-  // Authentication methods step
   const renderAuthMethodsStep = () => {
     if (authLoading) {
       return renderLoading("Authenticating your credentials...");
@@ -454,6 +459,10 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
 
     if (registeringUsername) {
       return renderLoading("Registering your username...");
+    }
+
+    if (currentAccount && sessionSigs) {
+      console.log(currentAccount);
     }
 
     return (
@@ -526,31 +535,6 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
     );
   };
 
-  // Complete/success step
-  const renderCompleteStep = () => (
-    <div className="text-center py-8">
-      <div className="w-20 h-20 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-6 ring-8 ring-green-500/20">
-        <Check className="w-10 h-10 text-white" />
-      </div>
-
-      <h2 className="text-3xl font-bold mb-2">Welcome to Dexfin!</h2>
-
-      <p className="text-white/60 mb-8 max-w-xs mx-auto">
-        Your account has been created successfully with username{" "}
-        <span className="font-semibold text-white">@{formData.username}</span>.
-        You'll be redirected to the dashboard in a moment.
-      </p>
-
-      <div className="relative w-12 h-12 mx-auto">
-        <div className="absolute inset-0 rounded-full border-t-2 border-blue-500 animate-spin"></div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full bg-blue-500/20"></div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Main render
   return (
     <Modal
       isOpen={isOpen}
@@ -573,24 +557,37 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
         boxShadow="0 4px 30px rgba(0, 0, 0, 0.3)"
         border="1px solid rgba(255, 255, 255, 0.1)"
       >
-        {currentStep !== "complete" && (
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
+        {/* Don't show close button during any loading state or complete step */}
+        {!authLoading &&
+          !accountsLoading &&
+          !sessionLoading &&
+          !isPreparingAccounts &&
+          !registeringUsername &&
+          currentStep !== "complete" && (
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
 
-        {currentStep !== "complete" && renderStepIndicator()}
+        {!isAnyLoading && currentStep !== "complete" && renderStepIndicator()}
 
-        {currentStep === "beta-code" && renderBetaCodeStep()}
-        {currentStep === "username" && renderUsernameStep()}
-        {currentStep === "auth-methods" && renderAuthMethodsStep()}
-        {currentStep === "complete" && renderCompleteStep()}
+        {authLoading && renderLoading("Authenticating your credentials...")}
+        {accountsLoading && renderLoading("Creating your account...")}
+        {sessionLoading && renderLoading("Securing your session...")}
+        {isPreparingAccounts && renderLoading("Preparing your account...")}
+        {registeringUsername && renderLoading("Registering your username...")}
+
+        {!isAnyLoading && currentStep === "beta-code" && renderBetaCodeStep()}
+        {!isAnyLoading && currentStep === "username" && renderUsernameStep()}
+        {!isAnyLoading &&
+          currentStep === "auth-methods" &&
+          renderAuthMethodsStep()}
       </ModalContent>
     </Modal>
   );
 };
 
-export default SignupModal;
+export default SignUpModal;

@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { Maximize2, Minimize2, X, } from 'lucide-react';
 import { ethers } from 'ethers';
 import { erc20Abi } from "viem";
@@ -63,25 +63,28 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const { chainId, address, signer, } = useContext(Web3AuthContext);
 
   const { getTokenBalance } = useTokenBalanceStore();
-  const { data: gasData } = useGasEstimation()
+  const { data: gasData } = useGasEstimation(chainId);
 
-  const positionHandlerList = DEFI_CHAIN_LIST.map(chainId => {
+  const positionHandlerList = useRef<{ isLoading: boolean, refetch: () => void, chainId: number }[]>([]);
+  for (const chainId of DEFI_CHAIN_LIST) {
     const { isLoading, refetch } = useDefiPositionByWallet({ chainId: Number(chainId), walletAddress: address });
-    return { isLoading, refetch, chainId: chainId }
-  });
+    positionHandlerList.current.push({ isLoading, refetch, chainId: chainId })
+  }
 
-  const refetchDefiPositionByWallet = positionHandlerList.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
+  const refetchDefiPositionByWallet = positionHandlerList.current.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
 
-  const isLoadingPosition = positionHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === positionHandlerList.length;
+  const isLoadingPosition = positionHandlerList.current.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === positionHandlerList.current.length;
 
-  const protocolHandlerList = DEFI_CHAIN_LIST.map(chainId => {
+  const protocolHandlerList = useRef<{ isLoading: boolean, refetch: () => void, chainId: number }[]>([]);
+
+  for (const chainId of DEFI_CHAIN_LIST) {
     const { isLoading, refetch } = useDefiProtocolsByWallet({ chainId: Number(chainId), walletAddress: address });
-    return { isLoading, refetch, chainId: chainId }
-  });
+    protocolHandlerList.current.push({ isLoading, refetch, chainId: chainId });
+  }
 
-  const isLoadingProtocol = protocolHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === protocolHandlerList.length;
+  const isLoadingProtocol = protocolHandlerList.current.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === protocolHandlerList.current.length;
 
-  const refetchDefiProtocolByWallet = protocolHandlerList.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
+  const refetchDefiProtocolByWallet = protocolHandlerList.current.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
 
   const isLoading = isLoadingPosition || isLoadingProtocol;
 

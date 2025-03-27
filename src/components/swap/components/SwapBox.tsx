@@ -129,7 +129,7 @@ export function SwapBox({
         isLoading: isQuoteLoading,
         quoteResponse,
         isGasLess: isGasLessSwap,
-        // refetch,
+        refetch: refetchQuoteData,
         data: quoteData,
     } = use0xQuote({
         sellToken: fromToken,
@@ -147,7 +147,7 @@ export function SwapBox({
     const {
         isLoading: isGasEstimationLoading,
         data: gasData
-    } = useGasEstimation()
+    } = useGasEstimation(fromToken?.chainId)
 
     const {
         isLoading: isFromBalanceLoading,
@@ -195,6 +195,21 @@ export function SwapBox({
 
 
     // console.log("gasData", mapPrices, gasData, isGasEstimationLoading)
+
+    useEffect(() => {
+        if (!isApproveLoading) {
+            let count = 0;
+            const interval = setInterval(() => {
+                if (count < 3) {
+                    refetchQuoteData();
+                    count ++;
+                } else {
+                    clearInterval(interval); // Stop after 3 calls
+                }
+            }, 1000); // 1 second interval
+            return () => clearInterval(interval); // Clean up interval on unmount or when dependencies change
+        }
+    }, [isApproveLoading, refetchQuoteData]);
 
     // Update toAmount when calculation changes
     useEffect(() => {

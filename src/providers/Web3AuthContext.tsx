@@ -16,7 +16,6 @@ import { ExternalProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/pr
 import { Connector, useAccount, useSwitchChain } from "wagmi";
 import useLocalStorage from "../hooks/useLocalStorage";
 import {
-    LIT_SESSION_UPDATE_INTERVAL,
     LOCAL_STORAGE_AUTH_REDIRECT_TYPE,
     LOCAL_STORAGE_WALLET_INFO,
     mapBundlerUrls,
@@ -88,7 +87,7 @@ interface Web3AuthContextType {
     sessionLoading: boolean;
     sessionError: Error | undefined;
     handleGoogleLogin: (isSignIn: boolean) => Promise<void>;
-    handleDiscordLogin: () => Promise<void>;
+    handleDiscordLogin: (isSignIn: boolean) => Promise<void>;
     createAccount: (authMethod: AuthMethod) => Promise<void>;
     initializeErrors: () => void;
     isConnected: boolean,
@@ -227,11 +226,9 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } = useAccounts();
     // console.log("currentAccount", accounts,
     // )
-
     const {
         initSession,
         initSessionUnSafe,
-        initSessionRepeatedly,
         sessionSigs,
         loading: sessionLoading,
         error: sessionError,
@@ -484,7 +481,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [currentAccount, initSessionUnSafe, sessionSigs, setAuthMethod, setCurrentAccount, storedWalletInfo])
 
     useEffect(() => {
-        if (currentAccount && sessionSigs/* && !solanaWalletInfo*/) {
+        const AUTH_TOKEN_KEY = "auth_token";
+        if (currentAccount && sessionSigs && !solanaWalletInfo) {
             if (hasGetSolanaWalletInfo.current)
                 return
             hasGetSolanaWalletInfo.current = true
@@ -492,6 +490,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     setIsPreparingAccounts(true)
                     await setProviderByPKPWallet(chainId ?? 1)
                     setIsConnected(true)
+                    localStorage.setItem(AUTH_TOKEN_KEY, "true");
                     // store variables to localstorage
                     setStoredWalletInfo({
                         authMethod: authMethod!,
@@ -501,19 +500,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     await getSolanaWalletOrGenerateNewWallet(sessionSigs, currentAccount)
                 })()
         }
-    }, [authMethod, chainId, currentAccount, getSolanaWalletOrGenerateNewWallet, sessionSigs, setProviderByPKPWallet, setStoredWalletInfo])
-
-    useEffect(() => {
-        const intervalId = setInterval(() => {
-            if (authMethod && currentAccount) {
-                console.log("called initSessionRepeatedly")
-                initSessionRepeatedly(authMethod, currentAccount)
-                hasGetSolanaWalletInfo.current = false
-            }
-        }, LIT_SESSION_UPDATE_INTERVAL);
-
-        return () => clearInterval(intervalId); // Cleanup on unmount
-    }, [authMethod, currentAccount, initSessionRepeatedly]);
+    }, [authMethod, chainId, currentAccount, getSolanaWalletOrGenerateNewWallet, sessionSigs, setProviderByPKPWallet, setStoredWalletInfo, solanaWalletInfo])
 
     const initializeAllVariables = () => {
         setStoredWalletInfo(null)
@@ -541,7 +528,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await signInWithGoogle(redirectUri);
     }
 
-    async function handleDiscordLogin() {
+    async function handleDiscordLogin(isSignIn: boolean) {
+        localStorage.setItem(LOCAL_STORAGE_AUTH_REDIRECT_TYPE, isSignIn ? 'sign-in' : 'sign-up')
         await signInWithDiscord(redirectUri);
     }
 

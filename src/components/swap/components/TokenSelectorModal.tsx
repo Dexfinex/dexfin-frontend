@@ -100,17 +100,17 @@ const ApproveModal: React.FC<ApproveModalProps> = ({ isOpen, onClose, onContinue
 
 export function TokenSelectorModal({
     isOpen,
-    // selectedToken,
+    selectedToken,
     selectedChainId,
     onSelect,
     onClose,
 }: TokenSelectorModalProps) {
     useWalletBalance()
-
+    const initialChainId = selectedToken?.chainId ?? selectedChainId
     const { trendingTokens } = useTrendingTokensStore();
     const { tokenBalances } = useTokenBalanceStore();
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(selectedChainId ? NETWORKS.filter(network => network.chainId === selectedChainId)[0] : null);
+    const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(initialChainId ? NETWORKS.filter(network => network.chainId === initialChainId)[0] : null);
     const [starredTokenMap, setStarredTokenMap] = useLocalStorage<Record<string, boolean> | null>(LOCAL_STORAGE_STARRED_TOKENS, {})
     const [addedTokens, setAddedTokens] = useLocalStorage<Array<TokenType> | null>(LOCAL_STORAGE_ADDED_TOKENS, [])
     const [showStarredOnly, setShowStarredOnly] = useState(false);
@@ -484,13 +484,15 @@ export function TokenSelectorModal({
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-5">
-                                                    <div className='flex flex-col text-sm items-end text-gray-400'>
-                                                        <span>{`${formatNumberByFrac(token.balance, 5)} ${token?.symbol ? token.symbol.toUpperCase() : ""}`}</span>
-                                                        <span>${formatNumberByFrac(token.usdValue, 5)}</span>
+                                                    <div className='flex flex-col text-sm items-end'>
+                                                        <span className="text-white">{`${formatNumberByFrac(token.balance, 5)} ${token?.symbol ? token.symbol.toUpperCase() : ""}`}</span>
+                                                        <span className="text-gray-400">${formatNumberByFrac(token.usdValue, 5)}</span>
                                                     </div>
+{/*
                                                     <div className="text-right w-24">
                                                         <div className="text-sm text-gray-400">{shrinkAddress(token.address)}</div>
                                                     </div>
+*/}
                                                 </div>
                                             </div>
                                         ))}

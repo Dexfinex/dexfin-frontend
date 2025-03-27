@@ -107,7 +107,7 @@ export const getTokenOutAmount = async (amount: number, address: string, chainId
     }
 }
 
-export const getTokenOutAmountByPercent = async (percent: number, fromAddress: string, address: string, chainId: number, signer: JsonRpcSigner | undefined) => {
+export const getTokenOutAmountByPercent = async (percent: number, fromAddress: string, address: string, signer: JsonRpcSigner | undefined) => {
     const contract = new ethers.Contract(address, erc20Abi, signer);
     try {
         const balance = await contract.balanceOf(fromAddress);

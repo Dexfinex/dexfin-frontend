@@ -24,7 +24,6 @@ export const DestinationAddressInputModal = ({open, setOpen, destinationNetwork,
     const [addressError, setAddressError] = useState<string>('');
     const [addressInput, setAddressInput] = useState<string>(address);
     const [recentWallets] = useLocalStorage<Array<BridgeRecentWalletType> | null>(LOCAL_STORAGE_BRIDGE_RECENT_WALLETS, [])
-
     const {
         connectedWalletCount,
         connectedWalletAddress,

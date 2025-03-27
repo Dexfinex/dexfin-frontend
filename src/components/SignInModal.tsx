@@ -1,19 +1,12 @@
-import React, { useContext, useEffect, useState } from "react";
-import {
-  X,
-  ChevronRight,
-  Loader2,
-  Mail,
-  LogIn,
-  AlertCircle,
-} from "lucide-react";
-import { Modal, ModalContent, ModalOverlay } from "@chakra-ui/react";
-import { AuthAlert } from "./AuthAlert.tsx";
+import React, {useContext, useEffect, useState} from "react";
+import {ChevronRight, LogIn, X,} from "lucide-react";
+import {Modal, ModalContent, ModalOverlay} from "@chakra-ui/react";
+import {AuthAlert} from "./AuthAlert.tsx";
 import Loading from "./auth/Loading";
 import LoginMethods from "./auth/LoginMethods";
 import CreateAccount from "./auth/CreateAccount";
-import { Web3AuthContext } from "../providers/Web3AuthContext";
-import { getReferralCodeFromStorage } from './ReferralHandler';
+import {Web3AuthContext} from "../providers/Web3AuthContext";
+import {getReferralCodeFromStorage} from './ReferralHandler';
 
 interface SigninModalProps {
   isOpen: boolean;
@@ -21,9 +14,8 @@ interface SigninModalProps {
   goToSignUp: () => void;
 }
 
-const SigninModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }) => {
+const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }) => {
   const [hasReferral, setHasReferral] = useState(false);
-  const [authView, setAuthView] = useState<string>("default");
 
   const {
     authMethod,
@@ -38,7 +30,6 @@ const SigninModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
     accountsLoading,
     accountsError,
     initSession,
-    sessionSigs,
     sessionLoading,
     sessionError,
     handleGoogleLogin,
@@ -47,13 +38,6 @@ const SigninModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
   } = useContext(Web3AuthContext);
 
   const error = authError || accountsError || sessionError;
-
-  useEffect(() => {
-    // Reset auth view when modal opens/closes
-    if (!isOpen) {
-      setAuthView("default");
-    }
-  }, [isOpen]);
 
   useEffect(() => {
     // If user is authenticated, fetch accounts
@@ -168,4 +152,4 @@ const SigninModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
   );
 };
 
-export default SigninModal;
+export default SignInModal;

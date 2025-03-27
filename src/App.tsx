@@ -1,14 +1,7 @@
 import { useContext, useEffect, useState } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-} from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { Box } from "@chakra-ui/react";
 import { useStore } from "./store/useStore";
-import { Header } from "./components/Header";
-import { Workspace } from "./components/Workspace";
 import AIAgentModal from "./components/agent/AIAgentModal.tsx";
 import SwapModal from "./components/swap/SwapModal";
 import { DeFiModal } from "./components/DeFiModal";
@@ -19,9 +12,9 @@ import CartModal from "./components/ShoppingCart/CartModal.tsx";
 import { SocialFeedModal } from "./components/SocialFeedModal";
 import { GamesModal } from "./components/GamesModal";
 import { RewardsModal } from "./components/RewardsModal";
-import SignupModal from "./components/SignupModal.tsx";
-import SigninModal from "./components/SigninModal.tsx";
-import { AuthMethodType } from "@lit-protocol/constants";
+import SignUpModal from "./components/SignUpModal.tsx";
+import SignInModal from "./components/SignInModal.tsx";
+import {AUTH_METHOD_TYPE} from '@lit-protocol/constants';
 import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
 import {
   LOCAL_STORAGE_AUTH_REDIRECT_TYPE,
@@ -30,13 +23,23 @@ import {
 import { TradingViewModal } from "./components/TradingViewModal.tsx";
 import { initStream } from "./utils/chat.util.ts";
 import { PushAPI, CONSTANTS } from "@pushprotocol/restapi";
+import UsernameModal from "./components/UsernameModal.tsx";
 import WalletDrawer from "./components/WalletDrawer.tsx";
-import ReferralHandler from "./components/ReferralHandler.tsx";
 import LandingPage from "./components/mainpage/LandingPage.tsx";
 import Privacy from "./components/Privacy.tsx";
 import Terms from "./components/Terms.tsx";
+import AppPage from "./AppPage";
 
-const MainApp: React.FC = () => {
+// Simple auth persistence key
+const AUTH_TOKEN_KEY = "auth_token";
+
+export default function App() {
+  const { theme } = useStore();
+  const [isSignupTriggered, setIsSignupTriggered] = useState(false);
+  const [isStylesApplied, setIsStylesApplied] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const {
     isAIAgentOpen,
     setIsAIAgentOpen,
@@ -66,6 +69,7 @@ const MainApp: React.FC = () => {
     setChatUser,
     isRewardsOpen,
     setIsRewardsOpen,
+    isUsernameModalOpen,
     widgetCommand,
     isWalletDrawerOpen,
     setIsWalletDrawerOpen,
@@ -74,21 +78,44 @@ const MainApp: React.FC = () => {
   const { authMethod, initializeErrors, address, isConnected } =
     useContext(Web3AuthContext);
 
-  const [isSignupTriggered, setIsSignupTriggered] = useState(false);
-  const navigate = useNavigate();
+  // Apply theme and global styles
+  useEffect(() => {
+    document.body.setAttribute("data-theme", theme);
+
+    if (!isStylesApplied) {
+      const style = document.createElement("style");
+      style.innerHTML = `
+                html, body {
+                    overflow-x: hidden;
+                    scroll-behavior: smooth;
+                }
+                body {
+                    position: relative;
+                    width: 100%;
+                }
+                #sections-container > div {
+                    min-height: 300px;
+                    position: relative;
+                    width: 100%;
+                }
+            `;
+      document.head.appendChild(style);
+      setIsStylesApplied(true);
+    }
+  }, [theme, isStylesApplied]);
 
   useEffect(() => {
-    if (!isConnected) {
-      navigate("/", { replace: true });
+    if (location.pathname === '/') { /* empty */ } else {
+      window.scrollTo(0, 0);
     }
-  }, [isConnected, navigate]);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (
-      authMethod?.authMethodType === AuthMethodType.GoogleJwt ||
-      authMethod?.authMethodType === AuthMethodType.AppleJwt
+      authMethod?.authMethodType === AUTH_METHOD_TYPE.GoogleJwt ||
+      authMethod?.authMethodType === AUTH_METHOD_TYPE.Discord ||
+      authMethod?.authMethodType === AUTH_METHOD_TYPE.AppleJwt
     ) {
-      // get whether this is from signin or sign-up
       const redirectType = localStorage.getItem(
         LOCAL_STORAGE_AUTH_REDIRECT_TYPE
       );
@@ -105,8 +132,12 @@ const MainApp: React.FC = () => {
       if (!chatUser) {
         unlockProfile();
       }
+      
+      if (location.pathname === '/') {
+        navigate("/app");
+      }
     }
-  }, [isConnected, setIsSigninModalOpen, setIsSignupModalOpen, chatUser]);
+  }, [isConnected, navigate, setIsSigninModalOpen, setIsSignupModalOpen, chatUser, location.pathname]);
 
   const unlockProfile = async () => {
     const chatKey = localStorage.getItem(LOCAL_STORAGE_PUSH_KEY);
@@ -132,7 +163,6 @@ const MainApp: React.FC = () => {
     }
   };
 
-  // Handle signup trigger
   useEffect(() => {
     if (isSignupTriggered) {
       initializeErrors();
@@ -141,20 +171,37 @@ const MainApp: React.FC = () => {
     }
   }, [authMethod, initializeErrors, isSignupTriggered, setIsSignupModalOpen]);
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <ReferralHandler />
-      <Header />
-      <Workspace />
+  // Check if user is authenticated (either currently connected or has valid token)
+  const isAuthenticated = () => {
+    return isConnected || localStorage.getItem(AUTH_TOKEN_KEY) === "true";
+  };
 
+  return (
+    <Box className="min-h-screen flex flex-col">
+      <Routes>
+        <Route 
+          path="/" 
+          element={isAuthenticated() ? <Navigate to="/app" replace /> : <LandingPage />} 
+        />
+        <Route 
+          path="/app" 
+          element={isAuthenticated() ? <AppPage /> : <Navigate to="/" replace />} 
+        />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
+      {/* Modals - these are conditionally rendered based on their open state */}
       {isSignupModalOpen && (
-        <SignupModal
+        <SignUpModal
           isOpen={true}
           onClose={() => setIsSignupModalOpen(false)}
         />
       )}
+
       {isSigninModalOpen && (
-        <SigninModal
+        <SignInModal
           isOpen={true}
           onClose={() => setIsSigninModalOpen(false)}
           goToSignUp={() => {
@@ -169,110 +216,55 @@ const MainApp: React.FC = () => {
         widgetCommand={widgetCommand}
         onClose={() => setIsAIAgentOpen(false)}
       />
+      
       <SwapModal isOpen={isSwapOpen} onClose={() => setIsSwapOpen(false)} />
+      
       <DeFiModal isOpen={isDefiOpen} onClose={() => setIsDefiOpen(false)} />
+      
       <DashboardModal
         isOpen={isDashboardOpen}
         onClose={() => setIsDashboardOpen(false)}
       />
+      
       <MarketDataModal
         isOpen={isMarketDataOpen}
         onClose={() => setIsMarketDataOpen(false)}
       />
+      
       <ChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      
       <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      
       <SocialFeedModal
         isOpen={isSocialFeedOpen}
         onClose={() => setIsSocialFeedOpen(false)}
       />
+      
       <GamesModal isOpen={isGamesOpen} onClose={() => setIsGamesOpen(false)} />
+      
       <RewardsModal
         isOpen={isRewardsOpen}
         onClose={() => setIsRewardsOpen(false)}
       />
+      
       {isTradeOpen && (
         <TradingViewModal
           isOpen={isTradeOpen}
           onClose={() => setTradeOpen(false)}
         />
       )}
+      
+      {isUsernameModalOpen && (
+        <UsernameModal
+          isOpen={true}
+          onClose={() => useStore.getState().setIsUsernameModalOpen(false)}
+        />
+      )}
+      
       <WalletDrawer
         isOpen={isWalletDrawerOpen}
         onClose={() => setIsWalletDrawerOpen(false)}
       />
-    </div>
+    </Box>
   );
-};
-
-const LandingWithRedirect: React.FC = () => {
-  const { isConnected, isLoadingStoredWallet } = useContext(Web3AuthContext);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isConnected) {
-      navigate("/app", { replace: true });
-    }
-    window.scrollTo(0, 0);
-  }, [isConnected, navigate]);
-
-  if (isLoadingStoredWallet) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
-
-  return (
-    <LandingPage
-    />
-  );
-};
-
-const AppWrapper = () => {
-  const { theme } = useStore();
-  const [isStylesApplied, setIsStylesApplied] = useState(false);
-
-  useEffect(() => {
-    document.body.setAttribute("data-theme", theme);
-    
-    if (!isStylesApplied) {
-      const style = document.createElement("style");
-      style.innerHTML = `
-        html, body {
-          overflow-x: hidden;
-          scroll-behavior: smooth;
-        }
-        body {
-          position: relative;
-          width: 100%;
-        }
-        #sections-container > div {
-          min-height: 300px;
-          position: relative;
-          width: 100%;
-        }
-      `;
-      document.head.appendChild(style);
-      setIsStylesApplied(true);
-    }
-    
-    window.scrollTo(0, 0);
-  }, [theme, isStylesApplied]);
-
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LandingWithRedirect />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/app" element={<MainApp />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
-  );
-};
-
-export default function App() {
-  return <AppWrapper />;
 }

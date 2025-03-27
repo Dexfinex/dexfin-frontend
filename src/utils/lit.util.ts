@@ -88,7 +88,9 @@ export async function authenticateWithGoogle(
  */
 export async function signInWithDiscord(redirectUri: string): Promise<void> {
     const discordProvider = new DiscordProvider({relay: litRelay, litNodeClient, redirectUri});
-    await discordProvider.signIn();
+    await discordProvider.signIn((loginUrl) => {
+        window.location.href = loginUrl.replace('https://login.litgateway.com', 'https://defi-os-lit-login-server-production.up.railway.app');
+    });
 }
 
 /**
@@ -189,7 +191,7 @@ export async function authenticateWithStytch(
     if (method === 'email') {
         provider = new StytchOtpProvider({relay: litRelay, litNodeClient,}, {
             appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
-            userId: PROVIDER_TYPE.StytchEmailFactorOtp
+            userId: userId,
         })
         /*
                 provider = litAuthClient.initProvider(PROVIDER_TYPE.StytchEmailFactorOtp, {
@@ -199,7 +201,7 @@ export async function authenticateWithStytch(
     } else {
         provider = new StytchOtpProvider({relay: litRelay, litNodeClient,}, {
             appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
-            userId: PROVIDER_TYPE.StytchSmsFactorOtp
+            userId: userId,
         })
         /*
                 provider = litAuthClient.initProvider(PROVIDER_TYPE.StytchSmsFactorOtp, {
@@ -400,6 +402,11 @@ export const getWrappedKeyMetaDataList = async (sessionSigs: SessionSigs): Promi
                 litNodeClient: litNodeClient as ILitNodeClient,
             });
         } catch (err) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            if (err?.message?.toLowerCase().indexOf('no keys exist') >= 0) {
+                return []
+            }
             console.log(`Attempt ${attempt} failed:`, err);
             if (attempt < 3) await sleep(300); // Wait before retrying
         }

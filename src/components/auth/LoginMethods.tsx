@@ -9,7 +9,7 @@ import { Gift } from 'lucide-react';
 
 interface LoginProps {
     handleGoogleLogin: (isSignIn: boolean) => Promise<void>;
-    handleDiscordLogin: () => Promise<void>;
+    handleDiscordLogin: (isSignIn: boolean) => Promise<void>;
     authWithEthWallet: (connector: any) => Promise<void>;
     authWithWebAuthn: () => Promise<void>;
     authWithStytch: (session_jwt: string, user_id: string, method: string) => Promise<void>;
