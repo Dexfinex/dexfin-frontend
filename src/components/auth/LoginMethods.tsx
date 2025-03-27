@@ -4,7 +4,6 @@ import WalletMethods from './WalletMethods';
 import WebAuthn from './WebAuthn';
 import StytchOTP from './StytchOTP';
 import { Text, VStack, Box, Flex, Icon } from "@chakra-ui/react";
-import { AuthAlert } from "../AuthAlert.tsx";
 import { Gift } from 'lucide-react';
 
 interface LoginProps {
@@ -23,7 +22,6 @@ export default function LoginMethods({
     authWithEthWallet,
     authWithWebAuthn,
     authWithStytch,
-    error,
     hasReferral = false,
 }: LoginProps) {
     const [view, setView] = useState<string>('default');
@@ -31,7 +29,6 @@ export default function LoginMethods({
     return (
         <div className="container">
             <div className="wrapper">
-                <AuthAlert error={error} />
                 {view === 'default' && (
                     <>
                         <VStack spacing={3}>

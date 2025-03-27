@@ -112,6 +112,7 @@ export default function useAuthenticate(redirectUri?: string) {
                     userId,
                     method
                 );
+                console.log(result)
                 setAuthMethod(result);
             } catch (err) {
                 setError(err as Error);
