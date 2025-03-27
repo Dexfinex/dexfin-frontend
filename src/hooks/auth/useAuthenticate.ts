@@ -3,7 +3,6 @@ import {
     isSignInRedirect,
     getProviderFromUrl,
 } from '@lit-protocol/lit-auth-client';
-import {AuthMethod} from '@lit-protocol/types';
 import {
     authenticateWithGoogle,
     authenticateWithDiscord,
@@ -11,9 +10,10 @@ import {
     authenticateWithStytch,
 } from '../../utils/lit.util.ts';
 import {Connector} from 'wagmi';
+import {ExAuthType} from "../../types/auth.type.ts";
 
 export default function useAuthenticate(redirectUri?: string) {
-    const [authMethod, setAuthMethod] = useState<AuthMethod>();
+    const [authMethod, setAuthMethod] = useState<ExAuthType>();
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<Error>();
 
@@ -26,7 +26,7 @@ export default function useAuthenticate(redirectUri?: string) {
         setAuthMethod(undefined);
 
         try {
-            const result: AuthMethod | undefined = await authenticateWithGoogle(redirectUri ?? '');
+            const result: ExAuthType | undefined = await authenticateWithGoogle(redirectUri ?? '');
             console.log("google authMethod", result)
             setAuthMethod(result);
         } catch (err) {
@@ -45,7 +45,7 @@ export default function useAuthenticate(redirectUri?: string) {
         setAuthMethod(undefined);
 
         try {
-            const result: AuthMethod | undefined = await authenticateWithDiscord(redirectUri ?? '')
+            const result: ExAuthType | undefined = await authenticateWithDiscord(redirectUri ?? '')
             setAuthMethod(result);
         } catch (err) {
             setError(err as Error);
@@ -86,7 +86,7 @@ export default function useAuthenticate(redirectUri?: string) {
             setAuthMethod(undefined);
 
             try {
-                const result: AuthMethod | undefined = await authenticateWithWebAuthn();
+                const result: ExAuthType | undefined = await authenticateWithWebAuthn();
                 setAuthMethod(result);
             } catch (err) {
                 setError(err as Error);
@@ -107,11 +107,12 @@ export default function useAuthenticate(redirectUri?: string) {
             setAuthMethod(undefined);
 
             try {
-                const result: AuthMethod | undefined = await authenticateWithStytch(
+                const result: ExAuthType | undefined = await authenticateWithStytch(
                     accessToken,
                     userId,
                     method
                 );
+                result.userId = userId
                 console.log(result)
                 setAuthMethod(result);
             } catch (err) {
