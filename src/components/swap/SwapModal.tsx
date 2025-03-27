@@ -11,7 +11,6 @@ import {NULL_ADDRESS} from "../../constants";
 import {SolanaSwapBox} from "./components/SolanaSwapBox.tsx";
 import {ChartDrawer} from "./components/chart/ChartDrawer.tsx";
 import {CrossChainSwapBox} from "./components/CrossChainSwapBox.tsx";
-import {useTrendingTokens} from '../../hooks/useTrendingTokens.ts';
 import { SOLANA_CHAIN_ID } from '../../constants/solana.constants.ts';
 
 interface SwapModalProps {
@@ -45,8 +44,6 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
     const [usdAmount, setUsdAmount] = useState('');
     const [chartType, setChartType] = useState<ChartType>('tradingview');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-
-    useTrendingTokens(-1);
 
     // Responsive layout
     const isMobile = useBreakpointValue({ base: true, md: false })

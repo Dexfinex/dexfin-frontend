@@ -26,7 +26,7 @@ const NumberFormat: React.FC<NumberFormatProps> = ({ number, prefix = "", suffix
             {prefix}
             {prev}
             {
-                current && <span style={{ fontSize: "70%" }}>({current})</span>
+                current && <span style={{ fontSize: "70%" }}>{current}</span>
             }
             {next}
             {suffix}
