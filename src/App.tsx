@@ -1,34 +1,23 @@
-import { useContext, useEffect, useState } from "react";
-import {
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-  useLocation,
-} from "react-router-dom";
-import { Box } from "@chakra-ui/react";
-import { useStore } from "./store/useStore";
+import {useContext, useEffect, useState} from "react";
+import {Navigate, Route, Routes, useLocation, useNavigate,} from "react-router-dom";
+import {Box} from "@chakra-ui/react";
+import {useStore} from "./store/useStore";
 import AIAgentModal from "./components/agent/AIAgentModal.tsx";
 import SwapModal from "./components/swap/SwapModal";
-import { DeFiModal } from "./components/DeFiModal";
-import { DashboardModal } from "./components/DashboardModal";
-import { MarketDataModal } from "./components/MarketDataModal";
-import { ChatModal } from "./components/ChatModal";
+import {DeFiModal} from "./components/DeFiModal";
+import {DashboardModal} from "./components/DashboardModal";
+import {MarketDataModal} from "./components/MarketDataModal";
+import {ChatModal} from "./components/ChatModal";
 import CartModal from "./components/ShoppingCart/CartModal.tsx";
-import { SocialFeedModal } from "./components/SocialFeedModal";
-import { GamesModal } from "./components/GamesModal";
-import { RewardsModal } from "./components/RewardsModal";
-import SignUpModal from "./components/SignupModal.tsx";
-import SignInModal from "./components/SignInModal.tsx";
-import { AUTH_METHOD_TYPE } from "@lit-protocol/constants";
-import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
-import {
-  LOCAL_STORAGE_AUTH_REDIRECT_TYPE,
-  LOCAL_STORAGE_PUSH_KEY,
-} from "./constants";
-import { TradingViewModal } from "./components/TradingViewModal.tsx";
-import { initStream } from "./utils/chat.util.ts";
-import { PushAPI, CONSTANTS } from "@pushprotocol/restapi";
+import {SocialFeedModal} from "./components/SocialFeedModal";
+import {GamesModal} from "./components/GamesModal";
+import {RewardsModal} from "./components/RewardsModal";
+import {AUTH_METHOD_TYPE} from "@lit-protocol/constants";
+import {Web3AuthContext} from "./providers/Web3AuthContext.tsx";
+import {LOCAL_STORAGE_AUTH_REDIRECT_TYPE, LOCAL_STORAGE_PUSH_KEY,} from "./constants";
+import {TradingViewModal} from "./components/TradingViewModal.tsx";
+import {initStream} from "./utils/chat.util.ts";
+import {CONSTANTS, PushAPI} from "@pushprotocol/restapi";
 import UsernameModal from "./components/UsernameModal.tsx";
 import WalletDrawer from "./components/WalletDrawer.tsx";
 import LandingPage from "./components/mainpage/LandingPage.tsx";

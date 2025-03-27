@@ -8,7 +8,6 @@ import {
   Crown,
   User,
   AlertCircle,
-  Mail,
 } from "lucide-react";
 import { Modal, ModalContent, ModalOverlay } from "@chakra-ui/react";
 import { AUTH_METHOD_TYPE } from "@lit-protocol/constants";
