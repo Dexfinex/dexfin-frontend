@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Spinner } from '@chakra-ui/react';
-import * as QRCode from 'qrcode';
 import {
   LockIcon,
   Loader,
   Copy,
-  CheckCircle
+  CheckCircle,
+  Trash2Icon
 } from 'lucide-react';
 import { dexfinv3Service } from '../services/dexfin.service';
+import { useUserData } from '../providers/UserProvider';
 
 interface TwoFactorAuthInputProps {
   isDisabled: boolean;
@@ -55,7 +56,7 @@ const TwoFactorAuthInput = ({ onComplete, isDisabled }: TwoFactorAuthInputProps)
   };
 
   return (
-    <div className="flex gap-2" onPaste={handlePaste}>
+    <div className="flex gap-2 items-center justify-center" onPaste={handlePaste}>
       {code.map((digit, index) => (
         <input
           key={index}
@@ -70,6 +71,8 @@ const TwoFactorAuthInput = ({ onComplete, isDisabled }: TwoFactorAuthInputProps)
           disabled={isDisabled ? true : false}
         />
       ))}
+
+      {isDisabled && <Loader className="w-4 h-4 animate-spin text-blue-400" />}
     </div>
   );
 };
@@ -83,24 +86,18 @@ export const SecuritySettings: React.FC = () => {
   const [secretKey, setSecretKey] = useState('');
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [backupCodes, setBackCodes] = useState('');
+  const [backupCodes, setBackCodes] = useState([]);
+  const [isAuthEnabled, setIsAuthEnabled] = useState(false);
+  const { userData } = useUserData();
 
   const handleSetup = async () => {
     setLoadingSetup(true)
     if (showSecret) {
       setShowSecret(false)
     }
-    const key = await dexfinv3Service.generate2FA()
-    const code = await QRCode.toDataURL(key, {
-      width: 200,
-      margin: 1,
-      color: {
-        dark: '#ffffff',
-        light: '#00000000'
-      }
-    })
-    setSecretKey(key)
-    setQrCode(code)
+    const data = await dexfinv3Service.generate2FA(userData?.accessToken || "")
+    setSecretKey(data.secret)
+    setQrCode(data.qrCodeUrl)
     setLoadingSetup(false)
     setStep(2)
   }
@@ -112,22 +109,40 @@ export const SecuritySettings: React.FC = () => {
   }
 
   const handleCopyBackupKey = () => {
-    navigator.clipboard.writeText(backupCodes)
+    navigator.clipboard.writeText(backupCodes.join(''))
     setCopied(true)
     setTimeout(() => setCopied(false), 1000)
   }
 
   const handleKeyVerify = async (code: string) => {
-    console.log('handle code verify = ', code)
     setConfirming(true)
-    const isValid = await dexfinv3Service.verify2FA()
-
-    if (isValid) {
-      const codes = await dexfinv3Service.generateBackupCodes()
-      setBackCodes(codes)
+    const data = await dexfinv3Service.enable2FA(userData?.accessToken || "", code)
+    if (data.success) {
+      setBackCodes(data.backupCodes)
       setStep(4)
     }
     setConfirming(false)
+  }
+
+  const handleRemove = async (code: string) => {
+    setConfirming(true)
+    const { success } = await dexfinv3Service.remove2FA(userData?.accessToken || "", code)
+    if (success) {
+      setIsAuthEnabled(false)
+      setStep(1)
+    }
+    setConfirming(false)
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    setLoading(true)
+    const isEnabled = await dexfinv3Service.get2FAStatus(userData?.accessToken || "")
+    setIsAuthEnabled(isEnabled)
+    setLoading(false)
   }
 
   if (loading) {
@@ -140,141 +155,200 @@ export const SecuritySettings: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {step === 1 && <>
-        <div>
-          <h2 className="text-lg font-medium mb-1">Security</h2>
-          <p className="text-sm text-white/60">
-            Set up multi-factor authentication
-          </p>
-        </div>
-        <div className='flex flex-col items-center justify-center gap-4 h-[420px]'>
-          <LockIcon className='w-20 h-20' />
-          <p className="text-sm text-white/60">
-            Add an additional layer of security to keep your funds safe.
-          </p>
-          {
-            loadingSetup ? <button
-              disabled
-              className="flex items-center justify-center gap-2 
+      {!isAuthEnabled ? <>
+        {step === 1 && <>
+          <div>
+            <h2 className="text-lg font-medium mb-1">Security</h2>
+            <p className="text-sm text-white/60">
+              Set up multi-factor authentication
+            </p>
+          </div>
+          <div className='flex flex-col items-center justify-center gap-4 h-[420px]'>
+            <LockIcon className='w-20 h-20' />
+            <p className="text-sm text-white/60">
+              Add an additional layer of security to keep your funds safe.
+            </p>
+            {
+              loadingSetup ? <button
+                disabled
+                className="flex items-center justify-center gap-2 
                        bg-gray-400 text-gray-200 cursor-not-allowed 
                        py-2 px-5 rounded-xl mb-8 opacity-50"
-            >
-              Set up now <Spinner size="md" className="mr-2" />
-            </button>
-              :
-              <button className='bg-blue-500 py-2 px-5 rounded-xl mb-8 hover:bg-blue-600 transition-colors' onClick={handleSetup}>
-                Set up now
+              >
+                Set up now <Spinner size="md" className="mr-2" />
               </button>
-          }
-        </div>
-      </>}
-
-      {
-        step === 2 && <>
-          <div>
-            <h2 className="text-lg font-medium mb-1">Set up authenticator</h2>
-            <p className="text-sm text-white/60">
-              Scan the QR code or copy and paste the key into your authenticator app.
-            </p>
-          </div>
-          <div className='flex flex-col items-center justify-center gap-4 h-[420px]'>
-
-            <div className="w-60 h-60 bg-white/5 rounded-xl p-4">
-              {qrCode && (
-                <img
-                  src={qrCode}
-                  alt="QRCode"
-                  className="w-full h-full"
-                />
-              )}
-            </div>
-            <div className='mb-4'>
-              {
-                !showSecret ?
-                  <button onClick={() => setShowSecret(true)}>Show secret</button>
-                  :
-                  <button className='flex items-center justify-center gap-4' onClick={handleCopyKey}>
-                    <span>{secretKey}</span>
-                    {
-                      copied ?
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                        :
-                        <Copy className='w-5 h-5' />
-                    }
-                  </button>
-              }
-            </div>
-            <button className='bg-blue-500 w-96 py-2 rounded-xl hover:bg-blue-600 transition-colors' onClick={() => setStep(3)}>
-              Continue
-            </button>
-            <button className='w-96 py-2 rounded-xl hover:bg-white/10 transition-colors' onClick={() => setStep(1)}>
-              Cancel
-            </button>
-          </div>
-        </>
-      }
-
-      {
-        step === 3 && <>
-          <div>
-            <h2 className="text-lg font-medium mb-1">Enter code</h2>
-            <p className="text-sm text-white/60">
-              Enter the 6-digit code from your authenticator app.
-            </p>
-          </div>
-          <div className='h-[420px]'>
-            {
-              confirming ? <>
-                <TwoFactorAuthInput onComplete={(code: string) => handleKeyVerify(code)} isDisabled={true} />
-                <button className='mt-5 bg-white/10 py-2 px-5 rounded-xl' onClick={() => setStep(1)} disabled>
-                  Cancel
+                :
+                <button className='bg-blue-500 py-2 px-5 rounded-xl mb-8 hover:bg-blue-600 transition-colors' onClick={handleSetup}>
+                  Set up now
                 </button>
-              </> : <>
-                <TwoFactorAuthInput onComplete={(code: string) => handleKeyVerify(code)} isDisabled={false} />
-                <button className='mt-5 bg-white/10 py-2 px-5 rounded-xl hover:bg-white/5'>
-                  Cancel
-                </button>
-              </>
             }
           </div>
-        </>
-      }
+        </>}
 
-      {
-        step === 4 && <>
-          <div>
-            <h2 className="text-lg font-medium mb-1">Backup codes</h2>
-            <p className="text-sm text-white/60">
-              Store your backup codes safely and securely.
-            </p>
-          </div>
-          <div className='flex flex-col items-center justify-center gap-4 h-[420px]'>
-
-            <div className="bg-white/5 rounded-xl p-4">
-              <div className="grid grid-cols-3 gap-6 px-6 py-8">
-                {backupCodes && backupCodes.match(/.{1,10}/g)?.map(str => <li key={str} className='flex items-center justify-center'>
-                  <pre>{str}</pre>
-                </li>)}
-              </div>
+        {
+          step === 2 && <>
+            <div>
+              <h2 className="text-lg font-medium mb-1">Set up authenticator</h2>
+              <p className="text-sm text-white/60">
+                Scan the QR code or copy and paste the key into your authenticator app.
+              </p>
             </div>
+            <div className='flex flex-col items-center justify-center gap-4 h-[420px]'>
 
-            <div className='mb-4'>
-              <button className='flex items-center justify-center gap-3' onClick={handleCopyBackupKey}>
-                Copy
+              <div className="w-60 h-60 bg-white/5 rounded-xl p-4">
+                {qrCode && (
+                  <img
+                    src={qrCode}
+                    alt="QRCode"
+                    className="w-full h-full"
+                  />
+                )}
+              </div>
+              <div className='mb-4'>
                 {
-                  copied ?
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  !showSecret ?
+                    <button onClick={() => setShowSecret(true)}>Show secret</button>
                     :
-                    <Copy className='w-5 h-5' />
+                    <button className='flex items-center justify-center gap-4' onClick={handleCopyKey}>
+                      <span>{secretKey}</span>
+                      {
+                        copied ?
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                          :
+                          <Copy className='w-5 h-5' />
+                      }
+                    </button>
                 }
+              </div>
+              <button className='bg-blue-500 w-96 py-2 rounded-xl hover:bg-blue-600 transition-colors' onClick={() => setStep(3)}>
+                Continue
+              </button>
+              <button className='w-96 py-2 rounded-xl hover:bg-white/10 transition-colors' onClick={() => setStep(1)}>
+                Cancel
               </button>
             </div>
-            <button className='bg-blue-500 w-96 py-2 rounded-xl hover:bg-blue-600 transition-colors' onClick={() => setStep(1)}>
-              I've saved my backup codes
-            </button>
-          </div>
-        </>
-      }
+          </>
+        }
+
+        {
+          step === 3 && <>
+            <div>
+              <h2 className="text-lg font-medium mb-1">Enter code</h2>
+              <p className="text-sm text-white/60">
+                Enter the 6-digit code from your authenticator app.
+              </p>
+            </div>
+            <div className='h-[420px]'>
+              {
+                confirming ? <>
+                  <TwoFactorAuthInput onComplete={(code: string) => handleKeyVerify(code)} isDisabled={true} />
+                  <div className='text-center'>
+                    <button className='mt-5 bg-white/10 py-2 px-5 rounded-xl' disabled>
+                      Cancel
+                    </button>
+                  </div>
+                </> : <>
+                  <TwoFactorAuthInput onComplete={(code: string) => handleKeyVerify(code)} isDisabled={false} />
+                  <div className='text-center'>
+                    <button className='mt-5 bg-white/10 py-2 px-5 rounded-xl hover:bg-white/5' onClick={() => setStep(1)}>
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              }
+            </div>
+          </>
+        }
+
+        {
+          step === 4 && <>
+            <div>
+              <h2 className="text-lg font-medium mb-1">Backup codes</h2>
+              <p className="text-sm text-white/60">
+                Store your backup codes safely and securely.
+              </p>
+            </div>
+            <div className='flex flex-col items-center justify-center gap-4 h-[420px]'>
+
+              <div className="bg-white/5 rounded-xl p-4">
+                <div className="grid grid-cols-3 gap-6 px-6 py-8">
+                  {/* {backupCodes} */}
+                  {backupCodes && backupCodes.length > 0 && backupCodes.map(str => <li key={str} className='flex items-center justify-center'>
+                    <pre>{str}</pre>
+                  </li>)}
+                </div>
+              </div>
+
+              <div className='mb-4'>
+                <button className='flex items-center justify-center gap-3' onClick={handleCopyBackupKey}>
+                  Copy
+                  {
+                    copied ?
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      :
+                      <Copy className='w-5 h-5' />
+                  }
+                </button>
+              </div>
+              <button className='bg-blue-500 w-96 py-2 rounded-xl hover:bg-blue-600 transition-colors' onClick={() => { setStep(1); setIsAuthEnabled(true); }}>
+                I've saved my backup codes
+              </button>
+            </div>
+          </>
+        }
+      </> : <>
+        {
+          step === 5 ? <>
+            <div>
+              <h2 className="text-lg font-medium mb-1">Enter code</h2>
+              <p className="text-sm text-white/60">
+                Enter the 6-digit code from your authenticator app.
+              </p>
+            </div>
+            <div className='h-[420px]'>
+              {
+                confirming ? <>
+                  <TwoFactorAuthInput onComplete={(code: string) => handleRemove(code)} isDisabled={true} />
+                  <div className='text-center'>
+                    <button className='mt-5 bg-white/10 py-2 px-5 rounded-xl' disabled>
+                      Cancel
+                    </button>
+                  </div>
+                </> : <>
+                  <TwoFactorAuthInput onComplete={(code: string) => handleRemove(code)} isDisabled={false} />
+                  <div className='text-center'>
+                    <button className='mt-5 bg-white/10 py-2 px-5 rounded-xl hover:bg-white/5' onClick={() => setStep(1)}>
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              }
+            </div>
+          </> : <>
+            <div>
+              <h2 className="text-lg font-medium mb-1">Security</h2>
+              <p className="text-sm text-white/60">
+                Set up multi-factor authentication
+              </p>
+            </div>
+
+            <div className='h-[420px]'>
+              <div className='flex items-center justify-between border border-white/50 p-5 rounded-xl'>
+                <div className='flex justify-center items-center gap-2'>
+                  <LockIcon className='w-10 h-10' />
+                  <div>
+                    <div>Authenticator app</div>
+                    <div className='text-sm text-white/70'>Uses a one-time code from your authenticator app</div>
+                  </div>
+                </div>
+                <button onClick={() => setStep(5)}>
+                  <Trash2Icon className='w-5 h-5 hover:text-white/70' />
+                </button>
+              </div>
+            </div>
+          </>
+        }
+      </>}
     </div >
   );
 };
