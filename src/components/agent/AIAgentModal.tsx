@@ -23,6 +23,7 @@ import { YieldProcess } from './components/EVM/YieldProcess.tsx';
 import { SwapProcess } from './components/EVM/SwapProcess.tsx';
 import { SolSwapProcess } from './components/Solana/SolSwapProcess.tsx';
 import { BridgeProcess } from './components/EVM/BridgeProcess.tsx';
+import { EVMBridgeProcess } from './components/EVM/EVMBridgeProcess.tsx';
 import { PortfolioProcess } from '../PortfolioProcess.tsx';
 import { SendProcess } from './components/EVM/SendProcess.tsx';
 import { EVMSendProcess } from './components/EVM/EVMSendProcess.tsx';
@@ -67,6 +68,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
   const [showSwapProcess, setShowSwapProcess] = useState(false);
   const [showSolSwapProcess, setShowSolSwapProcess] = useState(false);
   const [showBridgeProcess, setShowBridgeProcess] = useState(false);
+  const [showEVMBridgeProcess, setShowEVMBridgeProcess] = useState(false);
   const [showPortfolioProcess, setShowPortfolioProcess] = useState(false);
   const [showSendProcess, setShowSendProcess] = useState(false);
   const [showEVMSendProcess, setShowEVMSendProcess] = useState(false);
@@ -101,6 +103,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
     setShowSwapProcess(false);
     setShowSolSwapProcess(false);
     setShowBridgeProcess(false);
+    setShowEVMBridgeProcess(false);
     setShowPortfolioProcess(false);
     setShowSendProcess(false);
     setShowEVMSendProcess(false);
@@ -126,21 +129,11 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
 
     // If no direct match, use OpenAI with fallback
     try {
-      if (address) {
-        const brianTransactionData = await brianService.getBrianTransactionData(command, address, chainId);
-        return {
-          text: brianTransactionData.message,
-          brianData: brianTransactionData.data,
-          type: brianTransactionData.type
-        }
-      } else {
-        const brianKnowledgeData = await brianService.getBrianKnowledgeData(command);
-        return {
-          text: convertBrianKnowledgeToPlainText(brianKnowledgeData.message),
-          type: "knowledge",
-        }
+      const brianKnowledgeData = await brianService.getBrianKnowledgeData(command);
+      return {
+        text: convertBrianKnowledgeToPlainText(brianKnowledgeData.message),
+        type: "knowledge",
       }
-
     } catch (e) {
       const error = e as {
         error?: { type?: string; code?: string };
@@ -348,6 +341,61 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
       return sol_response;
     } else if (sol_response && sol_response.type == "swap_evm" && sol_response.args.chainName != "solana") {
       return sol_response;
+    } else if (sol_response && sol_response.type == "bridge_evm") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "deposit_evm") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "withdraw_evm") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "renew_ens") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "register_ens") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "borrow_evm") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "repay_evm") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "general") {
+      const brianKnowledgeData = await brianService.getBrianKnowledgeData(message);
+      return {
+        text: convertBrianKnowledgeToPlainText(brianKnowledgeData.message),
+        type: "knowledge",
+      }
     }
 
     for (const [key, response] of Object.entries(fallbackResponses)) {
@@ -384,7 +432,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           content: command
         }]);
         response = await generateResponse(normalizedCommand, address, chainId);
-        console.log(response);
+
         if (response.type == "action" && response.brianData.type == "write") {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
@@ -696,6 +744,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
                 logoURI: toToken.logoURI,
                 priceUSD: 0,
               });
+
               setFromAmount(response.args.inAmount);
               setShowEVMSwapProcess(true);
             } else {
@@ -703,6 +752,92 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
             }
           } else {
             response = { text: `swap ${response.args.inAmount} ${response.args.inputSymbol} for ${response.args.outputSymbol} on ${fromNetwork.id}`, insufficient: 'Insufficient balance to perform the transaction.' };
+          }
+        } else if (response.type == "bridge_evm") {
+          resetProcessStates();
+
+          const fromNetwork = mapChainName2Network[response.args.srcChainName];
+          const toNetwork = mapChainName2Network[response.args.dstChainName];
+
+          if (chainId != fromNetwork.chainId) {
+            await switchChain(fromNetwork.chainId);
+          }
+
+          const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === fromNetwork.id);
+
+          if (token && token.balance > response.args.amount) {
+            let toToken = null;
+            const popularTokens = mapPopularTokens[toNetwork.chainId];
+            const popularToken = popularTokens.find(item => item?.symbol?.toLowerCase() === response.args.outputSymbol.toLowerCase());
+            if (popularToken) {
+              toToken = {
+                symbol: popularToken.symbol || '',
+                name: popularToken.name,
+                address: popularToken.address,
+                chainId: popularToken.chainId,
+                decimals: popularToken.decimals,
+                logoURI: popularToken.logoURI,
+              };
+            } else {
+              const trendingTokensBase = trendingTokens[toNetwork.id];
+              const tmpToken = trendingTokensBase.find(item => item?.symbol?.toLowerCase() === response.args.outputSymbol.toLowerCase());
+
+              if (tmpToken) {
+                toToken = {
+                  symbol: tmpToken.symbol || '',
+                  name: tmpToken.name,
+                  address: tmpToken.address,
+                  chainId: tmpToken.chainId,
+                  decimals: tmpToken.decimals,
+                  logoURI: tmpToken.logoURI,
+                };
+              }
+            }
+            if (toToken) {
+              if (token.symbol == 'POL') {
+                setFromToken({
+                  symbol: token.symbol,
+                  name: token.name,
+                  address: mapChainId2NativeAddress[Number(token.chain)],
+                  chainId: Number(token.chain),
+                  decimals: token.decimals,
+                  logoURI: token.logo,
+                  priceUSD: token.usdPrice
+                });
+              } else {
+                setFromToken({
+                  symbol: token.symbol,
+                  name: token.name,
+                  address: token.address,
+                  chainId: Number(token.chain),
+                  decimals: token.decimals,
+                  logoURI: token.logo,
+                  priceUSD: token.usdPrice
+                });
+              }
+
+              setProtocol({
+                key: "",
+                logoURI: "",
+                name: "debridge",
+              });
+              setToToken({
+                symbol: toToken.symbol,
+                name: toToken.name,
+                address: toToken.address,
+                chainId: Number(toToken.chainId),
+                decimals: toToken.decimals,
+                logoURI: toToken.logoURI,
+                priceUSD: 0,
+              });
+              setFromAmount(response.args.amount.toString());
+              setSolver('debridge');
+              setShowEVMBridgeProcess(true);
+            } else {
+              response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.' }
+            }
+          } else {
+            response = { text: `bridge ${response.args.amount} ${response.args.inputSymbol} on ${fromNetwork.id} to ${response.args.outputSymbol} on ${toNetwork.id}`, insufficient: 'Insufficient balance to perform the transaction.' };
           }
         }
 
@@ -938,6 +1073,12 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           <EVMSwapProcess fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
             onClose={() => {
               setShowEVMSwapProcess(false);
+              setMessages([]);
+            }} />
+        ) : showEVMBridgeProcess && fromToken && toToken ? (
+          <EVMBridgeProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol} solver={solver}
+            onClose={() => {
+              setShowEVMBridgeProcess(false);
               setMessages([]);
             }} />
         ) :
