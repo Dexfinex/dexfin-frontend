@@ -1,13 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
 import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
-import { mapChainId2ViemChain } from '../../../../config/networks.ts';
+import useGetTokenPrices from "../../../../hooks/useGetTokenPrices.ts";
+import useTokenStore from "../../../../store/useTokenStore.ts";
 import { convertCryptoAmount } from '../../../../utils/agent.util.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
 import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 import { TokenChainIcon } from '../../../swap/components/TokenIcon.tsx';
+import { mapChainId2NativeAddress, mapChainId2ViemChain } from "../../../../config/networks.ts";
+import useDebridgeQuote from "../../../../hooks/useDebridgeQuote.ts";
+import useDebridgeOrderStatus from "../../../../hooks/useDebridgeOrderStatus.ts";
+import { DebridgeOrderStatus } from '../../../../types/swap.type';
+import { useTokenApprove } from "../../../../hooks/useTokenApprove.ts";
+import { toFixedFloat } from "../../../../utils/trade.util.ts";
+import { SOLANA_CHAIN_ID } from "../../../../constants/solana.constants.ts";
+import { VersionedTransaction } from "@solana/web3.js";
+import { connection } from "../../../../config/solana.ts";
+import { Web3AuthContext } from "../../../../providers/Web3AuthContext.tsx";
+import { Alert, AlertIcon, Button, Skeleton, Text } from '@chakra-ui/react';
+
+import BigNumber from "bignumber.js";
 interface BridgeProcessProps {
   onClose: () => void;
   fromToken: TokenType;
@@ -19,15 +33,91 @@ interface BridgeProcessProps {
   solver: string;
 }
 
-export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol, solver, onClose }) => {
+export const EVMBridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount, toToken, fromToken, protocol, solver, onClose }) => {
+  const nativeTokenAddressFromChain = mapChainId2NativeAddress[fromToken!.chainId]
+  const toTokenChainId = toToken && toToken?.chainId
+  const nativeTokenAddress = mapChainId2NativeAddress[toTokenChainId]
+  const { refetch: refetchTokensPrices } = useGetTokenPrices({
+    tokenAddresses: [fromToken?.address ?? null, toToken?.address ?? null, nativeTokenAddress],
+    chainId: toTokenChainId,
+  });
+
+  const fromTokenChainId = fromToken && fromToken?.chainId
+  const nativeFromTokenAddress = mapChainId2NativeAddress[fromTokenChainId]
+  const { refetch: refetchFromTokensPrices } = useGetTokenPrices({
+    tokenAddresses: [fromToken?.address ?? null, toToken?.address ?? null, nativeFromTokenAddress],
+    chainId: fromTokenChainId,
+  })
+
+
+  const {
+    solanaWalletInfo,
+    signer,
+    signSolanaTransaction,
+    chainId: walletChainId,
+    switchChain,
+  } = useContext(Web3AuthContext);
+
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [failedTransaction, setFailedTransaction] = useState(false);
-  const { mutate: sendTransactionMutate } = useBrianTransactionMutation();
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
   const [scan, setScan] = useState<string>('');
+
+  const [isBridging, setIsBridging] = useState(false);
+
+  const { getTokenPrice, tokenPrices } = useTokenStore()
+
+  const {
+    isLoading: isQuoteLoading,
+    quoteResponse,
+  } = useDebridgeQuote({
+    sellToken: fromToken,
+    buyToken: toToken,
+    sellAmount: fromAmount,
+    destinationAddress: null,
+  })
+
+  const {
+    isLoading: isTracking,
+    orderStatus,
+    completionHash,
+  } = useDebridgeOrderStatus(quoteResponse.orderId, isBridging)
+
+  useEffect(() => {
+    if (orderStatus === DebridgeOrderStatus.Fulfilled) {
+      // open tx modal
+      setScan(`${mapChainId2ViemChain[toToken.chainId].blockExplorers?.default.url}/tx/${completionHash}`)
+      setTransactionProgress(100);
+      setTransactionStatus('Transaction confirmed!');
+    }
+  }, [orderStatus])
+
+
+
+  const spenderAddress = quoteResponse.tx?.allowanceTarget || quoteResponse.tx?.to
+
+  const {
+    isApproved: isEvmApproved,
+    isLoading: isApproving,
+    approve
+  } = useTokenApprove({
+    token: fromToken?.address as `0x${string}`,
+    spender: spenderAddress as `0x${string}`,
+    amount: new BigNumber(toFixedFloat(fromAmount, 4))
+      .times(new BigNumber(10)
+        .pow(fromToken?.decimals ?? 1))
+      .toFixed(0),
+    chainId: fromToken?.chainId ?? 1
+  });
+
+  const isApproved =
+    (fromToken?.chainId === SOLANA_CHAIN_ID || nativeTokenAddressFromChain === fromToken?.address || !spenderAddress) // chain is solana or native token or don't have spenderAddress
+      ? true
+      : isEvmApproved
+
   useEffect(() => {
     if (step === 1) {
       const timer = setInterval(() => {
@@ -69,29 +159,45 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
   }, [showConfirmation]);
 
 
-  const handleTransaction = async (data: any) => {
+
+
+  const {
+    fromTokenPrice,
+    toTokenPrice,
+  } = useMemo(() => {
+    const fromTokenPrice = fromToken ? getTokenPrice(fromToken?.address, fromToken?.chainId) : 0
+    const toTokenPrice = toToken ? getTokenPrice(toToken?.address, toToken?.chainId) : 0
+    console.log(fromTokenPrice);
+    console.log(toTokenPrice);
+    console.log(toToken);
+    return {
+      fromTokenPrice,
+      toTokenPrice,
+    }
+  }, [fromToken, getTokenPrice, toToken, nativeTokenAddress, toTokenChainId, fromTokenChainId, tokenPrices])
+
+  useEffect(() => {
+    if (fromToken) {
+      refetchFromTokensPrices();
+    }
+    if (toToken) {
+      refetchTokensPrices();
+    }
+  }, [fromToken, toToken]);
+
+
+
+
+  const handleTransaction = async () => {
     try {
       if (steps.length === 0) {
         console.error("No transaction details available");
         return;
       }
       setShowConfirmation(true);
-
-      sendTransactionMutate(
-        { transactions: data, duration: 0 },
-        {
-          onSuccess: (receipt) => {
-            setTransactionProgress(100);
-            setTransactionStatus('Transaction confirmed!');
-            setScan(receipt ?? '');
-          },
-          onError: (error) => {
-            console.log(error);
-            setShowConfirmation(false);
-            setFailedTransaction(true);
-          },
-        },
-      );
+      setTransactionProgress(100);
+      setTransactionStatus('Transaction confirmed!');
+      setScan('');
 
     } catch (error) {
       console.error("Error executing transactions:", error);
@@ -99,6 +205,60 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
       setFailedTransaction(true);
     }
   };
+
+  const handleSwap = async () => {
+    if (!isApproved) {
+      approve?.()
+      return
+    }
+
+    try {
+      setShowConfirmation(true);
+      if (fromToken?.chainId === SOLANA_CHAIN_ID && quoteResponse.tx) { // solana transaction
+        const tx = VersionedTransaction.deserialize(Buffer.from(quoteResponse.tx.data!.slice(2), "hex"));
+        const { blockhash } = await connection.getLatestBlockhash();
+        tx.message.recentBlockhash = blockhash; // Update blockhash!
+
+        const signedTransaction = await signSolanaTransaction(tx)
+
+        try {
+          const txid = await connection.sendRawTransaction(signedTransaction!.serialize(), {
+            skipPreflight: false, // Set to true to skip validation checks
+            preflightCommitment: "confirmed",
+          });
+          console.log(`✅ Transaction Sent! TXID: ${txid}`);
+          // 5️⃣ Confirm the transaction
+          await connection.confirmTransaction(txid, "confirmed");
+
+          console.log("✅ Transaction Confirmed!");
+        } catch (error) {
+          console.error("❌ Error Sending Transaction:", error);
+          setShowConfirmation(false);
+          setFailedTransaction(true);
+        }
+
+      } else if (quoteResponse.tx) {
+        try {
+          await signer!.sendTransaction(quoteResponse.tx)
+
+        } catch (error) {
+          setShowConfirmation(false);
+          setFailedTransaction(true);
+        }
+      } else {
+
+        throw new Error('tx not provided')
+      }
+      // set estimated completion time in unixtimestamp
+      setIsBridging(true)
+    } catch (e) {
+      setShowConfirmation(false);
+      setFailedTransaction(true);
+      //
+    } finally {
+
+    }
+  }
 
   const renderStep1 = () => (
     <div className="flex flex-col items-center justify-center h-full">
@@ -139,7 +299,7 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
   const renderStep2 = () => (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-4 mb-6">
-        {protocol &&
+        {protocol?.logoURI &&
           <img
             src={protocol.logoURI}
             alt={protocol.name}
@@ -160,7 +320,7 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
                 size={"lg"} chainId={Number(fromToken?.chainId)} />
               <div>
                 <div className="text-sm text-white/60">You send</div>
-                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol}</div>
+                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken.symbol}</div>
               </div>
             </div>
             <ArrowRight className="w-6 h-6 text-white/40" />
@@ -169,7 +329,7 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
                 size={"lg"} chainId={Number(toToken?.chainId)} />
               <div>
                 <div className="text-sm text-white/60">You receive</div>
-                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol}</div>
+                <div className="text-xl font-medium">{formatNumberByFrac(convertCryptoAmount(fromAmount, 0) * fromTokenPrice / toTokenPrice)} {toToken.symbol}</div>
               </div>
             </div>
           </div>
@@ -186,12 +346,33 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
           </div>
         </div>
 
-        <button
-          onClick={() => handleTransaction(steps)}
-          className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
-        >
-          Confirm Bridge
-        </button>
+        {!isQuoteLoading && (
+          isApproved ?
+            (
+              <Button
+                isLoading={isApproving}
+                className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
+                loadingText={'Approving...'}
+                colorScheme="blue"
+                onClick={() => {
+                  approve?.()
+                }}
+                isDisabled={false}
+              >
+                Approve {fromToken?.symbol}
+              </Button>
+            ) :
+            (<Button
+              onClick={() => handleSwap()}
+              colorScheme="blue"
+              className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
+            >
+              Confirm Bridge
+            </Button>)
+        )
+        }
+
+
       </div>
     </div>
   );
@@ -226,11 +407,11 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
             />
           </div>
           <p className="mt-4 text-white/60">
-            Bridging {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} {fromToken.symbol} ( {mapChainId2ViemChain[fromToken.chainId].name} ) to {formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} {toToken.symbol} ( {mapChainId2ViemChain[toToken.chainId].name} ) via {solver}
+            Bridging {formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} {fromToken.symbol} ( {mapChainId2ViemChain[fromToken.chainId].name} ) to {formatNumberByFrac(convertCryptoAmount(fromAmount, 0) * fromTokenPrice / toTokenPrice)} {toToken.symbol} ( {mapChainId2ViemChain[toToken.chainId].name} ) via {solver}
           </p>
         </>
       ) : (
-        <SuccessModal onClose={onClose} scan={scan} description={`Successfully bridged ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} ( ${mapChainId2ViemChain[fromToken.chainId].name} ) to ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} ( ${mapChainId2ViemChain[toToken.chainId].name} )`} />
+        <SuccessModal onClose={onClose} scan={scan} description={`Successfully bridged ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken.symbol} ( ${mapChainId2ViemChain[fromToken.chainId].name} ) to ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0) * fromTokenPrice / toTokenPrice)} ${toToken.symbol} ( ${mapChainId2ViemChain[toToken.chainId].name} )`} />
       )}
     </div>
   );
@@ -267,7 +448,7 @@ export const BridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmount,
       </div>
       {failedTransaction &&
         <FailedTransaction
-          description={`Bridge ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals))} ${fromToken.symbol} ( ${mapChainId2ViemChain[fromToken.chainId].name} ) to ${formatNumberByFrac(convertCryptoAmount(fromAmount, fromToken.decimals) * fromToken.priceUSD / toToken.priceUSD)} ${toToken.symbol} ( ${mapChainId2ViemChain[toToken.chainId].name} ) via ${solver}`}
+          description={`Bridge ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0))} ${fromToken.symbol} ( ${mapChainId2ViemChain[fromToken.chainId].name} ) to ${formatNumberByFrac(convertCryptoAmount(fromAmount, 0) * fromTokenPrice / toTokenPrice)} ${toToken.symbol} ( ${mapChainId2ViemChain[toToken.chainId].name} ) via ${solver}`}
           onClose={onClose}
         />}
       {showConfirmation && !failedTransaction ? renderConfirmation() : (

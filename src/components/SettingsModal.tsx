@@ -19,6 +19,7 @@ import { useStore } from '../store/useStore';
 import { AppearanceSettings } from './AppearanceSettings';
 import { ReferralSettings } from './ReferralModal';
 import { SecuritySettings } from './SecurityModal';
+import {useBreakpointValue} from "@chakra-ui/react";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -43,24 +44,7 @@ const widgetConfigs = [
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('widgets');
-  const [isMobile, setIsMobile] = useState(false);
   const { widgetVisibility, toggleWidgetVisibility, resetWidgetVisibility } = useStore();
-
-  // Check if the screen is mobile sized
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-
-    // Initial check
-    checkScreenSize();
-
-    // Add event listener for window resize
-    window.addEventListener('resize', checkScreenSize);
-
-    // Cleanup
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
 
   if (!isOpen) return null;
 

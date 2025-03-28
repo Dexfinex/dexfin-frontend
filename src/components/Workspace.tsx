@@ -7,6 +7,7 @@ import { useStore } from '../store/useStore';
 
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import * as Icons from 'lucide-react';
+import {useBreakpointValue} from "@chakra-ui/react";
 
 export const Workspace: React.FC = () => {
   const { widgets, updateWidget, widgetVisibility, isTopbarVisible, isTopbarBottom,
@@ -25,23 +26,8 @@ export const Workspace: React.FC = () => {
     setIsRewardsOpen, } = useStore();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useBreakpointValue({ base: true, md: false })
   const { isConnected, login } = useContext(Web3AuthContext);
-
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-
-    // Initial check
-    checkScreenSize();
-
-    // Add event listener
-    window.addEventListener('resize', checkScreenSize);
-
-    // Cleanup
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
 
   const handleMenuItemClick = (itemId: string) => {
     // Close menu first
@@ -115,21 +101,21 @@ export const Workspace: React.FC = () => {
         {isMobile ? (
           // Mobile Grid Layout
           <div className="p-4">
-            <div className="grid grid-cols-3 gap-3 absolute bottom-24 left-0 right-0 p-4">
+            <div className="grid grid-cols-3 gap-3 absolute left-0 right-0 p-4">
               {menuItems.map((item) => {
                 const IconComponent = Icons[item.icon as keyof typeof Icons];
                 return (
                   <button
                     key={item.id}
-                    className="flex flex-col glass items-center text-center p-2 rounded-lg hover:bg-white/10 transition-colors"
+                    className="flex flex-col items-center text-center p-2 rounded-lg transition-colors"
                     onClick={() => handleMenuItemClick(item.id)}
                   >
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-1">
+                    <div className="w-10 h-10 rounded-full glass flex items-center justify-center mb-1">
                       {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
                       {/* @ts-expect-error */}
                       <IconComponent className="w-4 h-4" />
                     </div>
-                    <span className="text-xs mt-1">{item.label}</span>
+                    <span className="text-xs text-[#fff] mt-1">{item.label}</span>
                   </button>
                 );
               })}
@@ -146,7 +132,10 @@ export const Workspace: React.FC = () => {
                 id={widget.id}
                 type={widget.type}
                 position={widget.position}
-                size={widget.size}
+                size={{
+                  width: Number(widget.size.width),
+                  height: Number(widget.size.height),
+                }}
               />
             ))}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
