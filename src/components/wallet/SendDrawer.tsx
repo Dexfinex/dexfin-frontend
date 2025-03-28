@@ -7,6 +7,7 @@ import * as z from 'zod';
 import { useEnsAddress, useEnsAvatar } from 'wagmi';
 import { normalize } from 'viem/ens';
 import { ethers } from 'ethers';
+import { RiQrScanLine } from 'react-icons/ri';
 
 import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
@@ -535,7 +536,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
 
                 {/* Address Input */}
                 <div className='relative'>
-                    {isMobile && scanning && <div id="reader" className='!w-screen !h-screen !fixed !top-0 !left-0 !z-[100] bg-black'></div>}
+                    {isMobile && scanning && <div id="reader" className='!w-screen !h-screen !fixed !top-0 !left-0 !z-[100] bg-gray-400'></div>}
                     <label className="block text-sm text-white/60">Send To</label>
                     {errorAddress && <p className='text-red-500 text-xs italic mb-1'>Incorrect address</p>}
                     {
@@ -545,16 +546,16 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                     type="text"
                                     value={address}
                                     placeholder="Enter wallet address or ENS name"
-                                    className={`w-full bg-white/5 border ${errorAddress ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
+                                    className={`w-full bg-white/5 border ${errorAddress ? "border-red-500" : "border-white/10"} rounded-lg pl-4 pr-10 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
                                     onChange={(e) => {
                                         setAddress(e.target.value)
                                     }}
                                 />
                                 {
-                                    isMobile && <div className='absolute right-0 top-2'>
+                                    isMobile && <div className='absolute right-0 top-1.5'>
                                         {!scanning ?
-                                            <button className='bg-white mr-3 p-1 rounded-full hover:bg-white/80' onClick={handleQrCodeScan}>
-                                                <img src='/qrcode_scan.svg' className='w-6 h-6' />
+                                            <button className='mr-1 p-2 rounded-full hover:bg-white/10' onClick={handleQrCodeScan}>
+                                                <RiQrScanLine className='w-5 h-5'/>
                                             </button>
                                             :
                                             <Loader className="w-8 h-8 animate-spin text-blue-400" />}
