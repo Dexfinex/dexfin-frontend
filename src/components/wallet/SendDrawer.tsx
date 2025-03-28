@@ -1,31 +1,32 @@
-import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {Skeleton, SkeletonCircle, Spinner, useToast} from '@chakra-ui/react';
-import {ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle} from 'lucide-react';
-import {FieldValues, useForm} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { Skeleton, SkeletonCircle, Spinner, useToast } from '@chakra-ui/react';
+import { ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle, Camera, Loader } from 'lucide-react';
+import { FieldValues, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {useEnsAddress, useEnsAvatar} from 'wagmi';
-import {normalize} from 'viem/ens';
-import {ethers} from 'ethers';
+import { useEnsAddress, useEnsAvatar } from 'wagmi';
+import { normalize } from 'viem/ens';
+import { ethers } from 'ethers';
 
-import {TransactionModal} from '../swap/modals/TransactionModal.tsx';
+import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
-import {formatNumberByFrac, isValidAddress, shrinkAddress} from '../../utils/common.util';
-import {Web3AuthContext} from "../../providers/Web3AuthContext.tsx";
-import {mapChainId2ExplorerUrl, mapChainId2NativeAddress} from "../../config/networks.ts";
-import {useSendTransactionMutation} from '../../hooks/useSendTransactionMutation.ts';
-import {TransactionError} from '../../types';
-import {TokenChainIcon, TokenIcon} from '../swap/components/TokenIcon.tsx';
-import {useStore} from '../../store/useStore.ts';
-import {PageType} from '../WalletDrawer.tsx';
-import useTokenBalanceStore, {TokenBalance} from '../../store/useTokenBalanceStore.ts';
+import { formatNumberByFrac, isValidAddress, shrinkAddress } from '../../utils/common.util';
+import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
+import { mapChainId2ExplorerUrl, mapChainId2NativeAddress } from "../../config/networks.ts";
+import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
+import { TransactionError } from '../../types';
+import { TokenChainIcon, TokenIcon } from '../swap/components/TokenIcon.tsx';
+import { useStore } from '../../store/useStore.ts';
+import { PageType } from '../WalletDrawer.tsx';
+import useTokenBalanceStore, { TokenBalance } from '../../store/useTokenBalanceStore.ts';
 import makeBlockie from 'ethereum-blockies-base64';
-import {SOLANA_CHAIN_ID} from "../../constants/solana.constants.ts";
-import {LOCAL_STORAGE_RECENT_ADDRESSES} from '../../constants';
-import {getGasEstimationForNativeTokenTransfer} from '../../utils/chains.util.tsx';
-import {getRealNativeTokenAddress} from "../../utils/token.util.ts";
+import { SOLANA_CHAIN_ID } from "../../constants/solana.constants.ts";
+import { LOCAL_STORAGE_RECENT_ADDRESSES } from '../../constants';
+import { getGasEstimationForNativeTokenTransfer } from '../../utils/chains.util.tsx';
+import { getRealNativeTokenAddress } from "../../utils/token.util.ts";
+import { Html5QrcodeScanner } from "html5-qrcode";
 
 interface SendDrawerProps {
     setPage: (type: PageType) => void;
@@ -54,6 +55,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     const [recentAddresses, setRecentAddresses] = useState<string[]>([]);
     const [isTokenSwitching, setIsTokenSwitching] = useState(false);
     const [currentNativeTokenGasfee, setCurrentNativeTokenGasfee] = useState(0); //only used for native tokens
+    const [scanning, setScanning] = useState(false);
 
     useEffect(() => {
         if (tokenBalances.length > 0 && Object.keys(selectedAsset).length === 0) {
@@ -314,6 +316,29 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
         );
     }, [tokenBalances, searchQuery]);
 
+    const startScanner = () => {
+        const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+        console.log('scanner = ', scanner)
+        scanner.render(
+            (decodedText) => {
+                setAddress(decodedText)
+                setScanning(false)
+                scanner.clear()
+            },
+            (error) => {
+                console.log(error)
+                setScanning(false)
+            }
+        );
+    };
+
+    const handleQrCodeScan = () => {
+        setScanning(true);
+        setTimeout(() => {
+            startScanner()
+        }, 1000);
+    }
+
     // if (!isOpen) return null;
     const renderUsdValue = () => {
         const price = tokenBalances.find(token => token.address === selectedAsset.address && token.tokenId === selectedAsset.tokenId)?.usdPrice || 0
@@ -496,7 +521,18 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
 
                 {/* Address Input */}
                 <div className='relative'>
-                    <label className="block text-sm text-white/60 mb-2">Send To</label>
+                    <div className='mb-2 flex justify-between items-center'>
+                        <label className="text-sm text-white/60">Send To</label>
+                        {!scanning ?
+                            <button className='text-white/80 mr-3 bg-white/10 p-2 rounded-full hover:bg-white/15' onClick={handleQrCodeScan}>
+                                <Camera />
+
+                            </button>
+                            :
+                            <Loader className="w-8 h-8 animate-spin text-blue-400" />}
+                    </div>
+                    {scanning && <div id="reader" className='!w-screen !h-screen !fixed !top-0 !left-0 !z-[100]'></div>}
+
                     {errorAddress && <p className='text-red-500 text-xs italic mb-1'>Incorrect address</p>}
                     {
                         !showSelectedEnsInfo ?
