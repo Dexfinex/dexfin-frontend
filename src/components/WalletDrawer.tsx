@@ -50,8 +50,9 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
     useEffect(() => {
         const handleResize = () => {
             const width = window.innerWidth;
-            if (width <= 768) {
-                setDrawerWidth(width <= 360 ? "300px" : width <= 480 ? "350px" : "380px");
+            if (width <= 640) {
+                // setDrawerWidth(width <= 360 ? "300px" : width <= 480 ? "350px" : "380px");
+                setDrawerWidth(`${width}px`);
             } else {
                 setDrawerWidth("400px");
             }
