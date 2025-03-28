@@ -1,14 +1,14 @@
-import {Connector, CreateConnectorFn, useConnect} from 'wagmi';
-import {Button, Text, VStack, Image} from "@chakra-ui/react";
-import  {useMemo} from "react";
+import { Connector, CreateConnectorFn, useConnect } from 'wagmi';
+import { Button, Text, VStack, Image } from "@chakra-ui/react";
+import { useMemo } from "react";
 
 interface WalletMethodsProps {
     authWithEthWallet: (connector: any) => Promise<void>;
     setView: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const WalletMethods = ({authWithEthWallet, setView}: WalletMethodsProps) => {
-    const {connectors} = useConnect();
+const WalletMethods = ({ authWithEthWallet, setView }: WalletMethodsProps) => {
+    const { connectors } = useConnect();
     console.log("connectors", connectors)
 
     const filteredConnectors = useMemo(() => {
@@ -22,7 +22,7 @@ const WalletMethods = ({authWithEthWallet, setView}: WalletMethodsProps) => {
 
         return result
     }, [connectors])
-
+    console.log('filteredConnectors = ', filteredConnectors)
     return (
         <>
             <VStack spacing={3}>
@@ -38,7 +38,7 @@ const WalletMethods = ({authWithEthWallet, setView}: WalletMethodsProps) => {
                             w="full"
                             color="white"
                             borderColor="whiteAlpha.200"
-                            _hover={{bg: 'whiteAlpha.100'}}
+                            _hover={{ bg: 'whiteAlpha.100' }}
                             // disabled={!connector.ready}
                             key={connector.id}
                             onClick={() => authWithEthWallet(connector)}
@@ -49,7 +49,7 @@ const WalletMethods = ({authWithEthWallet, setView}: WalletMethodsProps) => {
                                         src="/metamask.png"
                                         alt="MetaMask logo"
                                         width="2rem"
-                                        // fill={true}
+                                    // fill={true}
                                     />
                                 </div>
                             )}
@@ -58,6 +58,15 @@ const WalletMethods = ({authWithEthWallet, setView}: WalletMethodsProps) => {
                                     <Image
                                         src="/coinbase.png"
                                         alt="Coinbase logo"
+                                        width="2rem"
+                                    />
+                                </div>
+                            )}
+                            {connector.name.toLowerCase() === 'rabby wallet' && (
+                                <div className="btn__icon">
+                                    <Image
+                                        src={connector.icon}
+                                        alt="Rabby logo"
                                         width="2rem"
                                     />
                                 </div>
@@ -72,7 +81,7 @@ const WalletMethods = ({authWithEthWallet, setView}: WalletMethodsProps) => {
                         w="full"
                         color="white"
                         borderColor="whiteAlpha.200"
-                        _hover={{bg: 'whiteAlpha.100'}}
+                        _hover={{ bg: 'whiteAlpha.100' }}
                     >
                         Back
                     </Button>
