@@ -59,7 +59,7 @@ const LendModal: React.FC<LendModalProps> = ({
     const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
     const { getOfferingPoolByChainId } = useDefillamaStore();
     const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
-    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
+    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation(chainId);
     const lendTokenInfo = LENDING_LIST.find((token) => {
         return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
     });
