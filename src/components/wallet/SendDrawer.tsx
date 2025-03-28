@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Skeleton, SkeletonCircle, Spinner, useToast } from '@chakra-ui/react';
-import { ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle, Camera, Loader } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle, Loader } from 'lucide-react';
 import { FieldValues, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -369,7 +369,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
             filtered = recentAddresses.filter(address => /^0x[a-fA-F0-9]{40}$/.test(address))
         }
 
-        return filtered.map((address, index) => <div key={index} onClick={() => setAddress(address)} className='cursor-pointer text-sm py-2 px-1 rounded-md text-white/70 hover:bg-white/10 flex items-center gap-2'>
+        return filtered.map((address, index) => <div key={index} onClick={() => setAddress(address)} className={`cursor-pointer text-sm py-2 px-1 rounded-md ${theme === 'dark' ? 'text-white/70' : 'text-black/70'} hover:bg-white/10 flex items-center gap-2`}>
             <img src={makeBlockie(address)} className='w-8 h-8 rounded-full' />
             <span>{shrinkAddress(address)}</span>
         </div>)
@@ -535,36 +535,32 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
 
                 {/* Address Input */}
                 <div className='relative'>
-                    {
-                        isMobile ?
-                            (<>
-                                <div className='mb-2 flex justify-between items-center'>
-                                    <label className="text-sm text-white/60">Send To</label>
-                                    {!scanning ?
-                                        <button className='text-white/80 mr-3 bg-white/10 p-2 rounded-full hover:bg-white/15' onClick={handleQrCodeScan}>
-                                            <Camera />
-
-                                        </button>
-                                        :
-                                        <Loader className="w-8 h-8 animate-spin text-blue-400" />}
-                                </div>
-                                {scanning && <div id="reader" className='!w-screen !h-screen !fixed !top-0 !left-0 !z-[100] bg-black'></div>}
-                            </>) :
-                            <label className="block text-sm text-white/60">Send To</label>
-                    }
-
+                    {isMobile && scanning && <div id="reader" className='!w-screen !h-screen !fixed !top-0 !left-0 !z-[100] bg-black'></div>}
+                    <label className="block text-sm text-white/60">Send To</label>
                     {errorAddress && <p className='text-red-500 text-xs italic mb-1'>Incorrect address</p>}
                     {
                         !showSelectedEnsInfo ?
-                            <input
-                                type="text"
-                                value={address}
-                                placeholder="Enter wallet address or ENS name"
-                                className={`w-full bg-white/5 border ${errorAddress ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
-                                onChange={(e) => {
-                                    setAddress(e.target.value)
-                                }}
-                            />
+                            <div className='relative'>
+                                <input
+                                    type="text"
+                                    value={address}
+                                    placeholder="Enter wallet address or ENS name"
+                                    className={`w-full bg-white/5 border ${errorAddress ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
+                                    onChange={(e) => {
+                                        setAddress(e.target.value)
+                                    }}
+                                />
+                                {
+                                    isMobile && <div className='absolute right-0 top-2'>
+                                        {!scanning ?
+                                            <button className='bg-white mr-3 p-1 rounded-full hover:bg-white/80' onClick={handleQrCodeScan}>
+                                                <img src='/qrcode_scan.svg' className='w-6 h-6' />
+                                            </button>
+                                            :
+                                            <Loader className="w-8 h-8 animate-spin text-blue-400" />}
+                                    </div>
+                                }
+                            </div>
                             :
                             <div
                                 className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">
@@ -591,6 +587,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                 }} />
                             </div>
                     }
+
                     {
                         showEnsList && ensAddress &&
                         <div onClick={() => setShowEnsList(false)}>
