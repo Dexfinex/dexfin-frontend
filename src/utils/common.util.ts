@@ -192,6 +192,7 @@ export const shrinkAddress = (address: string, length: number = 5): string => {
  *
  * @param {number | undefined} num - The number to be formatted. If undefined, defaults to '0'.
  * @param {number} [fixedCount=2] - The number of decimal places to format the number to. Default is 2.
+ * @param calcFuncName
  * @returns {string} - The number formatted to the specified decimal places as a string.
  *
  * @remarks
@@ -202,6 +203,7 @@ export const shrinkAddress = (address: string, length: number = 5): string => {
 export const formatNumberByFrac = (
     num: number | undefined,
     fixedCount: number = 2,
+    calcFuncName: string = 'round',
 ): string => {
     if (num === undefined) return '0';
 
@@ -211,7 +213,9 @@ export const formatNumberByFrac = (
 
     const getFixedNum = (num: number, fixedCount: number): string => {
         const multipleValue = 10 ** fixedCount;
-        return (Math.round(num * multipleValue) / multipleValue).toString();
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        return (Math[calcFuncName](num * multipleValue) / multipleValue).toString();
     };
 
     if (
