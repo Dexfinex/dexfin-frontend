@@ -1,3 +1,4 @@
+// src/App.tsx
 import { useContext, useEffect, useState } from "react";
 import {
   Routes,
@@ -18,7 +19,7 @@ import CartModal from "./components/ShoppingCart/CartModal.tsx";
 import { SocialFeedModal } from "./components/SocialFeedModal";
 import { GamesModal } from "./components/GamesModal";
 import { RewardsModal } from "./components/RewardsModal";
-// import SignUpModal from "./components/SignupModal.tsx";
+// import SignUpModal from "./components/SignUpModal.tsx";
 // import SignInModal from "./components/SignInModal.tsx";
 import { AUTH_METHOD_TYPE } from "@lit-protocol/constants";
 import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
@@ -36,13 +37,12 @@ import Privacy from "./components/Privacy.tsx";
 import Terms from "./components/Terms.tsx";
 import AppPage from "./AppPage";
 import GlobalLoading from "./components/GlobalLoading.tsx";
+import TrackingScripts from "./components/TrackingScripts.tsx";
 import {
-  initializeGA,
   trackPageView,
   trackModalInteraction,
 } from "./services/analytics";
 import {
-  initializeMouseflow,
   trackMouseflowPageView,
   addMouseflowTag,
 } from "./services/mouseflow";
@@ -78,7 +78,9 @@ export default function App() {
     isGamesOpen,
     setIsGamesOpen,
     setIsSignupModalOpen,
+    isSignupModalOpen,
     setIsSigninModalOpen,
+    isSigninModalOpen,
     isTradeOpen,
     setTradeOpen,
     chatUser,
@@ -104,15 +106,6 @@ export default function App() {
     sessionError,
     isPreparingAccounts,
   } = useContext(Web3AuthContext);
-
-  // Initialize tracking services
-  useEffect(() => {
-    // Initialize Google Analytics
-    initializeGA();
-
-    // Initialize Mouseflow
-    initializeMouseflow();
-  }, []);
 
   // Track page views
   useEffect(() => {
@@ -362,6 +355,7 @@ export default function App() {
 
   return (
     <Box className="min-h-screen flex flex-col">
+      <TrackingScripts />
       <ReferralHandler />
       {/* Global loading overlay */}
       <GlobalLoading
