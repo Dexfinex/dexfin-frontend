@@ -7,7 +7,7 @@ interface ConfirmSwapModalProps {
   fromAmount: string;
   toAmount: string;
   priceImpact: number;
-  slippage: number;
+  // slippage: number;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -18,7 +18,7 @@ export function ConfirmSwapModal({
   fromAmount,
   toAmount,
   priceImpact,
-  slippage,
+  // slippage,
   onConfirm,
   onClose,
 }: ConfirmSwapModalProps) {
@@ -83,10 +83,12 @@ export function ConfirmSwapModal({
                 {formattedPriceImpact}%
               </span>
             </div>
+{/*
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Slippage Tolerance</span>
               <span className="text-white">{slippage}%</span>
             </div>
+*/}
           </div>
         </div>
 

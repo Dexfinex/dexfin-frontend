@@ -438,7 +438,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   return (
     <div
       ref={panelRef}
-      className="bg-black/90 border border-white/10 rounded-md shadow-xl z-50"
+      className="glass border border-white/10 rounded-md shadow-xl z-50"
       style={mobileStyles}
     >
       <div className="flex items-center justify-between p-3 border-b border-white/10">
@@ -454,7 +454,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={markAllNotificationsAsRead}
-            className={`text-sm text-white/80 hover:text-white transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`text-sm  hover:text-white transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={loading}
           >
             Mark all as read
@@ -480,9 +480,9 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-              className="flex items-center justify-between h-9 px-3 bg-black/40 hover:bg-black/60 rounded transition-colors"
+              className="flex items-center justify-between h-9 px-3 hover:bg-black/10 rounded transition-colors"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center  gap-2">
                 {selectedType === NOTIFICATION_TYPES.ALL ? (
                   <Filter className="w-4 h-4" />
                 ) : (
@@ -503,13 +503,13 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                   className="fixed inset-0 z-10"
                   onClick={() => setShowTypeDropdown(false)}
                 />
-                <div className="absolute top-full left-0 mt-0.5 py-0 rounded z-20 border border-white/10 min-w-full bg-black/80 overflow-hidden">
+                <div className="absolute top-full left-0 mt-0.5 py-0 rounded z-20 glass border border-white/10 min-w-full overflow-hidden">
                   <button
                     onClick={() => {
                       setSelectedType(NOTIFICATION_TYPES.ALL);
                       setShowTypeDropdown(false);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-500 text-left"
+                    className="w-full flex items-center gap-2 px-3 py-2 glass hover:bg-blue-500 text-left"
                   >
                     <Filter className="w-4 h-4" />
                     <span>All Types</span>
@@ -523,7 +523,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                           setSelectedType(type);
                           setShowTypeDropdown(false);
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-500 text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2   hover:bg-blue-500 text-left"
                       >
                         {getTypeIcon(type)}
                         <span>{type.charAt(0) + type.slice(1).toLowerCase()}</span>
@@ -548,7 +548,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
             <div className="relative">
               <button
                 onClick={() => setSortBy(sortBy === 'newest' ? 'oldest' : 'newest')}
-                className="flex items-center justify-between h-9 px-3 bg-black/40 hover:bg-black/60 rounded transition-colors"
+                className="flex items-center justify-between h-9 px-3 glass hover:bg-black/60 rounded transition-colors"
               >
                 <span>{sortBy === 'newest' ? 'Newest First' : 'Oldest First'}</span>
                 <ChevronDown className="w-4 h-4 ml-2" />

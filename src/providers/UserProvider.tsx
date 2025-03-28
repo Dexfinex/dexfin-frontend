@@ -1,11 +1,12 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useAccount } from 'wagmi';
-import { type SolanaWalletInfoType } from '../types/auth.type';
-import { authService } from '../services/auth.service';
-import { Web3AuthContext } from './Web3AuthContext';
+import { createContext, useContext, useEffect, useState } from "react";
+import { useAccount } from "wagmi";
+import { type SolanaWalletInfoType } from "../types/auth.type";
+import { authService } from "../services/auth.service";
+import { Web3AuthContext } from "./Web3AuthContext";
 import { useStore } from "../store/useStore.ts";
-import { setAuthToken } from '../services/api.service';
-import {WalletTypeEnum} from "../types/wallet.type.ts";
+import { setAuthToken } from "../services/api.service";
+import { WalletTypeEnum } from "../types/wallet.type.ts";
+import { clearReferralCode, getReferralCodeFromStorage } from '../components/ReferralHandler.tsx';
 
 interface UserContextType {
   userData: {
@@ -27,13 +28,18 @@ const UserContext = createContext<UserContextType>({
 
 export const useUserData = () => useContext(UserContext);
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [userData, setUserData] = useState<UserContextType['userData']>(null);
+export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [userData, setUserData] = useState<UserContextType["userData"]>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  
-  const { address: wagmiAddress, isConnected: isWagmiWalletConnected } = useAccount();
-  const { 
+  const [isNewRegistration, setIsNewRegistration] = useState(false);
+  const [authenticatedWallets, setAuthenticatedWallets] = useState<Set<string>>(new Set());
+
+  const { address: wagmiAddress, isConnected: isWagmiWalletConnected } =
+    useAccount();
+  const {
     solanaWalletInfo,
     currentAccount,
     address: kernelAddress,
@@ -41,44 +47,94 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isConnected,
   } = useContext(Web3AuthContext);
 
-  const handleWalletAuth = async (walletType: WalletTypeEnum, evmAddress?: string, solAddress?: string) => {
+  const handleWalletAuth = async (
+    walletType: WalletTypeEnum,
+    evmAddress?: string,
+    solAddress?: string
+  ) => {
+    // Skip if already authenticated with this wallet
+    if (evmAddress && authenticatedWallets.has(evmAddress.toLowerCase())) {
+      console.log("Wallet already authenticated:", evmAddress);
+      return;
+    }
+
+    if (solAddress && authenticatedWallets.has(solAddress)) {
+      console.log("Solana wallet already authenticated:", solAddress);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
-      
-      // Try to login first
+
+      let authResponse;
       try {
-        const loginResponse = await authService.login(evmAddress || '');
-        if (loginResponse?.accessToken) {
-          setAuthToken(loginResponse.accessToken);
+        // Attempt login first
+        authResponse = await authService.login(evmAddress || "");
+        if (authResponse?.accessToken) {
+          console.log("Login successful");
+          setAuthToken(authResponse.accessToken);
           setUserData({
-            accessToken: loginResponse.accessToken,
-            userId: loginResponse.userId,
-            walletType
+            accessToken: authResponse.accessToken,
+            userId: authResponse.userId,
+            walletType,
           });
+          setIsNewRegistration(false);
+          
+          // Track the authenticated wallet
+          if (evmAddress) {
+            setAuthenticatedWallets(prev => {
+              const updated = new Set(prev);
+              updated.add(evmAddress.toLowerCase());
+              return updated;
+            });
+          }
+          if (solAddress) {
+            setAuthenticatedWallets(prev => {
+              const updated = new Set(prev);
+              updated.add(solAddress);
+              return updated;
+            });
+          }
+          
           return;
         }
-      } catch (error) {
-        console.log('Login failed, attempting registration...');
+      } catch (loginError) {
+        console.log("Login failed, attempting registration...", loginError);
       }
 
-      // If login failed, attempt to register
-      const registerResponse = await authService.register(
+      // If login fails, attempt registration
+      authResponse = await authService.register(
         walletType,
         evmAddress,
         solAddress
       );
 
-      if (registerResponse?.accessToken) {
-        setAuthToken(registerResponse.accessToken);
+      if (authResponse?.accessToken) {
+        console.log("Registration successful");
+        setAuthToken(authResponse.accessToken);
         setUserData({
-          accessToken: registerResponse.accessToken,
-          userId: registerResponse.userId,
-          walletType
+          accessToken: authResponse.accessToken,
+          userId: authResponse.userId,
+          walletType,
         });
+        setIsNewRegistration(true);
         
-        // Open username modal for new users
-        useStore.getState().setIsUsernameModalOpen(true);
+        // Track the authenticated wallet
+        if (evmAddress) {
+          setAuthenticatedWallets(prev => {
+            const updated = new Set(prev);
+            updated.add(evmAddress.toLowerCase());
+            return updated;
+          });
+        }
+        if (solAddress) {
+          setAuthenticatedWallets(prev => {
+            const updated = new Set(prev);
+            updated.add(solAddress);
+            return updated;
+          });
+        }
       }
     } catch (error) {
       console.error("Error in wallet authentication:", error);
@@ -88,28 +144,63 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const registerUsername = async () => {
+    if (isNewRegistration && userData?.accessToken) {
+      try {
+        let username = localStorage.getItem("username");
+        if (!username) {
+          username = useStore.getState().username;
+        }
+        const referralCode = getReferralCodeFromStorage();
+        const referralCodeOrUndefined =
+          referralCode === null ? undefined : referralCode;
+        if (username) {
+          const response = await authService.registerUsername(
+            username,
+            referralCodeOrUndefined
+          );
+
+          if (response) {
+            setIsNewRegistration(false);
+            clearReferralCode();
+            localStorage.removeItem("username");
+            useStore.getState().setUserName("");
+          }
+        } else {
+          console.log("No username found to register");
+          setIsNewRegistration(false);
+        }
+      } catch (error) {
+        console.error("Error registering username:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    registerUsername();
+  }, [isNewRegistration, userData, currentAccount]);
+
   const initializeAllVariables = () => {
     setUserData(null);
     setIsLoading(false);
     setError(null);
-    setAuthToken(null); // Clear auth tokens from all API instances
+    setAuthToken(null);
+    setIsNewRegistration(false);
+    setAuthenticatedWallets(new Set());
   };
 
-  // Handle Wagmi wallet connection
   useEffect(() => {
     if (isWagmiWalletConnected && wagmiAddress) {
       handleWalletAuth(walletType, wagmiAddress);
     }
   }, [isWagmiWalletConnected, wagmiAddress, walletType]);
 
-  // Handle Kernel Account and Solana wallet connection
   useEffect(() => {
     if (currentAccount && kernelAddress && solanaWalletInfo?.publicKey) {
-      handleWalletAuth(walletType, kernelAddress, solanaWalletInfo.publicKey );
+      handleWalletAuth(walletType, kernelAddress, solanaWalletInfo.publicKey);
     }
   }, [kernelAddress, currentAccount, solanaWalletInfo?.publicKey, walletType]);
 
-  // Reset user state when Web3Auth disconnects
   useEffect(() => {
     if (!isConnected) {
       initializeAllVariables();
@@ -120,12 +211,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     userData,
     isLoading,
     error,
-    solanaWalletInfo, // Pass through solanaWalletInfo from Web3AuthContext
+    solanaWalletInfo,
   };
 
-  return (
-    <UserContext.Provider value={value}>
-      {children}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };

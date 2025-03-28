@@ -16,49 +16,57 @@ export interface NETWORK {
     name: string;
     icon: string;
     chainId: number;
+    symbol: string;
 }
 export const NETWORKS: NETWORK[] = [
     {
         id: 'ethereum',
         name: 'Ethereum',
-        icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/ethereum.svg',
         chainId: 1,
+        symbol: 'ETH',
     },
     {
         id: 'base',
         name: 'Base',
-        icon: 'https://assets.coingecko.com/asset_platforms/images/131/small/base-network.png',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/base.svg',
         chainId: 8453,
+        symbol: 'ETH',
     },
     {
         id: 'polygon',
         name: 'Polygon',
-        icon: 'https://cryptologos.cc/logos/polygon-matic-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/polygon.svg',
         chainId: 137,
+        symbol: 'POL',
     },
     {
         id: 'bsc',
         name: 'BSC',
-        icon: 'https://cryptologos.cc/logos/bnb-bnb-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/bsc.svg',
         chainId: 56,
+        symbol: 'BNB',
     },
     {
         id: 'avalanche',
         name: 'Avalanche',
-        icon: 'https://cryptologos.cc/logos/avalanche-avax-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/avalanche.svg',
         chainId: 43114,
+        symbol: 'AVAX',
     },
     {
         id: 'optimism',
         name: 'Optimism',
-        icon: 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/optimism.svg',
         chainId: 10,
+        symbol: 'ETH',
     },
     {
         id: 'arbitrum',
         name: 'Arbitrum',
-        icon: 'https://cryptologos.cc/logos/arbitrum-arb-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/arbitrum.svg',
         chainId: 42161,
+        symbol: 'ETH',
     },
 /*
     {
@@ -71,8 +79,9 @@ export const NETWORKS: NETWORK[] = [
     {
         id: 'solana',
         name: 'Solana',
-        icon: 'https://cryptologos.cc/logos/solana-sol-logo.svg',
+        icon: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/solana.svg',
         chainId: SOLANA_CHAIN_ID,
+        symbol: 'SOL',
     },
 ] as const;
 
@@ -96,6 +105,9 @@ export const mapChainId2NativeAddress: Record<number, string> = {
     8453: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Base Mainnet (ETH placeholder)
     900: '11111111111111111111111111111111', // Solana
 };
+
+export const PRICE_MATIC_ADDRESS = '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'
+export const NATIVE_MATIC_ADDRESS = '0x0000000000000000000000000000000000001010'
 
 export const mapChainId2ChainName: Record<number, string> = {
     1: 'Ethereum', // Ethereum Mainnet (ETH)
@@ -369,7 +381,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
         {
             symbol: 'POL',
             name: 'Polygon Native Coin',
-            address: NULL_ADDRESS,
+            address: NATIVE_MATIC_ADDRESS,
             chainId: 137,
             decimals: 18,
             logoURI: '/images/token/pol.png',

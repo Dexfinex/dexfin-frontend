@@ -1,28 +1,31 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { Skeleton, SkeletonCircle, Spinner, useToast } from '@chakra-ui/react';
-import { ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle } from 'lucide-react';
-import { FieldValues, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import React, {useContext, useEffect, useMemo, useState} from 'react';
+import {Skeleton, SkeletonCircle, Spinner, useToast} from '@chakra-ui/react';
+import {ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle} from 'lucide-react';
+import {FieldValues, useForm} from 'react-hook-form';
+import {zodResolver} from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useEnsAddress, useEnsAvatar } from 'wagmi';
-import { normalize } from 'viem/ens';
-import { ethers } from 'ethers';
+import {useEnsAddress, useEnsAvatar} from 'wagmi';
+import {normalize} from 'viem/ens';
+import {ethers} from 'ethers';
 
-import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
+import {TransactionModal} from '../swap/modals/TransactionModal.tsx';
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
-import { compareWalletAddresses, formatNumberByFrac, shrinkAddress, isValidAddress } from '../../utils/common.util';
-import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
-import { mapChainId2ExplorerUrl, mapChainId2NativeAddress } from "../../config/networks.ts";
-import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
-import { TransactionError } from '../../types';
-import { TokenChainIcon, TokenIcon } from '../swap/components/TokenIcon.tsx';
-import { useStore } from '../../store/useStore.ts';
-import { PageType } from '../WalletDrawer.tsx';
-import useTokenBalanceStore, { TokenBalance } from '../../store/useTokenBalanceStore.ts';
+import {formatNumberByFrac, isValidAddress, shrinkAddress} from '../../utils/common.util';
+import {Web3AuthContext} from "../../providers/Web3AuthContext.tsx";
+import {mapChainId2ExplorerUrl, mapChainId2NativeAddress} from "../../config/networks.ts";
+import {useSendTransactionMutation} from '../../hooks/useSendTransactionMutation.ts';
+import {TransactionError} from '../../types';
+import {TokenChainIcon, TokenIcon} from '../swap/components/TokenIcon.tsx';
+import {useStore} from '../../store/useStore.ts';
+import {PageType} from '../WalletDrawer.tsx';
+import useTokenBalanceStore, {TokenBalance} from '../../store/useTokenBalanceStore.ts';
 import makeBlockie from 'ethereum-blockies-base64';
-import { SOLANA_CHAIN_ID } from "../../constants/solana.constants.ts";
+import {SOLANA_CHAIN_ID} from "../../constants/solana.constants.ts";
+import {LOCAL_STORAGE_RECENT_ADDRESSES} from '../../constants';
+import {getGasEstimationForNativeTokenTransfer} from '../../utils/chains.util.tsx';
+import {getRealNativeTokenAddress} from "../../utils/token.util.ts";
 
 interface SendDrawerProps {
     setPage: (type: PageType) => void;
@@ -35,6 +38,10 @@ interface FormValues extends FieldValues {
 }
 
 export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
+    const toast = useToast()
+    const { theme } = useStore();
+    const { mutate: sendTransactionMutate } = useSendTransactionMutation();
+    const { isChainSwitching, chainId, signer, isConnected, login, switchChain, walletType, transferSolToken } = useContext(Web3AuthContext);
     const { tokenBalances, setTokenBalances } = useTokenBalanceStore();
     const [showAssetSelector, setShowAssetSelector] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(tokenBalances[0] || {})
@@ -44,11 +51,9 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     const [showEnsList, setShowEnsList] = useState(true);
     const [address, setAddress] = useState("");
     const [showSelectedEnsInfo, setShowSelectedEnsInfo] = useState(false);
-    const { theme } = useStore();
     const [recentAddresses, setRecentAddresses] = useState<string[]>([]);
-    const { mutate: sendTransactionMutate } = useSendTransactionMutation();
-    const { isChainSwitching, chainId, signer, isConnected, login, switchChain, walletType, transferSolToken } = useContext(Web3AuthContext);
-    const toast = useToast()
+    const [isTokenSwitching, setIsTokenSwitching] = useState(false);
+    const [currentNativeTokenGasfee, setCurrentNativeTokenGasfee] = useState(0); //only used for native tokens
 
     useEffect(() => {
         if (tokenBalances.length > 0 && Object.keys(selectedAsset).length === 0) {
@@ -57,12 +62,16 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     }, [tokenBalances, selectedAsset])
 
     useEffect(() => {
-        const item = localStorage.getItem("recentSendAddresses")
+        const item = localStorage.getItem(LOCAL_STORAGE_RECENT_ADDRESSES)
         if (item) {
             const addresses = JSON.parse(item)
             setRecentAddresses(addresses)
         }
     }, [])
+
+    const switching = useMemo(() => {
+        return isTokenSwitching || isChainSwitching
+    }, [isTokenSwitching, isChainSwitching])
 
     const schema = z.object({
         amount: z.number({
@@ -106,11 +115,41 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     useEffect(() => {
         if (selectedAsset) {
             const targetChainId = Number(selectedAsset.chain)
-            if (targetChainId !== SOLANA_CHAIN_ID && Number(chainId) !== targetChainId) {
-                switchChain(Number(selectedAsset.chain));
+            // if (targetChainId !== SOLANA_CHAIN_ID && Number(chainId) !== targetChainId) {
+            const nativeTokenAddress = getRealNativeTokenAddress(tokenChainId)
+            if (Number(chainId) !== targetChainId) {
+                switchToken(nativeTokenAddress)
             }
         }
-    }, [chainId, selectedAsset, switchChain])
+    }, [chainId, selectedAsset])
+
+    const setNativeTokenGasFee = async (nativeTokenAddress: string) => {
+        if (selectedAsset.network?.name === "Solana") {
+            if (selectedAsset.tokenId === "solana") {
+                const gasFee = await getGasEstimationForNativeTokenTransfer(address, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
+                setCurrentNativeTokenGasfee(gasFee)
+            } else if (currentNativeTokenGasfee != 0) {
+                setCurrentNativeTokenGasfee(0)
+            }
+        } else {
+            if (nativeTokenAddress.toLowerCase() == selectedAsset.address) {
+                const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
+                const gasFee = await getGasEstimationForNativeTokenTransfer(_address, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
+                setCurrentNativeTokenGasfee(gasFee)
+            } else if (currentNativeTokenGasfee != 0) {
+                setCurrentNativeTokenGasfee(0)
+            }
+        }
+    }
+
+    const switchToken = async (nativeTokenAddress: string) => {
+        setIsTokenSwitching(true)
+        await setNativeTokenGasFee(nativeTokenAddress)
+        if (selectedAsset.network?.name != "Solana" && nativeTokenAddress.toLowerCase() != selectedAsset.address) {
+            await switchChain(Number(selectedAsset.chain))
+        }
+        setIsTokenSwitching(false)
+    }
 
     const ensAddressDataResponse = useEnsAddress({
         name: normalizedAddress,
@@ -149,26 +188,26 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
 
     const { getTokenPrice } = useTokenStore()
 
-    const tokenChainId = Number(chainId);
-    const nativeTokenAddress = mapChainId2NativeAddress[tokenChainId]
+    const tokenChainId = Number(selectedAsset.network?.chainId || '0');
+    const priceNativeTokenAddress = mapChainId2NativeAddress[tokenChainId]
 
     const { refetch: refetchNativeTokenPrice } = useGetTokenPrices({
-        tokenAddresses: [nativeTokenAddress],
+        tokenAddresses: [priceNativeTokenAddress],
         chainId: tokenChainId,
     })
 
     const nativeTokenPrice = useMemo(() => {
-        if (tokenChainId && nativeTokenAddress) {
-            return getTokenPrice(nativeTokenAddress, tokenChainId)
+        if (tokenChainId && priceNativeTokenAddress) {
+            return getTokenPrice(priceNativeTokenAddress, tokenChainId)
         }
         return 0;
-    }, [getTokenPrice, nativeTokenAddress, tokenChainId])
+    }, [getTokenPrice, priceNativeTokenAddress, tokenChainId])
 
     useEffect(() => {
-        if (tokenChainId && nativeTokenAddress && nativeTokenPrice === 0) {
+        if (tokenChainId && priceNativeTokenAddress && nativeTokenPrice === 0) {
             refetchNativeTokenPrice()
         }
-    }, [tokenChainId, nativeTokenAddress, nativeTokenPrice])
+    }, [tokenChainId, priceNativeTokenAddress, nativeTokenPrice])
 
     const updateBalance = () => {
         const updated = tokenBalances.map(token => {
@@ -192,10 +231,16 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     }
 
     const onSubmit = async () => {
-        setIsConfirming(true);
+        setIsConfirming(true)
         if (selectedAsset.network?.name === "Solana") {
             if (Number(amount) > 0) {
-                const signature = await transferSolToken(address, selectedAsset.address, Number(amount), selectedAsset.decimals)
+                let realAmount: number = Number(amount)
+
+                if (currentNativeTokenGasfee) {
+                    realAmount -= currentNativeTokenGasfee
+                }
+
+                const signature = await transferSolToken(address, selectedAsset.address, realAmount, selectedAsset.decimals)
                 if (signature) {
                     updateBalance()
                     setHash(signature)
@@ -203,7 +248,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                     setValue("amount", "")
                     saveAddress(address)
                     setAddress("")
-                    setIsConfirming(false)
                 } else {
                     toast({
                         status: 'error',
@@ -211,6 +255,8 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                         duration: 4000
                     })
                 }
+
+                setIsConfirming(false)
             }
         } else {
             if (Number(chainId) !== Number(selectedAsset.chain)) {
@@ -219,12 +265,17 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                 });
             }
             const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
+            let realAmount: number = Number(amount)
+
+            if (currentNativeTokenGasfee) {
+                realAmount -= currentNativeTokenGasfee
+            }
 
             sendTransactionMutate(
                 {
                     tokenAddress: selectedAsset.address,
                     sendAddress: _address,
-                    sendAmount: Number(amount),
+                    sendAmount: Number(realAmount),
                     signer,
                     gasLimit: gasData.gasLimit,
                     gasPrice: gasData.gasPrice,
@@ -251,30 +302,48 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                     },
                 },
             );
+            setIsConfirming(false);
         }
     };
 
-    const filteredAssets = tokenBalances.filter(token =>
-        token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        token.address.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredAssets = useMemo(() => {
+        return tokenBalances.filter(token =>
+            token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            token.address.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [tokenBalances, searchQuery]);
 
     // if (!isOpen) return null;
     const renderUsdValue = () => {
-        const price = tokenBalances.find(token => token.address === selectedAsset.address)?.usdPrice || 0
+        const price = tokenBalances.find(token => token.address === selectedAsset.address && token.tokenId === selectedAsset.tokenId)?.usdPrice || 0
         const value = amount ? amount * price : 0
         return <span className={`${amount !== selectedAsset.balance ? "right-14" : "right-3"} absolute  top-1/2 -translate-y-1/2 text-white/60 text-xs`}>${formatNumberByFrac(value)}</span>
     }
 
-    const saveAddress = (address: string) => {
-        let addresses = JSON.parse(localStorage.getItem("recentSendAddresses") || "[]");
-        if (!addresses.includes(address)) {
-            addresses.unshift(address);
-            addresses = addresses.slice(0, 3); // Keep only the last 3 addresses
+    const renderRecent = () => {
+        let filtered: string[] = []
+
+        if (selectedAsset.network?.name === "Solana") {
+            filtered = recentAddresses.filter(address => /^[1-9A-HJ-NP-Za-km-zZ]{32,44}$/.test(address))
+        } else {
+            filtered = recentAddresses.filter(address => /^0x[a-fA-F0-9]{40}$/.test(address))
         }
 
-        localStorage.setItem("recentSendAddresses", JSON.stringify(addresses));
+        return filtered.map((address, index) => <div key={index} onClick={() => setAddress(address)} className='cursor-pointer text-sm py-2 px-1 rounded-md text-white/70 hover:bg-white/10 flex items-center gap-2'>
+            <img src={makeBlockie(address)} className='w-8 h-8 rounded-full' />
+            <span>{shrinkAddress(address)}</span>
+        </div>)
+    }
+
+    const saveAddress = (address: string) => {
+        let addresses = JSON.parse(localStorage.getItem(LOCAL_STORAGE_RECENT_ADDRESSES) || "[]");
+        if (!addresses.includes(address)) {
+            addresses.unshift(address);
+            addresses = addresses.slice(0, 5); // Keep only the last 5 addresses
+        }
+
+        localStorage.setItem(LOCAL_STORAGE_RECENT_ADDRESSES, JSON.stringify(addresses));
     }
 
     return (
@@ -317,8 +386,8 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                             <div className="flex-1 text-left">
                                 <div className="font-medium">
                                     {selectedAsset.name}
-                                    {!compareWalletAddresses(selectedAsset.address, mapChainId2NativeAddress[Number(selectedAsset.chain)]) &&
-                                        <span className='ml-1 text-sm font-light'>({shrinkAddress(selectedAsset.address || "", 4)})</span>}
+                                    {/* {!compareWalletAddresses(selectedAsset.address, mapChainId2NativeAddress[Number(selectedAsset.chain)]) &&
+                                        <span className='ml-1 text-sm font-light'>({shrinkAddress(selectedAsset.address || "", 4)})</span>} */}
                                 </div>
                                 <div className="text-sm text-white/60">
                                     Balance: {`${formatNumberByFrac(selectedAsset.balance, 5)} ${selectedAsset.symbol}`}
@@ -397,6 +466,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                 validate: (value) => Number(value) > 0,
 
                             })}
+                            disabled={switching ? true : false}
                         />
 
                         {
@@ -413,6 +483,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                     })
                                 }
                                 className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-sm text-blue-400 hover:text-blue-300"
+                                disabled={switching ? true : false}
                             >
                                 MAX
                             </button>
@@ -502,10 +573,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                 {recentAddresses.length > 0 && <div>
                     <label className="block text-sm text-white/60 mb-2">Recent</label>
                     {
-                        recentAddresses.map((address, index) => <div key={index} onClick={() => setAddress(address)} className='cursor-pointer text-sm py-2 px-1 rounded-md text-white/70 hover:bg-white/10 flex items-center gap-2'>
-                            <img src={makeBlockie(address)} className='w-8 h-8 rounded-full' />
-                            <span>{shrinkAddress(address)}</span>
-                        </div>)
+                        renderRecent()
                     }
                 </div>}
 
@@ -519,7 +587,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                 <div className='ml-3'>
                                     <div className="text-sm text-white/60">You send</div>
                                     <div className="font-medium">
-                                        {`${formatNumberByFrac(Number(amount), 5)} ${selectedAsset.symbol}`}
+                                        {`${formatNumberByFrac(Number(amount) - currentNativeTokenGasfee, 5)} ${selectedAsset.symbol}`}
                                     </div>
                                 </div>
                             </div>
@@ -564,7 +632,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                     isConnected ?
                         <button
                             type={`${isConfirming ? "button" : "submit"}`}
-                            disabled={submitDisabled || !!errors.amount || isChainSwitching}
+                            disabled={submitDisabled || !!errors.amount || switching}
                             className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-medium flex align-center justify-center"
                         >
                             {
@@ -573,7 +641,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                         <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Confirming...
                                         </div>
-                                    ) : (isChainSwitching && selectedAsset.network?.name != "Solana") ? (
+                                    ) : (switching && selectedAsset.network?.name != "Solana") ? (
                                         <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Switching Chain...
                                         </div>

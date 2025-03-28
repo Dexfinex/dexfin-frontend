@@ -100,6 +100,13 @@ export const AppearanceSettings: React.FC = () => {
           currentWallpaper={currentWallpaper}
           onSelect={handleWallpaperChange}
         />
+        <WallpaperGroup
+          title="Drops"
+          type="DROPS"
+          wallpapers={wallpapers}
+          currentWallpaper={currentWallpaper}
+          onSelect={handleWallpaperChange}
+        />
       </div>
     </div>
   );

@@ -1,17 +1,17 @@
-import React, {useContext, useEffect, useState} from "react";
-import {ArrowDown, CreditCard, RefreshCw, Send, Wallet, XCircle} from "lucide-react";
-import {motion} from "framer-motion";
-import {Skeleton} from '@chakra-ui/react';
+import React, { useContext, useEffect, useState } from "react";
+import { ArrowDown, CreditCard, RefreshCw, Send, Wallet, XCircle, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { Skeleton } from '@chakra-ui/react';
 
-import {useStore} from "../store/useStore";
-import {Web3AuthContext} from "../providers/Web3AuthContext";
-import {mockDeFiPositions} from "../constants/defi.constants.ts";
-import {formatUsdValue} from "../utils/defi.util.ts";
-import {useWalletBalance} from "../hooks/useBalance";
-import useTokenBalanceStore, {TokenBalance} from "../store/useTokenBalanceStore";
-import {SendDrawer} from "./wallet/SendDrawer";
-import {BuyDrawer} from "./wallet/BuyDrawer";
-import {ReceiveDrawer} from "./wallet/ReceiveDrawer";
+import { useStore } from "../store/useStore";
+import { Web3AuthContext } from "../providers/Web3AuthContext";
+import { mockDeFiPositions } from "../constants/defi.constants.ts";
+import { formatUsdValue } from "../utils/defi.util.ts";
+import { useWalletBalance } from "../hooks/useBalance";
+import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStore";
+import { SendDrawer } from "./wallet/SendDrawer";
+import { BuyDrawer } from "./wallet/BuyDrawer";
+import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
 import Accounts from "./wallet/Accounts.tsx";
 import AssetInfo from "./wallet/AssetInfo.tsx";
 import RenderActivity from "./wallet/RenderActivity.tsx";
@@ -37,7 +37,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
     const { address, logout, solanaWalletInfo } = useContext(Web3AuthContext);
     const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
     const [page, setPage] = useState<PageType>('main');
-    const { isLoading: isLoadingBalance, refetch: refetchWalletBalance } = useWalletBalance();
+    const { isLoading: isLoadingBalance, refetch: refetchWalletBalance, isFetching: isFetchingBalance } = useWalletBalance();
     const { totalUsdValue, tokenBalances, pnlPercent, pnlUsd } = useTokenBalanceStore();
     const { totalLockedValue } = useDefiStore();
 
@@ -98,7 +98,7 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
                 style={{ width: drawerWidth }}
             >
                 {/* Close Button */}
-                {isOpen && <CloseButton setIsOpen={onClose} />}
+                {/* {isOpen && <CloseButton setIsOpen={onClose} />} */}
 
                 {/* TopBar */}
                 <div className="flex items-center justify-between mx-4">
@@ -107,8 +107,14 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
                         <Accounts evmAddress={address} solAddress={solanaWalletInfo?.publicKey || ""} />
                     </div>
 
-                    <button className={`p-1.5 sm:p-2 flex items-center gap-1 text-xs sm:text-sm rounded-xl hover:bg-white/10 ${theme === "dark" ? "text-white/70" : "text-black/70"}`} onClick={handleDisconnect}>
+                    {/* <button className={`p-1.5 sm:p-2 flex items-center gap-1 text-xs sm:text-sm rounded-xl hover:bg-white/10 ${theme === "dark" ? "text-white/70" : "text-black/70"}`} onClick={handleDisconnect}>
                         <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Disconnect
+                    </button> */}
+                    <button
+                        onClick={onClose}
+                        className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    >
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
@@ -121,12 +127,12 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
                                 Total Balance
                                 <button
                                     onClick={handleRefetch}
-                                    disabled={isLoadingBalance}
-                                    className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${isLoadingBalance ? 'opacity-50 cursor-not-allowed' : ''
+                                    disabled={isFetchingBalance || isLoadingBalance}
+                                    className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${isFetchingBalance || isLoadingBalance ? 'opacity-50 cursor-not-allowed' : ''
                                         }`}
                                     title="Refresh data"
                                 >
-                                    <RefreshCw className={`w-4 h-4 ${isLoadingBalance ? 'animate-spin' : ''}`} />
+                                    <RefreshCw className={`w-4 h-4 ${isFetchingBalance ? 'animate-spin' : ''}`} />
                                 </button></div>
                             <div className="text-xl sm:text-3xl font-bold mt-1">
                                 {

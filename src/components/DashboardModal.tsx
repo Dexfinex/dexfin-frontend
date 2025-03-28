@@ -1,4 +1,4 @@
-import { useState, useContext, useMemo, useEffect } from "react"
+import { useState, useContext, useMemo } from "react"
 import { X, Maximize2, Minimize2, TrendingUp, ArrowUp } from "lucide-react"
 import { Line } from "react-chartjs-2"
 import {
@@ -17,11 +17,12 @@ import { Skeleton } from '@chakra-ui/react';
 import { Web3AuthContext } from "../providers/Web3AuthContext"
 import { useWalletBalance } from "../hooks/useBalance"
 import { TokenChainIcon, TokenIcon } from "./swap/components/TokenIcon"
-import { formatNumberByFrac } from "../utils/common.util"
+import { formatNumberByFrac, formatNumberByRepeat } from "../utils/common.util"
 import useTokenBalanceStore from "../store/useTokenBalanceStore"
 import useDefiStore from "../store/useDefiStore"
 import PNL from "./common/PNL"
 import PNLPercent from "./common/PNLPercent"
+import NumberFormat from "./common/NumberFormat";
 
 import { usePortfolioPerformance } from "../hooks/usePortfolioPerformance";
 
@@ -96,7 +97,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
 
   const performanceData = useMemo(() => {
     const labelData = (portfolioData || []).map((item) => item.time);
-    const priceData = (portfolioData || []).map((item) => item.price);
+    const priceData = (portfolioData || []).map((item) => formatNumberByFrac(item.price));
     return {
       labels: labelData,
       datasets: [
@@ -175,6 +176,40 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
     },
   }
 
+  const chartOptionsDistribute = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          maxRotation: 0,
+          autoSkipPadding: 15,
+          font: {
+            size: 11,
+          },
+        },
+      },
+      y: {
+        grid: {
+        },
+        ticks: {
+          callback: (value: number) => value.toLocaleString() + "%",
+          font: {
+            size: 11,
+          },
+        },
+      },
+    },
+  }
+
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -188,7 +223,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-black/10 dark:border-white/10">
           <h2 className="text-lg md:text-xl font-semibold">
-            Portfolio Dashboard
+            Portfolio
             {isConnected && address && (
               <span className="ml-2 text-sm opacity-70">
                 ({address.slice(0, 6)}...{address.slice(-4)})
@@ -196,7 +231,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
             )}
           </h2>
           <div className="flex items-center gap-2">
-            <button
+            {/* <button
               onClick={refreshData}
               className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
               title="Refresh data"
@@ -205,7 +240,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                 <path d="M1 4v6h6M23 20v-6h-6" />
                 <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
               </svg>
-            </button>
+            </button> */}
             <button onClick={toggleFullscreen} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
               {isFullscreen ?
                 <Minimize2 className="w-4 h-4" /> :
@@ -262,7 +297,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                     isBalanceLoading || isLoadingPortfolio ?
                       <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'2rem'}></Skeleton> :
                       <div className="text-xl sm:text-2xl font-bold">
-                        {pnlUsdByDate > 0 ? "$" : "-$"}{formatNumberByFrac(Math.abs(pnlUsdByDate))}
+                        {pnlUsdByDate >= 0 ? "$" : "-$"}{formatNumberByFrac(Math.abs(pnlUsdByDate))}
                       </div>
                   }
                   {
@@ -364,7 +399,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                 <div className="h-[250px] sm:h-[300px]">
                   {
                     isLoadingPortfolio ?
-                      <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'300px'}></Skeleton> :
+                      <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'100%'}></Skeleton> :
                       <Line data={performanceData} options={chartOptions as any} />
                   }
                 </div>
@@ -376,8 +411,8 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                   <h3 className="font-medium">Asset Distribution</h3>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-12">
-                  <div className="relative w-[200px] h-[200px] sm:w-[250px] sm:h-[250px]">
-                    <Line data={distributionData} options={chartOptions as any} />
+                  <div className="relative w-full h-[200px] sm:w-[50%] sm:h-[250px]">
+                    <Line data={distributionData} options={chartOptionsDistribute as any} />
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       {
                         isBalanceLoading ?
@@ -448,22 +483,24 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                               <div className="font-medium text-sm sm:text-md">{token.symbol}</div>
                               <div className="flex items-center gap-2 text-sm">
                                 <span>
-                                  {formatNumberByFrac(token.balance)} {token.symbol}
+                                  <NumberFormat number={token.balance} suffix={" " + token.symbol} />
                                 </span>
                                 <span className="text-black/40 dark:text-white/40">•</span>
-                                <span>${formatNumberByFrac(token.usdValue)}</span>
+                                <NumberFormat number={token.usdValue} prefix="$" />
                               </div>
                             </div>
                           </div>
                           <div className="flex items-center justify-between sm:justify-end gap-4 flex-1">
-                            <div className="text-right">
-                              <div className="text-lg">${formatNumberByFrac(token.usdValue)}</div>
+                            <div className="flex flex-col items-end text-right">
+                              <div className="text-lg">
+                                <NumberFormat number={token.usdValue} prefix="$" />
+                              </div>
                               <PNLPercent pnlPercent={token.usdPrice24hrUsdChange * 100 / token.usdPrice} />
                             </div>
-                            <div className="w-32">
+                            <div className="w-48">
                               <div className="flex items-center justify-between text-sm mb-1">
                                 <span className="">Allocation</span>
-                                <span>{formatNumberByFrac(allocationPercent)}%</span>
+                                <NumberFormat number={allocationPercent} suffix="%" />
                               </div>
                               <div className="h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
                                 <div

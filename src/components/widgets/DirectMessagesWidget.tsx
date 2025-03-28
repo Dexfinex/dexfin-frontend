@@ -13,7 +13,8 @@ import { ChatType, IChat, IUser } from '../../types/chat.type';
 import { downloadBase64File, extractAddress, getEnsName, getHourAndMinute, shrinkAddress } from '../../utils/common.util';
 import { ImageWithSkeleton } from '../common/ImageWithSkeleton';
 import { WalletTypeEnum } from "../../types/wallet.type";
-import { LOCAL_STORAGE_PUSH_KEY } from '../../constants';
+import { LOCAL_STORAGE_PUSH_KEY, LOCAL_STORAGE_LAST_CHAT_USER } from '../../constants';
+import useLocalStorage from '../../hooks/useLocalStorage.ts';
 
 interface OverlayProps {
   isOpen: boolean;
@@ -23,11 +24,12 @@ interface OverlayProps {
 }
 
 const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSelectedUser }) => {
-  const { chatUser } = useStore();
+  const { chatUser, theme } = useStore();
   const { address } = useContext(Web3AuthContext);
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchedUser, setSearchedUser] = useState<IUser | null>(null);
+  const [_, setLastChatUser] = useLocalStorage<IUser | null>(LOCAL_STORAGE_LAST_CHAT_USER, {} as IUser);
 
   const handleSearch = async () => {
     if (!searchQuery || searchQuery == address) return
@@ -55,6 +57,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
         } as IUser
 
         setSearchedUser(user)
+        setLastChatUser(user)
       }
     } catch (err) {
       console.log('get user profile err: ', err)
@@ -71,14 +74,14 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
   return (
     isOpen && (
       <motion.div
-        className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-10"
+        className="fixed inset-0 bg-black bg-opacity-90 flex justify-center items-center z-10 rounded-lg"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
       >
         <motion.div
-          className="bg-white/90 p-3 rounded-lg shadow-lg w-[320px]"
+          className={`${theme === "dark" ? 'bg-black/90 border border-white/30' : 'bg-white/90'} p-3 rounded-lg shadow-lg w-[320px]`}
           initial={{ y: "-100%", opacity: 0 }}  // Start from top (hidden)
           animate={{ y: 0, opacity: 1 }}       // Animate to visible position
           exit={{ y: "-100%", opacity: 0 }}    // Slide out to the top
@@ -92,21 +95,21 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Search Address"
-              className="flex-1 px-3 py-1.5 rounded-lg outline-none text-sm caret:black text-black"
+              className={`${theme === "dark" ? "bg-white/20 caret-white placeholder-white text-white" : ""} flex-1 px-3 py-1.5 rounded-lg outline-none text-sm caret:black text-black`}
             />
 
             {
-              searching ? <Spinner className='ml-2 text-black/80' /> :
+              searching ? <Spinner className={`${theme === "dark" ? "text-white/80" : "text-black/80"} ml-2`} /> :
                 <button className='ml-2' onClick={handleSearch}>
-                  <Search className='text-black/80 w-5 h-5 hover:text-black' />
+                  <Search className={`${theme === "dark" ? "text-white hover:text-white/80" : "text-black/80 hover:text-black"}  w-5 h-5`} />
                 </button>
             }
           </div>
           {
-            searchedUser && <div className='py-2 my-2 cursor-pointer hover:bg-white/70 rounded-lg' onClick={handleSelectUser}>
+            searchedUser && <div className={`${theme === "dark" ? "hover:bg-white/10" : "hover:bg-white/70"} p-2 my-2 cursor-pointer rounded-lg`} onClick={handleSelectUser}>
               <div className='flex items-center gap-4 text-black'>
                 <img src={searchedUser.profilePicture} className='rounded-full w-10 h-10' />
-                <div className='flex items-start flex-col'>
+                <div className={`${theme === "dark" ? "text-white/80" : ""} text-sm flex items-start flex-col`}>
                   {searchedUser?.name && <div>{searchedUser?.name}</div>}
                   <div>{searchedUser?.ensName ? searchedUser?.ensName + " | " + shrinkAddress(searchedUser.address) : shrinkAddress(searchedUser.address)}</div>
                 </div>
@@ -120,7 +123,7 @@ const Overlay: React.FC<OverlayProps> = ({ isOpen, onClose, selectedUser, setSel
 };
 
 export const DirectMessagesWidget: React.FC = () => {
-  const { chatUser, setChatUser, receivedMessage, selectedUserInChatModal, isChatOpen, theme } = useStore();
+  const { chatUser, setChatUser, receivedMessage, isChatOpen, theme } = useStore();
   const { address, signer, walletType } = useContext(Web3AuthContext);
   const [isOverlay, setIsOverlay] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
@@ -135,6 +138,7 @@ export const DirectMessagesWidget: React.FC = () => {
   const [isGifOpen, setIsGifOpen] = useState(false);
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+  // const [lastChatUser, _] = useLocalStorage<IUser | null>(LOCAL_STORAGE_LAST_CHAT_USER, {} as IUser);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const emojiPickRef = useRef<HTMLDivElement>(null);
   const gifPickRef = useRef<HTMLDivElement>(null);
@@ -178,21 +182,23 @@ export const DirectMessagesWidget: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!isChatOpen) {
+    if (!isChatOpen && chatUser) {
+      const lastChatUser = JSON.parse(localStorage.getItem(LOCAL_STORAGE_LAST_CHAT_USER) || "{}")
+
       if (!selectedUser) {
-        setSelectedUser(selectedUserInChatModal)
-        handleSelectUser()
-      } else if (selectedUser.address != selectedUserInChatModal?.address) {
-        setSelectedUser(selectedUserInChatModal)
-        handleSelectUser()
+        setSelectedUser(lastChatUser)
+        // handleSelectUser()
+      } else if (selectedUser.address != lastChatUser?.address) {
+        setSelectedUser(lastChatUser)
+        // handleSelectUser()
       } else {
         handleSelectUser()
       }
     }
-  }, [selectedUserInChatModal, isChatOpen])
+  }, [isChatOpen, chatUser])
 
   useEffect(() => {
-    console.log('selectedUser = ', selectedUser)
+    // console.log('selectedUser = ', selectedUser)
     if (selectedUser) {
       handleSelectUser()
     }
@@ -791,9 +797,9 @@ export const DirectMessagesWidget: React.FC = () => {
         <div className='flex-1'>
           {
             selectedUser && <div className='flex items-center gap-4'>
-              <img src={selectedUser?.profilePicture} className='rounded-full w-6 h-6' />
+              {selectedUser?.profilePicture && <img src={selectedUser.profilePicture} className='rounded-full w-6 h-6' />}
               <span className={`text-sm ${theme == "dark" ? "text-white/50" : "text-black/50"} `}>
-                {selectedUser.name ? selectedUser.name + " | " + shrinkAddress(selectedUser.address) : selectedUser.address}
+                {selectedUser.name ? selectedUser.name + " | " + shrinkAddress(selectedUser.address) : shrinkAddress(selectedUser.address)}
               </span>
             </div>
           }

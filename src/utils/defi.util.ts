@@ -1,5 +1,5 @@
-import { mapChainId2ChainName } from "../config/networks";
-import { Position } from "../store/useDefiStore";
+import {mapChainId2ChainName, mapChainId2Network} from "../config/networks";
+import {Position} from "../store/useDefiStore";
 
 export const capitalizeFirstLetter = (val: string) => {
     return String(val).charAt(0).toUpperCase() + String(val.toLowerCase()).slice(1);
@@ -69,24 +69,36 @@ export const getChainNameById = (chaiId: number): string => {
 }
 
 export function getChainIcon(chainId?: number) {
-    switch (chainId) {
-        case 1:
-            return "/images/token/eth.png";
-        case 56:
-            return "https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png?1696501970";
-        case 137:
-            return "https://assets.coingecko.com/coins/images/4713/standard/polygon.png?1698233745";
-        case 43114:
-            return "https://assets.coingecko.com/coins/images/12559/standard/Avalanche_Circle_RedWhite_Trans.png?1696512369";
-        case 10:
-            return "https://assets.coingecko.com/coins/images/25244/standard/Optimism.png?1696524385";
-        case 42161:
-            return "https://assets.coingecko.com/coins/images/16547/standard/arb.jpg?1721358242";
-        case 8453:
-            return "https://assets.coingecko.com/asset_platforms/images/131/small/base-network.png";
-        case 900:
-            return "https://assets.coingecko.com/coins/images/4128/small/solana.png";
+    return mapChainId2Network[chainId!]?.icon ?? null
+}
+
+export const getAddActionName = ({ type }: { type: string }) => {
+    switch (type.toLowerCase()) {
+        case "staking":
+            return "stake";
+        case "liquidity":
+            return "deposit";
+        case "supplied":
+            return "deposit";
+        case "borrowing":
+            return "borrow";
+        case "lending":
+            return "lend";
         default:
-            return null;
+            return "";
+    }
+}
+
+export const getApyTokenFromDefiPosition = (position: Position) => {
+    switch (position.protocol_id) {
+        case "pendle":
+            return "SUSDE";
+        case "lido":
+            return "stETH";
+        default: {
+            const filteredTokens = position.tokens.filter(token => token.token_type !== "defi-token");
+            const apyTokens = filteredTokens.map(token => token.symbol);
+            return apyTokens.join("-");
+        }
     }
 }

@@ -6,15 +6,24 @@ import {
     ZeroxGaslessStatusRequestType, ZeroxGaslessStatusResponseType,
     ZeroxQuoteRequestType
 } from "../types/swap.type.ts";
+import {polygon} from "viem/chains";
+import {compareWalletAddresses} from "../utils/common.util.ts";
+import {mapChainId2NativeAddress} from "../config/networks.ts";
+import {NULL_ADDRESS} from "../constants";
 
 export const zeroxService = {
+    getCorrectTokenAddress: (address: string, chainId: number) => {
+        if (chainId === polygon.id && compareWalletAddresses(address, mapChainId2NativeAddress[chainId]))
+            return NULL_ADDRESS
+        return address
+    },
     getQuote: async (quote: ZeroxQuoteRequestType): Promise<QuoteResponse> => {
         try {
             const {data} = await zeroxApi.get<QuoteResponse>(quote.isGasLess ? '/gasless/quote' : 'quote', {
                 params: {
                     chainId: quote.chainId,
-                    sellTokenAddress: quote.sellTokenAddress,
-                    buyTokenAddress: quote.buyTokenAddress,
+                    sellTokenAddress: zeroxService.getCorrectTokenAddress(quote.sellTokenAddress, quote.chainId),
+                    buyTokenAddress: zeroxService.getCorrectTokenAddress(quote.buyTokenAddress, quote.chainId),
                     sellTokenAmount: quote.sellTokenAmount,
                     takerAddress: quote.takerAddress,
                 },
@@ -35,8 +44,8 @@ export const zeroxService = {
             const {data} = await zeroxApi.get<QuoteResponse>(quote.isGasLess ? '/gasless/price' : 'price', {
                 params: {
                     chainId: quote.chainId,
-                    sellTokenAddress: quote.sellTokenAddress,
-                    buyTokenAddress: quote.buyTokenAddress,
+                    sellTokenAddress: zeroxService.getCorrectTokenAddress(quote.sellTokenAddress, quote.chainId),
+                    buyTokenAddress: zeroxService.getCorrectTokenAddress(quote.buyTokenAddress, quote.chainId),
                     sellTokenAmount: quote.sellTokenAmount,
                     takerAddress: quote.takerAddress,
                 },

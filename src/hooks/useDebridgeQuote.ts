@@ -8,7 +8,7 @@ import {AxiosError} from "axios";
 import {debridgeService} from "../services/debridge.service.ts";
 import {ethers} from "ethers";
 import {mapDebridgeFeeCosts} from "../constants/debridge.constants.ts";
-import {nullToZeroAddress} from "../utils/swap.util.ts";
+import {getCorrectTokenAddressForBridging} from "../utils/swap.util.ts";
 
 interface quoteParam {
     sellToken: TokenType | null,
@@ -18,6 +18,7 @@ interface quoteParam {
 }
 
 const defaultQuoteResponse = {
+    solverGasCosts: 0,
     inputUsdAmount: 0,
     outputUsdAmount: 0,
     outputAmount: '0',
@@ -52,9 +53,9 @@ const useDebridgeQuote = ({
         try {
             const data = await debridgeService.getQuote({
                 srcChainId: sellToken!.chainId,
-                srcChainTokenIn: nullToZeroAddress(sellToken!.address),
+                srcChainTokenIn: getCorrectTokenAddressForBridging(sellToken!.address, sellToken!.chainId),
                 dstChainId: buyToken!.chainId,
-                dstChainTokenOut: nullToZeroAddress(buyToken!.address),
+                dstChainTokenOut: getCorrectTokenAddressForBridging(buyToken!.address, buyToken!.chainId),
                 dstChainTokenOutRecipient: dstAddress,
                 senderAddress: sellToken!.chainId === SOLANA_CHAIN_ID ? solanaWalletInfo!.publicKey : address,
                 srcChainTokenInAmount: ethers.utils.parseUnits(sellAmount!, sellToken!.decimals).toString(),
@@ -69,6 +70,10 @@ const useDebridgeQuote = ({
 
             if (data.order)
                 quoteResponse.estimatedTime = data.order.approximateFulfillmentDelay
+
+            if (data.prependedOperatingExpenseCost) {
+                quoteResponse.solverGasCosts = Number(ethers.utils.formatUnits(data.prependedOperatingExpenseCost, sellToken!.decimals))
+            }
 
             quoteResponse.orderId = data.orderId ?? ''
             quoteResponse.feeAmount = mapDebridgeFeeCosts[sellToken!.chainId] ?? 0
@@ -97,6 +102,7 @@ const useDebridgeQuote = ({
     return {
         isLoading,
         refetch,
+        targetDestinationAddress: dstAddress,
         quoteResponse: data ?? {
             ...defaultQuoteResponse,
             errorMessage,

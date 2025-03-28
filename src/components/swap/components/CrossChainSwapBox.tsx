@@ -1,8 +1,8 @@
 import {useContext, useEffect, useMemo, useState} from 'react';
-import {ArrowDownUp, ArrowRight, Clock, DollarSign} from 'lucide-react';
+import {ArrowDownUp} from 'lucide-react';
 import {TokenSelector} from './TokenSelector';
-import {DebridgeOrderStatus, SlippageOption, TokenType} from '../../../types/swap.type';
-import {formatNumberByFrac, isValidAddress, shrinkAddress} from '../../../utils/common.util';
+import {DebridgeOrderStatus, TokenType} from '../../../types/swap.type';
+import {compareWalletAddresses, formatNumberByFrac, isValidAddress, shrinkAddress} from '../../../utils/common.util';
 import {Alert, AlertIcon, Button, Skeleton, Text} from '@chakra-ui/react';
 import useTokenStore from "../../../store/useTokenStore.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
@@ -14,7 +14,7 @@ import {
 } from "../../../config/networks.ts";
 import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {SOLANA_CHAIN_ID} from "../../../constants/solana.constants.ts";
-import {formatEstimatedTimeBySeconds, getBridgingSpendTime, getUSDAmount} from "../../../utils/swap.util.ts";
+import {getBridgingSpendTime, getUSDAmount} from "../../../utils/swap.util.ts";
 import {DestinationAddressInputModal} from "../modals/DestinationAddressInputModal.tsx";
 import {useAllBalance} from "../../../hooks/useAllBalance.tsx";
 import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
@@ -23,6 +23,12 @@ import BigNumber from "bignumber.js";
 import {toFixedFloat} from "../../../utils/trade.util.ts";
 import useDebridgeOrderStatus from "../../../hooks/useDebridgeOrderStatus.ts";
 import useDebridgeQuote from "../../../hooks/useDebridgeQuote.ts";
+import useLocalStorage from "../../../hooks/useLocalStorage.ts";
+import {BridgeRecentWalletType} from "../../../types/bridge.type.ts";
+import {LOCAL_STORAGE_BRIDGE_RECENT_WALLETS} from "../../../constants";
+import {PreviewDetailItem} from "./SwapBox.tsx";
+import {VersionedTransaction} from "@solana/web3.js";
+import {connection} from "../../../config/solana.ts";
 
 interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
@@ -34,7 +40,6 @@ interface CrossChainSwapBoxProps {
     onFromAmountChange: (amount: string) => void;
     onToAmountChange: (amount: string) => void;
     onSwitch: () => void;
-    slippage: SlippageOption;
 }
 
 export function CrossChainSwapBox({
@@ -49,16 +54,16 @@ export function CrossChainSwapBox({
                                       onSwitch,
                                   }: CrossChainSwapBoxProps) {
     const {
-        chainId,
         solanaWalletInfo,
         signer,
-        transferSolToken,
+        signSolanaTransaction,
         chainId: walletChainId,
         switchChain,
     } = useContext(Web3AuthContext);
 
     const [destinationAddress, setDestinationAddress] = useState<string>('');
     const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
+    const [recentWallets, setRecentWallets] = useLocalStorage<Array<BridgeRecentWalletType> | null>(LOCAL_STORAGE_BRIDGE_RECENT_WALLETS, [])
     const [sendToAnotherAddress, setSendToAnotherAddress] = useState<boolean>(false);
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [countdown, setCountdown] = useState(0);
@@ -69,6 +74,7 @@ export function CrossChainSwapBox({
     const {
         isLoading: isQuoteLoading,
         quoteResponse,
+        targetDestinationAddress,
     } = useDebridgeQuote({
         sellToken: fromToken,
         buyToken: toToken,
@@ -105,15 +111,6 @@ export function CrossChainSwapBox({
         data: nativeBalance
     } = useAllBalance({tokenOrMintAddress: nativeTokenAddressFromChain, chainId: fromToken?.chainId});
 
-    const insufficientNativeBalance =
-        !isNaN(Number(nativeBalance?.formatted))
-            ? ((nativeTokenAddressFromChain !== fromToken?.address ? 0 : Number(fromAmount)) + Number(quoteResponse.feeAmount)) > Number(nativeBalance?.formatted)
-            : false;
-    const insufficientBalance =
-        !isNaN(Number(fromBalance?.formatted)) ? (Number(fromAmount) + Number(quoteResponse.feeAmount)) > Number(fromBalance?.formatted)
-            : false;
-    const isZeroAmount = !fromAmount || Number(fromAmount) <= 0 || Number(quoteResponse.outputAmount) <= 0
-
     // Update toAmount when calculation changes
     useEffect(() => {
         if (quoteResponse) {
@@ -142,7 +139,18 @@ export function CrossChainSwapBox({
 
     useEffect(() => {
         if (orderStatus === DebridgeOrderStatus.Fulfilled) {
+            // open tx modal
             setTxModalOpen(true)
+            // save used wallet address
+            if (targetDestinationAddress && (recentWallets ?? []).filter(wallet => compareWalletAddresses(wallet.address, targetDestinationAddress!)).length <= 0) {
+                setRecentWallets([
+                    ...(recentWallets ?? []),
+                    {
+                        chainId: toToken!.chainId,
+                        address: targetDestinationAddress!,
+                    }
+                ])
+            }
         }
     }, [orderStatus])
 
@@ -151,7 +159,12 @@ export function CrossChainSwapBox({
         toUsdAmount,
         fromNetwork,
         toNetwork,
-        feeAmountInUsd,
+        solverGasCostAmount,
+        deductionAmount,
+        solverGasText,
+        debridgeFeeText,
+        totalSpentText,
+        priceImpact,
     } = useMemo(() => {
         const fromTokenPrice = fromToken ? getTokenPrice(fromToken?.address, fromToken?.chainId) : 0
         const toTokenPrice = toToken ? getTokenPrice(toToken?.address, toToken?.chainId) : 0
@@ -160,17 +173,31 @@ export function CrossChainSwapBox({
         const toUsdAmount = toToken ? getUSDAmount(toToken, toTokenPrice, toAmount) : 0
         const fromNetwork = fromToken ? mapChainId2Network[fromToken.chainId] : null
         const toNetwork = toToken ? mapChainId2Network[toToken.chainId] : null
+        const solverGasCostAmount = quoteResponse.solverGasCosts
+        const solverGasUsdAmount = fromTokenPrice * solverGasCostAmount
+        const priceImpact = fromUsdAmount > 0 ? ((toUsdAmount - fromUsdAmount) / fromUsdAmount) * 100 : 0
+        const deductionAmount = solverGasCostAmount + (compareWalletAddresses(nativeTokenAddressFromChain, fromToken!.address) ? quoteResponse.feeAmount : 0)
+
         let feeAmountInUsd = 0
         if (quoteResponse) {
             feeAmountInUsd = nativeTokenPrice * quoteResponse.feeAmount
         }
+
+        const solverGasText = `${formatNumberByFrac(solverGasCostAmount, 4)} ${fromToken?.symbol} ($${formatNumberByFrac(solverGasUsdAmount, 3)})`
+        const debridgeFeeText = `${formatNumberByFrac(quoteResponse.feeAmount, 4)} ${fromNetwork?.symbol} ($${formatNumberByFrac(feeAmountInUsd, 3)})`
+        const totalSpentText = `${formatNumberByFrac(deductionAmount + Number(fromAmount), 4)} ${fromToken?.symbol}`
 
         return {
             fromUsdAmount,
             toUsdAmount,
             toNetwork,
             fromNetwork,
-            feeAmountInUsd,
+            solverGasCostAmount,
+            priceImpact,
+            solverGasText,
+            debridgeFeeText,
+            totalSpentText,
+            deductionAmount,
         }
     }, [nativeTokenAddressFromChain, fromToken, getTokenPrice, toToken, fromAmount, toAmount, quoteResponse])
 
@@ -178,7 +205,7 @@ export function CrossChainSwapBox({
         isRequireSwitchChain,
         textSwitchChain,
     } = useMemo(() => {
-        const isRequireSwitchChain = walletChainId !== fromToken?.chainId
+        const isRequireSwitchChain = fromToken?.chainId !== SOLANA_CHAIN_ID && walletChainId !== fromToken?.chainId
         const textSwitchChain = `Switch to ${mapChainId2ChainName[fromToken!.chainId]} network`
 
         return {
@@ -187,6 +214,14 @@ export function CrossChainSwapBox({
         }
     }, [fromToken, walletChainId])
 
+    const insufficientNativeBalance =
+        !isNaN(Number(nativeBalance?.formatted))
+            ? ((nativeTokenAddressFromChain !== fromToken?.address ? 0 : Number(fromAmount)) + Number(quoteResponse.feeAmount)) > Number(nativeBalance?.formatted)
+            : false;
+    const insufficientBalance =
+        !isNaN(Number(fromBalance?.formatted)) ? (Number(fromAmount) + solverGasCostAmount) > Number(fromBalance?.formatted)
+            : false;
+    const isZeroAmount = !fromAmount || Number(fromAmount) <= 0 || Number(quoteResponse.outputAmount) <= 0
 
     useEffect(() => {
         if (!txModalOpen) {
@@ -197,13 +232,15 @@ export function CrossChainSwapBox({
         }
     }, [onFromAmountChange, onToAmountChange, txModalOpen])
 
+    const spenderAddress = quoteResponse.tx?.allowanceTarget || quoteResponse.tx?.to
+
     const {
         isApproved: isEvmApproved,
         isLoading: isApproving,
         approve
     } = useTokenApprove({
         token: fromToken?.address as `0x${string}`,
-        spender: (quoteResponse.tx?.allowanceTarget) as `0x${string}`,
+        spender: spenderAddress as `0x${string}`,
         amount: new BigNumber(toFixedFloat(fromAmount, 4))
             .times(new BigNumber(10)
                 .pow(fromToken?.decimals ?? 1))
@@ -211,7 +248,10 @@ export function CrossChainSwapBox({
         chainId: fromToken?.chainId ?? 1
     });
 
-    const isApproved = fromToken?.chainId === SOLANA_CHAIN_ID ? true : isEvmApproved
+    const isApproved =
+        (fromToken?.chainId === SOLANA_CHAIN_ID || nativeTokenAddressFromChain === fromToken?.address || !spenderAddress) // chain is solana or native token or don't have spenderAddress
+            ? true
+            : isEvmApproved
 
     const handleSwap = async () => {
         if (!isApproved) {
@@ -221,13 +261,27 @@ export function CrossChainSwapBox({
 
         try {
             setIsConfirming(true)
-            if (fromToken?.chainId === SOLANA_CHAIN_ID && destinationAddress) { // solana transaction
-                await transferSolToken(
-                    destinationAddress,
-                    fromToken.address,
-                    Number(fromAmount),
-                    fromToken.decimals
-                )
+            if (fromToken?.chainId === SOLANA_CHAIN_ID && quoteResponse.tx) { // solana transaction
+                const tx = VersionedTransaction.deserialize(Buffer.from(quoteResponse.tx.data!.slice(2), "hex"));
+                const { blockhash } = await connection.getLatestBlockhash();
+                tx.message.recentBlockhash = blockhash; // Update blockhash!
+
+                const signedTransaction = await signSolanaTransaction(tx)
+
+                try {
+                    const txid = await connection.sendRawTransaction(signedTransaction!.serialize(), {
+                        skipPreflight: false, // Set to true to skip validation checks
+                        preflightCommitment: "confirmed",
+                    });
+                    console.log(`✅ Transaction Sent! TXID: ${txid}`);
+                    // 5️⃣ Confirm the transaction
+                    await connection.confirmTransaction(txid, "confirmed");
+                    console.log("✅ Transaction Confirmed!");
+                } catch (error) {
+                    console.error("❌ Error Sending Transaction:", error);
+                }
+
+
             } else if (quoteResponse.tx) {
                 await signer!.sendTransaction(quoteResponse.tx)
             } else {
@@ -237,6 +291,7 @@ export function CrossChainSwapBox({
             setIsBridging(true)
             setCountdown(quoteResponse.estimatedTime)
         } catch (e) {
+            console.log("error", e)
             //
         } finally {
             setIsConfirming(false)
@@ -248,9 +303,11 @@ export function CrossChainSwapBox({
             <TokenSelector
                 className="relative z-20 mb-2"
                 selectedToken={fromToken}
+                disabledToken={toToken}
                 selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onFromTokenSelect}
                 amount={fromAmount}
+                deductionAmount={deductionAmount}
                 usdAmount={fromUsdAmount.toString()}
                 onAmountChange={onFromAmountChange}
                 balance={fromBalance?.formatted}
@@ -267,10 +324,10 @@ export function CrossChainSwapBox({
                     </button>
                 </div>
             </div>
-
             <TokenSelector
                 className="relative z-10"
                 selectedToken={toToken}
+                disabledToken={fromToken}
                 selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onToTokenSelect}
                 amount={toAmount}
@@ -310,7 +367,7 @@ export function CrossChainSwapBox({
                         <div className="flex items-center">
                             {(destinationAddress && toNetwork) ? (
                                 <>
-                                    <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2"/>
+                                    <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2 rounded-full"/>
                                     <span className="font-medium">
                                 {shrinkAddress(destinationAddress)}
                             </span>
@@ -325,46 +382,88 @@ export function CrossChainSwapBox({
 
             {
                 (fromNetwork && toNetwork && !isZeroAmount) && (
-                    <div
-                        className={`rounded-xl p-4 border border-blue-500`}
-                    >
-                        {
-                            isQuoteLoading ? (
-                                <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'3rem'}></Skeleton>
-                            ) : (
-                                <>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div
-                                            className="bg-blue-500 text-xs font-medium text-white px-2 py-1 rounded-full inline-block mb-2">
-                                            Best Route
-                                        </div>
-                                        <div className="flex items-center">
-                                            <img src={fromNetwork.icon} alt={fromNetwork.name} className="w-5 h-5"/>
-                                            <ArrowRight size={14} className="mx-1 text-gray-400"/>
-                                            <img src={toNetwork.icon} alt={toNetwork.name}
-                                                 className="w-5 h-5"/>
-                                            <span className="ml-2 text-sm">Debridge</span>
-                                        </div>
-                                    </div>
+                    <div className="space-y-2.5 mt-4">
+                        {/* Exchange Rate */}
+                        <div
+                            className="px-4 py-3 text-sm rounded-lg border border-white/5 hover:border-blue-500/20 transition-all">
+                            {
+                                isQuoteLoading ? (
+                                    <Skeleton startColor="#444" endColor="#1d2837" w={'100%'} h={'3rem'}></Skeleton>
+                                ) : (
+                                    <>
+                                        {
+                                            solverGasCostAmount > 0 && (
+                                                <PreviewDetailItem
+                                                    title={'Solver gas fee'}
+                                                    info={'A fee paid to the solver who processes your cross-chain transaction and covers gas costs on both blockchains.'}
+                                                    value={solverGasText}
+                                                    isLoading={isQuoteLoading}
+                                                />
+                                            )
+                                        }
 
-                                    <div className="flex items-center justify-between mb-3">
+                                        <PreviewDetailItem
+                                            title={`deBridge Fee`}
+                                            info={'A small fee charged by deBridge for handling your cross-chain transaction and ensuring secure transfer between blockchains.'}
+                                            value={debridgeFeeText}
+                                            isLoading={isQuoteLoading}
+                                        />
+
+                                        <PreviewDetailItem
+                                            title={`Total spent`}
+                                            info={'The total amount deducted from your wallet, which includes the selling token amount plus the solver gas fee needed to process the cross-chain transaction.'}
+                                            value={totalSpentText}
+                                            isLoading={isQuoteLoading}
+                                        />
+
+                                        <PreviewDetailItem
+                                            title={'Price Impact'}
+                                            info={'The difference between market price and estimated price due to trade size'}
+                                            value={`${formatNumberByFrac(priceImpact, 2)}%`}
+                                            valueClassName={`${priceImpact < -5
+                                                ? 'text-red-500'
+                                                : priceImpact < -3
+                                                    ? 'text-yellow-500'
+                                                    : 'text-green-500'
+                                            }`}
+                                            isLoading={isQuoteLoading}
+                                        />
+
+                                        {/*
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div
+                                                className="bg-blue-500 text-xs font-medium text-white px-2 py-1 rounded-full inline-block mb-2">
+                                                Best Route
+                                            </div>
+                                            <div className="flex items-center">
+                                                <img src={fromNetwork.icon} alt={fromNetwork.name} className="w-5 h-5"/>
+                                                <ArrowRight size={14} className="mx-1 text-gray-400"/>
+                                                <img src={toNetwork.icon} alt={toNetwork.name}
+                                                     className="w-5 h-5"/>
+                                                <span className="ml-2 text-sm">Debridge</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between mb-3">
                                     <span
                                         className="text-sm text-gray-400">You receive: {formatNumberByFrac(Number(quoteResponse.outputAmount), 5)} {toToken?.symbol}</span>
-                                    </div>
+                                        </div>
 
-                                    <div className="flex justify-between text-xs text-gray-400">
-                                        <div className="flex items-center">
-                                            <Clock size={12} className="mr-1"/>
-                                            <span>{`estimated time: ${formatEstimatedTimeBySeconds(quoteResponse.estimatedTime)}`}</span>
+                                        <div className="flex justify-between text-xs text-gray-400">
+                                            <div className="flex items-center">
+                                                <Clock size={12} className="mr-1"/>
+                                                <span>{`estimated time: ${formatEstimatedTimeBySeconds(quoteResponse.estimatedTime)}`}</span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <span>Fee: {formatNumberByFrac(feeAmountInUsd, 5)}</span>
+                                                <DollarSign size={12} className="mr-1"/>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center">
-                                            <span>Fee: {formatNumberByFrac(feeAmountInUsd, 5)}</span>
-                                            <DollarSign size={12} className="mr-1"/>
-                                        </div>
-                                    </div>
-                                </>
-                            )
-                        }
+*/}
+                                    </>
+                                )
+                            }
+                        </div>
                     </div>
                 )
             }
@@ -377,7 +476,7 @@ export function CrossChainSwapBox({
                 )
             }
             {
-                (chainId === SOLANA_CHAIN_ID && !solanaWalletInfo) ? (
+                (walletChainId === SOLANA_CHAIN_ID && !solanaWalletInfo) ? (
                     <Button
                         width="full"
                         colorScheme="blue"
@@ -429,7 +528,7 @@ export function CrossChainSwapBox({
                                 colorScheme="blue"
                                 isDisabled={true}
                             >
-                                Insufficient Balance
+                                Insufficient {insufficientNativeBalance ? 'Native' : ''} Balance
                             </Button>
                         ) : (
                             <Button
@@ -437,8 +536,11 @@ export function CrossChainSwapBox({
                                 loadingText={(isApproving ? 'Approving...' : 'Computing...')}
                                 width="full"
                                 colorScheme="blue"
-                                onClick={handleSwap}
-                                isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !isApproved || !!quoteResponse.errorMessage || Number(quoteResponse.outputAmount) <= 0}
+                                onClick={() => {
+                                    if (isApproved) handleSwap()
+                                    else approve?.()
+                                }}
+                                isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !!quoteResponse.errorMessage || Number(quoteResponse.outputAmount) <= 0}
                             >
                                 {isApproved ? 'Bridge' : 'Approve'}
                             </Button>

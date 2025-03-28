@@ -158,7 +158,7 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 		return tokens;
 	}, [activeChainId, activeWalletAddress, solanaWalletInfo]);
 
-	const { isLoading, refetch, data } = useQuery<EvmWalletBalanceResponseType[]>(
+	const { isLoading, isFetching, refetch, data } = useQuery<EvmWalletBalanceResponseType[]>(
 		{
 			queryKey: ['balance', activeWalletAddress, activeChainId, solanaWalletInfo],
 			queryFn: fetchBalances,
@@ -193,6 +193,7 @@ export const useWalletBalance = (params?: IEvmWallet) => {
 
 	return {
 		isLoading,
+		isFetching,
 		refetch,
 		data,
 	};

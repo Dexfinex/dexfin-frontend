@@ -1,25 +1,32 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { ArrowDownUp, Info } from 'lucide-react';
-import { TokenSelector } from './TokenSelector';
-import { GaslessQuoteResponse, QuoteResponse, SlippageOption, TokenType } from '../../../types/swap.type';
-import { formatNumberByFrac } from '../../../utils/common.util';
-import { Button, Flex, Skeleton } from '@chakra-ui/react';
-import { ZEROX_AFFILIATE_FEE } from "../../../constants";
+import {useContext, useEffect, useMemo, useState} from 'react';
+import {ArrowDownUp, Info, PencilLine} from 'lucide-react';
+import {TokenSelector} from './TokenSelector';
+import {
+    GaslessQuoteResponse,
+    PreviewDetailItemProps,
+    QuoteResponse,
+    SlippageOption,
+    TokenType
+} from '../../../types/swap.type';
+import {formatNumberByFrac} from '../../../utils/common.util';
+import {Button, Flex, Skeleton} from '@chakra-ui/react';
+import {ZEROX_AFFILIATE_FEE} from "../../../constants";
 import useTokenStore from "../../../store/useTokenStore.ts";
 import use0xQuote from "../../../hooks/use0xQuote.ts";
 import useGetTokenPrices from "../../../hooks/useGetTokenPrices.ts";
 import useGasEstimation from "../../../hooks/useGasEstimation.ts";
-import { mapChainId2ChainName, mapChainId2ExplorerUrl, mapChainId2NativeAddress } from "../../../config/networks.ts";
-import { Web3AuthContext } from "../../../providers/Web3AuthContext.tsx";
-import { useBalance } from "../../../hooks/useBalance.tsx";
-import { ethers } from "ethers";
-import { concat, Hex, numberToHex, size } from "viem";
-import { TransactionModal } from "../modals/TransactionModal.tsx";
-import { use0xTokenApprove } from "../../../hooks/use0xTokenApprove.ts";
-import { zeroxService } from "../../../services/0x.service.ts";
+import {mapChainId2ChainName, mapChainId2ExplorerUrl, mapChainId2NativeAddress} from "../../../config/networks.ts";
+import {Web3AuthContext} from "../../../providers/Web3AuthContext.tsx";
+import {useBalance} from "../../../hooks/useBalance.tsx";
+import {ethers} from "ethers";
+import {concat, Hex, numberToHex, size} from "viem";
+import {TransactionModal} from "../modals/TransactionModal.tsx";
+import {use0xTokenApprove} from "../../../hooks/use0xTokenApprove.ts";
+import {zeroxService} from "../../../services/0x.service.ts";
 import use0xGaslessSwapStatus from "../../../hooks/use0xGaslessSwapStatus.ts";
-import { signTradeObject, tradeSplitSigDataToSubmit } from "../../../utils/swap.util.ts";
-import { WalletTypeEnum } from "../../../types/wallet.type.ts";
+import {getSlippageBigNumber, signTradeObject, tradeSplitSigDataToSubmit} from "../../../utils/swap.util.ts";
+import {WalletTypeEnum} from "../../../types/wallet.type.ts";
+import {SlippageDialog} from "../SlippageSettings.tsx";
 
 interface SwapBoxProps {
     fromToken: TokenType | null;
@@ -31,16 +38,6 @@ interface SwapBoxProps {
     onFromAmountChange: (amount: string) => void;
     onToAmountChange: (amount: string) => void;
     onSwitch: () => void;
-    slippage: SlippageOption;
-}
-
-interface PreviewDetailItemProps {
-    title: string;
-    info: string;
-    value: string;
-    valueClassName?: string;
-    isFree?: boolean;
-    isLoading: boolean;
 }
 
 const getUSDAmount = (selectedToken: TokenType | undefined, price: number, amount: string): number => {
@@ -51,25 +48,32 @@ const getUSDAmount = (selectedToken: TokenType | undefined, price: number, amoun
     return 0
 }
 
-const PreviewDetailItem = ({
-    title,
-    info,
-    value,
-    valueClassName,
-    isFree,
-    isLoading,
-}: PreviewDetailItemProps) => {
+export const PreviewDetailItem = ({
+                                      title,
+                                      info,
+                                      value,
+                                      valueClassName,
+                                      isFree,
+                                      isLoading,
+                                      isSlippageItem,
+                                      openDialog,
+                                  }: PreviewDetailItemProps) => {
     return (
         <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
                 <span className="text-gray-400">{title}</span>
                 <div className="group relative">
-                    <Info className="w-3.5 h-3.5 text-gray-500" />
+                    <Info className="peer w-3.5 h-3.5 text-gray-500 cursor-pointer"/>
                     <div
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 text-xs text-gray-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 text-xs text-gray-300 rounded-lg opacity-0 peer-hover:opacity-100 transition-opacity pointer-events-none">
                         {info}
                     </div>
                 </div>
+                {
+                    isSlippageItem && (
+                        <PencilLine className="w-3.5 h-3.5 text-gray-500 hover:text-gray-200 cursor-pointer" onClick={() => openDialog?.(true)}/>
+                    )
+                }
             </div>
             {
                 isLoading ? (
@@ -89,18 +93,19 @@ const PreviewDetailItem = ({
 }
 
 export function SwapBox({
-    fromToken,
-    toToken,
-    fromAmount,
-    toAmount,
-    onFromTokenSelect,
-    onToTokenSelect,
-    onFromAmountChange,
-    onToAmountChange,
-    onSwitch,
-    slippage,
-}: SwapBoxProps) {
+                            fromToken,
+                            toToken,
+                            fromAmount,
+                            toAmount,
+                            onFromTokenSelect,
+                            onToTokenSelect,
+                            onFromAmountChange,
+                            onToAmountChange,
+                            onSwitch,
+                        }: SwapBoxProps) {
 
+    const [slippage, setSlippage] = useState<SlippageOption>(0.5);
+    const [isOpenSlippageDialog, setIsOpenSlippageDialog] = useState<boolean>(false);
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [isConfirming, setIsConfirming] = useState(false);
     const [isSuccessNormalSwapAction, setIsSuccessNormalSwapAction] = useState(false)
@@ -119,12 +124,12 @@ export function SwapBox({
         isChainSwitching,
     } = useContext(Web3AuthContext);
 
-    const { getTokenPrice } = useTokenStore()
+    const {getTokenPrice} = useTokenStore()
     const {
         isLoading: isQuoteLoading,
         quoteResponse,
         isGasLess: isGasLessSwap,
-        // refetch,
+        refetch: refetchQuoteData,
         data: quoteData,
     } = use0xQuote({
         sellToken: fromToken,
@@ -142,28 +147,27 @@ export function SwapBox({
     const {
         isLoading: isGasEstimationLoading,
         data: gasData
-    } = useGasEstimation()
+    } = useGasEstimation(fromToken?.chainId)
 
     const {
         isLoading: isFromBalanceLoading,
         refetch: refetchFromBalance,
         data: fromBalance
-    } = useBalance({ chainId: fromToken?.chainId, token: fromToken?.address })
+    } = useBalance({chainId: fromToken?.chainId, token: fromToken?.address})
 
     const {
         isLoading: isToBalanceLoading,
         refetch: refetchToBalance,
         data: toBalance
-    } = useBalance({ chainId: toToken?.chainId, token: toToken?.address })
+    } = useBalance({chainId: toToken?.chainId, token: toToken?.address})
 
     const amountToApprove =
         fromToken && fromAmount !== ''
             ? ethers.BigNumber.from(ethers.utils.parseUnits(fromAmount, fromToken!.decimals))
-                .mul(100 + Number(slippage) * 2)
-                .div(100)
+                .mul(ethers.BigNumber.from(10000).add(getSlippageBigNumber(slippage)))
+                .div(10000)
                 .toString()
             : '0';
-
     const {
         approve,
         approvalDataToSubmit,
@@ -190,6 +194,21 @@ export function SwapBox({
 
 
     // console.log("gasData", mapPrices, gasData, isGasEstimationLoading)
+
+    useEffect(() => {
+        if (!isApproveLoading) {
+            let count = 0;
+            const interval = setInterval(() => {
+                if (count < 3) {
+                    refetchQuoteData();
+                    count ++;
+                } else {
+                    clearInterval(interval); // Stop after 3 calls
+                }
+            }, 1000); // 1 second interval
+            return () => clearInterval(interval); // Clean up interval on unmount or when dependencies change
+        }
+    }, [isApproveLoading, refetchQuoteData]);
 
     // Update toAmount when calculation changes
     useEffect(() => {
@@ -353,8 +372,8 @@ export function SwapBox({
             } else {
                 setIsSuccessNormalSwapAction(false)
             }
-        } catch(e) {
-        //
+        } catch (e) {
+            //
         } finally {
             setIsConfirming(false)
         }
@@ -372,130 +391,136 @@ export function SwapBox({
     const approvalRequired = (!isGasLessSwap && quoteData?.tokenApprovalRequired) || (isGasLessSwap && quoteData?.tokenApprovalRequired && !approvalDataToSubmit);
 
     return (
-        <div className="space-y-2.5">
-            <TokenSelector
-                className="relative z-20 mb-2"
-                selectedToken={fromToken}
-                selectedChainId={fromToken?.chainId ?? toToken?.chainId}
-                onSelect={onFromTokenSelect}
-                amount={fromAmount}
-                usdAmount={fromUsdAmount.toString()}
-                onAmountChange={onFromAmountChange}
-                balance={fromBalance?.formatted}
-                isBalanceLoading={isFromBalanceLoading}
-                label="You sell"
-            />
-            <div className="relative h-8 flex items-center justify-center">
-                <div className="z-30">
-                    <button
-                        onClick={onSwitch}
-                        className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
-                    >
-                        <ArrowDownUp className="w-4 h-4" />
-                    </button>
+        <>
+            <div className="space-y-2.5">
+                <TokenSelector
+                    className="relative z-20 mb-2"
+                    selectedToken={fromToken}
+                    disabledToken={toToken}
+                    selectedChainId={fromToken?.chainId ?? toToken?.chainId}
+                    onSelect={onFromTokenSelect}
+                    amount={fromAmount}
+                    usdAmount={fromUsdAmount.toString()}
+                    onAmountChange={onFromAmountChange}
+                    balance={fromBalance?.formatted}
+                    isBalanceLoading={isFromBalanceLoading}
+                    label="You sell"
+                />
+                <div className="relative h-8 flex items-center justify-center">
+                    <div className="z-30">
+                        <button
+                            onClick={onSwitch}
+                            className="hover:bg-blue-500/20 p-2.5 rounded-xl border border-white/10 transition-all hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:border-blue-500/20 text-blue-400"
+                        >
+                            <ArrowDownUp className="w-4 h-4"/>
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <TokenSelector
-                className="relative z-10"
-                selectedToken={toToken}
-                selectedChainId={fromToken?.chainId ?? toToken?.chainId}
-                onSelect={onToTokenSelect}
-                amount={toAmount}
-                usdAmount={toUsdAmount.toString()}
-                onAmountChange={() => {
-                }} // Disabled for now - only calculate based on fromAmount
-                label="You buy"
-                disabled={true}
-                isLoading={isQuoteLoading}
-                balance={toBalance?.formatted}
-                isBalanceLoading={isToBalanceLoading}
-            />
+                <TokenSelector
+                    className="relative z-10"
+                    selectedToken={toToken}
+                    disabledToken={fromToken}
+                    selectedChainId={fromToken?.chainId ?? toToken?.chainId}
+                    onSelect={onToTokenSelect}
+                    amount={toAmount}
+                    usdAmount={toUsdAmount.toString()}
+                    onAmountChange={() => {
+                    }} // Disabled for now - only calculate based on fromAmount
+                    label="You buy"
+                    disabled={true}
+                    isLoading={isQuoteLoading}
+                    balance={toBalance?.formatted}
+                    isBalanceLoading={isToBalanceLoading}
+                />
 
-            {fromToken && toToken && fromAmount && Number(fromAmount) > 0 && (
-                <div className="space-y-2.5 mt-4">
-                    {/* Exchange Rate */}
-                    <div
-                        className="px-4 py-3 text-sm bg-[#1d2837]/20 rounded-lg border border-white/5 hover:border-blue-500/20 transition-all">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-gray-400">Exchange Rate</span>
-                            {
-                                isQuoteLoading ? (
-                                    <Skeleton startColor="#444" endColor="#1d2837" w={'7rem'} h={'1rem'}></Skeleton>
-                                ) : (
-                                    <span className="text-white font-mono">
+                {fromToken && toToken && fromAmount && Number(fromAmount) > 0 && (
+                    <div className="space-y-2.5 mt-4">
+                        {/* Exchange Rate */}
+                        <div
+                            className="px-4 py-3 text-sm rounded-lg border border-white/5 hover:border-blue-500/20 transition-all">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-gray-400">Exchange Rate</span>
+                                {
+                                    isQuoteLoading ? (
+                                        <Skeleton startColor="#444" endColor="#1d2837" w={'7rem'} h={'1rem'}></Skeleton>
+                                    ) : (
+                                        <span className="text-white font-mono">
                                         1 {fromToken?.symbol} = {formatNumberByFrac(Number(quoteData?.exchangeRate), 2)} {toToken?.symbol}
                                     </span>
+                                    )
+                                }
+                            </div>
+
+                            {/* Price Impact */}
+                            <PreviewDetailItem
+                                title={'Price Impact'}
+                                info={'The difference between market price and estimated price due to trade size'}
+                                value={`${formatNumberByFrac(priceImpact, 2)}%`}
+                                valueClassName={`${priceImpact < -5
+                                    ? 'text-red-500'
+                                    : priceImpact < -3
+                                        ? 'text-yellow-500'
+                                        : 'text-green-500'
+                                }`}
+                                isLoading={isQuoteLoading}
+                            />
+
+                            {/* Affiliate Fee */}
+                            {
+                                quoteData?.affiliateFee && (
+                                    <PreviewDetailItem
+                                        title={`Affiliate Fee (${ZEROX_AFFILIATE_FEE / 100}%)`}
+                                        info={'A small percentage of the transaction fee shared with affiliates who bring users to the platform'}
+                                        value={`$${formatNumberByFrac(affiliateFeeUsdAmount, 2)}`}
+                                        isLoading={isQuoteLoading}
+                                    />
                                 )
                             }
-                        </div>
+                            {/* Sell Tax */}
+                            {
+                                quoteData?.sellTax && (
+                                    <PreviewDetailItem
+                                        title={`Sell Fee (${sellTaxPercentage}%)`}
+                                        info={`${fromToken?.symbol} charges a ${sellTaxPercentage}% fee when bought. Swapping it may result in a loss of funds. Dexfin does not receive any of these fees.`}
+                                        value={`$${sellTaxUsdAmount}`}
+                                        isLoading={isQuoteLoading}
+                                    />
+                                )
+                            }
+                            {/* Buy Tax */}
+                            {
+                                quoteData?.buyTax && (
+                                    <PreviewDetailItem
+                                        title={`Buy Fee (${buyTaxPercentage}%)`}
+                                        info={`${toToken?.symbol} charges a ${buyTaxPercentage}% fee when bought. Swapping it may result in a loss of funds. Dexfin does not receive any of these fees.`}
+                                        value={`$${buyTaxUsdAmount}`}
+                                        isLoading={isQuoteLoading}
+                                    />
+                                )
+                            }
 
-                        {/* Price Impact */}
-                        <PreviewDetailItem
-                            title={'Price Impact'}
-                            info={'The difference between market price and estimated price due to trade size'}
-                            value={`${formatNumberByFrac(priceImpact, 2)}%`}
-                            valueClassName={`${priceImpact < -5
-                                ? 'text-red-500'
-                                : priceImpact < -3
-                                    ? 'text-yellow-500'
-                                    : 'text-green-500'
-                                }`}
-                            isLoading={isQuoteLoading}
-                        />
+                            {/* Network Fee */}
+                            <PreviewDetailItem
+                                title={'Network Fee'}
+                                info={'Estimated network fees for processing the transaction'}
+                                value={`$${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}
+                                isLoading={isGasEstimationLoading}
+                                isFree={isGasLessSwap || walletType === WalletTypeEnum.EMBEDDED}
+                            />
 
-                        {/* Affiliate Fee */}
-                        {
-                            quoteData?.affiliateFee && (
-                                <PreviewDetailItem
-                                    title={`Affiliate Fee (${ZEROX_AFFILIATE_FEE / 100}%)`}
-                                    info={'A small percentage of the transaction fee shared with affiliates who bring users to the platform'}
-                                    value={`$${formatNumberByFrac(affiliateFeeUsdAmount, 2)}`}
-                                    isLoading={isQuoteLoading}
-                                />
-                            )
-                        }
-                        {/* Sell Tax */}
-                        {
-                            quoteData?.sellTax && (
-                                <PreviewDetailItem
-                                    title={`Sell Fee (${sellTaxPercentage}%)`}
-                                    info={`${fromToken?.symbol} charges a ${sellTaxPercentage}% fee when bought. Swapping it may result in a loss of funds. Dexfin does not receive any of these fees.`}
-                                    value={`$${sellTaxUsdAmount}`}
-                                    isLoading={isQuoteLoading}
-                                />
-                            )
-                        }
-                        {/* Buy Tax */}
-                        {
-                            quoteData?.buyTax && (
-                                <PreviewDetailItem
-                                    title={`Buy Fee (${buyTaxPercentage}%)`}
-                                    info={`${toToken?.symbol} charges a ${buyTaxPercentage}% fee when bought. Swapping it may result in a loss of funds. Dexfin does not receive any of these fees.`}
-                                    value={`$${buyTaxUsdAmount}`}
-                                    isLoading={isQuoteLoading}
-                                />
-                            )
-                        }
+                            {/* slippage */}
+                            <PreviewDetailItem
+                                title={'Max. slippage'}
+                                info={'Allowable difference between the expected and executed prices of a trade. Your transaction will revert if price changes unfavorably by more than this percentage'}
+                                value={`${slippage}%`}
+                                isLoading={false}
+                                isSlippageItem={true}
+                                openDialog={setIsOpenSlippageDialog}
+                            />
 
-                        {/* Network Fee */}
-                        <PreviewDetailItem
-                            title={'Network Fee'}
-                            info={'Estimated network fees for processing the transaction'}
-                            value={`$${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}
-                            isLoading={isGasEstimationLoading}
-                            isFree={isGasLessSwap || walletType === WalletTypeEnum.EMBEDDED}
-                        />
-
-                        {/* slippage */}
-                        <PreviewDetailItem
-                            title={'Max. slippage'}
-                            info={'Allowable difference between the expected and executed prices of a trade. Your transaction will revert if price changes unfavorably by more than this percentage'}
-                            value={`${slippage}%`}
-                            isLoading={false}
-                        />
-
-                        {/* Route */}
+                            {/* Route */}
+                            {/*
                         {
                             fromToken && toToken && (
                                 <>
@@ -521,11 +546,12 @@ export function SwapBox({
                                 </>
                             )
                         }
+*/}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/*
+                {/*
             {
                 error && (
                     <Alert status="error" variant="subtle" borderRadius="md">
@@ -536,97 +562,103 @@ export function SwapBox({
             }
 */}
 
-            {
-                !isConnected ? (
-                    <Button
-                        isLoading={false}
-                        loadingText={'Connecting Wallet...'}
-                        width="full"
-                        colorScheme="blue"
-                        onClick={() => {
-                            login()
-                            // if (approveReset) approveReset();
-                        }}
-                        isDisabled={false}
-                    >
-                        Connect Wallet
-                    </Button>
-                ) : (
-                    isRequireSwitchChain ? (
+                {
+                    !isConnected ? (
                         <Button
                             isLoading={false}
-                            loadingText={'Changing Network...'}
+                            loadingText={'Connecting Wallet...'}
                             width="full"
                             colorScheme="blue"
                             onClick={() => {
-                                switchChain(tokenChainId)
+                                login()
                                 // if (approveReset) approveReset();
                             }}
                             isDisabled={false}
                         >
-                            {textSwitchChain}
+                            Connect Wallet
                         </Button>
                     ) : (
-
-                        insufficientBalance ? (
+                        isRequireSwitchChain ? (
                             <Button
+                                isLoading={false}
+                                loadingText={'Changing Network...'}
                                 width="full"
                                 colorScheme="blue"
-                                isDisabled={true}
+                                onClick={() => {
+                                    switchChain(tokenChainId)
+                                    // if (approveReset) approveReset();
+                                }}
+                                isDisabled={false}
                             >
-                                Insufficient Balance
+                                {textSwitchChain}
                             </Button>
-
                         ) : (
-                            approvalRequired ? (
+
+                            insufficientBalance ? (
                                 <Button
-                                    isLoading={isApproveLoading}
-                                    loadingText={'Approving...'}
                                     width="full"
                                     colorScheme="blue"
-                                    onClick={() => {
-                                        approve?.()
-                                    }}
-                                    isDisabled={false}
+                                    isDisabled={true}
                                 >
-                                    Approve {fromToken?.symbol}
+                                    Insufficient Balance
                                 </Button>
+
                             ) : (
-                                <Button
-                                    isLoading={isChainSwitching || isConfirming || isGaslessTransactionPending}
-                                    loadingText={
-                                        isConfirming
-                                            ? 'Confirming...'
-                                            : isChainSwitching
-                                                ? 'Switching Chain...'
-                                                : (isGaslessTransactionPending)
-                                                    ? 'Waiting for confirmation...'
-                                                    : ''
-                                    }
-                                    width="full"
-                                    colorScheme="blue"
-                                    onClick={handleSwap}
-                                    isDisabled={!(Number(fromAmount) > 0) || isConfirming}
-                                >
-                                    Swap
-                                </Button>
+                                approvalRequired ? (
+                                    <Button
+                                        isLoading={isApproveLoading}
+                                        loadingText={'Approving...'}
+                                        width="full"
+                                        colorScheme="blue"
+                                        onClick={() => {
+                                            approve?.()
+                                        }}
+                                        isDisabled={false}
+                                    >
+                                        Approve {fromToken?.symbol}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        isLoading={isChainSwitching || isConfirming || isGaslessTransactionPending}
+                                        loadingText={
+                                            isConfirming
+                                                ? 'Confirming...'
+                                                : isChainSwitching
+                                                    ? 'Switching Chain...'
+                                                    : (isGaslessTransactionPending)
+                                                        ? 'Waiting for confirmation...'
+                                                        : ''
+                                        }
+                                        width="full"
+                                        colorScheme="blue"
+                                        onClick={handleSwap}
+                                        isDisabled={!(Number(fromAmount) > 0) || isConfirming}
+                                    >
+                                        Swap
+                                    </Button>
+                                )
                             )
                         )
                     )
-                )
-            }
-            {
-                isConfirmed && (
-                    <TransactionModal open={txModalOpen} setOpen={(value: boolean) => {
-                        setIsSuccessNormalSwapAction(false)
-                        setTxModalOpen(value)
-                    }}
-                        link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${transactionHash}`}
-                        checkBalance={true}
-                    />
-                )
-            }
-        </div>
-    )
-        ;
+                }
+                {
+                    isConfirmed && (
+                        <TransactionModal open={txModalOpen} setOpen={(value: boolean) => {
+                            setIsSuccessNormalSwapAction(false)
+                            setTxModalOpen(value)
+                        }}
+                                          link={`${mapChainId2ExplorerUrl[walletChainId!]}/tx/${transactionHash}`}
+                                          checkBalance={true}
+                        />
+                    )
+                }
+            </div>
+            <SlippageDialog
+                isOpen={isOpenSlippageDialog}
+                setIsOpen={setIsOpenSlippageDialog}
+                value={slippage}
+                onChange={setSlippage}
+            />
+        </>
+    );
 }

@@ -8,6 +8,7 @@ import { generateEnSoExecuteAction } from "../utils/enso.util.ts";
 import { mapChainId2NativeAddress } from "../config/networks.ts";
 import { compareWalletAddresses } from "../utils/common.util.ts";
 import { ENSO_ROUTER_ADDRESS } from "../constants/enso.constants.ts";
+import { getTokenOutAmount, getTokenOutAmountByPercent } from "../utils/token.util.ts";
 
 interface mutationDataParams {
     chainId: number;
@@ -24,10 +25,11 @@ interface mutationDataParams {
     gasLimit: bigint;
 }
 
+
 export const useEnSoActionMutation = () => {
     return useMutation({
         mutationFn: async (data: mutationDataParams) => {
-            const amountIn = [];
+            const amountIn: string[] = [];
 
             for (let i = 0; i < data.tokenIn.length; i++) {
                 const tokenContract = new ethers.Contract(
@@ -41,14 +43,9 @@ export const useEnSoActionMutation = () => {
                 const isNativeToken = compareWalletAddresses(nativeTokenAddress, data.tokenIn[i]);
 
                 if (data.action === "redeem") { // calc redeem amount by percent
-                    const balance = await tokenContract.balanceOf(data.fromAddress);
-                    amountValue = Math.ceil(Number(balance) * data.amountIn[0] / 100);
+                    amountValue = await getTokenOutAmountByPercent(data.amountIn[0], data.fromAddress, data.tokenIn[i], data.signer);
                 } else {
-                    const decimals = isNativeToken ? 18 : await tokenContract.decimals();
-                    amountValue = Number(ethers.utils.parseUnits(
-                        Number(data.amountIn[i]).toFixed(8).replace(/\.?0+$/, ""),
-                        decimals
-                    ));
+                    amountValue = await getTokenOutAmount(data.amountIn[i], data.tokenIn[i], data.chainId, data.signer)
                 }
 
                 if (!isNativeToken) {

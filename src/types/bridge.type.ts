@@ -155,6 +155,7 @@ export type SwapkitFinalizedQuoteResponse =  {
 }
 
 export type DebridgeQuoteResponse =  {
+    solverGasCosts: number,
     inputUsdAmount: number,
     outputUsdAmount: number,
     outputAmount: string,
@@ -165,17 +166,7 @@ export type DebridgeQuoteResponse =  {
     errorMessage: string;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export interface BridgeRecentWalletType {
+    chainId: number
+    address: string
+}

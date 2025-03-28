@@ -1,7 +1,8 @@
 import {useCallback, useState} from 'react';
 // import { LitAbility, LitActionResource } from '@lit-protocol/auth-helpers';
-import {AuthMethod, IRelayPKP, SessionSigs} from '@lit-protocol/types';
+import {IRelayPKP, SessionSigs} from '@lit-protocol/types';
 import {getSessionSigs} from '../../utils/lit.util.ts';
+import {ExAuthType} from "../../types/auth.type.ts";
 
 export default function useSession() {
     const [sessionSigs, setSessionSigs] = useState<SessionSigs>();
@@ -13,7 +14,7 @@ export default function useSession() {
      * Generate session sigs and store new session data
      */
     const initSession = useCallback(
-        async (authMethod: AuthMethod, pkp: IRelayPKP): Promise<void> => {
+        async (authMethod: ExAuthType, pkp: IRelayPKP): Promise<void> => {
             setLoading(true);
             setError(undefined);
             try {
@@ -33,11 +34,22 @@ export default function useSession() {
         []
     );
 
+    const initSessionRepeatedly = useCallback(
+        async (authMethod: ExAuthType, pkp: IRelayPKP): Promise<void> => {
+            const sessionSigs = await getSessionSigs({
+                pkpPublicKey: pkp.publicKey,
+                authMethod,
+            });
+            setSessionSigs(sessionSigs);
+        },
+        []
+    );
+
     /**
      * Generate session sigs and store new session data
      */
     const initSessionUnSafe = useCallback(
-        async (authMethod: AuthMethod, pkp: IRelayPKP): Promise<void> => {
+        async (authMethod: ExAuthType, pkp: IRelayPKP): Promise<void> => {
             setLoading(true);
             let error = undefined
             try {
@@ -63,6 +75,7 @@ export default function useSession() {
 
     return {
         initSession,
+        initSessionRepeatedly,
         initSessionUnSafe,
         sessionSigs,
         loading,

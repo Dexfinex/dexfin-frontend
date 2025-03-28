@@ -63,8 +63,8 @@ export function InitializeCommands({ setInput }: InitializeCommands) {
             {[
               { command: "Transfer 10 USDC to dexfin.eth", description: "Transfer USDC to dexfin.eth" },
               { command: "I want to swap 10 USDC for ETH", description: "Swap USDC for ETH" },
-              { command: "Stake 1 ETH", description: "Stake ETH" },
-              
+              { command: "Deposit 3 USDC on Aave", description: "Deposit on Aave" },
+
             ].map((cmd) => (
               <button
                 key={cmd.command}

@@ -1,11 +1,22 @@
 import { ethers } from "ethers";
-import { mapChainId2ViemChain } from "../config/networks";
+import {mapChainId2ViemChain, NATIVE_MATIC_ADDRESS, PRICE_MATIC_ADDRESS} from "../config/networks";
 import { erc20Abi } from "viem";
+import { JsonRpcSigner } from "@ethersproject/providers";
 import ErrorImg from "/images/token/error.svg";
 import { coingeckoService } from "../services/coingecko.service";
 import { birdeyeService } from "../services/birdeye.service";
 import { TokenType } from "../types/swap.type";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants";
+import { mapChainId2NativeAddress } from "../config/networks.ts";
+import { compareWalletAddresses } from "./common.util";
+import {polygon} from "viem/chains";
+import {NULL_ADDRESS, ZERO_ADDRESS} from "../constants";
+
+export const getRealNativeTokenAddress = (chainId: number) => {
+    if (chainId === polygon.id)
+        return NATIVE_MATIC_ADDRESS
+    return mapChainId2NativeAddress[chainId]
+}
 
 export const formatNumber = (num: string | number, fixedCount = 2) => {
     // Define the threshold below which numbers are shown as-is
@@ -32,7 +43,8 @@ export const formatNumber = (num: string | number, fixedCount = 2) => {
 export const getTokenInfo = async (address: string, chainId: number) => {
     if (chainId != SOLANA_CHAIN_ID) {
         const chain = mapChainId2ViemChain[chainId];
-        const provider = new ethers.providers.JsonRpcProvider(chain.rpcUrls.default.http[0]);
+        const rpcUrl = (chainId == 56 ? "https://bsc-rpc.publicnode.com" : chain.rpcUrls.default.http[0]);
+        const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 
         const contract = new ethers.Contract(address, erc20Abi, provider);
 
@@ -74,4 +86,47 @@ export const getTokenInfo = async (address: string, chainId: number) => {
     }
 
     return null;
+}
+
+export const getTokenOutAmount = async (amount: number, address: string, chainId: number, signer: JsonRpcSigner | undefined) => {
+
+    const contract = new ethers.Contract(address, erc20Abi, signer);
+
+    try {
+        const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
+        const isNativeToken = compareWalletAddresses(nativeTokenAddress, address);
+        const decimals = isNativeToken ? 18 : await contract.decimals();
+
+        return Number(ethers.utils.parseUnits(
+            amount + "",
+            decimals
+        ));
+    } catch (err) {
+        console.log('get token info err: ', err);
+        return 0
+    }
+}
+
+export const getTokenOutAmountByPercent = async (percent: number, fromAddress: string, address: string, signer: JsonRpcSigner | undefined) => {
+    const contract = new ethers.Contract(address, erc20Abi, signer);
+    try {
+        const balance = await contract.balanceOf(fromAddress);
+        return Math.ceil(Number(balance) * percent / 100);
+    } catch (err) {
+        console.log('get token info err: ', err);
+        return 0;
+    }
+}
+
+export const getTokenAddressForTokenPrice = (address: string, chainId: number) => {
+    if (chainId === polygon.id) {
+        return address.toLowerCase() === NATIVE_MATIC_ADDRESS ? PRICE_MATIC_ADDRESS : address
+    }
+    return address.toLowerCase() === NULL_ADDRESS ? ZERO_ADDRESS : address
+}
+export const getOriginTokenAddressFrom = (address: string, chainId: number) => {
+    if (chainId === polygon.id) {
+        return address.toLowerCase() === PRICE_MATIC_ADDRESS ? NATIVE_MATIC_ADDRESS : address
+    }
+    return address.toLowerCase() === ZERO_ADDRESS ? NULL_ADDRESS : address
 }

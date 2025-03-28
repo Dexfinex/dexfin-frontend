@@ -4,10 +4,11 @@ import {TokenType} from "../../../types/swap.type";
 import {TokenSelectorModal} from "./TokenSelectorModal.tsx";
 import {Skeleton} from "@chakra-ui/react";
 import {formatNumberByFrac} from "../../../utils/common.util.ts";
-
+import {TokenChainIcon} from './TokenIcon.tsx';
 
 interface TokenSelectorProps {
     selectedToken?: TokenType | null;
+    disabledToken?: TokenType | null;
     selectedChainId?: number | null;
     onSelect: (token: TokenType) => void;
     amount: string;
@@ -18,11 +19,13 @@ interface TokenSelectorProps {
     className?: string;
     isLoading?: boolean;
     balance?: string;
+    deductionAmount?: number;
     isBalanceLoading?: boolean;
 }
 
 export function TokenSelector({
                                   selectedToken,
+                                  disabledToken,
                                   selectedChainId,
                                   onSelect,
                                   amount,
@@ -32,6 +35,7 @@ export function TokenSelector({
                                   disabled = false,
                                   className = '',
                                   isLoading = false,
+                                  deductionAmount = 0,
                                   balance,
                                   isBalanceLoading = false,
                               }: TokenSelectorProps) {
@@ -48,8 +52,8 @@ export function TokenSelector({
                         {selectedToken?.price && (
                             <span
                                 className="text-[10px] text-blue-400/90 font-medium bg-blue-500/10 px-1.5 py-0.5 rounded-md">
-                ≈ ${(Number(amount || '0') * (selectedToken.price || 0)).toFixed(2)}
-              </span>
+                                ≈ ${(Number(amount || '0') * (selectedToken.price || 0)).toFixed(2)}
+                            </span>
                         )}
                     </div>
                     {
@@ -64,22 +68,23 @@ export function TokenSelector({
                                 />
                             </div>
                         ) : (
-                            <span className="text-gray-400 text-[10px] font-medium tracking-wide flex items-center gap-2">
+                            <span
+                                className="text-gray-400 text-[10px] font-medium tracking-wide flex items-center gap-2">
                                 Balance: {balance ? formatNumberByFrac(Number(balance), 7) : '0'} {selectedToken?.symbol}
                                 {(Number(balance) > 0) && !disabled && (
                                     <button
                                         className="text-blue-400 hover:text-blue-300 font-semibold bg-blue-500/10 px-2 py-0.5 rounded-md hover:bg-blue-500/20 transition-all hover:scale-105 active:scale-95"
                                         onClick={() => {
                                             const multiplier = (10 ** Math.min(6, (selectedToken?.decimals ?? 0)))
-                                            const roundedBalance = (Number(balance ?? '0')) * multiplier;
-                                            const formattedBalance = (Math.floor(roundedBalance) / multiplier).toString();
-                                            onAmountChange(formattedBalance)
+                                            const roundedBalance = (Number(balance ?? '0')) * multiplier
+                                            const formattedBalance = Math.max(0, Number(formatNumberByFrac(Math.floor(roundedBalance) / multiplier - deductionAmount, 7, 'floor')))
+                                            onAmountChange(formattedBalance.toString())
                                         }}
                                     >
                                         MAX
                                     </button>
                                 )}
-                      </span>
+                            </span>
 
                         )
                     }
@@ -93,11 +98,8 @@ export function TokenSelector({
                             className="absolute inset-0 bg-gradient-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 group-hover:translate-x-full duration-1000 transition-transform ease-in-out"/>
                         {selectedToken ? (
                             <>
-                                <img
-                                    src={selectedToken.logoURI}
-                                    alt={selectedToken.symbol}
-                                    className="w-7 h-7 rounded-full ring-1 ring-white/10 group-hover:ring-primary-500/20 transition-all duration-300 group-hover:scale-110"
-                                />
+                                <TokenChainIcon src={selectedToken.logoURI} alt={selectedToken.name} size={"lg"}
+                                                chainId={Number(selectedToken.chainId)}/>
                                 <div className="flex flex-col">
                                     <span
                                         className="font-semibold text-white tracking-wide text-sm whitespace-nowrap text-ellipsis overflow-hidden w-[60px]">{selectedToken.symbol}</span>
@@ -138,8 +140,7 @@ export function TokenSelector({
                                 onChange={(e) => onAmountChange(e.target.value)}
                                 disabled={disabled}
                                 placeholder="0"
-                                className={`w-0 flex-1 bg-transparent text-white text-right text-2xl font-medium outline-none placeholder-gray-500 focus:placeholder-primary-400/50 transition-all group-focus-within/input:placeholder-primary-400/30 ${
-                                    disabled ? 'opacity-50 cursor-not-allowed' : ''
+                                className={`w-0 flex-1 bg-transparent text-white text-right text-2xl font-medium outline-none placeholder-gray-500 focus:placeholder-primary-400/50 transition-all group-focus-within/input:placeholder-primary-400/30 ${disabled ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
                             />
                         )
@@ -159,8 +160,8 @@ export function TokenSelector({
                             </div>
                         ) : (
                             <span className={`text-xs px-2 py-0.5 rounded-full text-gray-400`}>
-                                    ${formatNumberByFrac(Number(usdAmount), 2)}
-                                </span>
+                                ${formatNumberByFrac(Number(usdAmount), 2)}
+                            </span>
                         )
                     )}
                 </div>
@@ -169,6 +170,7 @@ export function TokenSelector({
                 <TokenSelectorModal
                     isOpen={isOpen}
                     selectedToken={selectedToken}
+                    disabledToken={disabledToken}
                     selectedChainId={selectedChainId}
                     onSelect={onSelect}
                     onClose={() => setIsOpen(false)}

@@ -40,7 +40,7 @@ interface SolanaAgentSwapAction {
 }
 
 export const useSolanaAgentSwapActionMutation = () => {
-  const { walletType, signer, signSolanaTransaction, solanaWalletInfo } = useContext(Web3AuthContext);
+  const { walletType,  signSolanaTransaction, solanaWalletInfo } = useContext(Web3AuthContext);
 
   return useMutation({
     mutationFn: async (data: SolanaAgentSwapAction) => {

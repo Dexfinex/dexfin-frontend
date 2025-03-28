@@ -3,12 +3,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { StytchProvider } from '@stytch/react';
 import { StytchUIClient } from "@stytch/vanilla-js";
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 import Web3AuthProvider from './providers/Web3AuthContext';
 import { WalletProvider } from "./providers/WalletProvider";
 import { WebSocketProvider } from './providers/WebSocketProvider.tsx';
-import {UserProvider} from './providers/UserProvider.tsx';
+import { UserProvider } from './providers/UserProvider.tsx';
 
 
 const stytch = new StytchUIClient(
@@ -36,7 +37,9 @@ createRoot(document.getElementById('root')!).render(
                     <UserProvider>
                         <ChakraProvider>
                             <WebSocketProvider>
-                                <App />
+                                <BrowserRouter>
+                                    <App />
+                                </BrowserRouter>
                             </WebSocketProvider>
                         </ChakraProvider>
                     </UserProvider>

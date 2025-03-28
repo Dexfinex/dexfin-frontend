@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { ArrowRight, Wallet, X } from 'lucide-react';
 
-import { TokenType, Step } from '../../../../types/brian.type.ts';
+import { TokenType } from '../../../../types/brian.type.ts';
 import { convertCryptoAmount } from '../../../../utils/agent.util.tsx';
 import { shrinkAddress } from '../../../../utils/common.util.ts';
 import { mapChainId2ViemChain, mapChainId2ExplorerUrl } from '../../../../config/networks.ts';
@@ -11,7 +11,7 @@ import { formatNumberByFrac } from '../../../../utils/common.util.ts';
 import useGasEstimation from "../../../../hooks/useGasEstimation.ts";
 import { useSendTransactionMutation } from '../../../../hooks/useSendTransactionMutation.ts';
 import { Web3AuthContext } from "../../../../providers/Web3AuthContext.tsx";
-
+import { TokenChainIcon } from '../../../swap/components/TokenIcon.tsx';
 interface SendProcessProps {
   onClose: () => void;
   fromToken: TokenType;
@@ -108,11 +108,8 @@ export const EVMSendProcess: React.FC<SendProcessProps> = ({ receiver, fromAmoun
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3 mb-4 md:mb-0">
-              <img
-                src={fromToken.logoURI}
-                alt="USDC"
-                className="w-10 h-10"
-              />
+              <TokenChainIcon src={fromToken?.logoURI} alt={fromToken?.name}
+                size={"lg"} chainId={Number(fromToken?.chainId)} />
               <div>
                 <div className="text-sm text-white/60">Amount</div>
                 <div className="text-xl font-medium">{fromToken ? formatNumberByFrac(convertCryptoAmount(fromAmount, 0)) : ''} {fromToken?.symbol}</div>

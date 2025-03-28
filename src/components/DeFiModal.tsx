@@ -1,23 +1,20 @@
-import React, { useState, useContext, useMemo, useEffect } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { Maximize2, Minimize2, X, } from 'lucide-react';
 import { ethers } from 'ethers';
 import { erc20Abi } from "viem";
 
 import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useDefi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
-import useDefiStore, { Position } from '../store/useDefiStore';
+import { Position } from '../store/useDefiStore';
 import useTokenBalanceStore from '../store/useTokenBalanceStore';
 import { useEnSoActionMutation } from '../hooks/useActionEnSo.ts';
 import useGasEstimation from "../hooks/useGasEstimation.ts";
-import useGetTokenPrices from '../hooks/useGetTokenPrices';
-import useTokenStore from "../store/useTokenStore.ts";
 import { TransactionModal } from './swap/modals/TransactionModal.tsx';
 import { PositionList } from './defi/PositionList.tsx';
 import ProtocolStatistic from './defi/ProtocolStatistic.tsx';
 
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
-import { mapChainId2NativeAddress } from "../config/networks.ts";
-import { STAKING_TOKENS, BORROWING_LIST, LENDING_LIST } from '../constants/mock/defi.ts';
+import { STAKING_TOKENS, BORROWING_LIST } from '../constants/mock/defi.ts';
 import { OfferingList } from './defi/OfferlingList.tsx';
 import GlobalMetric from './defi/GlobalMetric.tsx';
 import RedeemModal from './defi/RedeemModal.tsx';
@@ -39,6 +36,13 @@ interface ModalState {
   supportedChains?: number[];
 }
 
+const DEFI_CHAIN_LIST = [
+  1, // Ethereum Mainnet (ETH)
+  56, // Binance Smart Chain (BNB)
+  137, // Polygon Mainnet (MATIC)
+  8453, // Base Mainnet (ETH placeholder)
+]
+
 export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'overview' | 'explore'>('explore');
@@ -56,61 +60,31 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const { mutate: enSoActionMutation } = useEnSoActionMutation();
 
-  const { chainId, address, signer, } = useContext(Web3AuthContext);
-  useDefiStore();
+  const { chainId, address, signer, switchChain} = useContext(Web3AuthContext);
 
   const { getTokenBalance } = useTokenBalanceStore();
-  const { data: gasData } = useGasEstimation()
+  const { data: gasData } = useGasEstimation(chainId);
 
-  const positionHandlerList = [
-    1, // Ethereum Mainnet (ETH)
-    56, // Binance Smart Chain (BNB)
-    137, // Polygon Mainnet (MATIC)
-    8453, // Base Mainnet (ETH placeholder)
-  ].map(chainId => {
+  const positionHandlerList = useRef<{ isLoading: boolean, refetch: () => void, chainId: number }[]>([]);
+  for (const chainId of DEFI_CHAIN_LIST) {
     const { isLoading, refetch } = useDefiPositionByWallet({ chainId: Number(chainId), walletAddress: address });
-    return { isLoading, refetch, chainId: chainId }
-  });
+    positionHandlerList.current.push({ isLoading, refetch, chainId: chainId })
+  }
 
-  const refetchDefiPositionByWallet = positionHandlerList.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
+  const refetchDefiPositionByWallet = positionHandlerList.current.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
 
-  const isLoadingPosition = positionHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === positionHandlerList.length;
+  const isLoadingPosition = positionHandlerList.current.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === positionHandlerList.current.length;
 
-  const protocolHandlerList = [
-    1, // Ethereum Mainnet (ETH)
-    56, // Binance Smart Chain (BNB)
-    137, // Polygon Mainnet (MATIC)
-    8453, // Base Mainnet (ETH placeholder)
-  ].map(chainId => {
+  const protocolHandlerList = useRef<{ isLoading: boolean, refetch: () => void, chainId: number }[]>([]);
+
+  for (const chainId of DEFI_CHAIN_LIST) {
     const { isLoading, refetch } = useDefiProtocolsByWallet({ chainId: Number(chainId), walletAddress: address });
-    return { isLoading, refetch, chainId: chainId }
-  });
+    protocolHandlerList.current.push({ isLoading, refetch, chainId: chainId });
+  }
 
-  const isLoadingProtocol = protocolHandlerList.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === protocolHandlerList.length;
+  const isLoadingProtocol = protocolHandlerList.current.reduce((sum, p) => sum + (p.isLoading ? 1 : 0), 0) === protocolHandlerList.current.length;
 
-  const refetchDefiProtocolByWallet = protocolHandlerList.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
-
-  const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
-
-  const { refetch: refetchNativeTokenPrice } = useGetTokenPrices({
-    tokenAddresses: [nativeTokenAddress],
-    chainId: Number(chainId),
-  })
-
-  const { getTokenPrice, tokenPrices } = useTokenStore()
-
-  const nativeTokenPrice = useMemo(() => {
-    if (chainId && nativeTokenAddress) {
-      return getTokenPrice(nativeTokenAddress, chainId)
-    }
-    return 0;
-  }, [getTokenPrice, nativeTokenAddress, chainId, tokenPrices])
-
-  useEffect(() => {
-    if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
-      refetchNativeTokenPrice()
-    }
-  }, [chainId, nativeTokenAddress, nativeTokenPrice])
+  const refetchDefiProtocolByWallet = protocolHandlerList.current.find(item => Number(item.chainId) === chainId)?.refetch || function () { };
 
   const isLoading = isLoadingPosition || isLoadingProtocol;
 
@@ -122,6 +96,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleAction = (type: string, position: Position, apyToken: string, supportedChains: number[]) => {
+    switchChain(supportedChains[0]);
     setModalState({ type, position, apyToken, supportedChains });
   };
 
@@ -165,61 +140,6 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
               setSelectedTab('overview');
             }
 
-          }
-          setConfirming("");
-        },
-        onError: async (e) => {
-          console.error(e)
-          setConfirming("");
-        }
-      })
-    }
-  }
-
-  const lendHandler = async () => {
-    if (signer && Number(tokenAmount) > 0) {
-      setConfirming("Approving...");
-      const lendTokenInfo = LENDING_LIST.find((token) => {
-        return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
-      });
-      const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
-      const tokenOutInfo = lendTokenInfo?.tokenOut ? lendTokenInfo?.tokenOut : null;
-
-      enSoActionMutation({
-        chainId: Number(chainId),
-        fromAddress: address,
-        routingStrategy: "router",
-        action: "deposit",
-        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
-        tokenIn: [tokenInInfo?.contract_address || ""],
-        tokenOut: [tokenOutInfo?.contract_address || ""],
-        amountIn: [Number(tokenAmount)],
-        signer: signer,
-        receiver: address,
-        gasPrice: gasData.gasPrice,
-        gasLimit: gasData.gasLimit
-      }, {
-        onSuccess: async (txData) => {
-          if (signer) {
-            setConfirming("Executing...");
-            // execute defi action
-            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
-              setConfirming("")
-              return null;
-            });
-            if (transactionResponse) {
-              const receipt = await transactionResponse.wait();
-              setHash(receipt.transactionHash);
-              setTxModalOpen(true);
-              await refetchDefiPositionByWallet();
-              await refetchDefiProtocolByWallet();
-
-              setTokenAmount("");
-              setToken2Amount("");
-              setShowPreview(false);
-              setModalState({ type: null });
-              setSelectedTab('overview');
-            }
           }
           setConfirming("");
         },
@@ -306,7 +226,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           if (signer) {
             setConfirming("Executing...");
             // execute defi action
-            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+            const transactionResponse = await signer.sendTransaction(txData.tx).catch((e) => {
+              console.error(e)
               setConfirming("")
               return null;
             });
@@ -599,13 +520,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       {modalState?.type === 'lend' && modalState.position && (
         <LendModal
           setModalState={setModalState}
-          showPreview={showPreview}
           modalState={modalState}
-          setShowPreview={setShowPreview}
-          tokenAmount={tokenAmount}
-          confirming={confirming}
-          lendHandler={lendHandler}
-          setTokenAmount={setTokenAmount}
+          refetchDefiPositionByWallet={refetchDefiPositionByWallet}
+          refetchDefiProtocolByWallet={refetchDefiProtocolByWallet}
+          setSelectedTab={setSelectedTab}
         />
       )}
 

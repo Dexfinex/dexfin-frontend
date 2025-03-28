@@ -10,6 +10,10 @@ export interface ExtendedError extends Error {
   details?: string[]
 }
 
+export interface ExAuthType extends AuthMethod {
+  userId?: string
+}
+
 export interface SolanaWalletInfoType {
   publicKey: string;
   pkpAddress: string;

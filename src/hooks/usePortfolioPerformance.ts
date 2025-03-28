@@ -14,9 +14,9 @@ type TimeRangeType = {
 }
 
 const customMapTimeRange: Record<string, TimeRangeType> = {
-    "24h": { mseconds: 86400, solInterval: "15m", interval: "1H" },
-    "7d": { mseconds: 604800, solInterval: "1H", interval: "1D" },
-    "1m": { mseconds: 2592000, solInterval: "4H", interval: "1W" },
+    "24h": { mseconds: 86400, solInterval: "1H", interval: "1H" },
+    "7d": { mseconds: 604800, solInterval: "1D", interval: "24H" },
+    "1m": { mseconds: 2592000, solInterval: "1D", interval: "24H" },
 };
 
 interface ChartPosition {
@@ -32,14 +32,22 @@ export const usePortfolioPerformance = (selectedTimeframe: string) => {
         return data.map((e: { time: number, close: number, open: number, low: number }) => {
             let readableTime = ""
 
-            if (selectedTimeframe === "24h") {
-                readableTime = getHourAndMinute(e.time * 1000)
-            } else if (selectedTimeframe === "7d") {
-                readableTime = getMonthDayHour(e.time * 1000)
-            } else if (selectedTimeframe === "1m") {
-                readableTime = getMonthDayHour(e.time * 1000)
-            } else if (selectedTimeframe === "3m") {
-                readableTime = getMonthDayYear(e.time * 1000)
+            switch (selectedTimeframe) {
+                case "24h":
+                    readableTime = getHourAndMinute(e.time * 1000);
+                    break;
+                case "7d":
+                    readableTime = getMonthDayHour(e.time * 1000);
+                    break;
+                case "1m":
+                    readableTime = getMonthDayHour(e.time * 1000);
+                    break;
+                case "3m":
+                    readableTime = getMonthDayYear(e.time * 1000);
+                    break;
+                default:
+                    readableTime = getMonthDayHour(e.time * 1000);
+                    break;
             }
 
             return {
@@ -87,7 +95,7 @@ export const usePortfolioPerformance = (selectedTimeframe: string) => {
                         time: price.time
                     }
                 })
-                for (let index = 0; index < valueList.length; index++) {
+                for (let index = 0; index < valueList.length - 1; index++) {
                     portfolioData[index] = {
                         price: Number(portfolioData[index]?.price || 0) + Number(valueList[index].price),
                         time: valueList[index].time

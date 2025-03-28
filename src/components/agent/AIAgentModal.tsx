@@ -1,15 +1,19 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { Web3AuthContext } from '../../providers/Web3AuthContext.tsx';
 import { coingeckoService } from '../../services/coingecko.service';
-import { cryptoNewsService } from '../../services/cryptonews.service.ts';
 import { isAddress } from "viem";
 import { brianService } from '../../services/brian.service';
-import { convertBrianKnowledgeToPlainText, parseChainedCommands } from '../../utils/agent.util.tsx';
+import useTrendingTokensStore from '../../store/useTrendingTokensStore.ts';
 import {
-  Mic,
-  Send,
-  Trash2,
-} from 'lucide-react';
+  convertBrianKnowledgeToPlainText,
+  convertCryptoAmount,
+  getSolAddressFromSNS,
+  isValidSolanaAddress,
+  parseChainedCommands,
+  resolveEnsToAddress,
+  symbolToToken
+} from '../../utils/agent.util.tsx';
+import { Mic, Send, Trash2, } from 'lucide-react';
 import { VoiceModal } from './VoiceModal.tsx';
 import { Message } from '../../types/index.ts';
 import { TrendingCoins } from './components/Analysis/TrendingCoins.tsx';
@@ -22,15 +26,15 @@ import { BridgeProcess } from './components/EVM/BridgeProcess.tsx';
 import { PortfolioProcess } from '../PortfolioProcess.tsx';
 import { SendProcess } from './components/EVM/SendProcess.tsx';
 import { EVMSendProcess } from './components/EVM/EVMSendProcess.tsx';
+import { EVMSwapProcess } from './components/EVM/EVMSwapProcess.tsx';
 import { SolSendProcess } from './components/Solana/SolSendProcess.tsx';
 import { StakeProcess } from '../StakeProcess.tsx';
 import { ProjectAnalysisProcess } from '../ProjectAnalysisProcess.tsx';
 import { WalletPanel } from './WalletPanel.tsx';
 import { InitializeCommands } from './InitializeCommands.tsx';
 import { TopBar } from './TopBar.tsx';
-import { TokenType, Step, Protocol } from '../../types/brian.type.ts';
+import { Protocol, Step, TokenType, Yield } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
-import { convertCryptoAmount, getSolAddressFromSNS, resolveEnsToAddress, isValidSolanaAddress, symbolToToken } from '../../utils/agent.util.tsx';
 import { DepositProcess } from './components/EVM/DepositProcess.tsx';
 import { WithdrawProcess } from './components/EVM/WithdrawProcess.tsx';
 import { BorrowProcess } from './components/EVM/BorrowProcess.tsx';
@@ -43,9 +47,8 @@ import { TechnicalAnalysis } from './components/Analysis/TechnicalAnalysis.tsx';
 import { SentimentAnalysis } from './components/Analysis/SentimentAnalysis.tsx';
 import { PredictionAnalysis } from './components/Analysis/PredictionAnalysis.tsx';
 import { MarketOverview } from './components/Analysis/MarketOverview.tsx';
-import { yields_data } from '../../constants/mock/agent.ts';
-import { Yield } from '../../types/brian.type.ts';
-import { mapChainName2Network } from '../../config/networks.ts';
+import { mapChainName2Network, mapPopularTokens, mapChainId2NativeAddress } from '../../config/networks.ts';
+
 interface AIAgentModalProps {
   isOpen: boolean;
   widgetCommand: string;
@@ -53,6 +56,7 @@ interface AIAgentModalProps {
 }
 
 export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgentModalProps) {
+  const { trendingTokens } = useTrendingTokensStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -66,6 +70,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
   const [showPortfolioProcess, setShowPortfolioProcess] = useState(false);
   const [showSendProcess, setShowSendProcess] = useState(false);
   const [showEVMSendProcess, setShowEVMSendProcess] = useState(false);
+  const [showEVMSwapProcess, setShowEVMSwapProcess] = useState(false);
   const [showSolSendProcess, setShowSolSendProcess] = useState(false);
   const [showStakeProcess, setShowStakeProcess] = useState(false);
   const [showProjectAnalysis, setShowProjectAnalysis] = useState(false);
@@ -76,7 +81,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
   const [showRepayProcess, setShowRepayProcess] = useState(false);
   const [showENSRegisterProcess, setShowENSRegisterProcess] = useState(false);
   const [showENSRenewProcess, setShowENSRenewProcess] = useState(false);
-  const { address, chainId, switchChain, solanaWalletInfo } = useContext(Web3AuthContext);
+  const { address, chainId, switchChain } = useContext(Web3AuthContext);
   const { tokenBalances } = useTokenBalanceStore();
 
   const [fromToken, setFromToken] = useState<TokenType>();
@@ -99,6 +104,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
     setShowPortfolioProcess(false);
     setShowSendProcess(false);
     setShowEVMSendProcess(false);
+    setShowEVMSwapProcess(false);
     setShowStakeProcess(false);
     setShowProjectAnalysis(false);
     setShowDepositProcess(false);
@@ -232,7 +238,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
   const findFallbackResponse = async (message: string) => {
     const normalizedMessage = message.toLowerCase();
     const response = await openaiService.getOpenAIAnalyticsData(normalizedMessage);
-
+    console.log(response);
     if (response && response.type == "price") {
 
       if (response.data) {
@@ -340,6 +346,8 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
       return sol_response;
     } else if (sol_response && sol_response.type == "transfer_evm" && sol_response.args.chainName != "solana") {
       return sol_response;
+    } else if (sol_response && sol_response.type == "swap_evm" && sol_response.args.chainName != "solana") {
+      return sol_response;
     }
 
     for (const [key, response] of Object.entries(fallbackResponses)) {
@@ -371,7 +379,10 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
 
       for (const command of commands) {
         const normalizedCommand = command.trim();
-
+        setMessages(prev => [...prev, {
+          role: 'user',
+          content: command
+        }]);
         response = await generateResponse(normalizedCommand, address, chainId);
         console.log(response);
         if (response.type == "action" && response.brianData.type == "write") {
@@ -525,10 +536,11 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
         } else if (response.type == "knowledge") {
           response = { text: response.text.replace(/brian/gi, "Dexfin") };
         } else if (response.type == "best_yields") {
+          await switchChain(1);
           setYields(response.yields);
           setShowYieldProcess(true);
         } else if (response.type == "transfer_sol") {
-          let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
+          const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
           if (token && token.balance > response.args.amount) {
             let address = response.args.outputMint;
             const snsToAddress = await getSolAddressFromSNS(address);
@@ -554,7 +566,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
             response = { text: `transfer ${response.args.amount} ${response.args.inputSymbol} to ${response.args.outputMint} on solana`, insufficient: 'Insufficient balance to perform the transaction.' };
           }
         } else if (response.type == "swap_sol") {
-          let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
+          const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
           if (token && token.balance > response.args.inAmount) {
             const toToken = symbolToToken(response.args.outputSymbol);
             const fromToken = symbolToToken(response.args.inputSymbol);
@@ -580,13 +592,12 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           if (chainId != fromNetwork.chainId) {
             await switchChain(fromNetwork.chainId);
           }
-          console.log(response);
-          console.log(tokenBalances);
-          let token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === fromNetwork.id);
-          console.log(token);
+
+          const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === fromNetwork.id);
+
           let address = response.args.outputMint;
           const ensAddress = await resolveEnsToAddress(address);
-          console.log(ensAddress);
+
           if (ensAddress) address = ensAddress;
           if (token && token.balance > response.args.amount) {
             if (isAddress(address)) {
@@ -607,15 +618,96 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
             }
           }
           else {
-            response = { text: response.text, insufficient: 'Insufficient balance to perform the transaction.' };
+            response = { text: `transfer ${response.args.amount} ${response.args.inputSymbol} to ${response.args.outputMint} on ${fromNetwork.id}`, insufficient: 'Insufficient balance to perform the transaction.' };
+          }
+        } else if (response.type == "swap_evm") {
+          resetProcessStates();
+
+          const fromNetwork = mapChainName2Network[response.args.chainName];
+
+          if (chainId != fromNetwork.chainId) {
+            await switchChain(fromNetwork.chainId);
+          }
+
+          const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === fromNetwork.id);
+
+          if (token && token.balance > response.args.inAmount) {
+            let toToken = null;
+            const popularTokens = mapPopularTokens[fromNetwork.chainId];
+            const popularToken = popularTokens.find(item => item?.symbol?.toLowerCase() === response.args.outputSymbol.toLowerCase());
+            if (popularToken) {
+              toToken = {
+                symbol: popularToken.symbol || '',
+                name: popularToken.name,
+                address: popularToken.address,
+                chainId: popularToken.chainId,
+                decimals: popularToken.decimals,
+                logoURI: popularToken.logoURI,
+              };
+            } else {
+              const trendingTokensBase = trendingTokens[fromNetwork.id];
+              const tmpToken = trendingTokensBase.find(item => item?.symbol?.toLowerCase() === response.args.outputSymbol.toLowerCase());
+
+              if (tmpToken) {
+                toToken = {
+                  symbol: tmpToken.symbol || '',
+                  name: tmpToken.name,
+                  address: tmpToken.address,
+                  chainId: tmpToken.chainId,
+                  decimals: tmpToken.decimals,
+                  logoURI: tmpToken.logoURI,
+                };
+              }
+            }
+            if (toToken) {
+              if (token.symbol == 'POL') {
+                setFromToken({
+                  symbol: token.symbol,
+                  name: token.name,
+                  address: mapChainId2NativeAddress[Number(token.chain)],
+                  chainId: Number(token.chain),
+                  decimals: token.decimals,
+                  logoURI: token.logo,
+                  priceUSD: token.usdPrice
+                });
+              } else {
+                setFromToken({
+                  symbol: token.symbol,
+                  name: token.name,
+                  address: token.address,
+                  chainId: Number(token.chain),
+                  decimals: token.decimals,
+                  logoURI: token.logo,
+                  priceUSD: token.usdPrice
+                });
+              }
+
+              setProtocol({
+                key: "",
+                logoURI: "",
+                name: "0x",
+              });
+              setToToken({
+                symbol: toToken.symbol,
+                name: toToken.name,
+                address: toToken.address,
+                chainId: Number(toToken.chainId),
+                decimals: toToken.decimals,
+                logoURI: toToken.logoURI,
+                priceUSD: 0,
+              });
+              setFromAmount(response.args.inAmount);
+              setShowEVMSwapProcess(true);
+            } else {
+              response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.' }
+            }
+          } else {
+            response = { text: `swap ${response.args.inAmount} ${response.args.inputSymbol} for ${response.args.outputSymbol} on ${fromNetwork.id}`, insufficient: 'Insufficient balance to perform the transaction.' };
           }
         }
 
         if (response) {
           setMessages(prev => [...prev, {
-            role: 'user',
-            content: command
-          }, {
             role: 'assistant',
             content: response.text,
             tip: response.insufficient,
@@ -842,6 +934,12 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
               setShowEVMSendProcess(false);
               setMessages([]);
             }} />
+        ) : showEVMSwapProcess && fromToken && toToken ? (
+          <EVMSwapProcess fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowEVMSwapProcess(false);
+              setMessages([]);
+            }} />
         ) :
           (
             <div className="flex flex-col h-full">
@@ -897,7 +995,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
                               )}
                               {message.marketOverview && (
                                 <div className="mt-4 w-full">
-                                  <MarketOverview isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.predictionAnalysis}></MarketOverview>
+                                  <MarketOverview isWalletPanelOpen={isWalletPanelOpen} isLoading={false} data={message.marketOverview}></MarketOverview>
                                 </div>
                               )}
                               {message.trending && <TrendingCoins coins={message.trending} />}
@@ -990,7 +1088,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
         isOpen={isListening}
         transcript={transcript}
         commands={[
-          { command: "Stake 1 ETH on Lido", description: "Earn staking rewards" },
+          { command: "Transfer 10 USDC to dexfin.eth", description: "Transfer USDC" },
           { command: "Deposit 1 USDC on Aave", description: "Earn lending interest" },
           { command: "Withdraw 2 USDC on Aave", description: "Remove Deposited tokens" },
           { command: "Swap 1 USDC for ETH", description: "Execute token swap" }

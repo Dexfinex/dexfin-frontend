@@ -1,5 +1,3 @@
-import { string } from "zod";
-
 export type TokenType = {
   symbol: string;
   name: string;

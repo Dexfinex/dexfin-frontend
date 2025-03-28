@@ -138,8 +138,8 @@ export const getFullDate = (timestamp: number) => {
  * @returns boolean - Returns true if the addresses are the same (case-insensitive), otherwise false.
  */
 export const compareWalletAddresses = (
-    address1: string,
-    address2: string,
+    address1: string | undefined,
+    address2: string | undefined,
 ): boolean => {
     // if (!ethers.utils.isAddress(address1) || !ethers.utils.isAddress(address2)) {
     //     return false;
@@ -192,6 +192,7 @@ export const shrinkAddress = (address: string, length: number = 5): string => {
  *
  * @param {number | undefined} num - The number to be formatted. If undefined, defaults to '0'.
  * @param {number} [fixedCount=2] - The number of decimal places to format the number to. Default is 2.
+ * @param calcFuncName
  * @returns {string} - The number formatted to the specified decimal places as a string.
  *
  * @remarks
@@ -202,6 +203,7 @@ export const shrinkAddress = (address: string, length: number = 5): string => {
 export const formatNumberByFrac = (
     num: number | undefined,
     fixedCount: number = 2,
+    calcFuncName: string = 'round',
 ): string => {
     if (num === undefined) return '0';
 
@@ -211,20 +213,49 @@ export const formatNumberByFrac = (
 
     const getFixedNum = (num: number, fixedCount: number): string => {
         const multipleValue = 10 ** fixedCount;
-        return (Math.round(num * multipleValue) / multipleValue).toString();
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        return (Math[calcFuncName](num * multipleValue) / multipleValue).toString();
     };
 
     if (
         Number.isInteger(num) ||
         (Math.abs(num) < threshold && Math.abs(num) > minThreshold)
     ) {
-        const lengthAfterDecimal = Math.ceil(Math.log10(1 / num));
+        const lengthAfterDecimal = Math.floor(Math.log10(1 / num));
         if (num > 0 && lengthAfterDecimal > 0) {
             return getFixedNum(num, lengthAfterDecimal + 2);
         }
     }
 
     return getFixedNum(num, fixedCount);
+};
+
+export const formatNumberByRepeat = (
+    num: number,
+    fixedCount: number = 2,
+): { prev: string, current: string, next: string } => {
+    const string = formatNumberByFrac(num, fixedCount);
+    const decimalIndex = string.indexOf('.');
+    const threshold = 0.001;
+
+    if (decimalIndex !== -1 && Math.abs(num) < threshold) {
+        const decimalPart = string.slice(decimalIndex + 1); // Get the decimal part
+
+        let significantDigitPosition = decimalPart.search(/[1-9]/); // Find the first non-zero digit
+
+        if (significantDigitPosition === -1) {
+            // Handle case when there's no significant digit
+            return { prev: string, current: "", next: "" };
+        }
+
+        const leadingZeros = decimalPart.slice(0, significantDigitPosition); // Leading zeros before the significant digit
+        const significantDigit = decimalPart.charAt(significantDigitPosition); // The significant digit itself
+        const remainingDigits = decimalPart.slice(significantDigitPosition + 1); // Any remaining digits after the significant digit
+        // return `0.0(${leadingZeros.length})${significantDigit}${remainingDigits}`; // Return the formatted string
+        return { prev: "0.0", current: leadingZeros.length + "", next: `${significantDigit}${remainingDigits}` };
+    }
+    return { prev: string, current: "", next: "" };
 };
 
 export const formatNumber = (num: number): string => {

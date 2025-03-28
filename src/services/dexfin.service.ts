@@ -1,16 +1,19 @@
 import { dexfinv3Api } from "./api.service.ts";
 import {
-  EvmWalletBalanceRequestType,
-  EvmWalletBalanceResponseType,
   EvmDefiPosition,
   EvmDefiProtocol,
+  EvmWalletBalanceRequestType,
+  EvmWalletBalanceResponseType,
   SolanaTokensType,
   SolanaWalletReponseType,
 } from "../types/dexfinv3.type.ts";
-import { birdeyeService } from "./birdeye.service.ts";
 import { coingeckoService } from "./coingecko.service.ts";
+import { birdeyeService } from "./birdeye.service.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.type.ts";
+import { TokenType } from "../types/swap.type.ts";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
+import { NETWORKS } from "../config/networks.ts";
+import { EVM_MINIMUM_VALUE, SOL_MINIMUM_VALUE } from "../constants/index.ts";
 
 export const dexfinv3Service = {
   getEvmWalletBalance: async ({
@@ -157,7 +160,7 @@ export const dexfinv3Service = {
   },
 
   getAllWalletTokens: async (evmAddress: string, solAddress: string) => {
-    let result: EvmWalletBalanceResponseType[] = [];
+    const result: EvmWalletBalanceResponseType[] = [];
 
     try {
       const { data } = await dexfinv3Api.get<any[]>(
@@ -170,36 +173,42 @@ export const dexfinv3Service = {
 
         for (const token of data) {
           if (token.network.id == "solana") {
-            const tokenAddress: string = (token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint)
-            const data = await birdeyeService.getOHLCV(tokenAddress, "12H", fromTime, currentTime)
-            const priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
-
-            result.push({
-              tokenAddress,
-              symbol: token.symbol,
-              name: token.name,
-              logo: token.logo,
-              thumbnail: "",
-              decimals: token.decimals,
-              balance: token.amountRaw,
-              balanceDecimal: Number(token.amount),
-              usdPrice: token.usdPrice,
-              usdPrice24hrUsdChange: priceChange24h,
-              usdValue: token.usdValue,
-              usdValue24hrUsdChange: Number(priceChange24h) * Number(token.amount),
-              chain: `0x${SOLANA_CHAIN_ID.toString(16)}`,
-              network: {
-                ...token.network,
-                chainId: SOLANA_CHAIN_ID
-              },
-              tokenId: token.tokenId
-            } as EvmWalletBalanceResponseType)
-          } else {
+            if (token.usdValue > SOL_MINIMUM_VALUE) {
+              const tokenAddress: string = (token.mint === "solana" ? "So11111111111111111111111111111111111111112" : token.mint)
+              const data = await birdeyeService.getOHLCV(tokenAddress, "12H", fromTime, currentTime)
+              const priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
+              result.push({
+                tokenAddress,
+                symbol: token.symbol,
+                name: token.name,
+                logo: token.logo,
+                thumbnail: "",
+                decimals: token.decimals,
+                balance: token.amountRaw,
+                balanceDecimal: Number(token.amount),
+                usdPrice: token.usdPrice,
+                usdPrice24hrUsdChange: priceChange24h,
+                usdValue: token.usdValue,
+                usdValue24hrUsdChange: Number(priceChange24h) * Number(token.amount),
+                chain: `0x${SOLANA_CHAIN_ID.toString(16)}`,
+                network: {
+                  ...token.network,
+                  chainId: SOLANA_CHAIN_ID
+                },
+                tokenId: token.tokenId
+              } as EvmWalletBalanceResponseType)
+            }
+          } else if (token.usdValue > EVM_MINIMUM_VALUE) {
             const tokenId = token.tokenId === "ethereum" ? (Number(token.chain) === 1 ? token.tokenId : ("w" + token.symbol.toLowerCase())) : token.tokenId;
-            const data = await coingeckoService.getOHLCV(tokenId, "12H", fromTime, currentTime)
-            const priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
-            const usdPrice = Number(data[data.length - 1]?.close);
-            const usdValue = usdPrice * Number(token.balanceDecimal);
+            let priceChange24h = 0, usdPrice = 0, usdValue = 0
+            try {
+              const data = await coingeckoService.getOHLCV(tokenId, "12H", fromTime, currentTime)
+              priceChange24h = data.length > 0 ? (data[data.length - 1]?.close - data[0]?.close) : 0;
+              usdPrice = Number(data[data.length - 1]?.close);
+              usdValue = usdPrice * Number(token.balanceDecimal);
+            } catch (e) {
+              console.log(e)
+            }
 
             result.push({
               ...token,
@@ -242,6 +251,148 @@ export const dexfinv3Service = {
       console.log("Failed to fetch evm wallet balance:", error);
     }
 
-    return []
-  }
+    return [];
+  },
+
+  getTrendingTokens: async (skip: number, chainId?: number) => {
+    const take = 30;
+
+    try {
+      const { data } = await dexfinv3Api.get<any>(
+        `/tokenlist?skip=${skip}&take=${take}&chainId=${chainId}`
+      );
+
+      return data;
+    } catch (error) {
+      console.log("Failed to fetch token list:", error);
+    }
+
+    return [];
+  },
+
+  getAllTrendingTokens: async () => {
+    const result = {
+      'all': [] as TokenType[],
+      'ethereum': [] as TokenType[],
+      'polygon': [] as TokenType[],
+      'base': [] as TokenType[],
+      'bsc': [] as TokenType[],
+      'avalanche': [] as TokenType[],
+      'optimism': [] as TokenType[],
+      'arbitrum': [] as TokenType[],
+      'bitcoin': [] as TokenType[],
+      'solana': [] as TokenType[]
+    };
+
+    try {
+      const { data } = await dexfinv3Api.get<TokenType[]>(
+        `/tokenlist?skip=${0}&take=${1600}&chainId=`
+      );
+
+      if (data && data.length > 0) {
+        const keys = Object.keys(result);
+        keys.forEach(key => {
+          if (key === "all") {
+            result[key] = data;
+          } else {
+            const network = NETWORKS.find(net => net.id == key);
+            const filtered: TokenType[] = data.filter((d: TokenType) => d.chainId == network?.chainId);
+            result[key as keyof typeof result] = filtered;
+          }
+        })
+      }
+
+      return result;
+    } catch (error) {
+      console.log("Failed to fetch token list:", error);
+    }
+
+    return null;
+  },
+
+  searchTrendingTokens: async (query: string, chainId?: number) => {
+    const limit = 10;
+
+    try {
+      const { data } = await dexfinv3Api.get<any>(
+        `/tokenlist/search?query=${query}&chainId=${chainId}&limit=${limit}`
+      );
+
+      return data;
+    } catch (error) {
+      console.log("Failed to search token:", error);
+    }
+
+    return [];
+  },
+
+  get2FAStatus: async (accessToken: string) => {
+    try {
+      const { data } = await dexfinv3Api.post(`/auth/gauth/is-enabled`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return data;
+    } catch (error) {
+      console.log('get2FAStatus error: ', error);
+    }
+  },
+
+  generate2FA: async (accessToken: string) => {
+    try {
+      const { data } = await dexfinv3Api.post(`/auth/gauth/setup`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return data;
+    } catch (error) {
+      console.log('generate2FA error: ', error);
+    }
+  },
+
+  enable2FA: async (accessToken: string, token: string) => {
+    try {
+      const { data } = await dexfinv3Api.post(`/auth/gauth/enable`, { token }, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return data;
+    } catch (error) {
+      console.log('enable2FA error: ', error);
+    }
+  },
+
+  verify2FA: async (accessToken: string, token: string) => {
+    try {
+      const { data } = await dexfinv3Api.post(`/auth/gauth/verify`, { token }, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return data;
+    } catch (error) {
+      console.log('verify2FA error: ', error);
+    }
+  },
+
+  remove2FA: async (accessToken: string, token: string) => {
+    try {
+      const { data } = await dexfinv3Api.post(`/auth/gauth/remove`, { token }, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      return data;
+    } catch (error) {
+      console.log('remove2FA error: ', error);
+    }
+  },
 };

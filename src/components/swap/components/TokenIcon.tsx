@@ -85,7 +85,7 @@ export function TokenChainIcon({ src, alt, size = 'md', chainId, className = '' 
       <img
         src={loadError ? ErrorImg : src}
         alt={alt}
-        className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 ${sizeClasses[size]} ${className} ${loading ? "hidden" : "block"}`}
+        className={`rounded-full duration-300 ${sizeClasses[size]} ${className} ${loading ? "hidden" : "block"}`}
         onError={() => {
           setLoading(false);
           setLoadError(true);
@@ -95,10 +95,10 @@ export function TokenChainIcon({ src, alt, size = 'md', chainId, className = '' 
         }}
       />
       {loading && <Skeleton className={sizeClasses[size]} />}
-      <div className="border border-white-600 absolute right-[-5px] bottom-[-5px] rounded-full padding-1">
+      <div className="absolute right-[-5px] bottom-[-5px] rounded-full padding-1">
         <img
           src={chainLoadError ? ErrorImg : (getChainIcon(chainId) || ErrorImg)}
-          className={`rounded-full ring-2 ring-white/10 group-hover:ring-blue-500/20 transition-all duration-300 ${chainSizeClasses[size]} ${chainLoading ? "hidden" : "block"}`}
+          className={`rounded-full group-hover:ring-blue-500/20 transition-all duration-300 ${chainSizeClasses[size]} ${chainLoading ? "hidden" : "block"}`}
           onError={() => {
             setChainLoading(false);
             setChainLoadError(true);
