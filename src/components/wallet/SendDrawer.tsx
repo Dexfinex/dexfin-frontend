@@ -56,6 +56,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     const [isTokenSwitching, setIsTokenSwitching] = useState(false);
     const [currentNativeTokenGasfee, setCurrentNativeTokenGasfee] = useState(0); //only used for native tokens
     const [scanning, setScanning] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         if (tokenBalances.length > 0 && Object.keys(selectedAsset).length === 0) {
@@ -69,6 +70,19 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
             const addresses = JSON.parse(item)
             setRecentAddresses(addresses)
         }
+
+        const handleResize = () => {
+            const width = window.innerWidth;
+            if (width <= 640) {
+                setIsMobile(true)
+            } else {
+                setIsMobile(false)
+            }
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, [])
 
     const switching = useMemo(() => {
@@ -521,17 +535,23 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
 
                 {/* Address Input */}
                 <div className='relative'>
-                    <div className='mb-2 flex justify-between items-center'>
-                        <label className="text-sm text-white/60">Send To</label>
-                        {!scanning ?
-                            <button className='text-white/80 mr-3 bg-white/10 p-2 rounded-full hover:bg-white/15' onClick={handleQrCodeScan}>
-                                <Camera />
+                    {
+                        isMobile ?
+                            (<>
+                                <div className='mb-2 flex justify-between items-center'>
+                                    <label className="text-sm text-white/60">Send To</label>
+                                    {!scanning ?
+                                        <button className='text-white/80 mr-3 bg-white/10 p-2 rounded-full hover:bg-white/15' onClick={handleQrCodeScan}>
+                                            <Camera />
 
-                            </button>
-                            :
-                            <Loader className="w-8 h-8 animate-spin text-blue-400" />}
-                    </div>
-                    {scanning && <div id="reader" className='!w-screen !h-screen !fixed !top-0 !left-0 !z-[100]'></div>}
+                                        </button>
+                                        :
+                                        <Loader className="w-8 h-8 animate-spin text-blue-400" />}
+                                </div>
+                                {scanning && <div id="reader" className='!w-screen !h-screen !fixed !top-0 !left-0 !z-[100] bg-black'></div>}
+                            </>) :
+                            <label className="block text-sm text-white/60">Send To</label>
+                    }
 
                     {errorAddress && <p className='text-red-500 text-xs italic mb-1'>Incorrect address</p>}
                     {
@@ -606,63 +626,67 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                 </div>
 
                 {/* recent addresses */}
-                {recentAddresses.length > 0 && <div>
-                    <label className="block text-sm text-white/60 mb-2">Recent</label>
-                    {
-                        renderRecent()
-                    }
-                </div>}
+                {
+                    recentAddresses.length > 0 && <div>
+                        <label className="block text-sm text-white/60 mb-2">Recent</label>
+                        {
+                            renderRecent()
+                        }
+                    </div>
+                }
 
                 {/* Preview */}
-                {showPreview ? (
-                    <div className="p-4 bg-white/5 rounded-lg">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center">
-                                <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"}
-                                    chainId={Number(selectedAsset.chain)} />
-                                <div className='ml-3'>
-                                    <div className="text-sm text-white/60">You send</div>
-                                    <div className="font-medium">
-                                        {`${formatNumberByFrac(Number(amount) - currentNativeTokenGasfee, 5)} ${selectedAsset.symbol}`}
+                {
+                    showPreview ? (
+                        <div className="p-4 bg-white/5 rounded-lg">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center">
+                                    <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"}
+                                        chainId={Number(selectedAsset.chain)} />
+                                    <div className='ml-3'>
+                                        <div className="text-sm text-white/60">You send</div>
+                                        <div className="font-medium">
+                                            {`${formatNumberByFrac(Number(amount) - currentNativeTokenGasfee, 5)} ${selectedAsset.symbol}`}
+                                        </div>
+                                    </div>
+                                </div>
+                                <ArrowRight className="w-5 h-5 text-white/40" />
+                                <div>
+                                    <div className="text-sm text-white/60">To</div>
+                                    <div className="font-medium font-mono">
+                                        {
+                                            showSelectedEnsInfo ?
+                                                <div className='flex flex-row justify-items-center items-center'>
+                                                    {
+                                                        (ensAvatarLoading || !ensAvatar) ?
+                                                            <SkeletonCircle startColor="#444" endColor="#1d2837"
+                                                                w={'2rem'} h={'2rem'}></SkeletonCircle> :
+                                                            <TokenIcon src={ensAvatar as string} alt={address}
+                                                                size='lg' />
+                                                    }
+                                                    <div className='flex flex-col ml-2'>
+                                                        <div>{address}</div>
+                                                        <div>{shrinkAddress(ensAddress || "", 4)}</div>
+                                                    </div>
+                                                </div> : `${shrinkAddress(address)}`
+                                        }
                                     </div>
                                 </div>
                             </div>
-                            <ArrowRight className="w-5 h-5 text-white/40" />
-                            <div>
-                                <div className="text-sm text-white/60">To</div>
-                                <div className="font-medium font-mono">
-                                    {
-                                        showSelectedEnsInfo ?
-                                            <div className='flex flex-row justify-items-center items-center'>
-                                                {
-                                                    (ensAvatarLoading || !ensAvatar) ?
-                                                        <SkeletonCircle startColor="#444" endColor="#1d2837"
-                                                            w={'2rem'} h={'2rem'}></SkeletonCircle> :
-                                                        <TokenIcon src={ensAvatar as string} alt={address}
-                                                            size='lg' />
-                                                }
-                                                <div className='flex flex-col ml-2'>
-                                                    <div>{address}</div>
-                                                    <div>{shrinkAddress(ensAddress || "", 4)}</div>
-                                                </div>
-                                            </div> : `${shrinkAddress(address)}`
-                                    }
-                                </div>
+                            <div className='w-full flex justify-end items-end'>
+                                {
+                                    walletType === "EMBEDDED" ?
+                                        <span className='text-sm text-green-500'>Network Fee: Free</span> :
+                                        <div className="text-sm text-white/60">
+                                            Network Fee: {
+                                                isGasEstimationLoading ?
+                                                    <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                                                    : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                                        </div>}
                             </div>
                         </div>
-                        <div className='w-full flex justify-end items-end'>
-                            {
-                                walletType === "EMBEDDED" ?
-                                    <span className='text-sm text-green-500'>Network Fee: Free</span> :
-                                    <div className="text-sm text-white/60">
-                                        Network Fee: {
-                                            isGasEstimationLoading ?
-                                                <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
-                                                : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
-                                    </div>}
-                        </div>
-                    </div>
-                ) : null}
+                    ) : null
+                }
 
                 {
                     isConnected ?
@@ -694,7 +718,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                             <Wallet className="w-5 h-5 mr-2" /> Connect
                         </button>
                 }
-            </form>
-        </div>
+            </form >
+        </div >
     );
 };
