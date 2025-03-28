@@ -291,6 +291,7 @@ export function CrossChainSwapBox({
             setIsBridging(true)
             setCountdown(quoteResponse.estimatedTime)
         } catch (e) {
+            console.log("error", e)
             //
         } finally {
             setIsConfirming(false)
@@ -302,6 +303,7 @@ export function CrossChainSwapBox({
             <TokenSelector
                 className="relative z-20 mb-2"
                 selectedToken={fromToken}
+                disabledToken={toToken}
                 selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onFromTokenSelect}
                 amount={fromAmount}
@@ -325,6 +327,7 @@ export function CrossChainSwapBox({
             <TokenSelector
                 className="relative z-10"
                 selectedToken={toToken}
+                disabledToken={fromToken}
                 selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onToTokenSelect}
                 amount={toAmount}
