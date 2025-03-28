@@ -120,13 +120,13 @@ export const getTokenOutAmountByPercent = async (percent: number, fromAddress: s
 
 export const getTokenAddressForTokenPrice = (address: string, chainId: number) => {
     if (chainId === polygon.id) {
-        return address.toLowerCase() === NULL_ADDRESS ? PRICE_MATIC_ADDRESS : address
+        return address.toLowerCase() === NATIVE_MATIC_ADDRESS ? PRICE_MATIC_ADDRESS : address
     }
     return address.toLowerCase() === NULL_ADDRESS ? ZERO_ADDRESS : address
 }
 export const getOriginTokenAddressFrom = (address: string, chainId: number) => {
     if (chainId === polygon.id) {
-        return address.toLowerCase() === PRICE_MATIC_ADDRESS ? NULL_ADDRESS : address
+        return address.toLowerCase() === PRICE_MATIC_ADDRESS ? NATIVE_MATIC_ADDRESS : address
     }
     return address.toLowerCase() === ZERO_ADDRESS ? NULL_ADDRESS : address
 }

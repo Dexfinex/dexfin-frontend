@@ -50,8 +50,9 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
     useEffect(() => {
         const handleResize = () => {
             const width = window.innerWidth;
-            if (width <= 768) {
-                setDrawerWidth(width <= 360 ? "300px" : width <= 480 ? "350px" : "380px");
+            if (width <= 640) {
+                // setDrawerWidth(width <= 360 ? "300px" : width <= 480 ? "350px" : "380px");
+                setDrawerWidth(`${width}px`);
             } else {
                 setDrawerWidth("400px");
             }
@@ -139,9 +140,11 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
                                     isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue + totalLockedValue)
                                 }
                             </div>
-                            {
-                                isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'} h={'1rem'}></Skeleton> : <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
-                            }
+                            <div className="mt-1">
+                                {
+                                    isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'} h={'1rem'}></Skeleton> : <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
+                                }
+                            </div>
                         </div>
 
                         {/* Quick Actions */}

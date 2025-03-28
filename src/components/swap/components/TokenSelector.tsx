@@ -1,13 +1,14 @@
-import { useState } from 'react';
-import { ChevronDown, Search } from 'lucide-react';
-import { TokenType } from "../../../types/swap.type";
-import { TokenSelectorModal } from "./TokenSelectorModal.tsx";
-import { Skeleton } from "@chakra-ui/react";
-import { formatNumberByFrac } from "../../../utils/common.util.ts";
-import { TokenChainIcon } from './TokenIcon.tsx';
+import {useState} from 'react';
+import {ChevronDown, Search} from 'lucide-react';
+import {TokenType} from "../../../types/swap.type";
+import {TokenSelectorModal} from "./TokenSelectorModal.tsx";
+import {Skeleton} from "@chakra-ui/react";
+import {formatNumberByFrac} from "../../../utils/common.util.ts";
+import {TokenChainIcon} from './TokenIcon.tsx';
 
 interface TokenSelectorProps {
     selectedToken?: TokenType | null;
+    disabledToken?: TokenType | null;
     selectedChainId?: number | null;
     onSelect: (token: TokenType) => void;
     amount: string;
@@ -23,20 +24,21 @@ interface TokenSelectorProps {
 }
 
 export function TokenSelector({
-    selectedToken,
-    selectedChainId,
-    onSelect,
-    amount,
-    usdAmount,
-    onAmountChange,
-    label,
-    disabled = false,
-    className = '',
-    isLoading = false,
-    deductionAmount = 0,
-    balance,
-    isBalanceLoading = false,
-}: TokenSelectorProps) {
+                                  selectedToken,
+                                  disabledToken,
+                                  selectedChainId,
+                                  onSelect,
+                                  amount,
+                                  usdAmount,
+                                  onAmountChange,
+                                  label,
+                                  disabled = false,
+                                  className = '',
+                                  isLoading = false,
+                                  deductionAmount = 0,
+                                  balance,
+                                  isBalanceLoading = false,
+                              }: TokenSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -66,7 +68,8 @@ export function TokenSelector({
                                 />
                             </div>
                         ) : (
-                            <span className="text-gray-400 text-[10px] font-medium tracking-wide flex items-center gap-2">
+                            <span
+                                className="text-gray-400 text-[10px] font-medium tracking-wide flex items-center gap-2">
                                 Balance: {balance ? formatNumberByFrac(Number(balance), 7) : '0'} {selectedToken?.symbol}
                                 {(Number(balance) > 0) && !disabled && (
                                     <button
@@ -74,7 +77,7 @@ export function TokenSelector({
                                         onClick={() => {
                                             const multiplier = (10 ** Math.min(6, (selectedToken?.decimals ?? 0)))
                                             const roundedBalance = (Number(balance ?? '0')) * multiplier
-                                            const formattedBalance = Math.max(0, Number(formatNumberByFrac(Math.floor(roundedBalance) / multiplier - deductionAmount, 4)))
+                                            const formattedBalance = Math.max(0, Number(formatNumberByFrac(Math.floor(roundedBalance) / multiplier - deductionAmount, 7, 'floor')))
                                             onAmountChange(formattedBalance.toString())
                                         }}
                                     >
@@ -92,10 +95,11 @@ export function TokenSelector({
                         className="flex items-center gap-2 rounded-lg px-3 py-2 transition-all cursor-pointer w-[140px] shrink-0 group ring-1 ring-white/10 hover:ring-blue-500/20 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] hover-effect glass-effect relative overflow-hidden"
                     >
                         <div
-                            className="absolute inset-0 bg-gradient-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 group-hover:translate-x-full duration-1000 transition-transform ease-in-out" />
+                            className="absolute inset-0 bg-gradient-to-r from-primary-500/0 via-primary-500/5 to-primary-500/0 group-hover:translate-x-full duration-1000 transition-transform ease-in-out"/>
                         {selectedToken ? (
                             <>
-                                <TokenChainIcon src={selectedToken.logoURI} alt={selectedToken.name} size={"lg"} chainId={Number(selectedToken.chainId)} />
+                                <TokenChainIcon src={selectedToken.logoURI} alt={selectedToken.name} size={"lg"}
+                                                chainId={Number(selectedToken.chainId)}/>
                                 <div className="flex flex-col">
                                     <span
                                         className="font-semibold text-white tracking-wide text-sm whitespace-nowrap text-ellipsis overflow-hidden w-[60px]">{selectedToken.symbol}</span>
@@ -103,16 +107,16 @@ export function TokenSelector({
                                         className="text-xs text-gray-400 whitespace-nowrap text-ellipsis overflow-hidden w-[80px]">{selectedToken.name}</span>
                                 </div>
                                 <ChevronDown
-                                    className="w-4 h-4 text-gray-400 absolute right-2 top-2 group-hover:text-primary-400 transition-all duration-300" />
+                                    className="w-4 h-4 text-gray-400 absolute right-2 top-2 group-hover:text-primary-400 transition-all duration-300"/>
                             </>
                         ) : (
                             <div className="flex items-center gap-2">
                                 <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center">
-                                    <Search className="w-4 h-4 text-gray-400" />
+                                    <Search className="w-4 h-4 text-gray-400"/>
                                 </div>
                                 <span className="text-gray-300 font-medium">Select Token</span>
                                 <ChevronDown
-                                    className="w-4 h-4 text-gray-400 absolute right-2 top-2 group-hover:text-primary-400 transition-all duration-300" />
+                                    className="w-4 h-4 text-gray-400 absolute right-2 top-2 group-hover:text-primary-400 transition-all duration-300"/>
                             </div>
                         )}
                     </div>
@@ -137,7 +141,7 @@ export function TokenSelector({
                                 disabled={disabled}
                                 placeholder="0"
                                 className={`w-0 flex-1 bg-transparent text-white text-right text-2xl font-medium outline-none placeholder-gray-500 focus:placeholder-primary-400/50 transition-all group-focus-within/input:placeholder-primary-400/30 ${disabled ? 'opacity-50 cursor-not-allowed' : ''
-                                    }`}
+                                }`}
                             />
                         )
                     }
@@ -166,6 +170,7 @@ export function TokenSelector({
                 <TokenSelectorModal
                     isOpen={isOpen}
                     selectedToken={selectedToken}
+                    disabledToken={disabledToken}
                     selectedChainId={selectedChainId}
                     onSelect={onSelect}
                     onClose={() => setIsOpen(false)}

@@ -85,7 +85,7 @@ export const ZEROX_BASE_URL = `${BASE_HOST_DOMAIN}/0x`;
 
 export const DEXFIN_BACKEND_BASE_URL = `${BASE_HOST_DOMAIN}`;
 
-export const ZEROX_AFFILIATE_FEE = 50; // 0.5% affiliate fee. Denoted in Bps.
+export const ZEROX_AFFILIATE_FEE = 30; // 0.5% affiliate fee. Denoted in Bps.
 
 export const defaultMaxPriorityFee = ethers.utils.parseUnits('1.5', 'gwei');
 

@@ -7,6 +7,8 @@ import {CreateKernelAccountReturnType} from "@zerodev/sdk";
 import {mapTimeRangeToExactSeconds} from "../constants/chart.constants.ts";
 import {NULL_ADDRESS, ZERO_ADDRESS} from "../constants";
 import {ethers} from "ethers";
+import {polygon} from "viem/chains";
+import {NATIVE_MATIC_ADDRESS} from "../config/networks.ts";
 
 export async function signTradeObject(walletClient: WalletClient | CreateKernelAccountReturnType, quote: GaslessQuoteResponse): Promise<any> {
     // Logic to sign trade object
@@ -87,7 +89,12 @@ export const findClosestClosedValue = (data: ChartDataPoint[], timeRange: TimeRa
     }, data[0])?.close ?? 0;
 }
 
-export const nullToZeroAddress = (key: string): string => (key === NULL_ADDRESS ? ZERO_ADDRESS : key)
+export const getCorrectTokenAddressForBridging = (address: string, chainId: number): string => {
+    if (chainId === polygon.id && address === NATIVE_MATIC_ADDRESS) {
+        return ZERO_ADDRESS
+    }
+    return address === NULL_ADDRESS ? ZERO_ADDRESS : address
+}
 
 export const getSlippageBigNumber = (slippage: string | number) => {
     if (!slippage || Number(slippage) === 0) return ethers.BigNumber.from(0);

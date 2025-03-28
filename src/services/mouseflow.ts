@@ -1,3 +1,4 @@
+// src/services/mouseflow.ts
 const MOUSEFLOW_PROJECT_ID = '4a24906b-10a0-45d1-8992-ed5e29e2605a';
 
 // Initialize Mouseflow
@@ -35,10 +36,3 @@ export const setMouseflowVariable = (name: string, value: string) => {
     window._mfq.push(['setVariable', name, value]);
   }
 };
-
-// Add typings for Mouseflow
-declare global {
-  interface Window {
-    _mfq: any[];
-  }
-}
