@@ -8,7 +8,7 @@ import { getTypeIcon, getTypeColor } from "../../utils/defi.util";
 import { formatNumberByFrac, formatHealthFactor, formatNumber } from "../../utils/common.util";
 import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon";
 import { isEnabledPosition } from "../../constants/mock/defi";
-import { getAddActionName } from "../../utils/defi.util";
+import { getAddActionName, getRemoveActionName } from "../../utils/defi.util";
 import useDefillamaStore from "../../store/useDefillamaStore";
 import { useGetDefillamaPoolByInfo } from "../../hooks/useDefillama";
 import { getApyTokenFromDefiPosition } from "../../utils/defi.util";
@@ -65,19 +65,6 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
                 return "Redeem";
             case "supplied":
                 return "Withdraw";
-            default:
-                return "";
-        }
-    }
-
-    const getRemoveActionName = ({ type }: { type: string }) => {
-        switch (type.toLowerCase()) {
-            case "staking":
-                return "unstake";
-            case "liquidity":
-                return "redeem";
-            case "supplied":
-                return "redeem";
             default:
                 return "";
         }

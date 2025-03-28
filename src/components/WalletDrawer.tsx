@@ -139,9 +139,11 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
                                     isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue + totalLockedValue)
                                 }
                             </div>
-                            {
-                                isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'} h={'1rem'}></Skeleton> : <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
-                            }
+                            <div className="mt-1">
+                                {
+                                    isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'} h={'1rem'}></Skeleton> : <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
+                                }
+                            </div>
                         </div>
 
                         {/* Quick Actions */}

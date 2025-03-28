@@ -124,7 +124,9 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                         <div>
                             <div className="font-medium">{modalState?.position?.protocol}</div>
                             <div className="text-sm text-white/60">
-                                {`${modalState?.position?.tokens[0].symbol}/${modalState?.position?.tokens[1].symbol} ${modalState?.position?.tokens[2].symbol}`}
+                                {
+                                    modalState?.position?.tokens?.map(item => item.symbol + " ")
+                                }
                             </div>
                         </div>
                         <div className="ml-auto text-right">
