@@ -65,7 +65,7 @@ const WalletMethods = ({ authWithEthWallet, setView }: WalletMethodsProps) => {
                             {connector.name.toLowerCase() === 'rabby wallet' && (
                                 <div className="btn__icon">
                                     <Image
-                                        src={connector.icon}
+                                        src="/rabby.svg"
                                         alt="Rabby logo"
                                         width="2rem"
                                     />
