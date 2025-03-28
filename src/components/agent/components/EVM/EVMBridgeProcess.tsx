@@ -363,7 +363,7 @@ export const EVMBridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmou
               </Button>
             ) :
             (<Button
-              onClick={() => handleTransaction()}
+              onClick={() => handleSwap()}
               colorScheme="blue"
               className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
             >

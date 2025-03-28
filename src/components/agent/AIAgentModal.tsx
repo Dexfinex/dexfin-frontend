@@ -129,21 +129,11 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
 
     // If no direct match, use OpenAI with fallback
     try {
-      if (address) {
-        const brianTransactionData = await brianService.getBrianTransactionData(command, address, chainId);
-        return {
-          text: brianTransactionData.message,
-          brianData: brianTransactionData.data,
-          type: brianTransactionData.type
-        }
-      } else {
-        const brianKnowledgeData = await brianService.getBrianKnowledgeData(command);
-        return {
-          text: convertBrianKnowledgeToPlainText(brianKnowledgeData.message),
-          type: "knowledge",
-        }
+      const brianKnowledgeData = await brianService.getBrianKnowledgeData(command);
+      return {
+        text: convertBrianKnowledgeToPlainText(brianKnowledgeData.message),
+        type: "knowledge",
       }
-
     } catch (e) {
       const error = e as {
         error?: { type?: string; code?: string };
@@ -352,7 +342,60 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
     } else if (sol_response && sol_response.type == "swap_evm" && sol_response.args.chainName != "solana") {
       return sol_response;
     } else if (sol_response && sol_response.type == "bridge_evm") {
-      return sol_response;
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "deposit_evm") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "withdraw_evm") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "renew_ens") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "register_ens") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "borrow_evm") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "repay_evm") {
+      const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
+      return {
+        text: brianTransactionData.message,
+        brianData: brianTransactionData.data,
+        type: brianTransactionData.type
+      }
+    } else if (sol_response && sol_response.type == "general") {
+      const brianKnowledgeData = await brianService.getBrianKnowledgeData(message);
+      return {
+        text: convertBrianKnowledgeToPlainText(brianKnowledgeData.message),
+        type: "knowledge",
+      }
     }
 
     for (const [key, response] of Object.entries(fallbackResponses)) {
@@ -389,7 +432,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           content: command
         }]);
         response = await generateResponse(normalizedCommand, address, chainId);
-        console.log(response);
+
         if (response.type == "action" && response.brianData.type == "write") {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
@@ -701,7 +744,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
                 logoURI: toToken.logoURI,
                 priceUSD: 0,
               });
-              
+
               setFromAmount(response.args.inAmount);
               setShowEVMSwapProcess(true);
             } else {
@@ -721,7 +764,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           }
 
           const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === fromNetwork.id);
-          
+
           if (token && token.balance > response.args.amount) {
             let toToken = null;
             const popularTokens = mapPopularTokens[toNetwork.chainId];
@@ -787,7 +830,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
                 logoURI: toToken.logoURI,
                 priceUSD: 0,
               });
-              setFromAmount(response.args.amount);
+              setFromAmount(response.args.amount.toString());
               setSolver('debridge');
               setShowEVMBridgeProcess(true);
             } else {
