@@ -11,7 +11,6 @@ import {NULL_ADDRESS} from "../../constants";
 import {SolanaSwapBox} from "./components/SolanaSwapBox.tsx";
 import {ChartDrawer} from "./components/chart/ChartDrawer.tsx";
 import {CrossChainSwapBox} from "./components/CrossChainSwapBox.tsx";
-import {useTrendingTokens} from '../../hooks/useTrendingTokens.ts';
 import { SOLANA_CHAIN_ID } from '../../constants/solana.constants.ts';
 
 interface SwapModalProps {
@@ -45,8 +44,6 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
     const [usdAmount, setUsdAmount] = useState('');
     const [chartType, setChartType] = useState<ChartType>('tradingview');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-
-    useTrendingTokens(-1);
 
     // Responsive layout
     const isMobile = useBreakpointValue({ base: true, md: false })
@@ -163,7 +160,7 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
                             {/* Tabs */}
                             {/* Swap Interface and Wallet */}
                             <div
-                                className="p-2.5 border border-white/5 relative z-50 w-full rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
+                                className="p-2.5 border border-white/5 relative z-50 w-full rounded-xl max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden custom-scrollbar-blue">
                                 {/*
                             <div className="flex items-center justify-between mb-4 rounded-lg p-1">
                                     <div className="flex items-center gap-2 w-full me-2">

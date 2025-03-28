@@ -526,8 +526,11 @@ const useStore = create<StoreState>((set, get) => ({
   setIsUsernameModalOpen: (isOpen) => set({ isUsernameModalOpen: isOpen }),
   isRewardsOpen: false,
   setIsRewardsOpen: (isOpen) => set({ isRewardsOpen: isOpen }),
-  username: "",
-  setUserName: (username: string) => set({ username: username }),
+  username: localStorage.getItem("username") || "",
+  setUserName: (username: string) => {
+    localStorage.setItem("username", username);
+    set({ username });
+  },
   isWalletDrawerOpen: false,
   setIsWalletDrawerOpen: (isOpen) => set({ isWalletDrawerOpen: isOpen }),
 
@@ -744,7 +747,7 @@ const useStore = create<StoreState>((set, get) => ({
           color: "text-cyan-500",
         },
         xpAmount: 500,
-        earnedDate: null, // Changed from '2024-03-15' to null
+        earnedDate: undefined, // Changed from '2024-03-15' to null
       },
       {
         id: "first-swap",
@@ -757,7 +760,7 @@ const useStore = create<StoreState>((set, get) => ({
           color: "text-purple-500",
         },
         xpAmount: 300,
-        earnedDate: null, // Changed from '2024-03-16' to null
+        earnedDate: undefined, // Changed from '2024-03-16' to null
       },
       {
         id: "daily-login",
@@ -770,7 +773,7 @@ const useStore = create<StoreState>((set, get) => ({
           color: "text-emerald-500",
         },
         xpAmount: 1000,
-        earnedDate: null, // Changed from '2024-03-18' to null
+        earnedDate: undefined, // Changed from '2024-03-18' to null
       },
       {
         id: "first-game",
@@ -783,7 +786,7 @@ const useStore = create<StoreState>((set, get) => ({
           color: "text-pink-500",
         },
         xpAmount: 200,
-        earnedDate: null, // Already null
+        earnedDate: undefined, // Already null
       },
       {
         id: "first-command",
@@ -796,7 +799,7 @@ const useStore = create<StoreState>((set, get) => ({
           color: "text-indigo-500",
         },
         xpAmount: 250,
-        earnedDate: null, // Already null
+        earnedDate: undefined, // Already null
       },
       {
         id: "first-alert",
@@ -809,7 +812,7 @@ const useStore = create<StoreState>((set, get) => ({
           color: "text-rose-500",
         },
         xpAmount: 200,
-        earnedDate: null, // Already null
+        earnedDate: undefined, // Already null
       },
       {
         id: "flash-multiply",

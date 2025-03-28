@@ -1,25 +1,27 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useInView } from 'react-intersection-observer';
+import React, {useEffect, useMemo, useState} from 'react';
+import {useInView} from 'react-intersection-observer';
 import ReactDOM from 'react-dom';
-import { Search, Star, X, ExternalLink, MessageSquareWarning } from 'lucide-react';
-import { TokenType } from "../../../types/swap.type.ts";
-import { mapPopularTokens, NETWORK, NETWORKS } from "../../../config/networks.ts";
+import {Search, Star, X, ExternalLink, MessageSquareWarning} from 'lucide-react';
+import {TokenType} from "../../../types/swap.type.ts";
+import {mapPopularTokens, NETWORK, NETWORKS} from "../../../config/networks.ts";
 // import {coingeckoService} from "../../../services/coingecko.service.ts";
-import { isValidAddress, shrinkAddress, formatNumberByFrac } from "../../../utils/common.util.ts";
+import {isValidAddress, shrinkAddress, formatNumberByFrac, compareWalletAddresses} from "../../../utils/common.util.ts";
 // import { savedTokens } from "../../../config/tokens.ts";
-import { Button, HStack, Image, Text } from "@chakra-ui/react";
+import {Button, HStack, Image, Text} from "@chakra-ui/react";
 import useLocalStorage from "../../../hooks/useLocalStorage.ts";
-import { useStore } from '../../../store/useStore.ts';
-import { LOCAL_STORAGE_STARRED_TOKENS, LOCAL_STORAGE_ADDED_TOKENS } from "../../../constants";
-import { getTokenInfo } from '../../../utils/token.util.ts';
-import { mapChainId2ExplorerUrl } from '../../../config/networks.ts';
-import { SOLANA_CHAIN_ID } from '../../../constants/solana.constants.ts';
+import {useStore} from '../../../store/useStore.ts';
+import {LOCAL_STORAGE_STARRED_TOKENS, LOCAL_STORAGE_ADDED_TOKENS} from "../../../constants";
+import {getTokenInfo} from '../../../utils/token.util.ts';
+import {mapChainId2ExplorerUrl} from '../../../config/networks.ts';
+import {SOLANA_CHAIN_ID} from '../../../constants/solana.constants.ts';
 import useTrendingTokensStore from '../../../store/useTrendingTokensStore.ts';
-import { TokenChainIcon } from './TokenIcon.tsx';
-import { debounce } from 'lodash';
-import { dexfinv3Service } from '../../../services/dexfin.service.ts';
-import useTokenBalanceStore, { TokenBalance } from '../../../store/useTokenBalanceStore.ts';
-import { useWalletBalance } from '../../../hooks/useBalance.tsx';
+import {useTrendingTokens} from '../../../hooks/useTrendingTokens.ts';
+import {TokenChainIcon} from './TokenIcon.tsx';
+import {debounce} from 'lodash';
+import {dexfinv3Service} from '../../../services/dexfin.service.ts';
+import useTokenBalanceStore, {TokenBalance} from '../../../store/useTokenBalanceStore.ts';
+import {useWalletBalance} from '../../../hooks/useBalance.tsx';
+
 /*
 const CATEGORIES = [
   { id: 'all', label: 'All Tokens', icon: TrendingUp },
@@ -30,6 +32,7 @@ const CATEGORIES = [
 interface TokenSelectorModalProps {
     isOpen: boolean;
     selectedToken?: TokenType | null;
+    disabledToken?: TokenType | null;
     selectedChainId?: number | null;
     onSelect: (token: TokenType) => void;
     onClose: () => void;
@@ -44,8 +47,8 @@ interface ApproveModalProps {
     chainId: number;
 }
 
-const ApproveModal: React.FC<ApproveModalProps> = ({ isOpen, onClose, onContinue, token, chainId }) => {
-    const { theme } = useStore();
+const ApproveModal: React.FC<ApproveModalProps> = ({isOpen, onClose, onContinue, token, chainId}) => {
+    const {theme} = useStore();
     const [tokenUrl, setTokenUrl] = useState("");
 
     const handleContinue = () => {
@@ -65,50 +68,57 @@ const ApproveModal: React.FC<ApproveModalProps> = ({ isOpen, onClose, onContinue
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-[340px] md:w-[520px] glass border border-white/10 rounded-xl overflow-hidden p-8">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose}/>
+            <div
+                className="relative w-[340px] md:w-[520px] glass border border-white/10 rounded-xl overflow-hidden p-8">
                 <div className='flex justify-center mb-4'>
-                    <MessageSquareWarning className='w-8 h-8 text-yellow-500' />
+                    <MessageSquareWarning className='w-8 h-8 text-yellow-500'/>
                 </div>
                 <p className='text-center mb-4'>Confirm Token</p>
                 <p className='text-center mb-4 text-yellow-500'>
                     This token is not on the default token lists.
                 </p>
                 <p className='mb-4 text-white/70 text-sm'>
-                    By Clicking below, you understand that you are fully responsible for confirming the token you are trading.
+                    By Clicking below, you understand that you are fully responsible for confirming the token you are
+                    trading.
                 </p>
                 <a className='mb-4 rounded-md flex items-center justify-between p-4 bg-white/5 cursor-pointer'
-                    href={tokenUrl} target='_blank'>
+                   href={tokenUrl} target='_blank'>
                     <div className='flex items-center gap-4'>
-                        <img src={token?.logoURI} className='w-8 h-8' />
+                        <img src={token?.logoURI} className='w-8 h-8'/>
                         <span>{token?.name}</span>
                     </div>
-                    <ExternalLink className='text-white/70 w-5 h-5' />
+                    <ExternalLink className='text-white/70 w-5 h-5'/>
                 </a>
                 <div className='flex flex-col items-center justify-center gap-4'>
-                    <button className={`${theme === 'dark' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-500 hover:bg-blue-600'} rounded-xl py-1 w-full`} onClick={handleContinue}>
+                    <button
+                        className={`${theme === 'dark' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-500 hover:bg-blue-600'} rounded-xl py-1 w-full`}
+                        onClick={handleContinue}>
                         I understand, confirm
                     </button>
-                    <button className={`${theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-black/10'} rounded-xl py-1 w-full`} onClick={onClose}>
+                    <button
+                        className={`${theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-black/10'} rounded-xl py-1 w-full`}
+                        onClick={onClose}>
                         Cancel
                     </button>
                 </div>
             </div>
-        </div >
+        </div>
     )
 }
 
 export function TokenSelectorModal({
-    isOpen,
-    selectedToken,
-    selectedChainId,
-    onSelect,
-    onClose,
-}: TokenSelectorModalProps) {
+                                       isOpen,
+                                       selectedToken,
+                                       disabledToken,
+                                       selectedChainId,
+                                       onSelect,
+                                       onClose,
+                                   }: TokenSelectorModalProps) {
     useWalletBalance()
     const initialChainId = selectedToken?.chainId ?? selectedChainId
-    const { trendingTokens } = useTrendingTokensStore();
-    const { tokenBalances } = useTokenBalanceStore();
+    const {trendingTokens} = useTrendingTokensStore();
+    const {tokenBalances} = useTokenBalanceStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedNetwork, setSelectedNetwork] = useState<NETWORK | null>(initialChainId ? NETWORKS.filter(network => network.chainId === initialChainId)[0] : null);
     const [starredTokenMap, setStarredTokenMap] = useLocalStorage<Record<string, boolean> | null>(LOCAL_STORAGE_STARRED_TOKENS, {})
@@ -121,7 +131,9 @@ export function TokenSelectorModal({
     const [approveModalActive, setApproveModalActive] = useState(false);
     const [tokens, setTokens] = useState<Array<TokenType>>([]);
 
-    const { ref, inView } = useInView({
+    const {isLoading} = useTrendingTokens(-1);
+
+    const {ref, inView} = useInView({
         threshold: 0.1, // Trigger when 10% of the element is visible
         triggerOnce: false, // Allow multiple triggers
     });
@@ -134,9 +146,12 @@ export function TokenSelectorModal({
 
 
     const loadMoreItems = async () => {
-        const result: TokenType[] = await dexfinv3Service.getTrendingTokens(tokens.length, selectedNetwork?.chainId)
-        setTokens([...tokens, ...result])
+        if (!searchQuery) {
+            const result: TokenType[] = await dexfinv3Service.getTrendingTokens(tokens.length, selectedNetwork?.chainId)
+            setTokens([...tokens, ...result])
+        }
     }
+
     // const tokens = useMemo(() => {
     //     if (addedTokens && addedTokens.length > 0) {
     //         if (selectedNetwork?.id) {
@@ -156,16 +171,16 @@ export function TokenSelectorModal({
             return tokenBalances.reduce((prev: TokenType[], cur: TokenBalance) => {
                 if (cur.network?.chainId === selectedNetwork.chainId) {
                     return [...prev,
-                    {
-                        symbol: cur.symbol,
-                        name: cur.name,
-                        address: cur.address,
-                        chainId: cur.network?.chainId || 0,
-                        decimals: cur.decimals,
-                        logoURI: cur.logo,
-                        balance: cur.balance,
-                        usdValue: cur.usdValue
-                    } as TokenType]
+                        {
+                            symbol: cur.symbol,
+                            name: cur.name,
+                            address: cur.address,
+                            chainId: cur.network?.chainId || 0,
+                            decimals: cur.decimals,
+                            logoURI: cur.logo,
+                            balance: cur.balance,
+                            usdValue: cur.usdValue
+                        } as TokenType]
                 }
 
                 return prev
@@ -289,7 +304,7 @@ export function TokenSelectorModal({
 
             const tokenKey = `${chainId}:${address}`
             if (prev[tokenKey]) {
-                const { [tokenKey]: _, ...rest } = prev
+                const {[tokenKey]: _, ...rest} = prev
                 return rest
             }
 
@@ -328,7 +343,8 @@ export function TokenSelectorModal({
     //     []);
 
     return ReactDOM.createPortal(
-        <div className={`fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-[10000] ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        <div
+            className={`fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-[10000] ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
             } transition-opacity duration-200`}>
             <div
                 className="glass rounded-2xl w-full max-w-xl border border-white/5 mt-[10vh] animate-modal-slide-down">
@@ -339,15 +355,15 @@ export function TokenSelectorModal({
                             <button
                                 onClick={() => setShowStarredOnly(!showStarredOnly)}
                                 className={`p-2 rounded-lg transition-colors group ${showStarredOnly ? 'text-yellow-400 bg-yellow-400/10' : 'text-gray-400 hover:text-yellow-400'
-                                    }`}
+                                }`}
                             >
-                                <Star className="w-5 h-5" fill={showStarredOnly ? "currentColor" : "none"} />
+                                <Star className="w-5 h-5" fill={showStarredOnly ? "currentColor" : "none"}/>
                             </button>
                             <button
                                 onClick={onClose}
                                 className="p-2 rounded-lg hover:bg-white/5 transition-colors group"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-5 h-5"/>
                             </button>
                         </div>
                     </div>
@@ -370,7 +386,7 @@ export function TokenSelectorModal({
           </div>
 */}
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
                         <input
                             type="text"
                             placeholder="Search by token name or paste address"
@@ -386,7 +402,7 @@ export function TokenSelectorModal({
                         <button
                             onClick={() => setSelectedNetwork(null)}
                             className={`px-3 py-1.5 rounded-lg text-sm transition-colors border ${!selectedNetwork ? 'text-white' : 'border-transparent hover:text-white'
-                                }`}
+                            }`}
                         >
                             All
                         </button>
@@ -395,9 +411,9 @@ export function TokenSelectorModal({
                                 key={network.id}
                                 onClick={() => setSelectedNetwork(network)}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border ${selectedNetwork === network ? 'text-white' : 'border-transparent hover:text-white'
-                                    }`}
+                                }`}
                             >
-                                <img src={network.icon} alt={network.name} className="w-5 h-5 rounded-full" />
+                                <img src={network.icon} alt={network.name} className="w-5 h-5 rounded-full"/>
                                 {/*<span>{network.name}</span>*/}
                             </button>
                         ))}
@@ -413,25 +429,31 @@ export function TokenSelectorModal({
                                 </div>
                                 <div className="p-4">
                                     <div className="flex flex-wrap gap-1">
-                                        {popularTokens.map(popularToken => (
-                                            <Button
-                                                key={popularToken.name + popularToken.chainId}
-                                                variant="ghost"
-                                                onClick={() => {
-                                                    onSelect(popularToken);
-                                                    onClose();
-                                                }}
-                                                _hover={{ bg: 'whiteAlpha.200' }}
-                                                style={{
-                                                    padding: '0px 0.75rem'
-                                                }}
-                                            >
-                                                <HStack>
-                                                    <Image src={popularToken.logoURI} boxSize='24px' />
-                                                    <Text className="text-sm text-white">{popularToken.symbol}</Text>
-                                                </HStack>
-                                            </Button>
-                                        ))}
+                                        {popularTokens.map(popularToken => {
+                                            const isDisabled = !!(disabledToken && compareWalletAddresses(popularToken.address, disabledToken.address) && popularToken.chainId === disabledToken.chainId)
+                                            return (
+                                                <Button
+                                                    key={popularToken.name + popularToken.chainId}
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                        if (!isDisabled) {
+                                                            onSelect(popularToken);
+                                                            onClose();
+                                                        }
+                                                    }}
+                                                    _hover={{bg: 'whiteAlpha.200'}}
+                                                    style={{
+                                                        padding: '0px 0.75rem'
+                                                    }}
+                                                    className={isDisabled ? 'opacity-70' : ''}
+                                                >
+                                                    <HStack>
+                                                        <Image src={popularToken.logoURI} boxSize='24px'/>
+                                                        <Text className="text-sm text-white">{popularToken.symbol}</Text>
+                                                    </HStack>
+                                                </Button>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             </>
@@ -446,51 +468,62 @@ export function TokenSelectorModal({
                                         My Tokens
                                     </div>
                                     <div className="p-2">
-                                        {myTokens.map((token, index) => (
-                                            <div
-                                                key={token.address + 'mytokens' + index}
-                                                onClick={() => {
-                                                    onSelect(token);
-                                                    onClose();
-                                                }}
-                                                className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div
-                                                        onClick={(e) => toggleStar(e, token.chainId, token.address)}
-                                                        className={`p-1.5 rounded-lg transition-colors ${starredTokenMap?.[`${token.chainId}:${token.address}`]
-                                                            ? 'text-yellow-400 bg-yellow-400/10'
-                                                            : 'text-gray-400 hover:text-yellow-400'
+                                        {myTokens.map((token, index) => {
+                                            const isDisabled = !!(disabledToken && compareWalletAddresses(token.address, disabledToken.address) && token.chainId === disabledToken.chainId)
+                                            return (
+                                                <div
+                                                    key={token.address + 'mytokens' + index}
+                                                    onClick={() => {
+                                                        if (!isDisabled) {
+                                                            onSelect(token);
+                                                            onClose();
+                                                        }
+                                                    }}
+                                                    className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group ${isDisabled ? 'opacity-70' : ''}`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div
+                                                            onClick={(e) => toggleStar(e, token.chainId, token.address)}
+                                                            className={`p-1.5 rounded-lg transition-colors ${starredTokenMap?.[`${token.chainId}:${token.address}`]
+                                                                ? 'text-yellow-400 bg-yellow-400/10'
+                                                                : 'text-gray-400 hover:text-yellow-400'
                                                             } cursor-pointer`}
-                                                    >
-                                                        <Star className="w-4 h-4"
-                                                            fill={starredTokenMap?.[`${token.chainId}:${token.address}`] ? "currentColor" : "none"} />
-                                                    </div>
-                                                    <TokenChainIcon src={token.logoURI} alt={token.name} size={"lg"} chainId={Number(token.chainId)} />
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-0.5">
-                                                            <span className="font-medium text-white">{token.symbol}</span>
-                                                            {token.category === 'meme' && (
+                                                        >
+                                                            <Star className="w-4 h-4"
+                                                                  fill={starredTokenMap?.[`${token.chainId}:${token.address}`] ? "currentColor" : "none"}/>
+                                                        </div>
+                                                        <TokenChainIcon src={token.logoURI} alt={token.name} size={"lg"}
+                                                                        chainId={Number(token.chainId)}/>
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-0.5">
                                                                 <span
-                                                                    className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 rounded-md">
+                                                                    className="font-medium text-white">{token.symbol}</span>
+                                                                {token.category === 'meme' && (
+                                                                    <span
+                                                                        className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 rounded-md">
                                                                     MEME
                                                                 </span>
-                                                            )}
+                                                                )}
+                                                            </div>
+                                                            <div className="text-sm text-gray-400">{token.name}</div>
                                                         </div>
-                                                        <div className="text-sm text-gray-400">{token.name}</div>
                                                     </div>
-                                                </div>
-                                                <div className="flex items-center gap-5">
-                                                    <div className='flex flex-col text-sm items-end text-gray-400'>
-                                                        <span>{`${formatNumberByFrac(token.balance, 5)} ${token?.symbol ? token.symbol.toUpperCase() : ""}`}</span>
-                                                        <span>${formatNumberByFrac(token.usdValue, 5)}</span>
-                                                    </div>
+                                                    <div className="flex items-center gap-5">
+                                                        <div className='flex flex-col text-sm items-end'>
+                                                        <span
+                                                            className="text-white">{`${formatNumberByFrac(token.balance, 5)} ${token?.symbol ? token.symbol.toUpperCase() : ""}`}</span>
+                                                            <span
+                                                                className="text-gray-400">${formatNumberByFrac(token.usdValue, 5)}</span>
+                                                        </div>
+                                                        {/*
                                                     <div className="text-right w-24">
                                                         <div className="text-sm text-gray-400">{shrinkAddress(token.address)}</div>
                                                     </div>
+*/}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            )
+                                        })}
                                     </div>
                                 </>
                             )
@@ -499,70 +532,60 @@ export function TokenSelectorModal({
                         <div className="text-gray-400 text-sm px-4 mt-2">
                             Trending
                         </div>
-                        {loadingToken ? (
+                        {(loadingToken || isLoading) ? (
                             <div className="flex items-center justify-center p-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"/>
                             </div>
                         ) : (
                             <div className="p-2">
-                                {filteredTokens.map((token: TokenType) => (
-                                    <div
-                                        key={token.address + 'trending'}
-                                        onClick={() => {
-                                            onSelect(token);
-                                            onClose();
-                                        }}
-                                        className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div
-                                                onClick={(e) => toggleStar(e, token.chainId, token.address)}
-                                                className={`p-1.5 rounded-lg transition-colors ${starredTokenMap?.[`${token.chainId}:${token.address}`]
-                                                    ? 'text-yellow-400 bg-yellow-400/10'
-                                                    : 'text-gray-400 hover:text-yellow-400'
+                                {filteredTokens.map((token: TokenType) => {
+                                    const isDisabled = !!(disabledToken && compareWalletAddresses(token.address, disabledToken.address) && token.chainId === disabledToken.chainId)
+                                    return (
+                                        <div
+                                            key={token.address + 'trending'}
+                                            onClick={() => {
+                                                if (!isDisabled) {
+                                                    onSelect(token);
+                                                    onClose();
+                                                }
+                                            }}
+                                            className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group ${isDisabled ? 'opacity-70' : ''}`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    onClick={(e) => toggleStar(e, token.chainId, token.address)}
+                                                    className={`p-1.5 rounded-lg transition-colors ${starredTokenMap?.[`${token.chainId}:${token.address}`]
+                                                        ? 'text-yellow-400 bg-yellow-400/10'
+                                                        : 'text-gray-400 hover:text-yellow-400'
                                                     } cursor-pointer`}
-                                            >
-                                                <Star className="w-4 h-4"
-                                                    fill={starredTokenMap?.[`${token.chainId}:${token.address}`] ? "currentColor" : "none"} />
-                                            </div>
-                                            <TokenChainIcon src={token.logoURI} alt={token.name} size={"lg"} chainId={Number(token.chainId)} />
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-0.5">
-                                                    <span className="font-medium text-white">{token.symbol}</span>
-                                                    {token.category === 'meme' && (
-                                                        <span
-                                                            className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 rounded-md">
+                                                >
+                                                    <Star className="w-4 h-4"
+                                                          fill={starredTokenMap?.[`${token.chainId}:${token.address}`] ? "currentColor" : "none"}/>
+                                                </div>
+                                                <TokenChainIcon src={token.logoURI} alt={token.name} size={"lg"}
+                                                                chainId={Number(token.chainId)}/>
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                        <span className="font-medium text-white">{token.symbol}</span>
+                                                        {token.category === 'meme' && (
+                                                            <span
+                                                                className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 rounded-md">
                                                             MEME
                                                         </span>
-                                                    )}
-                                                    {/*
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // TODO: Show token info modal
-                            console.log('Show token info:', token);
-                          }}
-                          className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
-                        >
-                          <Info className="w-4 h-4" />
-                        </button>
-                        <span className={`text-xs ${
-                          (token.priceChange24h ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'
-                        }`}>
-                          {(token.priceChange24h ?? 0) >= 0 ? '+' : ''}{token.priceChange24h?.toFixed(2)}%
-                        </span>
-*/}
+                                                        )}
+                                                    </div>
+                                                    <div className="text-sm text-gray-400">{token.name}</div>
                                                 </div>
-                                                <div className="text-sm text-gray-400">{token.name}</div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-right">
+                                                    <div
+                                                        className="text-sm text-gray-400">{shrinkAddress(token.address)}</div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="text-right">
-                                                <div className="text-sm text-gray-400">{shrinkAddress(token.address)}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                                 <div ref={ref} className="p-1"></div>
                             </div>
                         )}
@@ -574,7 +597,7 @@ export function TokenSelectorModal({
                             {
                                 loadingToken ?
                                     <div className="flex items-center justify-center p-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"/>
                                     </div>
                                     :
                                     <div className='p-2'>
@@ -583,17 +606,19 @@ export function TokenSelectorModal({
                                             onClick={() => setApproveModalActive(true)}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <img src={newToken.logoURI} className="w-8 h-8 rounded-full" />
+                                                <img src={newToken.logoURI} className="w-8 h-8 rounded-full"/>
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-0.5">
-                                                        <span className="font-medium text-white">{newToken?.symbol}</span>
+                                                        <span
+                                                            className="font-medium text-white">{newToken?.symbol}</span>
                                                     </div>
                                                     <div className="text-sm text-gray-400">{newToken?.name}</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <div className="text-right">
-                                                    <div className="text-sm text-gray-400">{shrinkAddress(newToken?.address)}</div>
+                                                    <div
+                                                        className="text-sm text-gray-400">{shrinkAddress(newToken?.address)}</div>
                                                 </div>
                                             </div>
                                         </div> : <div className='text-center p-2 text-gray-400 text-sm'>

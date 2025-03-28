@@ -26,8 +26,8 @@ const WalletMethods = ({authWithEthWallet, setView}: WalletMethodsProps) => {
     return (
         <>
             <VStack spacing={3}>
-                <Text fontSize="2xl" fontWeight="bold" textAlign={'left'} w="full">Connect your web3 wallet</Text>
-                <Text color="whiteAlpha.800">
+                <Text fontSize="2xl" fontWeight="bold" textAlign='center' w="full">Connect your web3 wallet</Text>
+                <Text color="whiteAlpha.800" textAlign='center'>
                     Connect your wallet then sign a message to verify you&apos;re the owner
                     of the address.
                 </Text>

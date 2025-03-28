@@ -797,7 +797,7 @@ export const DirectMessagesWidget: React.FC = () => {
         <div className='flex-1'>
           {
             selectedUser && <div className='flex items-center gap-4'>
-              <img src={selectedUser?.profilePicture} className='rounded-full w-6 h-6' />
+              {selectedUser?.profilePicture && <img src={selectedUser.profilePicture} className='rounded-full w-6 h-6' />}
               <span className={`text-sm ${theme == "dark" ? "text-white/50" : "text-black/50"} `}>
                 {selectedUser.name ? selectedUser.name + " | " + shrinkAddress(selectedUser.address) : shrinkAddress(selectedUser.address)}
               </span>

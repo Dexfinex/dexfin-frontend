@@ -24,7 +24,7 @@ import {TransactionModal} from "../modals/TransactionModal.tsx";
 import {use0xTokenApprove} from "../../../hooks/use0xTokenApprove.ts";
 import {zeroxService} from "../../../services/0x.service.ts";
 import use0xGaslessSwapStatus from "../../../hooks/use0xGaslessSwapStatus.ts";
-import {signTradeObject, tradeSplitSigDataToSubmit} from "../../../utils/swap.util.ts";
+import {getSlippageBigNumber, signTradeObject, tradeSplitSigDataToSubmit} from "../../../utils/swap.util.ts";
 import {WalletTypeEnum} from "../../../types/wallet.type.ts";
 import {SlippageDialog} from "../SlippageSettings.tsx";
 
@@ -63,9 +63,9 @@ export const PreviewDetailItem = ({
             <div className="flex items-center gap-2">
                 <span className="text-gray-400">{title}</span>
                 <div className="group relative">
-                    <Info className="w-3.5 h-3.5 text-gray-500"/>
+                    <Info className="peer w-3.5 h-3.5 text-gray-500 cursor-pointer"/>
                     <div
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 text-xs text-gray-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 text-xs text-gray-300 rounded-lg opacity-0 peer-hover:opacity-100 transition-opacity pointer-events-none">
                         {info}
                     </div>
                 </div>
@@ -129,7 +129,7 @@ export function SwapBox({
         isLoading: isQuoteLoading,
         quoteResponse,
         isGasLess: isGasLessSwap,
-        // refetch,
+        refetch: refetchQuoteData,
         data: quoteData,
     } = use0xQuote({
         sellToken: fromToken,
@@ -147,7 +147,7 @@ export function SwapBox({
     const {
         isLoading: isGasEstimationLoading,
         data: gasData
-    } = useGasEstimation()
+    } = useGasEstimation(fromToken?.chainId)
 
     const {
         isLoading: isFromBalanceLoading,
@@ -164,11 +164,10 @@ export function SwapBox({
     const amountToApprove =
         fromToken && fromAmount !== ''
             ? ethers.BigNumber.from(ethers.utils.parseUnits(fromAmount, fromToken!.decimals))
-                .mul(100 + Number(slippage) * 2)
-                .div(100)
+                .mul(ethers.BigNumber.from(10000).add(getSlippageBigNumber(slippage)))
+                .div(10000)
                 .toString()
             : '0';
-
     const {
         approve,
         approvalDataToSubmit,
@@ -195,6 +194,21 @@ export function SwapBox({
 
 
     // console.log("gasData", mapPrices, gasData, isGasEstimationLoading)
+
+    useEffect(() => {
+        if (!isApproveLoading) {
+            let count = 0;
+            const interval = setInterval(() => {
+                if (count < 3) {
+                    refetchQuoteData();
+                    count ++;
+                } else {
+                    clearInterval(interval); // Stop after 3 calls
+                }
+            }, 1000); // 1 second interval
+            return () => clearInterval(interval); // Clean up interval on unmount or when dependencies change
+        }
+    }, [isApproveLoading, refetchQuoteData]);
 
     // Update toAmount when calculation changes
     useEffect(() => {
@@ -382,6 +396,7 @@ export function SwapBox({
                 <TokenSelector
                     className="relative z-20 mb-2"
                     selectedToken={fromToken}
+                    disabledToken={toToken}
                     selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                     onSelect={onFromTokenSelect}
                     amount={fromAmount}
@@ -405,6 +420,7 @@ export function SwapBox({
                 <TokenSelector
                     className="relative z-10"
                     selectedToken={toToken}
+                    disabledToken={fromToken}
                     selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                     onSelect={onToTokenSelect}
                     amount={toAmount}

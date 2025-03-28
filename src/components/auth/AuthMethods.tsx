@@ -1,9 +1,10 @@
 import {Button, VStack,} from '@chakra-ui/react';
-import {Apple, Bot, Chrome, Mail, Smartphone, Wallet,} from 'lucide-react';
+import {Chrome, Mail, Wallet} from 'lucide-react';
+import { TbBrandDiscord as Discord } from "react-icons/tb";
 
 interface AuthMethodsProps {
     handleGoogleLogin: (isSignIn: boolean) => Promise<void>;
-    handleDiscordLogin: () => Promise<void>;
+    handleDiscordLogin: (isSignIn: boolean) => Promise<void>;
     setView: React.Dispatch<React.SetStateAction<string>>;
     isSignIn: boolean;
 }
@@ -31,12 +32,12 @@ const AuthMethods = ({
 
                 <Button
                     w="full"
-                    leftIcon={<Apple size={20}/>}
+                    leftIcon={<Discord size={20}/>}
                     variant="outline"
                     color="white"
                     borderColor="whiteAlpha.200"
                     _hover={{bg: 'whiteAlpha.100'}}
-                    onClick={handleDiscordLogin}
+                    onClick={() => handleDiscordLogin(isSignIn)}
                 >
                     Continue with Discord
                 </Button>
@@ -52,7 +53,7 @@ const AuthMethods = ({
                 >
                     Continue with email
                 </Button>
-
+{/*
                 <Button
                     w="full"
                     leftIcon={<Smartphone size={20}/>}
@@ -64,7 +65,7 @@ const AuthMethods = ({
                 >
                     Continue with phone
                 </Button>
-
+*/}
                 <Button
                     w="full"
                     leftIcon={<Wallet size={20}/>}
@@ -76,7 +77,7 @@ const AuthMethods = ({
                 >
                     Connect your web3 wallet
                 </Button>
-
+{/*
                 <Button
                     w="full"
                     leftIcon={<Bot size={20}/>}
@@ -88,6 +89,7 @@ const AuthMethods = ({
                 >
                     Use a passkey
                 </Button>
+*/}
             </VStack>
 
             {/*

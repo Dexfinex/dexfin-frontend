@@ -13,9 +13,8 @@ import {
 import { Twitter, Send, BookOpen } from "lucide-react";
 import Logo from "./Logo";
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
-import { useStore } from "../../store/useStore";
-import SignupModal from "../SignupModal";
-import SigninModal from "../SigninModal";
+import SignInModal from "../SignInModal";
+import SignUpModal from "../SignUpModal";
 
 const Header = () => {
   // Create dynamic colors for hover effects
@@ -156,12 +155,12 @@ const Header = () => {
           </Flex>
         </Container>
       </Box>
-      <SignupModal 
+      <SignUpModal
         isOpen={showSignUp} 
         onClose={() => setShowSignUp(false)} 
       />
       
-      <SigninModal 
+      <SignInModal 
         isOpen={showSignIn} 
         onClose={() => setShowSignIn(false)} 
         goToSignUp={() => {

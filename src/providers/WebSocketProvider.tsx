@@ -46,6 +46,7 @@ const NOTIFICATION_SOUNDS = {
     ACHIEVEMENT: '/sounds/achievement-unlocked.wav',
     PAYMENT: '/sounds/payment-update.wav',
     TVL_ALERT: '/sounds/tvl-alert-triggered',
+    BADGE_UNLOCKED: '/sounds/new_adge_unlocked.wav',
 };
 
 export const WebSocketContext = createContext<WebSocketContextType>({
@@ -115,10 +116,23 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                         return 'TVL_ALERT';
                     }
                 }
-
             } catch (e) {
                 console.warn('Could not parse notification metadata:', e);
                 return 'PRICE_ALERT';
+            }
+        }
+
+        if (notification.type === 'ACHIEVEMENT' && notification.metadata) {
+            try {
+                const metadata = typeof notification.metadata === 'string'
+                    ? JSON.parse(notification.metadata)
+                    : notification.metadata;
+                
+                if (metadata.badgeId || metadata.badgeName) {
+                    return 'BADGE_UNLOCKED';
+                }
+            } catch (e) {
+                console.warn('Could not parse achievement metadata:', e);
             }
         }
 
@@ -146,35 +160,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
     }, []);
 
-    const showToastNotification = useCallback((notification: Notification) => {
-        let status: 'info' | 'warning' | 'success' | 'error' = 'info';
-
-        switch (notification.status) {
-            case 'SUCCESS':
-                status = 'success';
-                break;
-            case 'ERROR':
-                status = 'error';
-                break;
-            case 'WARNING':
-                status = 'warning';
-                break;
-            case 'INFO':
-            case 'PENDING':
-            default:
-                status = 'info';
-        }
-
-        toast({
-            title: getNotificationTitle(notification),
-            description: notification.message,
-            status,
-            duration: 5000,
-            isClosable: true,
-            position: 'top-right'
-        });
-    }, [toast]);
-
     const getNotificationTitle = (notification: Notification): string => {
         if (notification.type === 'ALERT' && notification.metadata) {
             try {
@@ -199,6 +184,21 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 }
             } catch (e) {
                 console.warn('Could not parse notification metadata for title:', e);
+            }
+        }
+        
+        // Add special handling for badge notifications
+        if (notification.type === 'ACHIEVEMENT' && notification.metadata) {
+            try {
+                const metadata = typeof notification.metadata === 'string'
+                    ? JSON.parse(notification.metadata)
+                    : notification.metadata;
+                
+                if (metadata.badgeName) {
+                    return `New Badge: ${metadata.badgeName}`;
+                }
+            } catch (e) {
+                console.warn('Could not parse achievement metadata for title:', e);
             }
         }
 
@@ -231,6 +231,35 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 return 'Notification';
         }
     };
+
+    const showToastNotification = useCallback((notification: Notification) => {
+        let status: 'info' | 'warning' | 'success' | 'error' = 'info';
+
+        switch (notification.status) {
+            case 'SUCCESS':
+                status = 'success';
+                break;
+            case 'ERROR':
+                status = 'error';
+                break;
+            case 'WARNING':
+                status = 'warning';
+                break;
+            case 'INFO':
+            case 'PENDING':
+            default:
+                status = 'info';
+        }
+
+        toast({
+            title: getNotificationTitle(notification),
+            description: notification.message,
+            status,
+            duration: 5000,
+            isClosable: true,
+            position: 'top-right'
+        });
+    }, [toast]);
 
     const connect = useCallback(() => {
         if (!userData?.accessToken) {
@@ -330,6 +359,27 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 };
 
                 playAlertSound(pseudoNotification);
+            });
+            
+            // Add handler specifically for badge unlocks
+            socketRef.current.on('badgeUnlocked', (data: any) => {
+                console.log('Received badge unlock:', data);
+                
+                const pseudoNotification: Notification = {
+                    type: 'ACHIEVEMENT',
+                    status: 'SUCCESS',
+                    message: data.message || `You earned the "${data.badgeName}" badge and ${data.xpAmount || 0} XP!`,
+                    isRead: false,
+                    id: '',
+                    userId: '',
+                    sourceId: '',
+                    createdAt: '',
+                    updatedAt: '',
+                    metadata: data
+                };
+                
+                playAlertSound(pseudoNotification);
+                showToastNotification(pseudoNotification);
             });
 
         } catch (error) {
