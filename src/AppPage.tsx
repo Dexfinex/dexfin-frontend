@@ -1,3 +1,4 @@
+// src/AppPage.tsx
 import React, { useEffect, useState } from "react";
 import { Box } from "@chakra-ui/react";
 import { Header } from "./components/Header";
@@ -5,12 +6,15 @@ import { Workspace } from "./components/Workspace";
 import ReferralHandler from "./components/ReferralHandler.tsx";
 import { useStore } from "./store/useStore";
 import { trackEvent } from "./services/analytics";
-import { addMouseflowTag, setMouseflowVariable } from "./services/mouseflow";
+import { addMouseflowTag, setMouseflowVariable, trackMouseflowPageView } from "./services/mouseflow";
+import { useLocation } from "react-router-dom";
 
 const AppPage: React.FC = () => {
   const { theme } = useStore();
   const [isStylesApplied, setIsStylesApplied] = useState(false);
+  const location = useLocation();
 
+  // Initialize styles
   useEffect(() => {
     document.body.setAttribute("data-theme", theme);
 
@@ -36,15 +40,20 @@ const AppPage: React.FC = () => {
     }
   }, [theme, isStylesApplied]);
 
-  // Track app page view with session duration
+  // Track app page view with enhanced detail
   useEffect(() => {
     const startTime = new Date().getTime();
+    const pagePath = location.pathname;
+    
+    // More specific page tracking for app pages
+    trackMouseflowPageView(`app${pagePath}`);
     
     // Track that user entered the main app
     trackEvent('app_entry', 'Application', 'Main App');
     
-    // Track in Mouseflow
+    // Enhanced Mouseflow tracking
     addMouseflowTag('app_entry');
+    addMouseflowTag(`app_page_${pagePath.replace(/\//g, '_') || 'main'}`);
     
     // Setup session duration tracking
     return () => {
@@ -57,9 +66,14 @@ const AppPage: React.FC = () => {
         
         // Track in Mouseflow
         setMouseflowVariable('session_duration', durationInSeconds.toString());
+        
+        // If session is particularly long, mark as engaged user
+        if (durationInSeconds > 300) { // 5 minutes
+          addMouseflowTag('engaged_user');
+        }
       }
     };
-  }, []);
+  }, [location.pathname]);
 
   // Track theme changes
   useEffect(() => {
@@ -67,7 +81,20 @@ const AppPage: React.FC = () => {
     
     // Track in Mouseflow
     setMouseflowVariable('theme', theme);
+    addMouseflowTag(`theme_${theme}`);
   }, [theme]);
+
+  // Track referral usage if applicable
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const referralCode = params.get('ref');
+    
+    if (referralCode) {
+      setMouseflowVariable('referral_code', referralCode);
+      addMouseflowTag('referred_user');
+      trackEvent('referral_used', 'Acquisition', referralCode);
+    }
+  }, [location.search]);
 
   return (
     <Box minH="100vh" width="100%">
