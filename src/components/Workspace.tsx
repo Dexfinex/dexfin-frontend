@@ -132,7 +132,10 @@ export const Workspace: React.FC = () => {
                 id={widget.id}
                 type={widget.type}
                 position={widget.position}
-                size={widget.size}
+                size={{
+                  width: Number(widget.size.width),
+                  height: Number(widget.size.height),
+                }}
               />
             ))}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
