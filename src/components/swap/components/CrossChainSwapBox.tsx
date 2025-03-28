@@ -291,6 +291,7 @@ export function CrossChainSwapBox({
             setIsBridging(true)
             setCountdown(quoteResponse.estimatedTime)
         } catch (e) {
+            console.log("error", e)
             //
         } finally {
             setIsConfirming(false)
