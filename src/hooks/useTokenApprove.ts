@@ -98,7 +98,7 @@ export const useTokenApprove = ({
 	token,
 	spender,
 	amount,
-	chainId
+	chainId,
 }: {
 	token?: `0x${string}`;
 	spender?: `0x${string}`;
@@ -144,13 +144,14 @@ export const useTokenApprove = ({
 			setIsConfirmingApproval(false);
 		}
 	}
-	const approve = () =>  {
+	const approve = (additionalAmount: string = '0') => {
 		setIsConfirmingApproval(true);
-		(async() => {
-			await mainApproveFunc(normalizedAmount ? BigNumber.from(normalizedAmount) : ethers.constants.MaxUint256);
-		})()
-	}
-
+		(async () => {
+			const baseAmount = normalizedAmount ? BigNumber.from(normalizedAmount) : ethers.constants.MaxUint256;
+			const totalAmount = baseAmount.add(BigNumber.from(additionalAmount));
+			await mainApproveFunc(totalAmount);
+		})();
+	};
 	const isInfiniteLoading = false;
 	const approveInfinite = () => {
 		setIsConfirmingInfiniteApproval(true);

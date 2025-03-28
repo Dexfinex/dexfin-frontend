@@ -167,6 +167,8 @@ export function CrossChainSwapBox({
         debridgeFeeText,
         totalSpentText,
         priceImpact,
+        approveAmountString,
+        additionalAmountString,
     } = useMemo(() => {
         const fromTokenPrice = fromToken ? getTokenPrice(fromToken?.address, fromToken?.chainId) : 0
         const toTokenPrice = toToken ? getTokenPrice(toToken?.address, toToken?.chainId) : 0
@@ -180,14 +182,22 @@ export function CrossChainSwapBox({
         const priceImpact = fromUsdAmount > 0 ? ((toUsdAmount - fromUsdAmount) / fromUsdAmount) * 100 : 0
         const deductionAmount = solverGasCostAmount + (compareWalletAddresses(nativeTokenAddressFromChain, fromToken!.address) ? quoteResponse.feeAmount : 0)
 
+        const additionalTokenAmount = fromUsdAmount > 0 ? Number(fromAmount) / fromUsdAmount : 0 // give 1$ additional approve amount for fluctuation
+        const additionalAmountString = new BigNumber(toFixedFloat(additionalTokenAmount, 4))
+            .times(new BigNumber(10)
+                .pow(fromToken?.decimals ?? 1))
+            .toFixed(0)
+
         let feeAmountInUsd = 0
         if (quoteResponse) {
             feeAmountInUsd = nativeTokenPrice * quoteResponse.feeAmount
         }
 
+        const approveAmount = deductionAmount + Number(fromAmount)
+
         const solverGasText = `${formatNumberByFrac(solverGasCostAmount, 4)} ${fromToken?.symbol} ($${formatNumberByFrac(solverGasUsdAmount, 3)})`
+        const totalSpentText = `${formatNumberByFrac(approveAmount, 4)} ${fromToken?.symbol}`
         const debridgeFeeText = `${formatNumberByFrac(quoteResponse.feeAmount, 4)} ${fromNetwork?.symbol} ($${formatNumberByFrac(feeAmountInUsd, 3)})`
-        const totalSpentText = `${formatNumberByFrac(deductionAmount + Number(fromAmount), 4)} ${fromToken?.symbol}`
 
         return {
             fromUsdAmount,
@@ -200,8 +210,15 @@ export function CrossChainSwapBox({
             debridgeFeeText,
             totalSpentText,
             deductionAmount,
+            approveAmountString: new BigNumber(toFixedFloat(approveAmount, 4))
+                .times(new BigNumber(10)
+                    .pow(fromToken?.decimals ?? 1))
+                .toFixed(0),
+            additionalAmountString,
         }
     }, [nativeTokenAddressFromChain, fromToken, getTokenPrice, toToken, fromAmount, toAmount, quoteResponse])
+
+    console.log("additionalAmountString", additionalAmountString)
 
     const {
         isRequireSwitchChain,
@@ -243,10 +260,7 @@ export function CrossChainSwapBox({
     } = useTokenApprove({
         token: fromToken?.address as `0x${string}`,
         spender: spenderAddress as `0x${string}`,
-        amount: new BigNumber(toFixedFloat(fromAmount, 4))
-            .times(new BigNumber(10)
-                .pow(fromToken?.decimals ?? 1))
-            .toFixed(0),
+        amount: approveAmountString,
         chainId: fromToken?.chainId ?? 1
     });
 
@@ -257,7 +271,7 @@ export function CrossChainSwapBox({
 
     const handleSwap = async () => {
         if (!isApproved) {
-            approve?.()
+            approve?.(additionalAmountString)
             return
         }
 
@@ -544,7 +558,7 @@ export function CrossChainSwapBox({
                                 colorScheme="blue"
                                 onClick={() => {
                                     if (isApproved) handleSwap()
-                                    else approve?.()
+                                    else approve?.(additionalAmountString)
                                 }}
                                 isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !!quoteResponse.errorMessage || Number(quoteResponse.outputAmount) <= 0}
                             >
