@@ -17,6 +17,8 @@ import { Web3AuthContext } from "../providers/Web3AuthContext";
 import { authService } from "../services/auth.service";
 import { useStore } from "../store/useStore";
 import SignUpMethods from "./auth/SignUpMethods";
+import { getReferralCodeFromStorage } from "./ReferralHandler";
+
 interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -48,6 +50,7 @@ const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
     null
   );
+  const [hasReferral, setHasReferral] = useState(false);
 
   const {
     authMethod,
@@ -104,6 +107,11 @@ const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
       initSession(authMethod, currentAccount);
     }
   }, [authMethod, currentAccount, initSession]);
+
+  useEffect(() => {
+    const referralCode = getReferralCodeFromStorage();
+    setHasReferral(!!referralCode);
+  }, []);
 
   const validateBetaCode = () => {
     if (!formData.betaCode) {
@@ -471,6 +479,7 @@ const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
           authWithStytch={authWithStytch}
           handleBack={handleBack}
           // goToLogin={() => router.push('/login')}
+          hasReferral={hasReferral}
           error={error}
         />
       </>

@@ -6,9 +6,11 @@ import { erc20Abi } from "viem";
 import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useDefi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { Position } from '../store/useDefiStore';
+
 import useTokenBalanceStore from '../store/useTokenBalanceStore';
 import { useEnSoActionMutation } from '../hooks/useActionEnSo.ts';
 import useGasEstimation from "../hooks/useGasEstimation.ts";
+
 import { TransactionModal } from './swap/modals/TransactionModal.tsx';
 import { PositionList } from './defi/PositionList.tsx';
 import ProtocolStatistic from './defi/ProtocolStatistic.tsx';
@@ -60,7 +62,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const { mutate: enSoActionMutation } = useEnSoActionMutation();
 
-  const { chainId, address, signer, } = useContext(Web3AuthContext);
+  const { chainId, address, signer, switchChain } = useContext(Web3AuthContext);
 
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation(chainId);
@@ -96,6 +98,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleAction = (type: string, position: Position, apyToken: string, supportedChains: number[]) => {
+    switchChain(supportedChains[0]);
     setModalState({ type, position, apyToken, supportedChains });
   };
 
@@ -225,7 +228,8 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           if (signer) {
             setConfirming("Executing...");
             // execute defi action
-            const transactionResponse = await signer.sendTransaction(txData.tx).catch(() => {
+            const transactionResponse = await signer.sendTransaction(txData.tx).catch((e) => {
+              console.error(e)
               setConfirming("")
               return null;
             });
@@ -378,7 +382,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       action: "redeem",
       protocol: (modalState.position?.protocol_id || "").toLowerCase(),
       tokenIn: [modalState?.position?.address || ""],
-      tokenOut: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
+      tokenOut: [modalState?.position?.tokens[0]?.contract_address || "", modalState?.position?.tokens[1]?.contract_address || ""],
       amountIn: [Number(withdrawPercent)],
       signer: signer,
       receiver: address,
@@ -395,10 +399,10 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           });
           if (transactionResponse) {
             const receipt = await transactionResponse.wait();
-            setHash(receipt.transactionHash);
-            setTxModalOpen(true);
             await refetchDefiPositionByWallet();
             await refetchDefiProtocolByWallet();
+            setHash(receipt.transactionHash);
+            setTxModalOpen(true);
 
             setWithdrawPercent("1");
             setShowPreview(false);

@@ -4,7 +4,8 @@ import AuthMethods from "./AuthMethods";
 import WalletMethods from "./WalletMethods";
 import WebAuthn from "./WebAuthn";
 import StytchOTP from "./StytchOTP";
-import { Mail, ChevronLeft } from "lucide-react";
+import { Mail, ChevronLeft, Gift } from "lucide-react";
+import { Text, Box, Flex, Icon } from "@chakra-ui/react";
 import { AuthAlert } from "../AuthAlert";
 
 interface SignUpProps {
@@ -21,6 +22,7 @@ interface SignUpProps {
   ) => Promise<void>;
   goToLogin?: () => void;
   error?: Error;
+  hasReferral?: boolean;
 }
 
 // type AuthView = 'default' | 'email' | 'phone' | 'wallet' | 'webauthn';
@@ -34,6 +36,7 @@ export default function SignUpMethods({
   authWithStytch,
   handleBack,
   error,
+  hasReferral = false,
 }: SignUpProps) {
   const [view, setView] = useState<string>("default");
 
@@ -51,6 +54,37 @@ export default function SignUpMethods({
                 Choose how you want to continue
               </p>
             </div>
+            {hasReferral && (
+              <Box
+                bg="#1b3258"
+                color="white"
+                p={4}
+                borderRadius="md"
+                w="100%"
+                mb={2}
+                border="1px solid #2e4b7c"
+                boxShadow="0 2px 10px rgba(0, 0, 0, 0.3)"
+              >
+                <Flex align="center" gap={3} mb={2}>
+                  <Box
+                    bg="#2d4e8a"
+                    p={2}
+                    borderRadius="full"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Icon as={Gift} color="#8ab4fe" boxSize={5} />
+                  </Box>
+                  <Text fontWeight="bold" color="#8ab4fe" fontSize="md">
+                    You've been invited!
+                  </Text>
+                </Flex>
+                <Text fontSize="sm" color="whiteAlpha.900" mt={2}>
+                  Sign in to claim your referral bonus.
+                </Text>
+              </Box>
+            )}
 
             <AuthAlert error={error} />
 

@@ -35,7 +35,7 @@ interface RedeemModalProps {
 const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, withdrawPercent, setWithdrawPercent, tokenAmount, token2Amount, confirming, redeemHandler }) => {
     const { getTokenBalance } = useTokenBalanceStore();
     const { chainId } = useContext(Web3AuthContext);
-    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation()
+    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation(chainId)
 
     const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0]?.contract_address, Number(chainId)) : null;
     const tokenInfo1 = modalState?.position ? modalState.position.tokens[0] : null;
@@ -140,22 +140,22 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                 <div className='flex justify-between mt-2'>
                                     <div>
                                         <span className='ml-2 text-2xl'>
-                                            {`${formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenBalance1?.symbol}`}
+                                            {`${formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenInfo1?.symbol}`}
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
                                     </div>
                                 </div>
 
                                 <div className='flex justify-between mt-2'>
                                     <div>
                                         <span className='ml-2 text-2xl'>
-                                            {`${formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenBalance2?.symbol}`}
+                                            {`${formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenInfo2?.symbol}`}
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
                                     </div>
                                 </div>
 
@@ -167,23 +167,23 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                     </div>
                                     <div className='items-center flex'>
                                         <span className='ml-2 text-sm'>
-                                            1 {tokenBalance2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenBalance1?.symbol}
+                                            1 {tokenInfo2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenBalance1?.symbol}
                                         </span>
                                     </div>
                                 </div>
                                 <div className='flex justify-between'>
                                     <div>
                                         <span className='ml-2 text-sm text-white/60'>
-                                            New {tokenBalance1?.symbol || ""} Position
+                                            New {tokenInfo1?.symbol || ""} Position
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <span className='ml-2'>
                                             {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
                                         </span>
                                         <span className='ml-1 text-sm text-white/60'>
-                                            {tokenBalance1?.symbol || ""}
+                                            {tokenInfo1?.symbol || ""}
                                         </span>
                                     </div>
                                 </div>
@@ -191,16 +191,16 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                 <div className='flex justify-between'>
                                     <div>
                                         <span className='ml-2 text-sm text-white/60'>
-                                            New {tokenBalance2?.symbol || ""} Position
+                                            New {tokenInfo2?.symbol || ""} Position
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                        <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <span className='ml-2'>
                                             {formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
                                         </span>
                                         <span className='ml-1 text-sm text-white/60'>
-                                            {tokenBalance2?.symbol || ""}
+                                            {tokenInfo2?.symbol || ""}
                                         </span>
                                     </div>
                                 </div>
@@ -268,16 +268,16 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                     <div className='flex justify-between'>
                                         <div>
                                             <span className='ml-2 text-sm text-white/60'>
-                                                {tokenBalance1?.symbol || ""} Position
+                                                {tokenInfo1?.symbol || ""} Position
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
-                                            <TokenChainIcon src={tokenBalance1?.logo || ""} alt={tokenBalance1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                            <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                             <span className='ml-2'>
                                                 {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted))}
                                             </span>
                                             <span className='ml-1 text-sm text-white/60'>
-                                                {tokenBalance2?.symbol || ""}
+                                                {tokenInfo2?.symbol || ""}
                                             </span>
                                         </div>
                                     </div>
@@ -285,16 +285,16 @@ const RedeemModal: React.FC<RedeemModalProps> = ({ setModalState, showPreview, m
                                     <div className='flex justify-between'>
                                         <div>
                                             <span className='ml-2 text-sm text-white/60'>
-                                                {tokenBalance2?.symbol || ""} Position
+                                                {tokenInfo2?.symbol || ""} Position
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
-                                            <TokenChainIcon src={tokenBalance2?.logo || ""} alt={tokenBalance2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
+                                            <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                             <span className='ml-2'>
                                                 {formatNumberByFrac(Number(modalState.position?.tokens[1].balance_formatted))}
                                             </span>
                                             <span className='ml-1 text-sm text-white/60'>
-                                                {tokenBalance2?.symbol || ""}
+                                                {tokenInfo2?.symbol || ""}
                                             </span>
                                         </div>
                                     </div>

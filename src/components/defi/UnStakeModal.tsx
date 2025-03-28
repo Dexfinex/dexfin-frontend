@@ -33,7 +33,7 @@ interface UnStakeModalProps {
 const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, unStakeHandler, setTokenAmount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
     const { chainId } = useContext(Web3AuthContext);
-    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
+    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation(chainId);
     const stakeTokenInfo = STAKING_TOKENS.find((token) => token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[0].symbol);
     const tokenInBalance = stakeTokenInfo?.tokenIn ? getTokenBalance(stakeTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
     const tokenInInfo = stakeTokenInfo?.tokenIn ? stakeTokenInfo?.tokenIn : null;
@@ -79,6 +79,10 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
             refetchNativeTokenPrice()
         }
     }, [chainId, nativeTokenAddress, nativeTokenPrice])
+
+    const maxHandler = () => {
+        setTokenAmount(formatNumberByFrac(tokenOutBalance?.balance, 6) || "");
+    }
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -227,9 +231,7 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                                         <span className="text-white/60">
                                             {`Balance: ${formatNumberByFrac(Number(tokenOutBalance?.balance) || 0)}`}
                                         </span>
-                                        <button className="text-blue-400" onClick={() => {
-                                            setTokenAmount((formatNumberByFrac(Number(tokenOutBalance?.balance)) || ""));
-                                        }}>MAX</button>
+                                        <button className="text-blue-400" onClick={maxHandler}>MAX</button>
                                     </div>
                                 </div>
 
@@ -280,7 +282,7 @@ const UnStakeModal: React.FC<UnStakeModalProps> = ({ setModalState, showPreview,
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }
 

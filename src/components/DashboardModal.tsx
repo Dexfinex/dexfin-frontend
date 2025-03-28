@@ -223,7 +223,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-black/10 dark:border-white/10">
           <h2 className="text-lg md:text-xl font-semibold">
-            Portfolio Dashboard
+            Portfolio
             {isConnected && address && (
               <span className="ml-2 text-sm opacity-70">
                 ({address.slice(0, 6)}...{address.slice(-4)})
@@ -231,7 +231,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
             )}
           </h2>
           <div className="flex items-center gap-2">
-            <button
+            {/* <button
               onClick={refreshData}
               className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
               title="Refresh data"
@@ -240,7 +240,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({ isOpen, onClose 
                 <path d="M1 4v6h6M23 20v-6h-6" />
                 <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
               </svg>
-            </button>
+            </button> */}
             <button onClick={toggleFullscreen} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors">
               {isFullscreen ?
                 <Minimize2 className="w-4 h-4" /> :

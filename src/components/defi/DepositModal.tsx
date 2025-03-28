@@ -44,7 +44,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
     const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
     const { getOfferingPoolByChainId } = useDefillamaStore();
     const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
-    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation()
+    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation(chainId)
 
     const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0]?.contract_address, Number(chainId)) : null;
     const tokenInfo1 = modalState?.position ? modalState.position.tokens[0] : null;
@@ -269,7 +269,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                             value={tokenAmount}
                                             onChange={(e) => {
                                                 setTokenAmount(e.target.value);
-                                                setToken2Amount((Number(e.target.value) * Number(priceRatio)).toString());
+                                                setToken2Amount(formatNumberByFrac(Number(e.target.value) * Number(priceRatio)));
                                             }}
                                             type="text"
                                             className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""}`}
@@ -302,7 +302,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                             value={token2Amount}
                                             onChange={(e) => {
                                                 setToken2Amount(e.target.value);
-                                                setTokenAmount(((Number(e.target.value) / Number(priceRatio)) || 0).toString());
+                                                setTokenAmount(formatNumberByFrac((Number(e.target.value) / Number(priceRatio)) || 0));
                                             }}
                                             type="text"
                                             className={`w-full bg-transparent text-2xl outline-none ${isErrorToken2Amount ? "text-red-500" : ""}`}
@@ -321,7 +321,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                         </span>
                                         <button className="text-blue-400" onClick={() => {
                                             setToken2Amount((tokenBalance2?.balance || "") + "");
-                                            setTokenAmount(((Number(tokenBalance2?.balance) / Number(priceRatio)) || 0).toString());
+                                            setTokenAmount(formatNumberByFrac((Number(tokenBalance2?.balance) / Number(priceRatio)) || 0));
                                         }}>MAX</button>
                                     </div>
                                 </div>
@@ -387,7 +387,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                 switchChain(Number(chainId));
                             } else if (showPreview) {
                                 depositHandler();
-                            } else if (isErrorTokenAmount || isErrorToken2Amount || confirming) {
+                            } else if (!isErrorTokenAmount && !isErrorToken2Amount && !confirming) {
                                 setShowPreview(true);
                             }
                         }}
