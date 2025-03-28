@@ -218,7 +218,7 @@ export const formatNumberByFrac = (
         Number.isInteger(num) ||
         (Math.abs(num) < threshold && Math.abs(num) > minThreshold)
     ) {
-        const lengthAfterDecimal = Math.ceil(Math.log10(1 / num));
+        const lengthAfterDecimal = Math.floor(Math.log10(1 / num));
         if (num > 0 && lengthAfterDecimal > 0) {
             return getFixedNum(num, lengthAfterDecimal + 2);
         }
