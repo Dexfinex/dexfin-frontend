@@ -13,7 +13,6 @@ export const TopbarStarredItems: React.FC = () => {
     setIsMarketDataOpen,
     setIsChatOpen,
     setIsCartOpen,
-    setIsSocialFeedOpen,
     setIsGamesOpen,
     setTradeOpen,
     setIsRewardsOpen

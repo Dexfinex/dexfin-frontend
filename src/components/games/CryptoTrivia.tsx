@@ -7,6 +7,7 @@ import { useUserData } from '../../providers/UserProvider';
 
 
 import { GameService } from '../../services/game.services.ts';
+import {useBreakpointValue} from "@chakra-ui/react";
 
 interface CryptoTriviaProps {
   gameType?: string;
@@ -1459,7 +1460,7 @@ export const CryptoTrivia: React.FC<CryptoTriviaProps> = ({ gameType = 'TRIVIA' 
     multiplier: 1
   });
   const [gameQuestions, setGameQuestions] = useState<Question[]>([]);
-  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const isMobile = useBreakpointValue({ base: true, md: false })
   useEffect(() => {
     const loadGameData = async () => {
       if (userData && userData.accessToken) {
@@ -1532,16 +1533,6 @@ export const CryptoTrivia: React.FC<CryptoTriviaProps> = ({ gameType = 'TRIVIA' 
       }
     }
   }, [state.screen, userData, gameStats, state.answers, state.difficulty, state.multiplier, state.score, state.bestStreak, sessionStartTime]);
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   useEffect(() => {
     if (state.screen === 'game') {
