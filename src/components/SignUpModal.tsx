@@ -7,22 +7,16 @@ import {
   Loader2,
   Crown,
   User,
-  Mail,
   AlertCircle,
 } from "lucide-react";
 import { Modal, ModalContent, ModalOverlay } from "@chakra-ui/react";
-import { AuthAlert } from "./AuthAlert";
-import {AUTH_METHOD_TYPE} from '@lit-protocol/constants';
+import { AUTH_METHOD_TYPE } from "@lit-protocol/constants";
 import { registerWebAuthn } from "../utils/lit.util";
 import Loading from "./auth/Loading";
-import AuthMethods from "./auth/AuthMethods";
-import WalletMethods from "./auth/WalletMethods";
-import WebAuthn from "./auth/WebAuthn";
-import StytchOTP from "./auth/StytchOTP";
 import { Web3AuthContext } from "../providers/Web3AuthContext";
 import { authService } from "../services/auth.service";
 import { useStore } from "../store/useStore";
-
+import SignUpMethods from "./auth/SignUpMethods";
 interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -54,7 +48,6 @@ const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
     null
   );
-  const [authView, setAuthView] = useState<string>("default");
 
   const {
     authMethod,
@@ -95,7 +88,6 @@ const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
       setCurrentStep("beta-code");
       setFormData(initialFormData);
       setErrors({});
-      setAuthView("default");
       setRegistrationError(null);
       setRegisteringUsername(false);
     }
@@ -462,76 +454,26 @@ const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
     }
 
     if (currentAccount && sessionSigs) {
-      console.log(currentAccount);
+      return;
+      /*(
+        <Dashboard currentAccount={currentAccount} sessionSigs={sessionSigs} />
+    )*/ <div></div>;
     }
 
     return (
-      <div className="px-2">
-        {authView === "default" && (
-          <>
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-full bg-green-900/40 flex items-center justify-center mx-auto mb-5">
-                <Mail className="w-8 h-8 text-green-500" />
-              </div>
-              <h2 className="text-2xl font-bold">Complete Your Profile</h2>
-              <p className="text-white/60 mt-1">
-                Choose how you want to continue
-              </p>
-            </div>
-
-            <AuthAlert error={error} />
-
-            <AuthMethods
-              handleGoogleLogin={handleGoogleLogin}
-              handleDiscordLogin={handleDiscordLogin}
-              setView={setAuthView}
-              isSignIn={false}
-            />
-
-            <div className="mt-6">
-              <button
-                onClick={handleBack}
-                className="flex items-center gap-2 px-5 py-2.5 bg-black hover:bg-white/5 border border-white/10 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-                <span>Back</span>
-              </button>
-            </div>
-          </>
-        )}
-
-        {authView === "email" && (
-          <StytchOTP
-            method={"email"}
-            authWithStytch={authWithStytch}
-            setView={setAuthView}
-          />
-        )}
-
-        {authView === "phone" && (
-          <StytchOTP
-            method={"phone"}
-            authWithStytch={authWithStytch}
-            setView={setAuthView}
-          />
-        )}
-
-        {authView === "wallet" && (
-          <WalletMethods
-            authWithEthWallet={authWithEthWallet}
-            setView={setAuthView}
-          />
-        )}
-
-        {authView === "webauthn" && (
-          <WebAuthn
-            start={"register"}
-            authWithWebAuthn={authWithWebAuthn}
-            setView={setAuthView}
-            registerWithWebAuthn={registerWithWebAuthn}
-          />
-        )}
-      </div>
+      <>
+        <SignUpMethods
+          handleGoogleLogin={handleGoogleLogin}
+          handleDiscordLogin={handleDiscordLogin}
+          authWithEthWallet={authWithEthWallet}
+          registerWithWebAuthn={registerWithWebAuthn}
+          authWithWebAuthn={authWithWebAuthn}
+          authWithStytch={authWithStytch}
+          handleBack={handleBack}
+          // goToLogin={() => router.push('/login')}
+          error={error}
+        />
+      </>
     );
   };
 

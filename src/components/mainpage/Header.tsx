@@ -1,5 +1,4 @@
-import { useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useContext, useState } from "react";
 import {
   Box,
   Container,
@@ -11,24 +10,23 @@ import {
   useColorModeValue,
   chakra,
 } from "@chakra-ui/react";
-import { Twitter, Send, BookOpen, ExternalLink } from "lucide-react";
+import { Twitter, Send, BookOpen } from "lucide-react";
 import Logo from "./Logo";
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
-import { useStore } from "../../store/useStore";
+import SignInModal from "../SignInModal";
+import SignUpModal from "../SignUpModal";
 
 const Header = () => {
-  const navigate = useNavigate();
+  // Create dynamic colors for hover effects
   const hoverColor = useColorModeValue("blue.500", "blue.300");
   const buttonBgHover = useColorModeValue("blue.600", "blue.400");
-  const appButtonBg = useColorModeValue("purple.500", "purple.400");
-  const appButtonHoverBg = useColorModeValue("purple.600", "purple.500");
-
+  
+  // Local state for modals to ensure they work
+  const [showSignIn, setShowSignIn] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
+  
   const { isConnected } = useContext(Web3AuthContext);
   
-  const navigateToApp = () => {
-    navigate("/app");
-  };
-
   return (
     <>
       <Box
@@ -50,8 +48,6 @@ const Header = () => {
             <chakra.div
               transition="transform 0.3s ease"
               _hover={{ transform: "scale(1.05)" }}
-              cursor="pointer"
-              onClick={() => navigate("/")}
             >
               <Logo />
             </chakra.div>
@@ -108,26 +104,17 @@ const Header = () => {
               {isConnected ? (
                 <HStack spacing={3}>
                   <Button
-                    bg={appButtonBg}
-                    color="white"
+                    variant="ghost"
+                    color="whiteAlpha.800"
                     _hover={{
-                      bg: appButtonHoverBg,
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-                    }}
-                    _active={{
-                      bg: "purple.700",
-                      transform: "translateY(0)",
+                      color: "white",
+                      bg: "whiteAlpha.100",
                     }}
                     size={{ base: "sm", md: "md" }}
-                    fontWeight="semibold"
+                    fontWeight="medium"
                     transition="all 0.2s ease"
-                    borderRadius="full"
-                    px={6}
-                    rightIcon={<ExternalLink size={16} />}
-                    onClick={navigateToApp}
                   >
-                    Launch App
+                    Dexfin App
                   </Button>
                 </HStack>
               ) : (
@@ -142,9 +129,7 @@ const Header = () => {
                     size={{ base: "sm", md: "md" }}
                     fontWeight="medium"
                     transition="all 0.2s ease"
-                    onClick={() =>
-                      useStore.getState().setIsSigninModalOpen(true)
-                    }
+                    onClick={() => setShowSignIn(true)}
                   >
                     Sign In
                   </Button>
@@ -157,9 +142,7 @@ const Header = () => {
                       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
                     }}
                     size={{ base: "sm", md: "md" }}
-                    onClick={() =>
-                      useStore.getState().setIsSignupModalOpen(true)
-                    }
+                    onClick={() => setShowSignUp(true)}
                     fontWeight="semibold"
                     transition="all 0.2s ease"
                     px={6}
@@ -172,6 +155,19 @@ const Header = () => {
           </Flex>
         </Container>
       </Box>
+      <SignUpModal
+        isOpen={showSignUp} 
+        onClose={() => setShowSignUp(false)} 
+      />
+      
+      <SignInModal 
+        isOpen={showSignIn} 
+        onClose={() => setShowSignIn(false)} 
+        goToSignUp={() => {
+          setShowSignIn(false);
+          setShowSignUp(true);
+        }}
+      />
     </>
   );
 };
