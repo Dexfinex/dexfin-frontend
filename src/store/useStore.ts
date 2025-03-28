@@ -279,16 +279,16 @@ interface StoreState {
 
   // Market Data View
   marketDataView:
-    | "overview"
-    | "market-cap"
-    | "trending"
-    | "dex"
-    | "defi"
-    | "news"
-    | "alerts"
-    | "technical"
-    | "calendar"
-    | "feed";
+  | "overview"
+  | "market-cap"
+  | "trending"
+  | "dex"
+  | "defi"
+  | "news"
+  | "alerts"
+  | "technical"
+  | "calendar"
+  | "feed";
   setMarketDataView: (
     view:
       | "overview"
@@ -383,10 +383,10 @@ const useStore = create<StoreState>((set, get) => ({
   menuItems: [
     { id: "ai", label: "AI Agent", icon: "Bot", isStarred: false },
     { id: "swap", label: "Swap", icon: "ArrowLeftRight", isStarred: false },
-    { id: "defi", label: "DeFi", icon: "Wallet", isStarred: false },
+    { id: "defi", label: "Earn", icon: "HandCoinsIcon", isStarred: false },
     {
       id: "dashboard",
-      label: "Dashboard",
+      label: "Portfolio",
       icon: "LayoutDashboard",
       isStarred: false,
     },
