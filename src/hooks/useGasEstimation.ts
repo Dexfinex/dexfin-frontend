@@ -5,7 +5,7 @@ import {useCallback, useContext} from 'react';
 import {defaultGasLimit, defaultMaxPriorityFee, mapRpcUrls} from '../constants';
 import {Web3AuthContext} from "../providers/Web3AuthContext.tsx";
 
-const useGasEstimation = (chainId: number | undefined) => {
+const useGasEstimation = (chainId: number | undefined = undefined) => {
   const { address, provider } = useContext(Web3AuthContext);
   const enabled = !!address && !!provider
 
