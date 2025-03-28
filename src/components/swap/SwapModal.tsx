@@ -125,7 +125,7 @@ const SwapModal: React.FC<SwapModalProps> = ({ isOpen, onClose }) => {
                         )}
 
                         {/* Right Side - Swap Interface */}
-                        <Box minW={["100%", "400px"]} maxW={["100%", "100%", "400px"]} p={6}>
+                        <Box minW={["100%", "480px"]} maxW={["100%", "100%", "480px"]} p={6}>
                             {/* Header */}
                             <Flex justify="space-between" align="center" mb={6}>
                                 <Flex align="center" gap={2}>

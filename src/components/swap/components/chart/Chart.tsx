@@ -86,7 +86,7 @@ export function Chart({type, onTypeChange, token, isMaximized}: ChartProps) {
     useEffect(() => {
         if (!chartContainerRef.current) return;
         const chartWidget = createChart(chartContainerRef.current, {
-            width: isMobile ? window.innerWidth : 680,
+            width: isMobile ? window.innerWidth : 600,
             height: isMobile ? window.innerHeight * .45 : 420,
             layout: {
                 background: {
@@ -164,7 +164,7 @@ export function Chart({type, onTypeChange, token, isMaximized}: ChartProps) {
 
     const resizeChartWidth = useCallback(() => {
         if (chartContainerRef.current && !isMobile) {
-            const width = (chartParentContainerRef.current?.parentElement?.parentElement?.parentElement?.parentElement?.clientWidth ?? chartContainerRef.current?.clientWidth) - 440
+            const width = (chartParentContainerRef.current?.parentElement?.parentElement?.parentElement?.parentElement?.clientWidth ?? chartContainerRef.current?.clientWidth) - 520
             chart?.applyOptions({
                 width,
             });
