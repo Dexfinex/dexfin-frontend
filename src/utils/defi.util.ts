@@ -79,7 +79,7 @@ export const getAddActionName = ({ type }: { type: string }) => {
         case "liquidity":
             return "deposit";
         case "supplied":
-            return "deposit";
+            return "lend";
         case "borrowing":
             return "borrow";
         case "lending":

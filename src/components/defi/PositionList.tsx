@@ -51,7 +51,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
             case "liquidity":
                 return "Deposit";
             case "supplied":
-                return "";
+                return "Lend";
             default:
                 return "";
         }
@@ -64,7 +64,7 @@ export const PositionList: React.FC<PositionListProps> = ({ setSelectedPositionT
             case "liquidity":
                 return "Redeem";
             case "supplied":
-                return "";
+                return "Withdraw";
             default:
                 return "";
         }

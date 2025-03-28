@@ -22,7 +22,6 @@ import { getChainIcon } from "../../utils/defi.util.ts";
 import { getChainNameById } from "../../utils/defi.util.ts";
 
 import { mapChainId2ExplorerUrl } from '../../config/networks.ts';
-import { WalletTypeEnum } from "../../types/wallet.type.ts";
 import { EnSoResponse } from "../../services/enso.service.ts";
 
 interface ModalState {
@@ -61,7 +60,12 @@ const LendModal: React.FC<LendModalProps> = ({
     const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation(chainId);
     const lendTokenInfo = LENDING_LIST.find((token) => {
-        return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
+        return token.chainId === Number(chainId)
+            && token?.protocol_id?.toLowerCase() === modalState.position?.protocol_id?.toLowerCase()
+            && (modalState?.position.tokens.length === 1
+                ? token.tokenIn.symbol?.toLowerCase() === modalState?.position.tokens[0].symbol?.toLowerCase()
+                : token.tokenOut.symbol?.toLowerCase() === modalState?.position.tokens[0].symbol?.toLowerCase()
+            );
     });
     const tokenInBalance = lendTokenInfo?.tokenIn ? getTokenBalance(lendTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
     const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
@@ -162,54 +166,27 @@ const LendModal: React.FC<LendModalProps> = ({
     const lendHandler = async () => {
         if (signer && Number(tokenAmount) > 0) {
             setConfirming("Approving...");
-            const lendTokenInfo = LENDING_LIST.find((token) => {
-                return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
-            });
+
             const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
             const tokenOutInfo = lendTokenInfo?.tokenOut ? lendTokenInfo?.tokenOut : null;
 
-            switch (walletType) {
-                case WalletTypeEnum.EOA:
-                    enSoActionMutation({
-                        chainId: Number(chainId),
-                        fromAddress: address,
-                        routingStrategy: "router",
-                        action: "deposit",
-                        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
-                        tokenIn: [tokenInInfo?.contract_address || ""],
-                        tokenOut: [tokenOutInfo?.contract_address || ""],
-                        amountIn: [Number(tokenAmount)],
-                        signer: signer,
-                        receiver: address,
-                        gasPrice: gasData.gasPrice,
-                        gasLimit: gasData.gasLimit
-                    }, {
-                        onSuccess: onSuccessCallback,
-                        onError: onErrorCallback
-                    })
-                    break;
-                case WalletTypeEnum.EMBEDDED:
-                    enSoActionMutation({
-                        chainId: Number(chainId),
-                        fromAddress: address,
-                        routingStrategy: "router",
-                        action: "deposit",
-                        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
-                        tokenIn: [tokenInInfo?.contract_address || ""],
-                        tokenOut: [tokenOutInfo?.contract_address || ""],
-                        amountIn: [Number(tokenAmount)],
-                        signer: signer,
-                        receiver: address,
-                        gasPrice: gasData.gasPrice,
-                        gasLimit: gasData.gasLimit
-                    }, {
-                        onSuccess: onSuccessCallback,
-                        onError: onErrorCallback
-                    })
-                    break;
-                default:
-                    break;
-            }
+            enSoActionMutation({
+                chainId: Number(chainId),
+                fromAddress: address,
+                routingStrategy: "router",
+                action: "deposit",
+                protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+                tokenIn: [tokenInInfo?.contract_address || ""],
+                tokenOut: [tokenOutInfo?.contract_address || ""],
+                amountIn: [Number(tokenAmount)],
+                signer: signer,
+                receiver: address,
+                gasPrice: gasData.gasPrice,
+                gasLimit: gasData.gasLimit
+            }, {
+                onSuccess: onSuccessCallback,
+                onError: onErrorCallback
+            })
         }
     }
 
