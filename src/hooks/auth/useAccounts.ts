@@ -9,6 +9,8 @@ export default function useAccounts() {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<Error>();
 
+    console.log("currentAccount", currentAccount)
+
     /**
      * Fetch PKPs tied to given auth method
      */

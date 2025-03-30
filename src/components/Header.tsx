@@ -1,16 +1,16 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Bell, Maximize2, Minimize2, Wallet, ArrowUp, ArrowDown, Sun, Moon, Menu, X } from 'lucide-react';
-import { SettingsModal } from './SettingsModal';
-import { StarMenu } from './StarMenu';
-import { MainMenu } from './MainMenu';
-import { AccountMenu } from './AccountMenu';
-import { TopbarStarredItems } from './TopbarStarredItems';
-import { NotificationPanel } from './NotificationPanel';
-import { useStore } from '../store/useStore';
-import { Web3AuthContext } from "../providers/Web3AuthContext";
-import { useWebSocket } from '../providers/WebSocketProvider';
-import { useToast } from '@chakra-ui/react';
+import React, {useContext, useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {ArrowDown, ArrowUp, Bell, Maximize2, Minimize2, Moon, Sun, Wallet} from 'lucide-react';
+import {SettingsModal} from './SettingsModal';
+import {StarMenu} from './StarMenu';
+import {MainMenu} from './MainMenu';
+import {AccountMenu} from './AccountMenu';
+import {TopbarStarredItems} from './TopbarStarredItems';
+import {NotificationPanel} from './NotificationPanel';
+import {useStore} from '../store/useStore';
+import {Web3AuthContext} from "../providers/Web3AuthContext";
+import {useWebSocket} from '../providers/WebSocketProvider';
+import {useBreakpointValue, useToast} from '@chakra-ui/react';
 
 // Auth token key - must match the one in App.js
 const AUTH_TOKEN_KEY = "auth_token";
@@ -29,7 +29,7 @@ export const Header: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const isMobile = useBreakpointValue({ base: true, md: false })
   const toast = useToast();
 
   const { unreadCount } = useWebSocket();
@@ -46,23 +46,12 @@ export const Header: React.FC = () => {
     }
   }, [isConnected, loadStarredItems]);
 
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsSmallScreen(window.innerWidth < 640);
-    };
-
-    checkScreenSize();
-
-    window.addEventListener('resize', checkScreenSize);
-
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
 
   useEffect(() => {
-    if (!isSmallScreen && isMobileMenuOpen) {
+    if (!isMobile && isMobileMenuOpen) {
       setIsMobileMenuOpen(false);
     }
-  }, [isSmallScreen, isMobileMenuOpen]);
+  }, [isMobile, isMobileMenuOpen]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -124,7 +113,7 @@ export const Header: React.FC = () => {
           <div className="flex items-center gap-1 sm:gap-3">
             <MainMenu />
 
-            {!isSmallScreen && (
+            {!isMobile && (
               <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
             )}
 
@@ -137,10 +126,12 @@ export const Header: React.FC = () => {
             </div>
           </div>
 
-          <TopbarStarredItems />
+          {
+            !isMobile && <TopbarStarredItems />
+          }
 
           <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
-            {!isSmallScreen && <StarMenu />}
+            {!isMobile && <StarMenu />}
 
             <div className="relative">
               <button
@@ -171,7 +162,7 @@ export const Header: React.FC = () => {
               <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
-            {(!isSmallScreen || window.innerWidth > 380) && (
+            {(!isMobile || window.innerWidth > 380) && (
               <button
                 onClick={toggleFullscreen}
                 className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -185,7 +176,7 @@ export const Header: React.FC = () => {
               </button>
             )}
 
-            {(!isSmallScreen || window.innerWidth > 420) && (
+            {(!isMobile || window.innerWidth > 420) && (
               <button
                 onClick={toggleTopbarPosition}
                 className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"

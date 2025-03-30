@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { dexfinv3Service } from '../services/dexfin.service';
 import { useUserData } from '../providers/UserProvider';
+import { useStore } from '../store/useStore';
 
 interface TwoFactorAuthInputProps {
   isDisabled: boolean;
@@ -89,6 +90,7 @@ export const SecuritySettings: React.FC = () => {
   const [backupCodes, setBackCodes] = useState([]);
   const [isAuthEnabled, setIsAuthEnabled] = useState(false);
   const { userData } = useUserData();
+  const { theme } = useStore();
 
   const handleSetup = async () => {
     setLoadingSetup(true)
@@ -333,16 +335,16 @@ export const SecuritySettings: React.FC = () => {
             </div>
 
             <div className='h-[420px]'>
-              <div className='flex items-center justify-between border border-white/50 p-5 rounded-xl'>
+              <div className={`flex items-center justify-between border ${theme === 'dark' ? 'border-white/50' : 'border-black/50'}  p-5 rounded-xl`}>
                 <div className='flex justify-center items-center gap-2'>
                   <LockIcon className='w-10 h-10' />
                   <div>
                     <div>Authenticator app</div>
-                    <div className='text-sm text-white/70'>Uses a one-time code from your authenticator app</div>
+                    <div className={`text-sm ${theme === 'dark' ? "text-white/70" : "text-black/70"} `}>Uses a one-time code from your authenticator app</div>
                   </div>
                 </div>
                 <button onClick={() => setStep(5)}>
-                  <Trash2Icon className='w-5 h-5 hover:text-white/70' />
+                  <Trash2Icon className={`w-5 h-5 ${theme === 'dark' ? 'hover:text-white/70' : 'hover:text-black/70'}`} />
                 </button>
               </div>
             </div>

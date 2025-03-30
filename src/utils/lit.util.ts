@@ -219,8 +219,6 @@ export async function getSessionSigs({
     authMethod: ExAuthType;
     // sessionSigsParams: GetSessionSigsProps;
 }): Promise<SessionSigs> {
-    // const provider = getProviderByAuthMethod(authMethod);
-    // if (provider) {
     await litNodeClient.connect();
     return await litNodeClient.getPkpSessionSigs({
         pkpPublicKey,
@@ -237,13 +235,6 @@ export async function getSessionSigs({
             },
         ],
     });
-    /*
-        } else {
-            throw new Error(
-                `Provider not found for auth method type ${authMethod.authMethodType}`
-            );
-        }
-    */
 }
 
 export async function updateSessionSigs(

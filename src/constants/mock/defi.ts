@@ -12,10 +12,10 @@ export const ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN: Record<number, Record<string,
             "token": "stETH",
             "type": "Staking"
         },
-        // "aave-v3": {
-        //     "token": "aEthWETH,WETH",
-        //     "type": "Supplied"
-        // },
+        "aave-v3": {
+            "token": "aEthWETH,WETH",
+            "type": "Supplied"
+        },
     },
 }
 
