@@ -138,7 +138,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                             let data = (position && offering.protocol_id !== "pendle")
                                                 ? { ...position, apy: Number(poolInfo?.apy) }
                                                 : { ...offering, apy: Number(poolInfo?.apy), id: index + "", chainId: offering.chainId }
-                                            const supportedChains = offerings.filter((item => item.protocol_id === offering.protocol_id && item.address === offering.address)).map(item => item.chainId);
+                                            const supportedChains = [... new Set(offerings.filter((item => item.protocol_id === offering.protocol_id && item.address === offering.address)).map(item => item.chainId))];
                                             handleAction(
                                                 getAddActionName({ type: offering.type }),
                                                 data,

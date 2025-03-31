@@ -99,7 +99,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const handleAction = (type: string, position: Position, apyToken: string, supportedChains: number[]) => {
     switchChain(supportedChains[0]);
-    setModalState({ type, position, apyToken, supportedChains });
+    setModalState({ type, position, apyToken, supportedChains: [...new Set(supportedChains)] });
   };
 
   const depositHandler = async () => {
