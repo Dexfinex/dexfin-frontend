@@ -346,7 +346,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
             },
             (error) => {
                 console.log(error)
-                setScanning(false)
             }
         );
     };
