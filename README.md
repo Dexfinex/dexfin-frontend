@@ -3,7 +3,7 @@
 Welcome to the **Dexfin Frontend** repository! This project serves as the user interface for the **Dexfin** platform, a decentralized finance (DeFi) cross-chain aggregator powered by AI.
 
 ## 🚀 Overview
-🔗 **Live URL:** [Dexfin Frontend](https://dexfin-frontend-production.up.railway.app/)
+🔗 **Live URL:** [Dexfin Frontend](https://dexfin.com)
 
 Dexfin is redefining the DeFi experience by combining seamless cross-chain aggregation, AI-driven insights, and a decentralized social layer. Our platform offers:
 
