@@ -8,6 +8,7 @@ import { useStore } from "./store/useStore";
 import { trackEvent } from "./services/analytics";
 import { addMouseflowTag, setMouseflowVariable, trackMouseflowPageView } from "./services/mouseflow";
 import { useLocation } from "react-router-dom";
+import TrackingScripts from "./components/TrackingScripts.tsx";
 
 const AppPage: React.FC = () => {
   const { theme } = useStore();
@@ -98,6 +99,7 @@ const AppPage: React.FC = () => {
 
   return (
     <Box minH="100vh" width="100%">
+      <TrackingScripts />
       <ReferralHandler />
       <Header />
       <Workspace />
