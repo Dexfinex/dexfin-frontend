@@ -643,7 +643,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
                 };
               }
             }
-            
+
             if (toToken) {
               setFromToken({
                 symbol: token.symbol,
@@ -1149,7 +1149,10 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
                                 : 'glass border border-white/10'
                                 }`}
                             >
-                              <p className="whitespace-pre-wrap">{message.content}</p>
+                              <p
+                                className="whitespace-pre-wrap"
+                                dangerouslySetInnerHTML={{ __html: message.content }}
+                              />
                               <p className="text-red-500 text-sm whitespace-pre-wrap">{message.tip}</p>
                               {message.link && (
                                 <a href={message.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 float-right">

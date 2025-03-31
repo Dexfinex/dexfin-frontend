@@ -94,8 +94,6 @@ export const Workspace: React.FC = () => {
   // Filter widgets based on visibility settings
   const visibleWidgets = widgets.filter(widget => widgetVisibility[widget.type]);
 
-  console.log("visibleWidgets", visibleWidgets)
-
   return (
     <div className={`fixed inset-0 ${isTopbarVisible ? (isTopbarBottom ? 'pb-12' : 'pt-12') : ''} transition-all duration-300`}>
       <div className="relative w-full h-full p-6">

@@ -7,7 +7,7 @@ import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon";
 import { Position } from "../../store/useDefiStore";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
-import { formatNumberByFrac } from "../../utils/common.util";
+import { formatNumberByFrac, compareStringUppercase } from "../../utils/common.util";
 
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
@@ -52,22 +52,29 @@ const LendModal: React.FC<LendModalProps> = ({
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
 
+    const { chainId: connectedChainId, switchChain, isChainSwitching, signer, address } = useContext(Web3AuthContext)
+
     const { mutate: enSoActionMutation } = useEnSoActionMutation();
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId: connectedChainId, switchChain, isChainSwitching, signer, address, walletType } = useContext(Web3AuthContext)
-    const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
     const { getOfferingPoolByChainId } = useDefillamaStore();
-    const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
+
+    const protocolId = modalState.position?.protocol_id || ""
+
+    const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
+    const poolInfo = getOfferingPoolByChainId(Number(chainId), protocolId, modalState.apyToken || "");
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation(chainId);
+
     const lendTokenInfo = LENDING_LIST.find((token) => {
         return token.chainId === Number(chainId)
-            && token?.protocol_id?.toLowerCase() === modalState.position?.protocol_id?.toLowerCase()
-            && (modalState?.position.tokens.length === 1
-                ? token.tokenIn.symbol?.toLowerCase() === modalState?.position.tokens[0].symbol?.toLowerCase()
-                : token.tokenOut.symbol?.toLowerCase() === modalState?.position.tokens[0].symbol?.toLowerCase()
+            && compareStringUppercase(token?.protocol_id, protocolId)
+            && (modalState?.position?.tokens.length === 1
+                ? compareStringUppercase(token.tokenIn.symbol, modalState?.position.tokens[0].symbol)
+                : compareStringUppercase(token.tokenOut.symbol, modalState?.position?.tokens[0].symbol || "")
             );
     });
+
     const tokenInBalance = lendTokenInfo?.tokenIn ? getTokenBalance(lendTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
+
     const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
 
     const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
@@ -175,7 +182,7 @@ const LendModal: React.FC<LendModalProps> = ({
                 fromAddress: address,
                 routingStrategy: "router",
                 action: "deposit",
-                protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+                protocol: protocolId,
                 tokenIn: [tokenInInfo?.contract_address || ""],
                 tokenOut: [tokenOutInfo?.contract_address || ""],
                 amountIn: [Number(tokenAmount)],
