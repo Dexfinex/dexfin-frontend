@@ -8,8 +8,8 @@ import {
     base, linea, Chain, sepolia
 } from "viem/chains";
 import { TokenType } from "../types/swap.type.ts";
-import {SOLANA_CHAIN_ID} from "../constants/solana.constants.ts";
-import {NULL_ADDRESS} from "../constants";
+import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
+import { NULL_ADDRESS } from "../constants";
 
 export interface NETWORK {
     id: string;
@@ -68,14 +68,14 @@ export const NETWORKS: NETWORK[] = [
         chainId: 42161,
         symbol: 'ETH',
     },
-/*
-    {
-        id: 'bitcoin',
-        name: 'Bitcoin',
-        icon: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg',
-        chainId: 0,
-    },
-*/
+    /*
+        {
+            id: 'bitcoin',
+            name: 'Bitcoin',
+            icon: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg',
+            chainId: 0,
+        },
+    */
     {
         id: 'solana',
         name: 'Solana',
@@ -86,12 +86,12 @@ export const NETWORKS: NETWORK[] = [
 ] as const;
 
 export const mapChainId2Network: Record<number, NETWORK> = {}
-for(const network of NETWORKS) {
+for (const network of NETWORKS) {
     mapChainId2Network[network.chainId] = network;
 }
 
 export const mapChainName2Network: Record<string, NETWORK> = {}
-for(const network of NETWORKS) {
+for (const network of NETWORKS) {
     mapChainName2Network[network.id] = network;
 }
 
@@ -108,6 +108,7 @@ export const mapChainId2NativeAddress: Record<number, string> = {
 
 export const PRICE_MATIC_ADDRESS = '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'
 export const NATIVE_MATIC_ADDRESS = '0x0000000000000000000000000000000000001010'
+export const NATIVE_AVAX_ADDRESS = '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7'
 
 export const mapChainId2ChainName: Record<number, string> = {
     1: 'Ethereum', // Ethereum Mainnet (ETH)
