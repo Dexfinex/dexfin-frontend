@@ -9,8 +9,6 @@ interface WalletMethodsProps {
 
 const WalletMethods = ({ authWithEthWallet, setView }: WalletMethodsProps) => {
     const { connectors } = useConnect();
-    console.log("connectors", connectors)
-
     const filteredConnectors = useMemo(() => {
         const result: Connector<CreateConnectorFn>[] = []
         const vis: Record<string, boolean> = {}
@@ -22,7 +20,7 @@ const WalletMethods = ({ authWithEthWallet, setView }: WalletMethodsProps) => {
 
         return result
     }, [connectors])
-    console.log('filteredConnectors = ', filteredConnectors)
+
     return (
         <>
             <VStack spacing={3}>
@@ -32,48 +30,42 @@ const WalletMethods = ({ authWithEthWallet, setView }: WalletMethodsProps) => {
                     of the address.
                 </Text>
                 <VStack spacing={4} w="full">
-                    {filteredConnectors.map(connector => (
-                        <Button
-                            variant="outline"
-                            w="full"
-                            color="white"
-                            borderColor="whiteAlpha.200"
-                            _hover={{ bg: 'whiteAlpha.100' }}
-                            // disabled={!connector.ready}
-                            key={connector.id}
-                            onClick={() => authWithEthWallet(connector)}
-                        >
-                            {connector.name.toLowerCase() === 'metamask' && (
-                                <div className="btn__icon">
-                                    <Image
-                                        src="/metamask.png"
-                                        alt="MetaMask logo"
-                                        width="2rem"
-                                    // fill={true}
-                                    />
-                                </div>
-                            )}
-                            {connector.name.toLowerCase() === 'coinbase wallet' && (
-                                <div className="btn__icon">
-                                    <Image
-                                        src="/coinbase.png"
-                                        alt="Coinbase logo"
-                                        width="2rem"
-                                    />
-                                </div>
-                            )}
-                            {connector.name.toLowerCase() === 'rabby wallet' && (
-                                <div className="btn__icon">
-                                    <Image
-                                        src="/rabby.svg"
-                                        alt="Rabby logo"
-                                        width="2rem"
-                                    />
-                                </div>
-                            )}
-                            <Text w="full">Continue with {connector.name}</Text>
-                        </Button>
-                    ))}
+                    {filteredConnectors.map(connector => {
+                        const name = connector.name.toLowerCase()
+                        let imageSrc = ''
+                        if (name === 'metamask') {
+                            imageSrc = '/metamask.png'
+                        } else if (name === 'coinbase wallet') {
+                            imageSrc = '/coinbase.png'
+                        } else if (name === 'rabby wallet') {
+                            imageSrc = '/rabby.svg'
+                        } else if (connector.icon) {
+                            imageSrc = connector.icon
+                        }
+
+                        return (
+                            <Button
+                                variant="outline"
+                                w="full"
+                                color="white"
+                                borderColor="whiteAlpha.200"
+                                _hover={{ bg: 'whiteAlpha.100' }}
+                                // disabled={!connector.ready}
+                                key={connector.id}
+                                onClick={() => authWithEthWallet(connector)}
+                            >
+                                {imageSrc && (
+                                    <div className="btn__icon">
+                                        <Image
+                                            src={imageSrc}
+                                            width="2rem"
+                                        />
+                                    </div>
+                                )}
+                                <Text w="full">Continue with {connector.name}</Text>
+                            </Button>
+                        )
+                    })}
 
                     <Button
                         onClick={() => setView('default')}
