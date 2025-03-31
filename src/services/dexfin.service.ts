@@ -12,8 +12,8 @@ import { birdeyeService } from "./birdeye.service.ts";
 import { Transfer, TokenMetadata } from "../types/wallet.type.ts";
 import { TokenType } from "../types/swap.type.ts";
 import { SOLANA_CHAIN_ID } from "../constants/solana.constants.ts";
-import { NETWORKS } from "../config/networks.ts";
-import { EVM_MINIMUM_VALUE, SOL_MINIMUM_VALUE } from "../constants/index.ts";
+import { NETWORKS, NATIVE_AVAX_ADDRESS } from "../config/networks.ts";
+import { EVM_MINIMUM_VALUE, SOL_MINIMUM_VALUE, ETHEREUM_TOKENID, AVAX_TOKENID } from "../constants/index.ts";
 
 export const dexfinv3Service = {
   getEvmWalletBalance: async ({
@@ -199,7 +199,7 @@ export const dexfinv3Service = {
               } as EvmWalletBalanceResponseType)
             }
           } else if (token.usdValue > EVM_MINIMUM_VALUE) {
-            const tokenId = token.tokenId === "ethereum" ? (Number(token.chain) === 1 ? token.tokenId : ("w" + token.symbol.toLowerCase())) : token.tokenId;
+            const tokenId = token.tokenId === ETHEREUM_TOKENID ? (Number(token.chain) === 1 ? token.tokenId : ("w" + token.symbol.toLowerCase())) : token.tokenId;
             let priceChange24h = 0, usdPrice = 0, usdValue = 0
             try {
               const data = await coingeckoService.getOHLCV(tokenId, "12H", fromTime, currentTime)
@@ -209,10 +209,12 @@ export const dexfinv3Service = {
             } catch (e) {
               console.log(e)
             }
+            const tokenAddress = token.tokenId === AVAX_TOKENID ? NATIVE_AVAX_ADDRESS : token.tokenAddress
 
             result.push({
               ...token,
               ...{
+                tokenAddress,
                 usdPrice24hrUsdChange: priceChange24h,
                 usdValue24hrUsdChange: Number(priceChange24h) * Number(token.balanceDecimal),
                 usdPrice,
