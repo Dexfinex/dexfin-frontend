@@ -284,3 +284,11 @@ export const getTimeAgo = (time: string) => {
         replace('months', 'mo').replace('month', 'mo');
     return result;
 }
+
+export const compareStringUppercase = (a: string, b: string) => {
+    return a.toUpperCase() === b.toUpperCase();
+}
+
+export const compareStringLowercase = (a: string, b: string) => {
+    return a.toLowerCase() === b.toLowerCase();
+}
