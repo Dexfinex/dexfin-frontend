@@ -1,35 +1,88 @@
 import { PositionToken } from "../../store/useDefiStore";
 
-export const ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN: Record<number, Record<string, Record<string, string>>> = {
+interface AllowedTokenPair {
+    token: string;
+    type: string;
+}
+
+export const ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN: Record<number, Record<string, AllowedTokenPair[]>> = {
     56: {
-        "uniswap-v2": {
-            "token": "USDT,USDC,UNI-V2",
-            "type": "Liquidity"
-        },
+        "uniswap-v2": [
+            {
+                "token": "USDT,USDC,UNI-V2",
+                "type": "Liquidity"
+            }
+        ],
+        "aave-v3": [
+            // {
+            //     "token": "aBnbWETH,WETH",
+            //     "type": "Supplied"
+            // },
+            // {
+            //     "token": "aBnbDAI,DAI",
+            //     "type": "Supplied"
+            // },
+            // {
+            //     "token": "aBnbUSDC,USDC",
+            //     "type": "Supplied"
+            // }
+        ],
     },
     1: {
-        "lido": {
-            "token": "stETH",
-            "type": "Staking"
-        },
-        "aave-v3": {
-            "token": "aEthWETH,WETH",
-            "type": "Supplied"
-        },
+        "lido": [
+            {
+                "token": "stETH",
+                "type": "Staking"
+            }
+        ],
+        "aave-v3": [
+            {
+                "token": "aEthWETH,WETH",
+                "type": "Supplied"
+            },
+            {
+                "token": "aEthDAI,DAI",
+                "type": "Supplied"
+            },
+            {
+                "token": "aEthUSDC,USDC",
+                "type": "Supplied"
+            },
+            {
+                "token": "aEthUSDT,USDT",
+                "type": "Supplied"
+            }
+        ],
+    },
+    8453: {
+        "aave-v3": [
+            {
+                "token": "aBasWETH,WETH",
+                "type": "Supplied"
+            },
+            {
+                "token": "aBasDAI,DAI",
+                "type": "Supplied"
+            },
+            {
+                "token": "aBasUSDC,USDC",
+                "type": "Supplied"
+            },
+            {
+                "token": "aBasUSDT,USDT",
+                "type": "Supplied"
+            }
+        ],
     },
 }
 
 export const isEnabledPosition = ({ chainId, protocol, tokenPair, type }: { chainId: number, protocol: string, tokenPair: string, type: string }) => {
-    if (
-        ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId] &&
-        ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol] &&
-        ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol]?.token === tokenPair &&
-        ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol]?.type === type
-    ) {
-        return true;
+    try {
+        const index = ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN[chainId][protocol].findIndex(item => item.token === tokenPair && item.type === type)
+        return index !== -1;
+    } catch (e) {
+        return false;
     }
-
-    return false;
 }
 
 export interface Offering {
@@ -311,7 +364,7 @@ export const LENDING_LIST = [
         "tokenOut": {
             "token_type": "erc20",
             "name": "Aave Ethereum WETH",
-            "symbol": "aEthWETH",
+            "symbol": "aBasWETH",
             "contract_address": "0xd4a0e0b9149bcee3c920d2e00b5de09138fd8bb7",
             "decimals": "18",
             "logo": "https://etherscan.io/token/images/aave_weth.png",
@@ -335,7 +388,7 @@ export const LENDING_LIST = [
         "tokenOut": {
             "token_type": "erc20",
             "name": "Aave Ethereum USDC",
-            "symbol": "aEthUSDC",
+            "symbol": "aBasUSDC",
             "contract_address": "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
             "decimals": "18",
             "logo": "https://etherscan.io/token/images/aave_usdc.png",
@@ -389,7 +442,31 @@ export const LENDING_LIST = [
             "logo": "https://coin-images.coingecko.com/coins/images/33669/large/sUSDe-Symbol-Color.png?1716307680",
             "thumbnail": "https://coin-images.coingecko.com/coins/images/33669/large/sUSDe-Symbol-Color.png?1716307680",
         },
-    }
+    },
+    {
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "logo": "https://cdn.moralis.io/defi/aave.png",
+        "chainId": 56,
+        "tokenIn": {
+            "token_type": "erc20",
+            "name": "USDC",
+            "symbol": "USDC",
+            "contract_address": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+            "decimals": "6",
+            "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+            "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "Aave BNB Smart Chain USDC",
+            "symbol": "aBnbUSDC",
+            "contract_address": "0x00901a076785e0906d1028c7d6372d247bec7d61",
+            "decimals": "18",
+            "logo": "https://etherscan.io/token/images/aave_usdc.png",
+            "thumbnail": "https://etherscan.io/token/images/aave_usdc.png",
+        },
+    },
 ];
 
 export const offerings: Offering[] = [
@@ -615,6 +692,34 @@ export const offerings: Offering[] = [
         "healthFactor": 0,
         "logo": "https://cdn.moralis.io/defi/aave.png"
     },
+    // {
+    //     "chainId": 56,
+    //     "apy": 0,
+    //     "apyToken": "USDC",
+    //     "address": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+    //     "protocol": "Aave V3",
+    //     "protocol_id": "aave-v3",
+    //     "type": "Lending",
+    //     "amount": 0,
+    //     "tokens": [
+    //         {
+    //             "token_type": "erc20",
+    //             "name": "USDC",
+    //             "symbol": "USDC",
+    //             "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    //             "decimals": "6",
+    //             "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+    //             "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+    //             "balance": "0",
+    //             "balance_formatted": "0",
+    //             "usd_price": 0,
+    //             "usd_value": 0
+    //         }
+    //     ],
+    //     "rewards": 0,
+    //     "healthFactor": 0,
+    //     "logo": "https://cdn.moralis.io/defi/aave.png"
+    // },
     {
         "chainId": 1,
         "apy": 0,
