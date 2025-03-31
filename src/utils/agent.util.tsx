@@ -1,13 +1,12 @@
-import { PublicKey } from '@solana/web3.js'
-import { getDomainKey, NameRegistryState } from "@bonfida/spl-name-service";
-import { tokenList } from '../constants/mock/solana.ts';
-import { connection } from "../config/solana.ts";
-import { createPublicClient, http } from 'viem';
-import { normalize } from 'viem/ens';
-import { mapChainId2ViemChain } from "../config/networks.ts";
-import {
-  mapRpcUrls,
-} from "../constants/index.ts";
+import {PublicKey} from '@solana/web3.js'
+import {getDomainKey, NameRegistryState} from "@bonfida/spl-name-service";
+import {tokenList} from '../constants/mock/solana.ts';
+import {connection} from "../config/solana.ts";
+import {createPublicClient, http} from 'viem';
+import {normalize} from 'viem/ens';
+import {mapChainId2ViemChain} from "../config/networks.ts";
+import {mapRpcUrls,} from "../constants/index.ts";
+
 const publicClient = createPublicClient({
   transport: http(mapRpcUrls[1]),
   chain: mapChainId2ViemChain[1],
@@ -48,11 +47,9 @@ export function BollingerBandsProgress({ value, upperBand, lowerBand }: any): nu
 export function symbolToToken(symbol: string): any {
 
   if (symbol == "SOL") {
-    const token = tokenList.find(token => token.symbol === symbol && token.name === "Wrapped SOL");
-    return token;
+    return tokenList.find(token => token.symbol === symbol && token.name === "Wrapped SOL");
   } else {
-    const token = tokenList.find(token => token.symbol === symbol);
-    return token;
+    return tokenList.find(token => token.symbol === symbol);
   }
 }
 
@@ -64,8 +61,6 @@ export function isValidSolanaAddress(address: string): boolean {
     return false;
   }
 }
-
-
 
 export async function getSolAddressFromSNS(domain: string) {
   try {
