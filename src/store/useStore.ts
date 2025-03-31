@@ -12,7 +12,7 @@ interface WidgetPosition {
   y: number;
 }
 
-interface WidgetSize {
+export interface WidgetSize {
   width: number;
   height: number | string;
 }

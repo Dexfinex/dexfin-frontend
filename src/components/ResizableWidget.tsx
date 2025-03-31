@@ -12,7 +12,7 @@ import { PriceConverterWidget } from './widgets/PriceConverterWidget';
 import { TwitterWidget } from './widgets/TwitterWidget';
 import { DirectMessagesWidget } from './widgets/DirectMessagesWidget';
 import { GripVertical, X, RefreshCw } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import {useStore, WidgetSize} from '../store/useStore';
 import { ResizableBox, ResizableBoxProps } from "react-resizable";
 import "react-resizable/css/styles.css"; // Import styles
 
@@ -20,7 +20,7 @@ interface WidgetProps {
   id: string;
   type: string;
   position: { x: number; y: number };
-  size: { width: number; height: number };
+  size: WidgetSize;
 }
 
 const widgetComponents: Record<string, React.FC> = {
