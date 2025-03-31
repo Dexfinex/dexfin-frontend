@@ -32,7 +32,6 @@ export const mapRpcUrls: Record<number, string> = {
 const BASE_HOST_DOMAIN = 'https://dexfinv3-backend-production.up.railway.app'
 
 export const COINGECKO_BASE_URL = `${BASE_HOST_DOMAIN}/coingecko`
-// export const COINGECKO_BASE_URL = `http://localhost:3000/coingecko`
 
 export const SWAPKIT_BASE_URL = `${BASE_HOST_DOMAIN}/crosschain`
 

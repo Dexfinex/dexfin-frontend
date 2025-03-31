@@ -42,7 +42,7 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
 
   const {
     executeBatchBuy,
-    error: buyHandlerError,
+    // error: buyHandlerError,
     txHashes,
     isPending: isBuyPending,
     isConfirmed
@@ -219,7 +219,6 @@ const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
   const toggleCart = useCallback(() => {
     setShowCart((prev) => !prev)
   }, [])
-  const [flag, setFlag] = useState(false)
 
   if (!isOpen) return null;
 
