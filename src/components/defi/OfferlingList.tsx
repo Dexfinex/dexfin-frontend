@@ -114,8 +114,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                     </span>
                                 </div>
                                 <div className="flex w-full items-center gap-2">
-                                    <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
-                                        }`}>
+                                    <div className={'text-emerald-400'}>
                                         {
                                             isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
                                                 : <div className="flex gap-1"><span className="block md:hidden">TVL</span>{`$${formatNumber(Number(poolInfo?.tvlUsd) || 0)}`}</div>
@@ -123,7 +122,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                     </div>
                                 </div>
                                 <div className="flex w-full items-center gap-2">
-                                    <div className={`${offering.type === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
+                                    <div className={`${offering?.type?.toUpperCase() === 'BORROWING' ? 'text-red-400' : 'text-emerald-400'
                                         }`}>
                                         {isLoading ? <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
                                             : <div className="flex gap-1"><span className="block md:hidden">APY</span> {`${formatNumberByFrac(poolInfo?.apy) || "0"}%`}</div>
@@ -138,7 +137,7 @@ export const OfferingList: React.FC<OfferingListProps> = ({ setSelectedPositionT
                                             let data = (position && offering.protocol_id !== "pendle")
                                                 ? { ...position, apy: Number(poolInfo?.apy) }
                                                 : { ...offering, apy: Number(poolInfo?.apy), id: index + "", chainId: offering.chainId }
-                                            const supportedChains = offerings.filter((item => item.protocol_id === offering.protocol_id && item.address === offering.address)).map(item => item.chainId);
+                                            const supportedChains = [... new Set(offerings.filter((item => item.protocol_id === offering.protocol_id && item.address === offering.address)).map(item => item.chainId))];
                                             handleAction(
                                                 getAddActionName({ type: offering.type }),
                                                 data,

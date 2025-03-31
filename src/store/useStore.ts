@@ -12,7 +12,7 @@ interface WidgetPosition {
   y: number;
 }
 
-interface WidgetSize {
+export interface WidgetSize {
   width: number;
   height: number | string;
 }
@@ -718,7 +718,7 @@ const useStore = create<StoreState>((set, get) => ({
     }),
 
   // Appearance
-  currentWallpaper: wallpapersList[0],
+  currentWallpaper: wallpapersList.find(wp => wp.id === "abstract-3") || wallpapersList[9],
   setWallpaper: (wallpaper) => set({ currentWallpaper: wallpaper }),
 
   // Topbar control

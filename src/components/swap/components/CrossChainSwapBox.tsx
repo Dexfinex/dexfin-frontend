@@ -218,8 +218,6 @@ export function CrossChainSwapBox({
         }
     }, [nativeTokenAddressFromChain, fromToken, getTokenPrice, toToken, fromAmount, toAmount, quoteResponse])
 
-    console.log("additionalAmountString", additionalAmountString)
-
     const {
         isRequireSwitchChain,
         textSwitchChain,

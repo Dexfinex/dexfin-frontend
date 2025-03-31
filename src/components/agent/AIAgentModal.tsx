@@ -616,16 +616,58 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
         } else if (response.type == "swap_sol") {
           const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === "solana");
           if (token && token.balance > response.args.inAmount) {
-            const toToken = symbolToToken(response.args.outputSymbol);
-            const fromToken = symbolToToken(response.args.inputSymbol);
-            if (toToken && fromToken) {
-              setFromToken(fromToken);
+            let toToken = null;
+            const popularTokens = mapPopularTokens[900];
+            const popularToken = popularTokens.find(item => item?.symbol?.toLowerCase() === response.args.outputSymbol.toLowerCase());
+            if (popularToken) {
+              toToken = {
+                symbol: popularToken.symbol || '',
+                name: popularToken.name,
+                address: popularToken.address,
+                chainId: popularToken.chainId,
+                decimals: popularToken.decimals,
+                logoURI: popularToken.logoURI,
+              };
+            } else {
+              const trendingTokensBase = trendingTokens[900];
+              const tmpToken = trendingTokensBase.find(item => item?.symbol?.toLowerCase() === response.args.outputSymbol.toLowerCase());
+
+              if (tmpToken) {
+                toToken = {
+                  symbol: tmpToken.symbol || '',
+                  name: tmpToken.name,
+                  address: tmpToken.address,
+                  chainId: tmpToken.chainId,
+                  decimals: tmpToken.decimals,
+                  logoURI: tmpToken.logoURI,
+                };
+              }
+            }
+            
+            if (toToken) {
+              setFromToken({
+                symbol: token.symbol,
+                name: token.name,
+                address: token.address,
+                chainId: token.chain,
+                decimals: token.decimals,
+                logoURI: token.logo,
+                priceUSD: token.usdPrice
+              });
               setProtocol({
                 key: "",
                 logoURI: "",
                 name: "Jupiter",
               });
-              setToToken(toToken);
+              setToToken({
+                symbol: toToken.symbol,
+                name: toToken.name,
+                address: toToken.address,
+                chainId: Number(toToken.chainId),
+                decimals: toToken.decimals,
+                logoURI: toToken.logoURI,
+                priceUSD: 0,
+              });
               setFromAmount(response.args.inAmount);
               setShowSolSwapProcess(true);
             } else {

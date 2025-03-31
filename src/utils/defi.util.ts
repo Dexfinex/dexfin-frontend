@@ -96,7 +96,7 @@ export const getRemoveActionName = ({ type }: { type: string }) => {
         case "liquidity":
             return "redeem";
         case "supplied":
-            return "";
+            return "withdraw";
         default:
             return "";
     }

@@ -1,18 +1,17 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { DndContext, DragEndEvent } from '@dnd-kit/core';
-import { Widget } from './Widget';
-import { ResizableWidget } from './ResizableWidget';
-import { AskAnythingWidget } from './widgets/AskAnythingWidget';
-import { useStore } from '../store/useStore';
+import React, {useContext} from 'react';
+import {DndContext, DragEndEvent} from '@dnd-kit/core';
+import {ResizableWidget} from './ResizableWidget';
+import {AskAnythingWidget} from './widgets/AskAnythingWidget';
+import {useStore} from '../store/useStore';
 
-import { Web3AuthContext } from '../providers/Web3AuthContext';
+import {Web3AuthContext} from '../providers/Web3AuthContext';
 import * as Icons from 'lucide-react';
 import {useBreakpointValue} from "@chakra-ui/react";
 
 export const Workspace: React.FC = () => {
   const { widgets, updateWidget, widgetVisibility, isTopbarVisible, isTopbarBottom,
     menuItems,
-    toggleStarMenuItem,
+    // toggleStarMenuItem,
     setIsAIAgentOpen,
     setIsSwapOpen,
     setIsDefiOpen,
@@ -25,13 +24,13 @@ export const Workspace: React.FC = () => {
     setTradeOpen,
     setIsRewardsOpen, } = useStore();
 
-  const [isOpen, setIsOpen] = useState(false);
+  // const [isOpen, setIsOpen] = useState(false);
   const isMobile = useBreakpointValue({ base: true, md: false })
   const { isConnected, login } = useContext(Web3AuthContext);
 
   const handleMenuItemClick = (itemId: string) => {
     // Close menu first
-    setIsOpen(false);
+    // setIsOpen(false);
 
     // Use setTimeout to ensure menu is closed before opening modal
     setTimeout(() => {
@@ -132,10 +131,7 @@ export const Workspace: React.FC = () => {
                 id={widget.id}
                 type={widget.type}
                 position={widget.position}
-                size={{
-                  width: Number(widget.size.width),
-                  height: Number(widget.size.height),
-                }}
+                size={widget.size}
               />
             ))}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
