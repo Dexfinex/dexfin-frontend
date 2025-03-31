@@ -1,7 +1,7 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import * as Icons from 'lucide-react';
-import { useStore } from '../store/useStore';
-import { Web3AuthContext } from '../providers/Web3AuthContext';
+import {useStore} from '../store/useStore';
+import {Web3AuthContext} from '../providers/Web3AuthContext';
 
 export const MainMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);

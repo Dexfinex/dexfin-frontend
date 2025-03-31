@@ -17,7 +17,7 @@ const PNL: React.FC<PNLProps> = ({ pnlUsd, pnlPercent, label = "" }) => {
             }
             <span className="text-xs sm:text-sm">
                 <NumberFormat prefix={pnlUsd >= 0 ? "$" : "-$"} number={Math.abs(pnlUsd)} />&nbsp;
-                <NumberFormat number={pnlPercent || 0} suffix="%" />&nbsp;
+                (<NumberFormat number={pnlPercent || 0} suffix="%" />)&nbsp;
                 {label}
             </span>
         </div>

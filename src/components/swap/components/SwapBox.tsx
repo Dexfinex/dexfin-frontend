@@ -396,6 +396,7 @@ export function SwapBox({
                 <TokenSelector
                     className="relative z-20 mb-2"
                     selectedToken={fromToken}
+                    disabledToken={toToken}
                     selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                     onSelect={onFromTokenSelect}
                     amount={fromAmount}
@@ -419,6 +420,7 @@ export function SwapBox({
                 <TokenSelector
                     className="relative z-10"
                     selectedToken={toToken}
+                    disabledToken={fromToken}
                     selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                     onSelect={onToTokenSelect}
                     amount={toAmount}
@@ -468,8 +470,8 @@ export function SwapBox({
                             {
                                 quoteData?.affiliateFee && (
                                     <PreviewDetailItem
-                                        title={`Affiliate Fee (${ZEROX_AFFILIATE_FEE / 100}%)`}
-                                        info={'A small percentage of the transaction fee shared with affiliates who bring users to the platform'}
+                                        title={`Dexfin fee (${ZEROX_AFFILIATE_FEE / 100}%)`}
+                                        info={'A small percentage fee for Dexfin.'}
                                         value={`$${formatNumberByFrac(affiliateFeeUsdAmount, 2)}`}
                                         isLoading={isQuoteLoading}
                                     />

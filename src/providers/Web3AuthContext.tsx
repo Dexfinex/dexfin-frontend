@@ -401,17 +401,19 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (wrappedKeyMetaDataList !== null) {
                 const targetMetaData = getSolanaWrappedKeyMetaDataByPkpEthAddress(wrappedKeyMetaDataList, currentAccount.ethAddress)
                 if (!targetMetaData) {
-                    const { id, pkpAddress, generatedPublicKey } = await generatePrivateKey({
-                        pkpSessionSigs: sessionSigs,
-                        network: 'solana',
-                        memo: "solana address",
-                        litNodeClient: litNodeClient as ILitNodeClient,
-                    });
-                    // console.log("generated", pkpAddress, generatedPublicKey)
-                    solanaWalletData = {
-                        publicKey: generatedPublicKey,
-                        pkpAddress: pkpAddress,
-                        wrappedKeyId: id,
+                    if (wrappedKeyMetaDataList.length === 0) { // should generate wallet only if there were no wrapped keys
+                        const { id, pkpAddress, generatedPublicKey } = await generatePrivateKey({
+                            pkpSessionSigs: sessionSigs,
+                            network: 'solana',
+                            memo: "solana address",
+                            litNodeClient: litNodeClient as ILitNodeClient,
+                        });
+                        // console.log("generated", pkpAddress, generatedPublicKey)
+                        solanaWalletData = {
+                            publicKey: generatedPublicKey,
+                            pkpAddress: pkpAddress,
+                            wrappedKeyId: id,
+                        }
                     }
                 } else {
                     solanaWalletData = {
@@ -513,6 +515,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setWalletClient(undefined)
         setIsLoadingStoredWallet(false)
         hasGetSolanaWalletInfo.current = false
+        pkpWalletRef.current = null
         localStorage.removeItem(AUTH_TOKEN_KEY);
 
         setWalletType(WalletTypeEnum.UNKNOWN)

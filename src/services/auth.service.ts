@@ -100,22 +100,23 @@ export const authService = {
     try {
       const response = await userAuthApi.get("/check-username");
       console.log("Username check response:", response.data);
-  
+
       if (response.data === false) {
         return false;
       }
-  
+
       if (response.data && response.data.hasUsername === true) {
         return {
           hasUsername: true,
-          username: response.data.username
+          username: response.data.username,
         };
       }
-  
+
       return false;
     } catch (error: any) {
       console.error("Error checking username:", error);
-      const errorMessage = error.response?.data?.message || "Failed to check username";
+      const errorMessage =
+        error.response?.data?.message || "Failed to check username";
       const enhancedError = new Error(errorMessage) as EnhancedError;
       enhancedError.original = error;
       throw enhancedError;
@@ -172,6 +173,7 @@ export const authService = {
         throw new Error("Username is required");
       }
 
+      // Validate username format (letters, numbers, underscores, hyphens only)
       const usernameRegex = /^[A-Za-z0-9_-]+$/;
       if (!usernameRegex.test(username)) {
         throw new Error(
@@ -209,6 +211,88 @@ export const authService = {
       }
 
       throw error;
+    }
+  },
+
+  getNonce: async (walletAddress: string) => {
+    try {
+      if (!walletAddress) {
+        throw new Error("Wallet address is required");
+      }
+
+      const response = await userAuthApi.post(`/nonce`, { walletAddress });
+
+      return response.data;
+    } catch (error: any) {
+      console.error("Error get nonce:", error);
+
+      // Format error message for UI
+      const errorMessage =
+        error.response?.data?.message || "Failed to get nonce";
+
+      const enhancedError = new Error(errorMessage) as EnhancedError;
+      enhancedError.original = error;
+      throw enhancedError;
+    }
+  },
+
+  loginBySign: async (
+    walletAddress: string,
+    signature: string,
+    nonce: string
+  ) => {
+    try {
+      if (!walletAddress) {
+        throw new Error("Wallet address is required");
+      }
+
+      const response = await userAuthApi.post(`/loginBySign`, {
+        walletAddress,
+        signature,
+        nonce,
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error("Error loginBySign:", error);
+
+      // Format error message for UI
+      const errorMessage =
+        error.response?.data?.message || "Failed to loginBySign";
+
+      const enhancedError = new Error(errorMessage) as EnhancedError;
+      enhancedError.original = error;
+      throw enhancedError;
+    }
+  },
+
+  registerBySign: async (
+    walletAddress: string,
+    signature: string,
+    nonce: string
+  ) => {
+    try {
+      if (!walletAddress) {
+        throw new Error("Wallet address is required");
+      }
+
+      const response = await userAuthApi.post(`/registerBySign`, {
+        walletAddress,
+        signature,
+        nonce,
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error("Error registerBySign:", error);
+
+      // Format error message for UI
+      const errorMessage =
+        error.response?.data?.message || "Failed to registerBySign";
+
+      const enhancedError = new Error(errorMessage) as EnhancedError;
+      enhancedError.original = error;
+      throw enhancedError;
     }
   },
 };

@@ -1,23 +1,22 @@
-import React, { useContext, useEffect, useState } from "react";
-import { ArrowDown, CreditCard, RefreshCw, Send, Wallet, XCircle, X } from "lucide-react";
-import { motion } from "framer-motion";
-import { Skeleton } from '@chakra-ui/react';
+import React, {useContext, useEffect, useState} from "react";
+import {ArrowDown, CreditCard, RefreshCw, Send, Wallet, X} from "lucide-react";
+import {motion} from "framer-motion";
+import {Skeleton} from '@chakra-ui/react';
 
-import { useStore } from "../store/useStore";
-import { Web3AuthContext } from "../providers/Web3AuthContext";
-import { mockDeFiPositions } from "../constants/defi.constants.ts";
-import { formatUsdValue } from "../utils/defi.util.ts";
-import { useWalletBalance } from "../hooks/useBalance";
-import useTokenBalanceStore, { TokenBalance } from "../store/useTokenBalanceStore";
-import { SendDrawer } from "./wallet/SendDrawer";
-import { BuyDrawer } from "./wallet/BuyDrawer";
-import { ReceiveDrawer } from "./wallet/ReceiveDrawer";
+import {useStore} from "../store/useStore";
+import {Web3AuthContext} from "../providers/Web3AuthContext";
+import {mockDeFiPositions} from "../constants/defi.constants.ts";
+import {formatUsdValue} from "../utils/defi.util.ts";
+import {useWalletBalance} from "../hooks/useBalance";
+import useTokenBalanceStore, {TokenBalance} from "../store/useTokenBalanceStore";
+import {SendDrawer} from "./wallet/SendDrawer";
+import {BuyDrawer} from "./wallet/BuyDrawer";
+import {ReceiveDrawer} from "./wallet/ReceiveDrawer";
 import Accounts from "./wallet/Accounts.tsx";
 import AssetInfo from "./wallet/AssetInfo.tsx";
 import RenderActivity from "./wallet/RenderActivity.tsx";
 import RenderDefi from "./wallet/RenderDeFi.tsx";
 import RenderTokens from "./wallet/RenderTokens.tsx";
-import CloseButton from "./wallet/CloseButton.tsx";
 import PNL from "./common/PNL.tsx";
 
 import useDefiStore from "../store/useDefiStore.ts";
@@ -34,7 +33,7 @@ export type PageType = 'main' | 'asset' | 'send' | 'receive'
 export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
     const { theme } = useStore();
 
-    const { address, logout, solanaWalletInfo } = useContext(Web3AuthContext);
+    const { address, solanaWalletInfo } = useContext(Web3AuthContext);
     const [selectedTab, setSelectedTab] = useState<'tokens' | 'activity' | 'defi'>('tokens');
     const [page, setPage] = useState<PageType>('main');
     const { isLoading: isLoadingBalance, refetch: refetchWalletBalance, isFetching: isFetchingBalance } = useWalletBalance();
@@ -50,8 +49,9 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
     useEffect(() => {
         const handleResize = () => {
             const width = window.innerWidth;
-            if (width <= 768) {
-                setDrawerWidth(width <= 360 ? "300px" : width <= 480 ? "350px" : "380px");
+            if (width <= 640) {
+                // setDrawerWidth(width <= 360 ? "300px" : width <= 480 ? "350px" : "380px");
+                setDrawerWidth(`${width}px`);
             } else {
                 setDrawerWidth("400px");
             }
@@ -64,10 +64,12 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
 
     const sortedMockDeFiPositions = mockDeFiPositions.sort((a, b) => a.value >= b.value ? -1 : 1)
 
+/*
     const handleDisconnect = () => {
         logout()
         onClose()
     }
+*/
 
     const handleAsset = async (token: TokenBalance) => {
         setSelectedAsset(token)
@@ -139,9 +141,11 @@ export const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) =
                                     isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'5rem'} h={'2rem'}></Skeleton> : formatUsdValue(totalUsdValue + totalLockedValue)
                                 }
                             </div>
-                            {
-                                isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'} h={'1rem'}></Skeleton> : <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
-                            }
+                            <div className="mt-1">
+                                {
+                                    isLoadingBalance ? <Skeleton startColor="#444" endColor="#1d2837" w={'10rem'} h={'1rem'}></Skeleton> : <PNL pnlPercent={pnlPercent} pnlUsd={pnlUsd} label="Today" />
+                                }
+                            </div>
                         </div>
 
                         {/* Quick Actions */}

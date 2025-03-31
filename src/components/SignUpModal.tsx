@@ -64,7 +64,6 @@ const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
     createAccount,
     accountsLoading,
     accountsError,
-    initSession,
     sessionLoading,
     sessionError,
     sessionSigs,
@@ -97,16 +96,10 @@ const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
   }, [isOpen]);
 
   useEffect(() => {
-    if (authMethod && authMethod.authMethodType !== AUTH_METHOD_TYPE.WebAuthn) {
+    if (isOpen && authMethod && authMethod.authMethodType !== AUTH_METHOD_TYPE.WebAuthn) {
       createAccount(authMethod);
     }
-  }, [authMethod, createAccount]);
-
-  useEffect(() => {
-    if (authMethod && currentAccount) {
-      initSession(authMethod, currentAccount);
-    }
-  }, [authMethod, currentAccount, initSession]);
+  }, [authMethod, createAccount, isOpen]);
 
   useEffect(() => {
     const referralCode = getReferralCodeFromStorage();

@@ -29,6 +29,7 @@ import {LOCAL_STORAGE_BRIDGE_RECENT_WALLETS} from "../../../constants";
 import {PreviewDetailItem} from "./SwapBox.tsx";
 import {VersionedTransaction} from "@solana/web3.js";
 import {connection} from "../../../config/solana.ts";
+import {WalletTypeEnum} from "../../../types/wallet.type.ts";
 
 interface CrossChainSwapBoxProps {
     fromToken: TokenType | null;
@@ -59,6 +60,7 @@ export function CrossChainSwapBox({
         signSolanaTransaction,
         chainId: walletChainId,
         switchChain,
+        walletType
     } = useContext(Web3AuthContext);
 
     const [destinationAddress, setDestinationAddress] = useState<string>('');
@@ -165,6 +167,8 @@ export function CrossChainSwapBox({
         debridgeFeeText,
         totalSpentText,
         priceImpact,
+        approveAmountString,
+        additionalAmountString,
     } = useMemo(() => {
         const fromTokenPrice = fromToken ? getTokenPrice(fromToken?.address, fromToken?.chainId) : 0
         const toTokenPrice = toToken ? getTokenPrice(toToken?.address, toToken?.chainId) : 0
@@ -178,14 +182,22 @@ export function CrossChainSwapBox({
         const priceImpact = fromUsdAmount > 0 ? ((toUsdAmount - fromUsdAmount) / fromUsdAmount) * 100 : 0
         const deductionAmount = solverGasCostAmount + (compareWalletAddresses(nativeTokenAddressFromChain, fromToken!.address) ? quoteResponse.feeAmount : 0)
 
+        const additionalTokenAmount = fromUsdAmount > 0 ? Number(fromAmount) / fromUsdAmount : 0 // give 1$ additional approve amount for fluctuation
+        const additionalAmountString = new BigNumber(toFixedFloat(additionalTokenAmount, 4))
+            .times(new BigNumber(10)
+                .pow(fromToken?.decimals ?? 1))
+            .toFixed(0)
+
         let feeAmountInUsd = 0
         if (quoteResponse) {
             feeAmountInUsd = nativeTokenPrice * quoteResponse.feeAmount
         }
 
+        const approveAmount = deductionAmount + Number(fromAmount)
+
         const solverGasText = `${formatNumberByFrac(solverGasCostAmount, 4)} ${fromToken?.symbol} ($${formatNumberByFrac(solverGasUsdAmount, 3)})`
+        const totalSpentText = `${formatNumberByFrac(approveAmount, 4)} ${fromToken?.symbol}`
         const debridgeFeeText = `${formatNumberByFrac(quoteResponse.feeAmount, 4)} ${fromNetwork?.symbol} ($${formatNumberByFrac(feeAmountInUsd, 3)})`
-        const totalSpentText = `${formatNumberByFrac(deductionAmount + Number(fromAmount), 4)} ${fromToken?.symbol}`
 
         return {
             fromUsdAmount,
@@ -198,8 +210,15 @@ export function CrossChainSwapBox({
             debridgeFeeText,
             totalSpentText,
             deductionAmount,
+            approveAmountString: new BigNumber(toFixedFloat(approveAmount, 4))
+                .times(new BigNumber(10)
+                    .pow(fromToken?.decimals ?? 1))
+                .toFixed(0),
+            additionalAmountString,
         }
     }, [nativeTokenAddressFromChain, fromToken, getTokenPrice, toToken, fromAmount, toAmount, quoteResponse])
+
+    console.log("additionalAmountString", additionalAmountString)
 
     const {
         isRequireSwitchChain,
@@ -241,10 +260,7 @@ export function CrossChainSwapBox({
     } = useTokenApprove({
         token: fromToken?.address as `0x${string}`,
         spender: spenderAddress as `0x${string}`,
-        amount: new BigNumber(toFixedFloat(fromAmount, 4))
-            .times(new BigNumber(10)
-                .pow(fromToken?.decimals ?? 1))
-            .toFixed(0),
+        amount: approveAmountString,
         chainId: fromToken?.chainId ?? 1
     });
 
@@ -255,7 +271,7 @@ export function CrossChainSwapBox({
 
     const handleSwap = async () => {
         if (!isApproved) {
-            approve?.()
+            approve?.(additionalAmountString)
             return
         }
 
@@ -263,7 +279,7 @@ export function CrossChainSwapBox({
             setIsConfirming(true)
             if (fromToken?.chainId === SOLANA_CHAIN_ID && quoteResponse.tx) { // solana transaction
                 const tx = VersionedTransaction.deserialize(Buffer.from(quoteResponse.tx.data!.slice(2), "hex"));
-                const { blockhash } = await connection.getLatestBlockhash();
+                const {blockhash} = await connection.getLatestBlockhash();
                 tx.message.recentBlockhash = blockhash; // Update blockhash!
 
                 const signedTransaction = await signSolanaTransaction(tx)
@@ -291,6 +307,7 @@ export function CrossChainSwapBox({
             setIsBridging(true)
             setCountdown(quoteResponse.estimatedTime)
         } catch (e) {
+            console.log("error", e)
             //
         } finally {
             setIsConfirming(false)
@@ -302,6 +319,7 @@ export function CrossChainSwapBox({
             <TokenSelector
                 className="relative z-20 mb-2"
                 selectedToken={fromToken}
+                disabledToken={toToken}
                 selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onFromTokenSelect}
                 amount={fromAmount}
@@ -325,6 +343,7 @@ export function CrossChainSwapBox({
             <TokenSelector
                 className="relative z-10"
                 selectedToken={toToken}
+                disabledToken={fromToken}
                 selectedChainId={fromToken?.chainId ?? toToken?.chainId}
                 onSelect={onToTokenSelect}
                 amount={toAmount}
@@ -338,45 +357,49 @@ export function CrossChainSwapBox({
                 isBalanceLoading={isToBalanceLoading}
             />
 
-            <div
-                className="rounded-xl p-4 mb-4 cursor-pointer border border-white/5 hover:border-blue-500/20 transition-all duration-200 hover:shadow-[0_8px_32px_rgba(59,130,246,0.15)]"
-                onClick={() => sendToAnotherAddress && setIsAddressModalOpen(true)}
-            >
-                <div className={`flex justify-between ${sendToAnotherAddress ? 'mb-4' : ''}`} onClick={(e) => {
-                    e.stopPropagation()
-                }}>
-                    <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer group">
-                        <input
-                            type="checkbox"
-                            checked={sendToAnotherAddress}
-                            onChange={(e) => setSendToAnotherAddress(e.target.checked)}
-                            className="appearance-none h-6 w-6 rounded-md border-2 border-blue-500/60 checked:bg-blue-500 checked:border-transparent relative checked:after:content-['✔'] checked:after:absolute checked:after:left-[4px] checked:after:top-[-2px] checked:after:text-white checked:after:text-lg"
-                        />
-                        <span className="group-hover:text-gray-300 transition-colors">Send to Another Address</span>
-                    </label>
-                    {/*
+            {
+                walletType !== WalletTypeEnum.EMBEDDED && (
+                    <div
+                        className="rounded-xl p-4 mb-4 cursor-pointer border border-white/5 hover:border-blue-500/20 transition-all duration-200 hover:shadow-[0_8px_32px_rgba(59,130,246,0.15)]"
+                        onClick={() => sendToAnotherAddress && setIsAddressModalOpen(true)}
+                    >
+                        <div className={`flex justify-between ${sendToAnotherAddress ? 'mb-4' : ''}`} onClick={(e) => {
+                            e.stopPropagation()
+                        }}>
+                            <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={sendToAnotherAddress}
+                                    onChange={(e) => setSendToAnotherAddress(e.target.checked)}
+                                    className="appearance-none h-6 w-6 rounded-md border-2 border-blue-500/60 checked:bg-blue-500 checked:border-transparent relative checked:after:content-['✔'] checked:after:absolute checked:after:left-[4px] checked:after:top-[-2px] checked:after:text-white checked:after:text-lg"
+                                />
+                                <span className="group-hover:text-gray-300 transition-colors">Send to Another Address</span>
+                            </label>
+                            {/*
                     <span
                         className="text-blue-400/90 text-[10px] font-semibold tracking-wider uppercase bg-blue-500/10 px-2 py-0.5 rounded-md">Destination Address</span>
 */}
-                </div>
-                {
-                    sendToAnotherAddress && (
-                        <div className="flex items-center">
-                            {(destinationAddress && toNetwork) ? (
-                                <>
-                                    <img src={toNetwork.icon} alt={toNetwork.name} className="w-6 h-6 mr-2 rounded-full"/>
-                                    <span className="font-medium">
+                        </div>
+                        {
+                            sendToAnotherAddress && (
+                                <div className="flex items-center">
+                                    {(destinationAddress && toNetwork) ? (
+                                        <>
+                                            <img src={toNetwork.icon} alt={toNetwork.name}
+                                                 className="w-6 h-6 mr-2 rounded-full"/>
+                                            <span className="font-medium">
                                 {shrinkAddress(destinationAddress)}
                             </span>
-                                </>
-                            ) : (
-                                <span className="text-gray-400">Click to enter Address</span>
-                            )}
-                        </div>
-                    )
-                }
-            </div>
-
+                                        </>
+                                    ) : (
+                                        <span className="text-gray-400">Click to enter Address</span>
+                                    )}
+                                </div>
+                            )
+                        }
+                    </div>
+                )
+            }
             {
                 (fromNetwork && toNetwork && !isZeroAmount) && (
                     <div className="space-y-2.5 mt-4">
@@ -535,7 +558,7 @@ export function CrossChainSwapBox({
                                 colorScheme="blue"
                                 onClick={() => {
                                     if (isApproved) handleSwap()
-                                    else approve?.()
+                                    else approve?.(additionalAmountString)
                                 }}
                                 isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !!quoteResponse.errorMessage || Number(quoteResponse.outputAmount) <= 0}
                             >

@@ -27,7 +27,6 @@ export default function useAuthenticate(redirectUri?: string) {
 
         try {
             const result: ExAuthType | undefined = await authenticateWithGoogle(redirectUri ?? '');
-            console.log("google authMethod", result)
             setAuthMethod(result);
         } catch (err) {
             setError(err as Error);
@@ -62,8 +61,6 @@ export default function useAuthenticate(redirectUri?: string) {
             setLoading(true);
             setError(undefined);
             setAuthMethod(undefined);
-
-            console.log("connector", connector)
 
             try {
                 await connector.connect()
@@ -113,7 +110,6 @@ export default function useAuthenticate(redirectUri?: string) {
                     method
                 );
                 result.userId = userId
-                console.log(result)
                 setAuthMethod(result);
             } catch (err) {
                 setError(err as Error);

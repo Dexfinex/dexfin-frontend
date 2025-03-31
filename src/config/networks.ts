@@ -98,7 +98,7 @@ for(const network of NETWORKS) {
 export const mapChainId2NativeAddress: Record<number, string> = {
     1: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Ethereum Mainnet (ETH)
     56: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Binance Smart Chain (BNB)
-    137: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Polygon Mainnet (MATIC)
+    137: '0x0000000000000000000000000000000000001010', // Polygon Mainnet (MATIC)
     43114: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7', // Avalanche C-Chain (AVAX)
     10: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Optimism (ETH)
     42161: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Arbitrum (ETH)
@@ -381,7 +381,7 @@ export const mapPopularTokens: Record<number, TokenType[]> = {
         {
             symbol: 'POL',
             name: 'Polygon Native Coin',
-            address: NULL_ADDRESS,
+            address: NATIVE_MATIC_ADDRESS,
             chainId: 137,
             decimals: 18,
             logoURI: '/images/token/pol.png',

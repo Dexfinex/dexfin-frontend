@@ -67,93 +67,97 @@ const StytchOTP = ({method, authWithStytch, setView}: StytchOTPProps) => {
     return (
         <>
             {step === 'submit' && (
-                <>
-                    <AuthAlert error={error}/>
-                    <VStack spacing={6}>
-                        <Text fontSize="2xl" fontWeight="bold">Enter your {method}</Text>
-                        <Text color="whiteAlpha.800">A verification code will be sent to your {method}.</Text>
-                        <VStack spacing={4} w="full">
-                            <InputGroup>
-                                <InputLeftElement>
-                                    {
-                                        method === 'email' ? (
-                                            <Mail size={20}/>
-                                        ) : (
-                                            <Phone size={20}/>
-                                        )
-                                    }
-                                </InputLeftElement>
-                                <Input
-                                    id={method}
-                                    value={userId}
-                                    onChange={e => setUserId(e.target.value)}
-                                    type={method === 'email' ? 'email' : 'tel'}
-                                    name={method}
-                                    placeholder={
-                                        method === 'email' ? 'Your email' : 'Your phone number'
-                                    }
-                                />
-                            </InputGroup>
+                <VStack spacing={6}>
+                    <Text fontSize="2xl" fontWeight="bold">Enter your {method}</Text>
+                    <Text color="whiteAlpha.800" textAlign='center'>A verification code will be sent to
+                        your {method}.</Text>
+                    <VStack spacing={4} w="full">
+                        <InputGroup>
+                            <InputLeftElement>
+                                {
+                                    method === 'email' ? (
+                                        <Mail size={20}/>
+                                    ) : (
+                                        <Phone size={20}/>
+                                    )
+                                }
+                            </InputLeftElement>
+                            <Input
+                                id={method}
+                                value={userId}
+                                onChange={e => setUserId(e.target.value)}
+                                type={method === 'email' ? 'email' : 'tel'}
+                                name={method}
+                                placeholder={
+                                    method === 'email' ? 'Your email' : 'Your phone number'
+                                }
+                            />
+                        </InputGroup>
+                        <AuthAlert error={error}/>
+                        <Button
+                            colorScheme="blue"
+                            w="full"
+                            disabled={loading}
+                            onClick={sendPasscode}
+                        >
+                            Send code
+                        </Button>
 
-                            <Button
-                                colorScheme="blue"
-                                w="full"
-                                disabled={loading}
-                                onClick={sendPasscode}
-                            >
-                                Send code
-                            </Button>
+                        <Button
+                            w="full"
+                            onClick={() => {
+                                setError(undefined);
+                                setView('default')
+                            }}
+                            variant="outline"
+                            color="white"
+                            borderColor="whiteAlpha.200"
+                            _hover={{bg: 'whiteAlpha.100'}}
+                        >
+                            Back
+                        </Button>
 
-                            <Button
-                                w="full"
-                                onClick={() => setView('default')}
-                                variant="outline"
-                                color="white"
-                                borderColor="whiteAlpha.200"
-                                _hover={{bg: 'whiteAlpha.100'}}
-                            >
-                                Back
-                            </Button>
-
-                        </VStack>
                     </VStack>
-                </>
+                </VStack>
             )}
             {step === 'verify' && (
-                <>
-                    <VStack spacing={6}>
-                        <Text fontSize="2xl" fontWeight="bold">Check your {method}</Text>
-                        <Text color="whiteAlpha.800">Enter the 6-digit verification code to {userId}</Text>
-                        <VStack spacing={4} w="full">
-                            <InputGroup>
-                                <Input
-                                    id={method}
-                                    value={code}
-                                    onChange={e => setCode(e.target.value)}
-                                    type="code"
-                                    placeholder="Verification code"
-                                    autoComplete="off"
-                                />
-                            </InputGroup>
-                            <Button
-                                colorScheme="blue"
-                                w="full"
-                                disabled={loading}
-                                onClick={authenticate}
-                            >Verify</Button>
-                            <Button
-                                w="full"
-                                onClick={() => setStep('submit')}
-                                variant="outline"
-                                color="white"
-                                borderColor="whiteAlpha.200"
-                                _hover={{bg: 'whiteAlpha.100'}}
-                            >
-                                Try again
-                            </Button>
-                        </VStack>
+                <VStack spacing={6}>
+                    <Text fontSize="2xl" fontWeight="bold">Check your {method}</Text>
+                    <Text color="whiteAlpha.800" textAlign='center'>Enter the 6-digit verification code
+                        to {userId}</Text>
+                    <VStack spacing={4} w="full">
+                        <InputGroup>
+                            <Input
+                                id={method}
+                                value={code}
+                                onChange={e => setCode(e.target.value)}
+                                type="code"
+                                placeholder="Verification code"
+                                autoComplete="off"
+                            />
+                        </InputGroup>
+                        <AuthAlert error={error}/>
+                        <Button
+                            colorScheme="blue"
+                            w="full"
+                            disabled={loading}
+                            onClick={authenticate}
+                        >Verify</Button>
+                        <Button
+                            w="full"
+                            onClick={() => {
+                                setError(undefined);
+                                setStep('submit')
+                            }}
+                            variant="outline"
+                            color="white"
+                            borderColor="whiteAlpha.200"
+                            _hover={{bg: 'whiteAlpha.100'}}
+                        >
+                            Try again
+                        </Button>
                     </VStack>
-                </>
+                </VStack>
             )}
         </>
     );

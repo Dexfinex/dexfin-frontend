@@ -21,6 +21,7 @@ import { AppearanceSettings } from './AppearanceSettings';
 import { ReferralSettings } from './ReferralModal';
 import { SecuritySettings } from './SecurityModal';
 import { UsernameSettings } from './UsernameSettings';
+import {useBreakpointValue} from "@chakra-ui/react";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -44,33 +45,9 @@ const widgetConfigs = [
   { type: 'Direct Messages', icon: MessageCircle, description: 'Chat with other traders' }
 ];
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, initialTab = 'widgets' }) => {
-  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
-  const [isMobile, setIsMobile] = useState(false);
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+  const [activeTab, setActiveTab] = useState<SettingsTab>('widgets');
   const { widgetVisibility, toggleWidgetVisibility, resetWidgetVisibility } = useStore();
-
-  // Update activeTab if initialTab changes
-  useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
-    }
-  }, [initialTab]);
-
-  // Check if the screen is mobile sized
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-
-    // Initial check
-    checkScreenSize();
-
-    // Add event listener for window resize
-    window.addEventListener('resize', checkScreenSize);
-
-    // Cleanup
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
 
   if (!isOpen) return null;
 
