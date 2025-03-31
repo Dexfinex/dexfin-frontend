@@ -93,3 +93,6 @@ export const SOL_TRANSFER_GAS_FEE = 0.000005;
 
 export const EVM_MINIMUM_VALUE = 0.01;
 export const SOL_MINIMUM_VALUE = 0.001;
+
+export const ETHEREUM_TOKENID = 'ethereum';
+export const AVAX_TOKENID = 'avalanche-2';

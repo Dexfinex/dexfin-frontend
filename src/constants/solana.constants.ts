@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import {SolanaTokenInfo} from "../types/jupiterSwap.type.ts";
+import { SolanaTokenInfo } from "../types/jupiterSwap.type.ts";
 
 export const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 
@@ -40,6 +40,8 @@ export function programSupportsExtensions(programId: PublicKey): boolean {
 
 export const SOLANA_CHAIN_ID = 900 // predefined id for solana mainnet
 export const BITCOIN_CHAIN_ID = 0 // predefined id for solana mainnet
+
+export const SOLANA_TOKEN_ID = "solana"
 
 export const SOL_INFO: SolanaTokenInfo = {
     chainId: 101,

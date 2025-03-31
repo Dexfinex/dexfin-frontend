@@ -23,7 +23,7 @@ import { useStore } from '../../store/useStore.ts';
 import { PageType } from '../WalletDrawer.tsx';
 import useTokenBalanceStore, { TokenBalance } from '../../store/useTokenBalanceStore.ts';
 import makeBlockie from 'ethereum-blockies-base64';
-import { SOLANA_CHAIN_ID } from "../../constants/solana.constants.ts";
+import { SOLANA_CHAIN_ID, SOLANA_TOKEN_ID } from "../../constants/solana.constants.ts";
 import { LOCAL_STORAGE_RECENT_ADDRESSES } from '../../constants';
 import { getGasEstimationForNativeTokenTransfer } from '../../utils/chains.util.tsx';
 import { getRealNativeTokenAddress } from "../../utils/token.util.ts";
@@ -133,39 +133,46 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
         if (selectedAsset) {
             const targetChainId = Number(selectedAsset.chain)
             // if (targetChainId !== SOLANA_CHAIN_ID && Number(chainId) !== targetChainId) {
-            const nativeTokenAddress = getRealNativeTokenAddress(tokenChainId)
             if (Number(chainId) !== targetChainId) {
-                switchToken(nativeTokenAddress)
+                switchToken()
+            } else if (currentNativeTokenGasfee == 0) {
+                setNativeTokenGasFee()
             }
         }
     }, [chainId, selectedAsset])
 
-    const setNativeTokenGasFee = async (nativeTokenAddress: string) => {
-        if (selectedAsset.network?.name === "Solana") {
-            if (selectedAsset.tokenId === "solana") {
-                const gasFee = await getGasEstimationForNativeTokenTransfer(address, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
-                setCurrentNativeTokenGasfee(gasFee)
-            } else if (currentNativeTokenGasfee != 0) {
-                setCurrentNativeTokenGasfee(0)
+    const setNativeTokenGasFee = async () => {
+        if (isNativeToken()) {
+            let tokenAddress = address
+            if (selectedAsset.network?.chainId != SOLANA_CHAIN_ID) {
+                tokenAddress = showSelectedEnsInfo ? ensAddress as unknown as string : address
             }
-        } else {
-            if (nativeTokenAddress.toLowerCase() == selectedAsset.address) {
-                const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
-                const gasFee = await getGasEstimationForNativeTokenTransfer(_address, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
-                setCurrentNativeTokenGasfee(gasFee)
-            } else if (currentNativeTokenGasfee != 0) {
-                setCurrentNativeTokenGasfee(0)
-            }
+            const gasFee = await getGasEstimationForNativeTokenTransfer(tokenAddress, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
+            setCurrentNativeTokenGasfee(gasFee)
+        } else if (currentNativeTokenGasfee != 0) {
+            setCurrentNativeTokenGasfee(0)
         }
     }
 
-    const switchToken = async (nativeTokenAddress: string) => {
+    const switchToken = async () => {
         setIsTokenSwitching(true)
-        await setNativeTokenGasFee(nativeTokenAddress)
-        if (selectedAsset.network?.name != "Solana" && nativeTokenAddress.toLowerCase() != selectedAsset.address) {
+        await setNativeTokenGasFee()
+        if (selectedAsset.network?.chainId != SOLANA_CHAIN_ID) {
             await switchChain(Number(selectedAsset.chain))
         }
         setIsTokenSwitching(false)
+    }
+
+    const isNativeToken = () => {
+        const nativeTokenAddress = getRealNativeTokenAddress(tokenChainId)
+
+        if (selectedAsset.network?.chainId === SOLANA_CHAIN_ID && selectedAsset.tokenId === SOLANA_TOKEN_ID) {
+            return true
+        } else if (nativeTokenAddress.toLowerCase() == selectedAsset.address.toLowerCase()) {
+            return true
+        }
+
+        return false
     }
 
     const ensAddressDataResponse = useEnsAddress({
@@ -181,7 +188,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     const { isLoading: ensAvatarLoading, data: ensAvatar } = ensAvatarDataResponse
 
     const submitDisabled = useMemo(() => {
-        if (selectedAsset.network?.name != "Solana") {
+        if (selectedAsset.network?.chainId != SOLANA_CHAIN_ID) {
             return !amount || isConfirming || !(ethers.utils.isAddress(address) || showSelectedEnsInfo)
         } else {
             return !amount || isConfirming || !isValidAddress(address, SOLANA_CHAIN_ID) || showSelectedEnsInfo
@@ -189,7 +196,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     }, [amount, address, isConfirming, showSelectedEnsInfo])
 
     const showPreview = useMemo(() => {
-        if (selectedAsset.network?.name != "Solana") {
+        if (selectedAsset.network?.chainId != SOLANA_CHAIN_ID) {
             return (amount && address && (ethers.utils.isAddress(address) || showSelectedEnsInfo))
         } else {
             return (amount && address && isValidAddress(address, SOLANA_CHAIN_ID) || showSelectedEnsInfo)
@@ -249,14 +256,13 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
 
     const onSubmit = async () => {
         setIsConfirming(true)
-        if (selectedAsset.network?.name === "Solana") {
+        if (selectedAsset.network?.chainId === SOLANA_CHAIN_ID) {
             if (Number(amount) > 0) {
                 let realAmount: number = Number(amount)
 
-                if (currentNativeTokenGasfee) {
+                if (selectedAsset.tokenId === SOLANA_TOKEN_ID && amount === selectedAsset.balance) {
                     realAmount -= currentNativeTokenGasfee
                 }
-
                 const signature = await transferSolToken(address, selectedAsset.address, realAmount, selectedAsset.decimals)
                 if (signature) {
                     updateBalance()
@@ -284,10 +290,9 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
             const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
             let realAmount: number = Number(amount)
 
-            if (currentNativeTokenGasfee) {
+            if (isNativeToken() && amount === selectedAsset.balance) {
                 realAmount -= currentNativeTokenGasfee
             }
-
             sendTransactionMutate(
                 {
                     tokenAddress: selectedAsset.address,
@@ -319,7 +324,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                     },
                 },
             );
-            setIsConfirming(false);
         }
     };
 
@@ -356,7 +360,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
 
     const handleRemoveRecent = (event: any, address: string) => {
         event.preventDefault();
-
         const item = localStorage.getItem(LOCAL_STORAGE_RECENT_ADDRESSES)
         if (item) {
             const addresses = JSON.parse(item)
@@ -376,18 +379,20 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     const renderRecent = () => {
         let filtered: string[] = []
 
-        if (selectedAsset.network?.name === "Solana") {
+        if (selectedAsset.network?.chainId === SOLANA_CHAIN_ID) {
             filtered = recentAddresses.filter(address => /^[1-9A-HJ-NP-Za-km-zZ]{32,44}$/.test(address))
         } else {
             filtered = recentAddresses.filter(address => /^0x[a-fA-F0-9]{40}$/.test(address))
         }
 
-        return filtered.map((address, index) => <div key={index} onClick={() => setAddress(address)} className={`cursor-pointer text-sm py-2 pl-1 pr-2 rounded-md ${theme === 'dark' ? 'text-white/70' : 'text-black/70'} hover:bg-white/10 flex items-center justify-between`}>
-            <div className='flex items-center gap-2'>
+        return filtered.map((address, index) => <div key={index} className={`text-sm flex items-center justify-between`}>
+            <div className={`flex items-center py-2 px-2 gap-2 cursor-pointer  rounded-md ${theme === 'dark' ? 'text-white/70' : 'text-black/70'} hover:bg-white/10 flex-1`} onClick={() => setAddress(address)} >
                 <img src={makeBlockie(address)} className='w-8 h-8 rounded-full' />
                 <span>{shrinkAddress(address)}</span>
             </div>
-            <Trash2 className='w-4 h-4 hover:text-red' onClick={e => handleRemoveRecent(e, address)} />
+            <div className='p-2 hover:bg-white/5 rounded-full cursor-pointer text-red-500' onClick={e => handleRemoveRecent(e, address)}>
+                <Trash2 className='w-4 h-4' />
+            </div>
         </div>)
     }
 
@@ -561,7 +566,9 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                     type="text"
                                     value={address}
                                     placeholder="Enter wallet address or ENS name"
-                                    className={`w-full bg-white/5 border ${errorAddress ? "border-red-500" : "border-white/10"} rounded-lg pl-4 pr-10 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
+                                    className={`w-full bg-white/5 border ${errorAddress ? "border-red-500" : "border-white/10"} rounded-lg 
+                                                ${!isMobile ? "px-4" : "pl-4 pr-10"}
+                                                py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
                                     onChange={(e) => {
                                         setAddress(e.target.value)
                                     }}
@@ -714,7 +721,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                         <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Confirming...
                                         </div>
-                                    ) : (switching && selectedAsset.network?.name != "Solana") ? (
+                                    ) : (switching && selectedAsset.network?.chainId != SOLANA_CHAIN_ID) ? (
                                         <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Switching Chain...
                                         </div>
