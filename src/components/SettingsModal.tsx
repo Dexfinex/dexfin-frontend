@@ -13,20 +13,23 @@ import {
   TrendingUp,
   Twitter,
   MessageCircle,
-  LockIcon
+  LockIcon,
+  User
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { AppearanceSettings } from './AppearanceSettings';
 import { ReferralSettings } from './ReferralModal';
 import { SecuritySettings } from './SecurityModal';
+import { UsernameSettings } from './UsernameSettings';
 import {useBreakpointValue} from "@chakra-ui/react";
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: SettingsTab;
 }
 
-type SettingsTab = 'widgets' | 'appearance' | 'referral' | 'security';
+type SettingsTab = 'widgets' | 'appearance' | 'username' | 'referral' | 'security';
 
 // Improved widget configurations with proper icons
 const widgetConfigs = [
@@ -51,9 +54,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const tabs = [
     { id: 'widgets', label: 'Widgets', icon: LayoutGrid },
     { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'username', label: 'Username', icon: User },
     { id: 'referral', label: 'Referral', icon: Users },
     { id: 'security', label: 'Security', icon: LockIcon }
   ];
+  
+  // Function to switch to username tab
+  const switchToUsernameTab = () => {
+    setActiveTab('username');
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -77,6 +86,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                data-tab={tab.id}
                 onClick={() => setActiveTab(tab.id as SettingsTab)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors whitespace-nowrap mr-2 md:mr-0 md:w-full md:mb-2 
                   ${activeTab === tab.id ? 'bg-white/10' : 'hover:bg-white/5'}`}
@@ -139,7 +149,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             )}
 
             {activeTab === 'appearance' && <AppearanceSettings />}
-            {activeTab === 'referral' && <ReferralSettings />}
+            {activeTab === 'username' && <UsernameSettings />}
+            {activeTab === 'referral' && <ReferralSettings onSwitchToUsername={switchToUsernameTab} />}
             {activeTab === 'security' && <SecuritySettings />}
           </div>
         </div>

@@ -6,28 +6,55 @@ import {
   ExternalLink,
   Coins,
   Gift,
-  Loader
+  Loader,
+  User
 } from 'lucide-react';
 import { useUserData } from '../providers/UserProvider';
 import { referralService, ReferralStats } from '../services/referral.service';
+import { authService } from '../services/auth.service';
 
-export const ReferralSettings: React.FC = () => {
-  const { userData } = useUserData()
+interface ReferralSettingsProps {
+  onSwitchToUsername?: () => void;
+}
+
+export const ReferralSettings: React.FC<ReferralSettingsProps> = ({ onSwitchToUsername }) => {
+  const { userData } = useUserData();
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<ReferralStats | null>(null);
+  const [hasUsername, setHasUsername] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(true);
 
-  // Constants for rewards - matching the backend service constants
   const REFERRER_REWARD = 10;
   const REFEREE_REWARD = 5;
 
+  const checkUsernameStatus = async () => {
+    try {
+      setCheckingUsername(true);
+      const response = await authService.getUserName();
+      if (response === false) {
+        setHasUsername(false);
+      } 
+      else if (response && typeof response === 'object' && response.hasUsername === true) {
+        setHasUsername(true);
+      }
+      else {
+        setHasUsername(false);
+      }
+    } catch (err) {
+      console.error('Error checking username status:', err);
+      setHasUsername(false);
+    } finally {
+      setCheckingUsername(false);
+    }
+  };
   const fetchReferralStats = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const data = await referralService.getReferralStates() ;
+      const data = await referralService.getReferralStates();
       
       setStats(data);
     } catch (err) {
@@ -40,9 +67,17 @@ export const ReferralSettings: React.FC = () => {
 
   useEffect(() => {
     if (userData?.accessToken) {
-      fetchReferralStats();
+      checkUsernameStatus();
     }
   }, [userData]);
+
+  useEffect(() => {
+    if (userData?.accessToken && hasUsername === true) {
+      fetchReferralStats();
+    } else if (hasUsername === false) {
+      setLoading(false);
+    }
+  }, [userData, hasUsername]);
 
   const handleCopy = () => {
     if (stats?.referralLink) {
@@ -77,7 +112,7 @@ export const ReferralSettings: React.FC = () => {
     window.open(shareUrl, '_blank');
   };
 
-  if (loading) {
+  if (checkingUsername || (loading && hasUsername === true)) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader className="w-8 h-8 animate-spin text-blue-400" />
@@ -85,13 +120,37 @@ export const ReferralSettings: React.FC = () => {
     );
   }
 
+  if (hasUsername === false) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="bg-blue-500/10 rounded-full p-6 mb-4">
+          <User className="w-14 h-14 text-blue-400" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2 text-center">Username Required</h3>
+        <p className="text-white/70 text-center max-w-md mb-8">
+          You need to set a username before you can access the referral program and start earning rewards.
+        </p>
+        <button 
+          onClick={() => {
+            if (onSwitchToUsername) {
+              onSwitchToUsername();
+            }
+          }}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors font-medium"
+        >
+          Register Username
+        </button>
+      </div>
+    );
+  }
+
   if (error) {
     return (
-      <div className="bg-red-500/20 text-red-400 p-4 rounded-lg">
-        <p>{error}</p>
+      <div className="bg-red-500/20 text-red-400 p-6 rounded-lg my-4">
+        <p className="mb-4">{error}</p>
         <button
           onClick={fetchReferralStats}
-          className="mt-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+          className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
         >
           Try Again
         </button>
@@ -103,10 +162,8 @@ export const ReferralSettings: React.FC = () => {
     return null;
   }
 
-  // Get total earnings from your referrals
   const totalEarningsFromReferrals = stats.totalTokensEarned || 0;
 
-  // Get tokens received from being referred
   const tokensReceivedFromReferrer = stats.wasReferred?.tokensReceived || 0;
   
   return (
@@ -199,6 +256,7 @@ export const ReferralSettings: React.FC = () => {
         </div>
       </div>
 
+      {/* Rest of the component remains the same... */}
       {/* Rewards Info */}
       <div className="bg-white/5 rounded-xl p-4">
         <div className="flex items-center gap-2 mb-3">
