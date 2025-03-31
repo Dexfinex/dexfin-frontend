@@ -57,13 +57,16 @@ const LendModal: React.FC<LendModalProps> = ({
     const { mutate: enSoActionMutation } = useEnSoActionMutation();
     const { getTokenBalance } = useTokenBalanceStore();
     const { getOfferingPoolByChainId } = useDefillamaStore();
+
+    const protocolId = modalState.position?.protocol_id || ""
+
     const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
-    const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
+    const poolInfo = getOfferingPoolByChainId(Number(chainId), protocolId, modalState.apyToken || "");
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation(chainId);
 
     const lendTokenInfo = LENDING_LIST.find((token) => {
         return token.chainId === Number(chainId)
-            && compareStringUppercase(token?.protocol_id, modalState.position?.protocol_id || "")
+            && compareStringUppercase(token?.protocol_id, protocolId)
             && (modalState?.position?.tokens.length === 1
                 ? compareStringUppercase(token.tokenIn.symbol, modalState?.position.tokens[0].symbol)
                 : compareStringUppercase(token.tokenOut.symbol, modalState?.position?.tokens[0].symbol || "")
@@ -71,6 +74,7 @@ const LendModal: React.FC<LendModalProps> = ({
     });
 
     const tokenInBalance = lendTokenInfo?.tokenIn ? getTokenBalance(lendTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
+
     const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
 
     const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
@@ -178,7 +182,7 @@ const LendModal: React.FC<LendModalProps> = ({
                 fromAddress: address,
                 routingStrategy: "router",
                 action: "deposit",
-                protocol: (modalState.position?.protocol_id || "").toLowerCase(),
+                protocol: protocolId,
                 tokenIn: [tokenInInfo?.contract_address || ""],
                 tokenOut: [tokenOutInfo?.contract_address || ""],
                 amountIn: [Number(tokenAmount)],

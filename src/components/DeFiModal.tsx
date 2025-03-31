@@ -459,6 +459,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
             setConfirming("")
             return null;
           });
+
           if (transactionResponse) {
             const receipt = await transactionResponse.wait();
             await refetchDefiPositionByWallet();
