@@ -111,7 +111,7 @@ export const getTokenOutAmountByPercent = async (percent: number, fromAddress: s
     const contract = new ethers.Contract(address, erc20Abi, signer);
     try {
         const balance = await contract.balanceOf(fromAddress);
-        return Math.ceil(Number(balance) * percent / 100);
+        return Math.floor(Number(balance) * percent / 100);
     } catch (err) {
         console.log('get token info err: ', err);
         return 0;

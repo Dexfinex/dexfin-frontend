@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { EvmDefiPosition, EvmDefiProtocol } from "../types/dexfinv3.type";
+import { EvmDefiPosition, EvmDefiProtocol, EvmProtocol } from "../types/dexfinv3.type";
 import { capitalizeFirstLetter } from "../utils/defi.util";
+import { compareStringUppercase } from "../utils/common.util";
 
 export interface PositionToken {
     token_type: string;
@@ -46,8 +47,9 @@ interface DefiStoreState {
     positions: Position[];
     protocolTypes: string[];
     protocol: EvmDefiProtocol[];
-    setPositions: (chaindId: number, evmPositions: EvmDefiPosition[]) => void
-    setProtocol: (chainId: number, protocol: EvmDefiProtocol) => void
+    setPositions: (chainId: number, evmPositions: EvmDefiPosition[]) => void;
+    setProtocol: (chainId: number, protocol: EvmDefiProtocol) => void;
+    getProtocolById: (chainId: Number, protocol_id: string) => EvmProtocol | undefined;
 }
 
 // Create the store
@@ -125,6 +127,14 @@ const useDefiStore = create<DefiStoreState>((set, get) => ({
 
         set({ protocol: totalProtocol, totalLockedValue });
     },
+    getProtocolById(chainId, protocol_id) {
+        const state = get();
+        const chainProtocol = state.protocol.find(o => o.chainId === chainId);
+        if (!chainProtocol) {
+            return undefined;
+        }
+        return chainProtocol.protocols.find(o => compareStringUppercase(o.protocol_id, protocol_id))
+    }
 }));
 
 export default useDefiStore;
