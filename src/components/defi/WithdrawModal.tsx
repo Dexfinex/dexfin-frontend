@@ -234,7 +234,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({ setModalState, showPrevie
                                         <span className='ml-2'>
                                             {
                                                 formatNumberByFrac(
-                                                    Number(tokenBalance2?.balance) + (Number(modalState.position?.tokens[0].balance_formatted) * Number(priceRatio) * Number(withdrawPercent) / 100),
+                                                    Number(tokenBalance2?.balance || 0) + (Number(modalState.position?.tokens[0].balance_formatted) * Number(priceRatio) * Number(withdrawPercent) / 100),
                                                     6
                                                 )
                                             }
@@ -317,7 +317,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({ setModalState, showPrevie
                                                 {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted))}
                                             </span>
                                             <span className='ml-1 text-sm text-white/60'>
-                                                {tokenInfo2?.symbol || ""}
+                                                {tokenInfo1?.symbol || ""}
                                             </span>
                                         </div>
                                     </div>
@@ -331,7 +331,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({ setModalState, showPrevie
                                         <div className='items-center flex'>
                                             <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                             <span className='ml-2'>
-                                                {formatNumberByFrac(Number(tokenBalance2?.balance), 6)}
+                                                {formatNumberByFrac(Number(tokenBalance2?.balance || 0), 6)}
                                             </span>
                                             <span className='ml-1 text-sm text-white/60'>
                                                 {tokenInfo2?.symbol || ""}

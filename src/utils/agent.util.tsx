@@ -14,8 +14,16 @@ const publicClient = createPublicClient({
 
 export function convertBrianKnowledgeToPlainText(text: string) {
   return text
-    .replace(/^###\s*(\d+\.)\s*\*\*(.*?)\*\*/gm, '$1 $2') // Remove ### and bold from numbered headings
-    .replace(/\*\*(.*?)\*\*:/g, '$1:'); // Convert "**Tokens:**" to "<b>Tokens</b>:"
+
+    .replace(/###\s(.*?)(\n|$)/g, "<span style='font-size: 24px; font-weight: bold;'>$1</span>$2")
+    .replace(/\*\*([^*]+)\*\*/g, "<span style='font-weight: bold;'>$1</span>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s]+)\)/g,
+      (match, text, url) => {
+        return `<a href="${url}" style="color: var(--chakra-colors-green-400)">${text}</a>`;
+      })
+    .replace(/\n"\n/g, '')
+    .replace(/\\\[ (.*?) \\]/g, "$1")
+    .replace(/\n"/g, '')
 }
 
 export const parseChainedCommands = (message: string): string[] => {
