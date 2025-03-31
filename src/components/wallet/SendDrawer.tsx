@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Skeleton, SkeletonCircle, Spinner, useToast } from '@chakra-ui/react';
-import { ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle, Loader } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle, Loader, Trash2 } from 'lucide-react';
 import { FieldValues, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -354,6 +354,18 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
         }, 1000);
     }
 
+    const handleRemoveRecent = (event: any, address: string) => {
+        event.preventDefault();
+
+        const item = localStorage.getItem(LOCAL_STORAGE_RECENT_ADDRESSES)
+        if (item) {
+            const addresses = JSON.parse(item)
+            const newAddresses = addresses.filter((addr: string) => addr != address)
+            localStorage.setItem(LOCAL_STORAGE_RECENT_ADDRESSES, JSON.stringify(newAddresses))
+            setRecentAddresses(newAddresses)
+        }
+    }
+
     // if (!isOpen) return null;
     const renderUsdValue = () => {
         const price = tokenBalances.find(token => token.address === selectedAsset.address && token.tokenId === selectedAsset.tokenId)?.usdPrice || 0
@@ -370,9 +382,12 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
             filtered = recentAddresses.filter(address => /^0x[a-fA-F0-9]{40}$/.test(address))
         }
 
-        return filtered.map((address, index) => <div key={index} onClick={() => setAddress(address)} className={`cursor-pointer text-sm py-2 px-1 rounded-md ${theme === 'dark' ? 'text-white/70' : 'text-black/70'} hover:bg-white/10 flex items-center gap-2`}>
-            <img src={makeBlockie(address)} className='w-8 h-8 rounded-full' />
-            <span>{shrinkAddress(address)}</span>
+        return filtered.map((address, index) => <div key={index} onClick={() => setAddress(address)} className={`cursor-pointer text-sm py-2 pl-1 pr-2 rounded-md ${theme === 'dark' ? 'text-white/70' : 'text-black/70'} hover:bg-white/10 flex items-center justify-between`}>
+            <div className='flex items-center gap-2'>
+                <img src={makeBlockie(address)} className='w-8 h-8 rounded-full' />
+                <span>{shrinkAddress(address)}</span>
+            </div>
+            <Trash2 className='w-4 h-4 hover:text-red' onClick={e => handleRemoveRecent(e, address)} />
         </div>)
     }
 
@@ -555,7 +570,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                     isMobile && <div className='absolute right-0 top-1.5'>
                                         {!scanning ?
                                             <button className='mr-1 p-2 rounded-full hover:bg-white/10' onClick={handleQrCodeScan}>
-                                                <RiQrScanLine className='w-5 h-5'/>
+                                                <RiQrScanLine className='w-5 h-5' />
                                             </button>
                                             :
                                             <Loader className="w-8 h-8 animate-spin text-blue-400" />}
