@@ -28,11 +28,10 @@ export const mapRpcUrls: Record<number, string> = {
     [avalanche.id]: 'https://avalanche-mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',
 }
 
-// const BASE_HOST_DOMAIN = 'http://localhost:3000'
-const BASE_HOST_DOMAIN = 'https://dexfinv3-backend-production.up.railway.app'
+const BASE_HOST_DOMAIN = 'http://localhost:3000'
+// const BASE_HOST_DOMAIN = 'https://dexfinv3-backend-production.up.railway.app'
 
 export const COINGECKO_BASE_URL = `${BASE_HOST_DOMAIN}/coingecko`
-// export const COINGECKO_BASE_URL = `http://localhost:3000/coingecko`
 
 export const SWAPKIT_BASE_URL = `${BASE_HOST_DOMAIN}/crosschain`
 
@@ -51,9 +50,7 @@ export const BRIAN_BASE_URL = `${BASE_HOST_DOMAIN}/brian`;
 export const CRYPTONEWS_BASE_URL = `${BASE_HOST_DOMAIN}/crypto-news`;
 
 export const OPENAI_BASE_URL = `${BASE_HOST_DOMAIN}/openai`;
-// export const OPENAI_BASE_URL = `http://localhost:3000/openai`;
 
-// export const ALERT_BASE_URL = `http://localhost:3000/alerts`;
 export const ALERT_BASE_URL = `${BASE_HOST_DOMAIN}/alerts`;
 
 export const ENSO_BASE_URL = `${BASE_HOST_DOMAIN}/enso`;
@@ -61,7 +58,6 @@ export const ENSO_BASE_URL = `${BASE_HOST_DOMAIN}/enso`;
 export const CALENDAR_BASE_URL = `${BASE_HOST_DOMAIN}/calendar`;
 
 export const USERAUTH_BASE_URL = `${BASE_HOST_DOMAIN}/auth`;
-// export const USERAUTH_BASE_URL = `http://localhost:3000/auth`;
 
 export const TECHNICALANALYSIS_BASE_URL = `${BASE_HOST_DOMAIN}/technical`;
 
@@ -70,14 +66,11 @@ export const NOTIFICATION_BASE_URL = `${BASE_HOST_DOMAIN}/notifications`;
 export const REWARDS_BASE_URL = `${BASE_HOST_DOMAIN}`;
 
 export const REFERRAL_BASE_URL = `${BASE_HOST_DOMAIN}/referral`;
-// export const REFERRAL_BASE_URL = `http://localhost:3000/referral`;
 
 
 export const WS_CONNECTION_URL = `${BASE_HOST_DOMAIN}`;
-// export const WS_CONNECTION_URL = `http://127.0.0.1:3000`;
 
 export const GAME_SYSTEM_BASEURL = `${BASE_HOST_DOMAIN}/game-system`;
-// export const GAME_SYSTEM_BASEURL = `http://127.0.0.1:3000/game-system`;
 
 export const COINGECKO_URL = "https://api.coingecko.com/api/v3";
 
