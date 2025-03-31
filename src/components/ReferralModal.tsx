@@ -6,7 +6,7 @@ import {
   ExternalLink,
   Coins,
   Gift,
-  Loader,
+  Loader2,
   User
 } from 'lucide-react';
 import { useUserData } from '../providers/UserProvider';
@@ -114,8 +114,18 @@ export const ReferralSettings: React.FC<ReferralSettingsProps> = ({ onSwitchToUs
 
   if (checkingUsername || (loading && hasUsername === true)) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader className="w-8 h-8 animate-spin text-blue-400" />
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-medium mb-1">Referral Program</h3>
+          <p className="text-sm text-white/60">
+            Invite friends and earn rewards
+          </p>
+        </div>
+        
+        <div className="w-full flex flex-col items-center justify-center bg-white/5 rounded-xl p-12">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-400 mb-4" />
+          <p className="text-white/60">Loading referral information...</p>
+        </div>
       </div>
     );
   }
@@ -167,7 +177,7 @@ export const ReferralSettings: React.FC<ReferralSettingsProps> = ({ onSwitchToUs
   const tokensReceivedFromReferrer = stats.wasReferred?.tokensReceived || 0;
   
   return (
-    <div className="max-h-screen overflow-y-auto px-2 py-4 md:px-4 md:py-6 space-y-4">
+    <div className="w-full">
       {/* Referral Link */}
       <div className="bg-white/5 rounded-xl p-6">
         <h3 className="text-lg font-medium mb-4">Your Referral Link</h3>
@@ -228,7 +238,7 @@ export const ReferralSettings: React.FC<ReferralSettingsProps> = ({ onSwitchToUs
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
         <div className="bg-white/5 rounded-xl p-4">
           <div className="text-sm text-white/60 mb-1">Total Referrals</div>
           <div className="text-2xl font-bold">{stats.totalReferrals}</div>
@@ -256,9 +266,8 @@ export const ReferralSettings: React.FC<ReferralSettingsProps> = ({ onSwitchToUs
         </div>
       </div>
 
-      {/* Rest of the component remains the same... */}
       {/* Rewards Info */}
-      <div className="bg-white/5 rounded-xl p-4">
+      <div className="bg-white/5 rounded-xl p-4 mt-4">
         <div className="flex items-center gap-2 mb-3">
           <Gift className="w-4 h-4 md:w-5 md:h-5 text-blue-400" />
           <h3 className="text-base md:text-lg font-medium">Rewards Structure</h3>
@@ -316,7 +325,7 @@ export const ReferralSettings: React.FC<ReferralSettingsProps> = ({ onSwitchToUs
 
       {/* If the user was referred by someone */}
       {stats.wasReferred && (
-        <div className="bg-white/5 rounded-xl p-6">
+        <div className="bg-white/5 rounded-xl p-6 mt-4">
           <h3 className="text-lg font-medium mb-4">You Were Referred By</h3>
           <div className="p-4 bg-white/5 rounded-lg flex items-center justify-between">
             <div>
@@ -342,7 +351,7 @@ export const ReferralSettings: React.FC<ReferralSettingsProps> = ({ onSwitchToUs
       )}
 
       {/* Recent Referrals */}
-      <div className="bg-white/5 rounded-xl p-6">
+      <div className="bg-white/5 rounded-xl p-6 mt-4">
         <h3 className="text-lg font-medium mb-4">Recent Referrals</h3>
         {stats.recentReferrals && stats.recentReferrals.length > 0 ? (
           <div className="space-y-3">

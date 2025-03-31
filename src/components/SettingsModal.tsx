@@ -21,7 +21,6 @@ import { AppearanceSettings } from './AppearanceSettings';
 import { ReferralSettings } from './ReferralModal';
 import { SecuritySettings } from './SecurityModal';
 import { UsernameSettings } from './UsernameSettings';
-import {useBreakpointValue} from "@chakra-ui/react";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -45,9 +44,15 @@ const widgetConfigs = [
   { type: 'Direct Messages', icon: MessageCircle, description: 'Chat with other traders' }
 ];
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('widgets');
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, initialTab = 'widgets' }) => {
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const { widgetVisibility, toggleWidgetVisibility, resetWidgetVisibility } = useStore();
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   if (!isOpen) return null;
 
@@ -66,7 +71,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="glass w-full max-w-5xl rounded-xl flex flex-col max-h-[90vh]">
+      <div className="glass w-full max-w-5xl rounded-xl flex flex-col h-[750px]">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <h2 className="text-xl font-semibold">Settings</h2>
@@ -97,8 +102,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             ))}
           </div>
 
-          {/* Main content - scrollable container */}
-          <div className="flex-1 p-4 md:p-6 overflow-y-auto settings-scrollbar">
+          {/* Main content - scrollable container with fixed height */}
+          <div className="flex-1 p-6 overflow-y-auto h-[calc(800px-65px)] w-full">
             {activeTab === 'widgets' && (
               <>
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
