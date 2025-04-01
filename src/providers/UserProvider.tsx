@@ -7,6 +7,7 @@ import { useStore } from "../store/useStore.ts";
 import { setAuthToken } from "../services/api.service";
 import { WalletTypeEnum } from "../types/wallet.type.ts";
 import { clearReferralCode, getReferralCodeFromStorage } from '../components/ReferralHandler.tsx';
+import {useToast} from "@chakra-ui/react";
 
 interface UserContextType {
   userData: {
@@ -36,7 +37,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [error, setError] = useState<Error | null>(null);
   const [isNewRegistration, setIsNewRegistration] = useState(false);
   const [authenticatedWallets, setAuthenticatedWallets] = useState<Set<string>>(new Set());
-
+  const toast = useToast()
   const { address: wagmiAddress, isConnected: isWagmiWalletConnected } =
     useAccount();
   const {
@@ -45,6 +46,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     address: kernelAddress,
     walletType,
     isConnected,
+    logout,
   } = useContext(Web3AuthContext);
 
   const handleWalletAuth = async (
@@ -102,8 +104,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (loginError) {
         console.log("Login failed, attempting registration...", loginError);
       }
+      // ------------- for invite only mode ------------
+      logout()
+      toast({
+        status: 'info',
+        description: `Please signup before you connect your wallet`,
+        duration: 3500
+      })
+      return
+      // ------------- end of invite only mode ------------
 
-      // If login fails, attempt registration
+/*      // If login fails, attempt registration
       authResponse = await authService.register(
         walletType,
         evmAddress,
@@ -135,7 +146,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             return updated;
           });
         }
-      }
+      }*/
     } catch (error) {
       console.error("Error in wallet authentication:", error);
       setError(error as Error);
