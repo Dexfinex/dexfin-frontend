@@ -149,9 +149,11 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
   const [currentWord, setCurrentWord] = useState<string>('');
   const [selectionStart, setSelectionStart] = useState<{ row: number; col: number } | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  // New state for mobile responsiveness
+  // State for mobile responsiveness
   const [showWordList, setShowWordList] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  // Ref for touch handling
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const { userData } = useUserData();
 
@@ -169,14 +171,28 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
-    
+
     window.addEventListener('resize', checkMobile);
-    
+
     // Clean up
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Effect to handle mobile touch behavior
+  useEffect(() => {
+    if (gameState === 'game') {
+      // Prevent scrolling while the game is active
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        // Re-enable scrolling when game ends or component unmounts
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [gameState]);
 
   useEffect(() => {
     const loadGameData = async () => {
@@ -212,15 +228,15 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
   }, [gameState]);
 
   useEffect(() => {
-    if (foundWords.length === wordsToFind.length && foundWords.length > 0 && 
-        showSuccessModal && !gameSessionSaved.current && 
-        userData && userData.accessToken && gameId) {
-      
+    if (foundWords.length === wordsToFind.length && foundWords.length > 0 &&
+      showSuccessModal && !gameSessionSaved.current &&
+      userData && userData.accessToken && gameId) {
+
       console.log("Game completed! Saving session...");
       saveGameSession();
     }
   }, [foundWords, wordsToFind, showSuccessModal, userData, gameId, gameStats]);
- 
+
   const saveGameSession = async () => {
     if (!userData || !userData.accessToken || !gameId || gameSessionSaved.current) return;
 
@@ -254,9 +270,9 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
           },
           totalTokens: gameStats.totalTokens + tokensEarned
         };
-        
+
         updateGameStats(updatedStats);
-        
+
         setShowSuccessModal(true);
       }
     } catch (error) {
@@ -372,12 +388,13 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
     setGameState('game');
     setShowWordList(false);
   };
+
   useEffect(() => {
     // Check if game is completed by finding all words
     if (gameState === 'game' && foundWords.length === wordsToFind.length && foundWords.length > 0) {
       // Game is completed - stop the timer and show success
       setShowSuccessModal(true);
-      
+
       // Save game session if it hasn't been saved yet
       if (!gameSessionSaved.current && userData && userData.accessToken && gameId) {
         saveGameSession();
@@ -385,29 +402,29 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
     }
   }, [foundWords, wordsToFind, gameState, userData, gameId]);
 
-useEffect(() => {
-  let timer: NodeJS.Timeout;
-  
-  // Only run the timer if game is active AND not all words have been found
-  if (gameState === 'game' && timeLeft > 0 && foundWords.length < wordsToFind.length) {
-    timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
-      setTimeTaken(prev => prev + 1);
-    }, 1000);
-  } else if (timeLeft === 0 && gameState === 'game') {
-    // Handle game over due to timeout
-    if (foundWords.length === wordsToFind.length) {
-      setShowSuccessModal(true);
-      
-      // Save game session if it hasn't been saved yet
-      if (!gameSessionSaved.current && userData && userData.accessToken && gameId) {
-        saveGameSession();
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    // Only run the timer if game is active AND not all words have been found
+    if (gameState === 'game' && timeLeft > 0 && foundWords.length < wordsToFind.length) {
+      timer = setInterval(() => {
+        setTimeLeft(prev => prev - 1);
+        setTimeTaken(prev => prev + 1);
+      }, 1000);
+    } else if (timeLeft === 0 && gameState === 'game') {
+      // Handle game over due to timeout
+      if (foundWords.length === wordsToFind.length) {
+        setShowSuccessModal(true);
+
+        // Save game session if it hasn't been saved yet
+        if (!gameSessionSaved.current && userData && userData.accessToken && gameId) {
+          saveGameSession();
+        }
       }
     }
-  }
-  
-  return () => clearInterval(timer);
-}, [timeLeft, gameState, foundWords.length, wordsToFind.length]);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, gameState, foundWords.length, wordsToFind.length]);
 
   const handleCellMouseDown = (row: number, col: number) => {
     setIsSelecting(true);
@@ -421,43 +438,48 @@ useEffect(() => {
     ));
   };
 
+  // Improved touch handling function
+  const handleTouchStart = (row: number, col: number) => {
+    handleCellMouseDown(row, col);
+  };
+
   const handleCellMouseEnter = (row: number, col: number) => {
     if (!isSelecting || !selectionStart) return;
-  
+
     // Calculate direction
     const dx = Math.sign(col - selectionStart.col);
     const dy = Math.sign(row - selectionStart.row);
-  
+
     // Allow any of the 8 directions (horizontal, vertical, and diagonal)
     // This check ensures the selection follows a straight line in any of these directions
-    if ((dx === 0 && dy === 0) || (Math.abs(dx) > 0 && Math.abs(dy) > 0 && 
-        Math.abs(row - selectionStart.row) !== Math.abs(col - selectionStart.col))) {
+    if ((dx === 0 && dy === 0) || (Math.abs(dx) > 0 && Math.abs(dy) > 0 &&
+      Math.abs(row - selectionStart.row) !== Math.abs(col - selectionStart.col))) {
       // Either same cell (dx=0,dy=0) or not a straight line in diagonal direction
       return;
     }
-  
+
     const newSelection: { row: number; col: number }[] = [];
     let currentRow = selectionStart.row;
     let currentCol = selectionStart.col;
-  
+
     // Build the selection path
     while (true) {
       newSelection.push({ row: currentRow, col: currentCol });
       if (currentRow === row && currentCol === col) break;
-      
+
       // Move in the determined direction
       currentRow += dy;
       currentCol += dx;
     }
-  
+
     const word = newSelection.map(pos => grid[pos.row][pos.col].letter).join('');
     setCurrentWord(word);
-  
+
     const reversedWord = word.split('').reverse().join('');
     const isValidWord = wordsToFind.some(w =>
       !foundWords.includes(w.text) && (w.text === word || w.text === reversedWord)
     );
-  
+
     setGrid(prev => prev.map((r, i) =>
       r.map((cell, j) => ({
         ...cell,
@@ -465,27 +487,43 @@ useEffect(() => {
         isHighlighted: isValidWord && newSelection.some(pos => pos.row === i && pos.col === j)
       }))
     ));
-  
+
     setSelection(newSelection);
+  };
+
+  // Improved touch move handler
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isSelecting) return;
+
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+
+    if (element) {
+      const cellCoords = element.getAttribute('data-coords');
+      if (cellCoords) {
+        const [row, col] = cellCoords.split('-').map(Number);
+        handleCellMouseEnter(row, col);
+      }
+    }
   };
 
   const handleCellMouseUp = () => {
     if (!isSelecting) return;
     setIsSelecting(false);
     setSelectionStart(null);
-  
+
     const selectedWord = selection.map(pos => grid[pos.row][pos.col].letter).join('');
     const reversedWord = selectedWord.split('').reverse().join('');
-  
+
     const foundWord = wordsToFind.find(w =>
       !foundWords.includes(w.text) && (w.text === selectedWord || w.text === reversedWord)
     );
-  
+
     if (foundWord) {
       // Update foundWords - this will trigger the effect that stops the timer
       setFoundWords(prev => [...prev, foundWord.text]);
       setScore(prev => prev + foundWord.points);
-  
+
       setGrid(prev => prev.map((row, i) =>
         row.map((cell, j) => ({
           ...cell,
@@ -502,20 +540,9 @@ useEffect(() => {
         }))
       ));
     }
-  
+
     setSelection([]);
     setCurrentWord('');
-  };
-
-  // Fixed touch event handler to avoid preventDefault errors
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    const cellCoords = element?.getAttribute('data-coords');
-    if (cellCoords) {
-      const [row, col] = cellCoords.split('-').map(Number);
-      handleCellMouseEnter(row, col);
-    }
   };
 
   const renderDifficultySelection = () => (
@@ -618,6 +645,7 @@ useEffect(() => {
     </div>
   );
 
+
   const renderGame = () => {
     if (!selectedDifficulty) return null;
     const showTimeTaken = foundWords.length === wordsToFind.length && foundWords.length > 0;
@@ -644,7 +672,7 @@ useEffect(() => {
               <div className="text-base md:text-2xl font-bold">{foundWords.length}/{wordsToFind.length}</div>
               <div className="text-xs md:text-sm text-white/60">Words Found</div>
             </div>
-            
+
             {isMobile ? (
               <button
                 onClick={() => setShowWordList(!showWordList)}
@@ -667,10 +695,11 @@ useEffect(() => {
           {/* Game Grid */}
           {!showWordList && (
             <div
-              className="select-none max-w-full md:max-w-[600px] mx-auto"
+              className="select-none max-w-full md:max-w-[600px] mx-auto game-grid-container"
               onMouseUp={handleCellMouseUp}
               onMouseLeave={handleCellMouseUp}
               onTouchEnd={handleCellMouseUp}
+              ref={gridRef}
             >
               <div
                 className="grid bg-gradient-to-br from-[#1a237e]/80 to-[#283593]/80 backdrop-blur-xl border border-[#3949ab]/30 rounded-2xl overflow-hidden shadow-xl"
@@ -684,29 +713,23 @@ useEffect(() => {
                       key={`${rowIndex}-${colIndex}`}
                       onMouseDown={() => handleCellMouseDown(rowIndex, colIndex)}
                       onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
-                      onTouchStart={(e) => {
-                        if ("ontouchstart" in window) {
-                          e.currentTarget.addEventListener('touchmove', (e) => {
-                            e.stopPropagation();
-                          }, { passive: false });
-                        }
-                        handleCellMouseDown(rowIndex, colIndex);
-                      }}
+                      onTouchStart={() => handleTouchStart(rowIndex, colIndex)}
                       onTouchMove={handleTouchMove}
+                      onTouchEnd={handleCellMouseUp}
                       data-coords={`${rowIndex}-${colIndex}`}
-                      className={`aspect-square flex items-center justify-center font-bold text-xs md:text-base lg:text-xl transition-all ${
-                        cell.isFound
+                      className={`aspect-square flex items-center justify-center font-bold text-xs md:text-base lg:text-xl transition-all ${cell.isFound
                           ? 'bg-green-500/30 text-white'
                           : cell.isSelected
                             ? cell.isHighlighted
                               ? 'bg-blue-500 text-white scale-110 z-10'
                               : 'bg-white/20 text-white'
                             : 'text-white/90 hover:bg-[#283593]/50'
-                      }`}
+                        }`}
                       style={{
                         fontSize: isMobile ? `${Math.max(10, Math.min(16, 24 / selectedDifficulty.gridSize))}px` : undefined,
                         borderRight: colIndex < selectedDifficulty.gridSize - 1 ? '1px solid rgba(57, 73, 171, 0.3)' : 'none',
-                        borderBottom: rowIndex < selectedDifficulty.gridSize - 1 ? '1px solid rgba(57, 73, 171, 0.3)' : 'none'
+                        borderBottom: rowIndex < selectedDifficulty.gridSize - 1 ? '1px solid rgba(57, 73, 171, 0.3)' : 'none',
+                        touchAction: 'none' // This prevents default touch actions like scrolling
                       }}
                     >
                       {cell.letter}
@@ -733,11 +756,10 @@ useEffect(() => {
                 {wordsToFind.map((word) => (
                   <div
                     key={word.text}
-                    className={`flex items-center justify-between p-3 rounded-lg transition-all ${
-                      foundWords.includes(word.text)
+                    className={`flex items-center justify-between p-3 rounded-lg transition-all ${foundWords.includes(word.text)
                         ? 'bg-green-500/20 text-green-400'
                         : 'bg-white/10 border border-white/5'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-base">{word.text}</span>
@@ -750,7 +772,7 @@ useEffect(() => {
                 ))}
               </div>
               <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#1a237e] to-transparent pt-8">
-                <button 
+                <button
                   onClick={() => setShowWordList(false)}
                   className="w-full p-4 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-xl transition-colors shadow-lg"
                 >
@@ -778,11 +800,10 @@ useEffect(() => {
                 {wordsToFind.map((word) => (
                   <div
                     key={word.text}
-                    className={`flex items-center justify-between p-3 rounded-lg transition-all ${
-                      foundWords.includes(word.text)
+                    className={`flex items-center justify-between p-3 rounded-lg transition-all ${foundWords.includes(word.text)
                         ? 'bg-green-500/20 text-green-400'
                         : 'bg-white/5 hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{word.text}</span>
@@ -807,7 +828,7 @@ useEffect(() => {
               <ArrowLeft className="w-5 h-5 mb-1" />
               <span className="text-xs">Menu</span>
             </button>
-            
+
             <button
               onClick={() => setShowWordList(true)}
               className="flex flex-col items-center p-2 rounded-lg hover:bg-white/10 transition-colors relative"
@@ -816,15 +837,20 @@ useEffect(() => {
               <span className="text-xs">Words ({foundWords.length}/{wordsToFind.length})</span>
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
             </button>
-            
+
             <div className="flex flex-col items-center p-2">
               <Trophy className="w-5 h-5 text-yellow-400 mb-1" />
               <span className="text-xs">{score} pts</span>
             </div>
-            
+
             <div className="flex flex-col items-center p-2">
               <Clock className="w-5 h-5 text-blue-400 mb-1" />
-              <span className="text-xs">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+              <span className="text-xs">
+                {foundWords.length === wordsToFind.length && foundWords.length > 0
+                  ? `${Math.floor(timeTaken / 60)}:${(timeTaken % 60).toString().padStart(2, '0')}`
+                  : `${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`
+                }
+              </span>
             </div>
           </div>
         )}
@@ -834,9 +860,9 @@ useEffect(() => {
 
   const renderSuccessModal = () => {
     const tokensEarned = Math.floor(score * 0.1);
-    
+
     const totalTokens = gameStats ? gameStats.totalTokens + tokensEarned : tokensEarned;
-    
+
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowSuccessModal(false)} />
@@ -900,37 +926,21 @@ useEffect(() => {
       </div>
     );
   };
- // Also update the mobile navigation bar to show time taken when complete
-{isMobile && !showWordList && (
-  <div className="fixed bottom-0 left-0 right-0 bg-[#1a237e]/90 backdrop-blur-md border-t border-[#3949ab]/30 p-2 flex justify-between items-center z-30">
-    {/* Other mobile navigation elements */}
-    <div className="flex flex-col items-center p-2">
-      <Clock className="w-5 h-5 text-blue-400 mb-1" />
-      <span className="text-xs">
-        {foundWords.length === wordsToFind.length && foundWords.length > 0
-          ? `${Math.floor(timeTaken / 60)}:${(timeTaken % 60).toString().padStart(2, '0')}`
-          : `${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`
-        }
-      </span>
-    </div>
-  </div>
-)}
 
   return (
     <div className="p-3 md:p-6 h-full">
       {gameState === 'menu' ? renderDifficultySelection() : renderGame()}
       {showSuccessModal && renderSuccessModal()}
-        {isMobile && gameState === 'game' && (
-          <button 
-            onClick={() => setShowWordList(!showWordList)}
-            className="fixed bottom-4 right-4 z-30 w-12 h-12 rounded-full bg-blue-500 shadow-lg flex items-center justify-center"
-          >
-            {showWordList ? <ArrowLeft className="w-6 h-6" /> : <Star className="w-6 h-6" />}
-          </button>
-        )}
-      </div>
-    );
-  };
-
+      {isMobile && gameState === 'game' && (
+        <button
+          onClick={() => setShowWordList(!showWordList)}
+          className="fixed bottom-4 right-4 z-30 w-12 h-12 rounded-full bg-blue-500 shadow-lg flex items-center justify-center"
+        >
+          {showWordList ? <ArrowLeft className="w-6 h-6" /> : <Star className="w-6 h-6" />}
+        </button>
+      )}
+    </div>
+  );
+};
 
 export default CryptoWordHunt;
