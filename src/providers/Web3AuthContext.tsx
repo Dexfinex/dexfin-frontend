@@ -673,7 +673,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = async () => {
         if (connector) { // disconnect connector
             await connector.disconnect()
-        } else if (isConnected) {
+        }
+        if (isConnected) {
             initializeAllVariables()
         }
     }
