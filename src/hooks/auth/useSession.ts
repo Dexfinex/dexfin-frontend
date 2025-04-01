@@ -5,10 +5,9 @@ import {getSessionSigs} from '../../utils/lit.util.ts';
 import {ExAuthType} from "../../types/auth.type.ts";
 
 export default function useSession() {
-    const [sessionSigs, setSessionSigs] = useState<SessionSigs>();
+    const [sessionSigs, setSessionSigs] = useState<SessionSigs | undefined>(undefined);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<Error>();
-
 
     /**
      * Generate session sigs and store new session data
@@ -78,6 +77,7 @@ export default function useSession() {
         initSessionRepeatedly,
         initSessionUnSafe,
         sessionSigs,
+        setSessionSigs,
         loading,
         error,
         setError,
