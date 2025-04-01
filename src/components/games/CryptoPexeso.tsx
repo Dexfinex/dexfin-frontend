@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { Timer, Trophy, RotateCcw, Gamepad2 } from 'lucide-react';
+import { Timer, Trophy, RotateCcw, Gamepad2, X } from 'lucide-react';
 import { useBreakpointValue } from '@chakra-ui/react';
 import { useUserData } from '../../providers/UserProvider';
 
@@ -8,6 +8,7 @@ import { GameService } from '../../services/game.services.ts';
 import { useStore } from '../../store/useStore';
 interface CryptoPexesoProps {
   gameType?: string;
+  onClose?: () => void; // Add onClose prop
 }
 
 interface Card {
@@ -49,7 +50,7 @@ const shuffleArray = <T extends unknown>(array: T[]): T[] => {
   return newArray;
 };
 
-export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' }) => {
+export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO', onClose }) => {
   const [cards, setCards] = useState<Card[]>(createBoard());
   const [flippedIndexes, setFlippedIndexes] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
@@ -62,8 +63,8 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
   const [currentStreak, setCurrentStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
 
-  const isMobile = useBreakpointValue({base: true, md: false});
-  
+  const isMobile = useBreakpointValue({ base: true, md: false });
+
   // Add Web3AuthContext and game session tracking
   const { userData } = useUserData();
   const gameSessionSaved = useRef(false);
@@ -71,16 +72,22 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
   const [gameId, setGameId] = useState<string>("");
   const { gameStats, updateGameStats } = useStore();
 
+  // Handle close game function
+  const handleCloseGame = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
 
   useEffect(() => {
     const loadGameData = async () => {
       if (userData && userData.accessToken) {
         try {
           const data = await GameService.fetchUserGameId(userData.accessToken);
-          
+
           if (Array.isArray(data)) {
             setGameData(data);
-            
+
             const game = data.find(g => g.type === gameType);
             if (game) {
               setGameId(game.id);
@@ -93,7 +100,7 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
         }
       }
     };
-    
+
     loadGameData();
   }, [userData, gameType]);
 
@@ -132,17 +139,17 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
   }, [isGameOver]);
 
   useEffect(() => {
-    if (isGameOver && !gameSessionSaved.current && 
-        userData && userData.accessToken && gameId) {
-      
+    if (isGameOver && !gameSessionSaved.current &&
+      userData && userData.accessToken && gameId) {
+
       const isVictory = matches === tokens.length;
       const accuracy = timeLeft > 0 ? (matches / tokens.length) * 100 : 0;
-      
+
       const baseReward = isVictory ? 100 : 0;
-      const timeBonus = isVictory ? timeLeft * 2 : 0; 
-      const streakBonus = bestStreak * 5; 
+      const timeBonus = isVictory ? timeLeft * 2 : 0;
+      const streakBonus = bestStreak * 5;
       const totalReward = baseReward + timeBonus + streakBonus;
-      
+
       const gameSession: GameSession = {
         gameId: gameId,
         tokensEarned: totalReward,
@@ -151,7 +158,7 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
         streak: bestStreak,
         winStatus: isVictory,
       };
-      
+
       saveGameSession(gameSession);
       gameSessionSaved.current = true;
     }
@@ -162,10 +169,10 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
       if (gameSession && userData && userData.accessToken) {
         const response = await GameService.gameHistory(userData.accessToken, gameSession);
         console.log(response);
-        
+
         if (gameStats) {
           const tokensEarned = gameSession.tokensEarned || 0;
-          
+
           updateGameStats({
 
             totalTokens: gameStats.totalTokens + tokensEarned
@@ -247,16 +254,14 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
     <button
       key={card.id}
       onClick={() => handleCardClick(index)}
-      className={`aspect-square rounded-xl transition-all duration-500 transform ${
-        card.isFlipped || card.isMatched
-          ? 'rotate-y-180'
-          : 'bg-gradient-to-br from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 hover:scale-105'
-      }`}
+      className={`aspect-square rounded-xl transition-all duration-500 transform ${card.isFlipped || card.isMatched
+        ? 'rotate-y-180'
+        : 'bg-gradient-to-br from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 hover:scale-105'
+        }`}
       disabled={isGameOver}
     >
-      <div className={`w-full h-full rounded-xl transition-all duration-500 ${
-        card.isFlipped || card.isMatched ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-      }`}>
+      <div className={`w-full h-full rounded-xl transition-all duration-500 ${card.isFlipped || card.isMatched ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+        }`}>
         <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 rounded-xl border border-white/10 backdrop-blur-sm">
           <div className="relative w-8 h-8 mb-1 md:w-12 md:h-12 md:mb-2">
             <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-emerald-500/20 rounded-full blur-xl" />
@@ -292,11 +297,11 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
           <div className="w-16 h-16 md:w-20 md:h-20 mx-auto rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center mb-4 md:mb-6">
             <Trophy className="w-8 h-8 md:w-10 md:h-10 text-emerald-400" />
           </div>
-          
+
           <h2 className="text-xl md:text-2xl font-bold mb-2">
             {isVictory ? 'Congratulations!' : 'Time\'s Up!'}
           </h2>
-          
+
           <p className="text-white/60 mb-4 md:mb-6 text-sm md:text-base">
             {isVictory
               ? 'You matched all pairs!'
@@ -365,12 +370,21 @@ export const CryptoPexeso: React.FC<CryptoPexesoProps> = ({ gameType = 'PEXESO' 
             </div>
           )}
 
-          <button
-            onClick={resetGame}
-            className="px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 rounded-lg transition-colors font-medium text-sm md:text-base"
-          >
-            Play Again
-          </button>
+          <div className="flex justify-between items-center">
+            <button
+              onClick={resetGame}
+              className="px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 rounded-lg transition-colors font-medium text-sm md:text-base"
+            >
+              Play Again
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4 md:w-5 md:h-5 text-white/70" />
+            </button>
+          </div>
         </div>
       </div>
     );
