@@ -6,7 +6,7 @@ import { erc20Abi } from "viem";
 
 import { Web3AuthContext } from "../providers/Web3AuthContext.tsx";
 import { compareWalletAddresses } from "../utils/common.util.ts";
-import {getRealNativeTokenAddress} from "../utils/token.util.ts";
+import { getRealNativeTokenAddress } from "../utils/token.util.ts";
 
 interface mutationDataParams {
   tokenAddress: string;
@@ -29,7 +29,7 @@ export const useSendTransactionMutation = () => {
       const nativeTokenAddress = getRealNativeTokenAddress(Number(chainId)) || "";
 
       if (compareWalletAddresses(data.tokenAddress, nativeTokenAddress)) {
-        const amountValue = ethers.utils.parseEther(Number(data.sendAmount).toFixed(8).replace(/\.?0+$/,""));
+        const amountValue = ethers.utils.parseEther(Number(data.sendAmount).toString().replace(/\.?0+$/, ""));
 
         const tx = {
           to: data.sendAddress,
@@ -51,7 +51,7 @@ export const useSendTransactionMutation = () => {
 
         const decimals = await tokenContract.decimals();
         const amountValue = ethers.utils.parseUnits(
-          Number(data.sendAmount).toFixed(8).replace(/\.?0+$/,""),
+          Number(data.sendAmount).toString().replace(/\.?0+$/, ""),
           decimals
         );
 
@@ -66,7 +66,6 @@ export const useSendTransactionMutation = () => {
           gasLimit: data.gasLimit, // Example static gas limit
           value: 0n,
         };
-
         const transactionResponse = await data.signer!.sendTransaction(tx);
         const receipt = await transactionResponse.wait();
         console.log("Transaction successful:", receipt);

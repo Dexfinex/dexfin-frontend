@@ -1,55 +1,57 @@
-import React, { useContext, useMemo, useEffect, useState } from "react";
-import { X, ArrowLeft } from 'lucide-react';
+import React, { useMemo, useEffect } from "react";
+import { X, ArrowLeft, ArrowDown } from 'lucide-react';
 import { Spinner, Skeleton } from '@chakra-ui/react';
 
-import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon";
-import { Web3AuthContext } from "../../providers/Web3AuthContext";
+import { TokenChainIcon } from "../swap/components/TokenIcon";
 import { Position } from "../../store/useDefiStore";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
-import { formatNumberByFrac } from "../../utils/common.util";
-import { getChainIcon } from "../../utils/defi.util.ts";
-import { getChainNameById } from "../../utils/defi.util.ts";
+import { LENDING_LIST } from "../../constants/mock/defi.ts";
+
+import { formatNumberByFrac, compareStringUppercase } from "../../utils/common.util";
 
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
 import useTokenBalanceStore from "../../store/useTokenBalanceStore";
 import useTokenStore from "../../store/useTokenStore.ts";
-import useDefillamaStore from "../../store/useDefillamaStore.ts";
-
-import SelectChain from "./SelectChain.tsx";
+import useDefiStore from "../../store/useDefiStore";
 
 interface ModalState {
     type: string | null;
     position?: Position;
-    supportedChains?: number[];
-    apyToken?: string;
 }
 
-interface DepositModalProps {
+interface WithdrawModalProps {
     setModalState: (state: ModalState) => void,
     showPreview: boolean,
     modalState: ModalState,
     setShowPreview: (preview: boolean) => void,
+    withdrawPercent: string,
+    setWithdrawPercent: (percent: string) => void,
     tokenAmount: string,
     token2Amount: string,
     confirming: string,
-    depositHandler: () => void,
-    setTokenAmount: (amount: string) => void,
-    setToken2Amount: (amount: string) => void,
+    redeemHandler: () => void
 }
 
-const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, token2Amount, confirming, depositHandler, setTokenAmount, setToken2Amount }) => {
+
+const WithdrawModal: React.FC<WithdrawModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, withdrawPercent, setWithdrawPercent, tokenAmount, token2Amount, confirming, redeemHandler }) => {
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId: connectedChainId, switchChain, isChainSwitching } = useContext(Web3AuthContext)
-    const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
-    const { getOfferingPoolByChainId } = useDefillamaStore();
-    const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
+    const chainId = Number(modalState.position?.chainId);
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation(chainId)
 
-    const tokenBalance1 = modalState?.position ? getTokenBalance(modalState.position.tokens[0]?.contract_address, Number(chainId)) : null;
+    const protocolId = modalState.position?.protocol_id?.toUpperCase() || "";
+
+    const tokenBalance1 = modalState?.position ? modalState.position.tokens[0] : null;
     const tokenInfo1 = modalState?.position ? modalState.position.tokens[0] : null;
-    const tokenBalance2 = modalState?.position ? getTokenBalance(modalState.position.tokens[1]?.contract_address, Number(chainId)) : null;
-    const tokenInfo2 = modalState?.position ? modalState.position.tokens[1] : null;
+
+    const lendTokenInfo = LENDING_LIST.find((token) => {
+        return token.chainId === Number(chainId)
+            && compareStringUppercase(token?.protocol_id, protocolId)
+            && compareStringUppercase(token.tokenOut.symbol, modalState?.position?.tokens[0].symbol || "");
+    });
+
+    const tokenBalance2 = lendTokenInfo?.tokenIn ? getTokenBalance(lendTokenInfo?.tokenIn?.contract_address, Number(lendTokenInfo.chainId)) : null;
+    const tokenInfo2 = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
 
     const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
 
@@ -59,6 +61,19 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
     })
 
     const { getTokenPrice, tokenPrices } = useTokenStore();
+    const { getProtocolById } = useDefiStore();
+
+    const protocolInfo = getProtocolById(chainId, protocolId);
+
+    const maxPercent = useMemo(() => {
+        const unclaimedUsd = protocolInfo?.total_usd_value;
+        if (Number(unclaimedUsd) > Number(tokenBalance1?.usd_value)) {
+            return "100";
+        }
+        const unclaimedBalance = Number(unclaimedUsd) / Number(tokenBalance1?.usd_price);
+        const availablePercent = 100 - 15;
+        return formatNumberByFrac(unclaimedBalance * availablePercent / Number(tokenBalance1?.balance_formatted), 0);
+    }, [protocolInfo, tokenBalance1])
 
     const nativeTokenPrice = useMemo(() => {
         if (chainId && nativeTokenAddress) {
@@ -68,9 +83,9 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
     }, [getTokenPrice, nativeTokenAddress, chainId, tokenPrices])
 
     const priceRatio = useMemo(() => {
-        if (tokenBalance1?.usdPrice && tokenBalance2?.usdPrice) {
-            const ratio = tokenBalance1?.usdPrice / tokenBalance2?.usdPrice
-            return ratio > 1 ? 1 : ratio;
+        if (tokenBalance1?.usd_price && tokenBalance2?.usdPrice) {
+            const ratio = tokenBalance1?.usd_price / tokenBalance2?.usdPrice
+            return ratio;
         }
         return 1;
     }, [tokenBalance1, tokenBalance2]);
@@ -95,24 +110,11 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
         return true;
     }, [token2Amount, tokenBalance2])
 
-    const isCorrectChain = useMemo(() => {
-        return Number(chainId) === Number(connectedChainId)
-    }, [chainId, connectedChainId]);
+    const isErrorPercent = useMemo(() => {
+        return Number(withdrawPercent) > Number(maxPercent)
+    }, [withdrawPercent, maxPercent])
 
-    const buttonLabel = useMemo(() => {
-        if (isChainSwitching) return <div className="flex justify-center"><Spinner size="md" className='mr-2' /> Switching network</div>
-        return !isCorrectChain ?
-            <>
-                Switch Chain
-                <TokenIcon src={getChainIcon(chainId) || ""} alt={getChainNameById(Number(chainId))} size="sm" className="ml-2" />
-            </> :
-            confirming ?
-                <div><Spinner size="md" className='mr-2' /> {confirming}</div>
-                : showPreview
-                    ? "Deposit"
-                    : "Next"
-
-    }, [confirming, chainId, connectedChainId, isChainSwitching, showPreview])
+    const isDisabledAction = isErrorTokenAmount || isErrorToken2Amount || isErrorPercent;
 
     useEffect(() => {
         if (chainId && nativeTokenAddress && nativeTokenPrice === 0) {
@@ -132,7 +134,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                         </button>
                     }
                     <h3 className="text-xl font-medium">
-                        Deposit
+                        Withdraw
                     </h3>
                     <button
                         onClick={() => setModalState({ type: null })}
@@ -145,31 +147,24 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
                         <img
-                            src={modalState.position?.logo}
-                            alt={modalState.position?.protocol}
+                            src={modalState?.position?.logo}
+                            alt={modalState?.position?.protocol}
                             className="w-8 h-8"
                         />
                         <div>
-                            <div className="font-medium">{modalState.position?.protocol}</div>
+                            <div className="font-medium">{modalState?.position?.protocol}</div>
                             <div className="text-sm text-white/60">
                                 {
-                                    modalState.position?.tokens.map((token) => `${token?.symbol} `)
+                                    modalState?.position?.tokens?.map(item => item.symbol + " ")
                                 }
                             </div>
                         </div>
                         <div className="ml-auto text-right">
                             <div className={`text-emerald-400`}>
-                                {formatNumberByFrac(poolInfo?.apy || 0)}% APY
+                                {formatNumberByFrac(modalState?.position?.apy) || 0}% APY
                             </div>
                         </div>
                     </div>
-
-                    <SelectChain
-                        chainList={modalState?.supportedChains || []}
-                        selectedChain={Number(chainId)}
-                        setSelectedChain={setChainId}
-
-                    />
 
                     {
                         showPreview ?
@@ -177,18 +172,21 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                 <div className='flex justify-between mt-2'>
                                     <div>
                                         <span className='ml-2 text-2xl'>
-                                            {`${formatNumberByFrac(Number(tokenAmount), 6)} ${tokenInfo1?.symbol}`}
+                                            {`${formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenInfo1?.symbol}`}
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
                                         <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"lg"} chainId={Number(chainId)} />
                                     </div>
                                 </div>
+                                <div className='flex mt-2 w-full items-center justify-center'>
+                                    <ArrowDown />
+                                </div>
 
                                 <div className='flex justify-between mt-2'>
                                     <div>
                                         <span className='ml-2 text-2xl'>
-                                            {`${formatNumberByFrac(Number(token2Amount), 6)} ${tokenInfo2?.symbol}`}
+                                            {`${formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted) * Number(withdrawPercent) / 100, 6)} ${tokenInfo2?.symbol}`}
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
@@ -203,7 +201,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <span className='ml-2 text-sm text-white/60'>
+                                        <span className='ml-2 text-sm'>
                                             1 {tokenInfo2?.symbol} = {formatNumberByFrac(1 / priceRatio, 4)} {tokenInfo1?.symbol}
                                         </span>
                                     </div>
@@ -217,10 +215,10 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                     <div className='items-center flex'>
                                         <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <span className='ml-2'>
-                                            {formatNumberByFrac(Number(modalState.position?.tokens[0]?.balance_formatted) + Number(tokenAmount))}
+                                            {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted) * ((100 - Number(withdrawPercent)) / 100))}
                                         </span>
                                         <span className='ml-1 text-sm text-white/60'>
-                                            {tokenBalance1?.symbol || ""}
+                                            {tokenInfo1?.symbol || ""}
                                         </span>
                                     </div>
                                 </div>
@@ -228,13 +226,18 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                 <div className='flex justify-between'>
                                     <div>
                                         <span className='ml-2 text-sm text-white/60'>
-                                            New {tokenBalance2?.symbol || ""} Position
+                                            New {tokenInfo2?.symbol || ""} Position
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
                                         <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                         <span className='ml-2'>
-                                            {formatNumberByFrac(Number(modalState.position?.tokens[1]?.balance_formatted) + Number(token2Amount))}
+                                            {
+                                                formatNumberByFrac(
+                                                    Number(tokenBalance2?.balance || 0) + (Number(modalState.position?.tokens[0].balance_formatted) * Number(priceRatio) * Number(withdrawPercent) / 100),
+                                                    6
+                                                )
+                                            }
                                         </span>
                                         <span className='ml-1 text-sm text-white/60'>
                                             {tokenInfo2?.symbol || ""}
@@ -249,7 +252,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                         </span>
                                     </div>
                                     <div className='items-center flex'>
-                                        <span className='ml-2'>
+                                        <span className='ml-2 text-sm'>
                                             {
                                                 isGasEstimationLoading ?
                                                     <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
@@ -262,67 +265,42 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                             <>
                                 <div className="bg-white/5 rounded-xl p-4">
                                     <div className="text-sm text-white/60 mb-2">
-                                        Amount
+                                        Withdrawal amount
                                     </div>
-                                    <div className='relative flex'>
+                                    <div className={`relative flex flex-row items-center justify-center w-full ${isDisabledAction ? "text-red-400" : ""}`}>
                                         <input
-                                            value={tokenAmount}
+                                            minLength={1}
+                                            maxLength={3}
+                                            inputMode="numeric" autoComplete="off" autoCorrect="off" type="text" pattern="^\d*$"
+                                            placeholder="0" spellCheck="false"
+                                            value={withdrawPercent}
                                             onChange={(e) => {
-                                                setTokenAmount(e.target.value);
-                                                setToken2Amount(formatNumberByFrac(Number(e.target.value) * Number(priceRatio)));
+                                                if (0 < Number(e.target.value) && Number(e.target.value) <= 100 && !isNaN(Number(e.target.value))) {
+                                                    setWithdrawPercent(e.target.value)
+                                                }
                                             }}
-                                            type="text"
-                                            className={`w-full bg-transparent text-2xl outline-none ${isErrorTokenAmount ? "text-red-500" : ""}`}
-                                            placeholder="0.00"
+                                            className={`bg-transparent text-5xl outline-none`}
+                                            style={{ width: (withdrawPercent.length || 1) * 30 }}
                                         />
-                                        <div className='flex items-center fixed right-12'>
-                                            <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
-                                            <span className='ml-2'>
-                                                {tokenInfo1?.symbol || ""}
-                                            </span>
-                                        </div>
+                                        <div className={`text-4xl ${isDisabledAction ? "text-red-400" : "text-black"} ml-2`}>%</div>
                                     </div>
-                                    <div className="flex items-center justify-between mt-2 text-sm">
-                                        <span className="text-white/60">
-                                            {`Balance: ${formatNumberByFrac(Number(tokenBalance1?.balance) || 0)}`}
-                                        </span>
-                                        <button className="text-blue-400" onClick={() => {
-                                            setTokenAmount((tokenBalance1?.balance || "") + "");
-                                            setToken2Amount((Number(tokenBalance1?.balance) * Number(priceRatio) || 0).toString());
-                                        }}>MAX</button>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white/5 rounded-xl p-4">
-                                    <div className="text-sm text-white/60 mb-2">
-                                        Amount
-                                    </div>
-                                    <div className='relative flex'>
-                                        <input
-                                            value={token2Amount}
-                                            onChange={(e) => {
-                                                setToken2Amount(e.target.value);
-                                                setTokenAmount(formatNumberByFrac((Number(e.target.value) / Number(priceRatio)) || 0));
-                                            }}
-                                            type="text"
-                                            className={`w-full bg-transparent text-2xl outline-none ${isErrorToken2Amount ? "text-red-500" : ""}`}
-                                            placeholder="0.00"
-                                        />
-                                        <div className='flex items-center fixed right-12'>
-                                            <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
-                                            <span className='ml-2'>
-                                                {tokenInfo2?.symbol || ""}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-2 text-sm">
-                                        <span className="text-white/60">
-                                            {`Balance: ${formatNumberByFrac(Number(tokenBalance2?.balance) || 0)}`}
-                                        </span>
-                                        <button className="text-blue-400" onClick={() => {
-                                            setToken2Amount((tokenBalance2?.balance || "") + "");
-                                            setTokenAmount(formatNumberByFrac((Number(tokenBalance2?.balance) / Number(priceRatio)) || 0));
-                                        }}>MAX</button>
+                                    <div className='flex w-full items-center justify-center mt-4 gap-4'>
+                                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                                            onClick={() => setWithdrawPercent("25")}>
+                                            25%
+                                        </button>
+                                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                                            onClick={() => setWithdrawPercent("50")}>
+                                            50%
+                                        </button>
+                                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                                            onClick={() => setWithdrawPercent("75")}>
+                                            75%
+                                        </button>
+                                        <button className="text-gray-100 border-[1px] border-gray-200 rounded-xl px-2"
+                                            onClick={() => setWithdrawPercent(maxPercent)}>
+                                            MAX
+                                        </button>
                                     </div>
                                 </div>
 
@@ -336,7 +314,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                         <div className='items-center flex'>
                                             <TokenChainIcon src={tokenInfo1?.logo || ""} alt={tokenInfo1?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                             <span className='ml-2'>
-                                                {formatNumberByFrac(Number(modalState.position?.tokens[0]?.balance_formatted))}
+                                                {formatNumberByFrac(Number(modalState.position?.tokens[0].balance_formatted))}
                                             </span>
                                             <span className='ml-1 text-sm text-white/60'>
                                                 {tokenInfo1?.symbol || ""}
@@ -353,7 +331,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                         <div className='items-center flex'>
                                             <TokenChainIcon src={tokenInfo2?.logo || ""} alt={tokenInfo2?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                             <span className='ml-2'>
-                                                {formatNumberByFrac(Number(modalState.position?.tokens[1]?.balance_formatted))}
+                                                {formatNumberByFrac(Number(tokenBalance2?.balance || 0), 6)}
                                             </span>
                                             <span className='ml-1 text-sm text-white/60'>
                                                 {tokenInfo2?.symbol || ""}
@@ -368,7 +346,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                                             </span>
                                         </div>
                                         <div className='items-center flex'>
-                                            <span className='ml-2 text-sm'>
+                                            <span className='ml-2 text-sm '>
                                                 {
                                                     isGasEstimationLoading ?
                                                         <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
@@ -381,18 +359,16 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
                     }
 
                     <button
-                        className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium flex align-center justify-center`} disabled={isErrorTokenAmount}
+                        className={`w-full py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-xl font-medium ${(isDisabledAction || confirming) ? "opacity-60" : ""} flex align-center justify-center`} disabled={isDisabledAction}
                         onClick={async () => {
-                            if (!isCorrectChain) {
-                                switchChain(Number(chainId));
-                            } else if (showPreview) {
-                                depositHandler();
-                            } else if (!isErrorTokenAmount && !isErrorToken2Amount && !confirming) {
+                            if (showPreview) {
+                                redeemHandler()
+                            } else {
                                 setShowPreview(true);
                             }
                         }}
                     >
-                        {buttonLabel}
+                        {confirming ? <div><Spinner size="md" className='mr-2' /> {confirming}</div> : showPreview ? "Withdraw" : "Next"}
                     </button>
                 </div>
             </div>
@@ -400,4 +376,4 @@ const DepositModal: React.FC<DepositModalProps> = ({ setModalState, showPreview,
     )
 }
 
-export default DepositModal;
+export default WithdrawModal;

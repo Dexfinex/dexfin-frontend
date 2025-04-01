@@ -6,23 +6,28 @@ import { erc20Abi } from "viem";
 import { useDefiPositionByWallet, useDefiProtocolsByWallet } from '../hooks/useDefi';
 import { Web3AuthContext } from '../providers/Web3AuthContext';
 import { Position } from '../store/useDefiStore';
+
 import useTokenBalanceStore from '../store/useTokenBalanceStore';
 import { useEnSoActionMutation } from '../hooks/useActionEnSo.ts';
 import useGasEstimation from "../hooks/useGasEstimation.ts";
+
 import { TransactionModal } from './swap/modals/TransactionModal.tsx';
 import { PositionList } from './defi/PositionList.tsx';
 import ProtocolStatistic from './defi/ProtocolStatistic.tsx';
 
 import { mapChainId2ExplorerUrl } from '../config/networks.ts';
-import { STAKING_TOKENS, BORROWING_LIST } from '../constants/mock/defi.ts';
+import { STAKING_TOKENS, BORROWING_LIST, LENDING_LIST } from '../constants/mock/defi.ts';
 import { OfferingList } from './defi/OfferlingList.tsx';
 import GlobalMetric from './defi/GlobalMetric.tsx';
 import RedeemModal from './defi/RedeemModal.tsx';
+import WithdrawModal from './defi/WithdrawModal.tsx';
 import DepositModal from './defi/DepositModal.tsx';
 import StakeModal from './defi/StakeModal.tsx';
 import BorrowModal from './defi/BorrowModal.tsx';
 import UnStakeModal from './defi/UnStakeModal.tsx';
 import LendModal from './defi/LendModal.tsx';
+
+import { compareStringUppercase } from '../utils/common.util.ts';
 
 interface DeFiModalProps {
   isOpen: boolean;
@@ -60,7 +65,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const { mutate: enSoActionMutation } = useEnSoActionMutation();
 
-  const { chainId, address, signer, switchChain} = useContext(Web3AuthContext);
+  const { chainId, address, signer, switchChain } = useContext(Web3AuthContext);
 
   const { getTokenBalance } = useTokenBalanceStore();
   const { data: gasData } = useGasEstimation(chainId);
@@ -97,7 +102,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const handleAction = (type: string, position: Position, apyToken: string, supportedChains: number[]) => {
     switchChain(supportedChains[0]);
-    setModalState({ type, position, apyToken, supportedChains });
+    setModalState({ type, position, apyToken, supportedChains: [...new Set(supportedChains)] });
   };
 
   const depositHandler = async () => {
@@ -380,7 +385,7 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
       action: "redeem",
       protocol: (modalState.position?.protocol_id || "").toLowerCase(),
       tokenIn: [modalState?.position?.address || ""],
-      tokenOut: [tokenBalance1?.address || "", tokenBalance2?.address || ""],
+      tokenOut: [modalState?.position?.tokens[0]?.contract_address || "", modalState?.position?.tokens[1]?.contract_address || ""],
       amountIn: [Number(withdrawPercent)],
       signer: signer,
       receiver: address,
@@ -397,10 +402,70 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           });
           if (transactionResponse) {
             const receipt = await transactionResponse.wait();
-            setHash(receipt.transactionHash);
-            setTxModalOpen(true);
             await refetchDefiPositionByWallet();
             await refetchDefiProtocolByWallet();
+            setHash(receipt.transactionHash);
+            setTxModalOpen(true);
+
+            setWithdrawPercent("1");
+            setShowPreview(false);
+            setModalState({ type: null })
+            setSelectedTab('overview');
+          }
+
+        }
+        setConfirming("");
+      },
+      onError: async (e) => {
+        console.error(e)
+        setConfirming("");
+      }
+    })
+  }
+
+  const withdrawHandler = async () => {
+    if (!signer) return;
+
+    setConfirming("Approving...");
+
+    const protocolId = modalState.position?.protocol_id?.toLowerCase() || "";
+
+    const lendTokenInfo = LENDING_LIST.find((token) => {
+      return token.chainId === Number(chainId)
+        && compareStringUppercase(token?.protocol_id, protocolId)
+        && compareStringUppercase(token.tokenOut.symbol, modalState?.position?.tokens[0].symbol || "");
+    });
+
+    enSoActionMutation({
+      chainId: Number(chainId),
+      fromAddress: address,
+      routingStrategy: "router",
+      action: "redeem",
+      protocol: protocolId,
+      tokenIn: [lendTokenInfo?.tokenOut.contract_address || ""],
+      tokenOut: [lendTokenInfo?.tokenIn.contract_address || ""],
+      amountIn: [Number(withdrawPercent)],
+      signer: signer,
+      receiver: address,
+      gasPrice: gasData.gasPrice,
+      gasLimit: gasData.gasLimit
+    }, {
+      onSuccess: async (txData) => {
+        if (signer) {
+          setConfirming("Withdrawing...");
+          // execute defi action
+          const transactionResponse = await signer.sendTransaction(txData.tx).catch((e) => {
+            console.error(e)
+            setConfirming("")
+            return null;
+          });
+
+          if (transactionResponse) {
+            const receipt = await transactionResponse.wait();
+            await refetchDefiPositionByWallet();
+            await refetchDefiProtocolByWallet();
+            setHash(receipt.transactionHash);
+            setTxModalOpen(true);
 
             setWithdrawPercent("1");
             setShowPreview(false);
@@ -567,6 +632,21 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           confirming={confirming}
           unStakeHandler={unStakeHandler}
           setTokenAmount={setTokenAmount}
+        />
+      )}
+
+      {modalState?.type === 'withdraw' && modalState.position && (
+        <WithdrawModal
+          setModalState={setModalState}
+          showPreview={showPreview}
+          modalState={modalState}
+          setShowPreview={setShowPreview}
+          withdrawPercent={withdrawPercent}
+          setWithdrawPercent={setWithdrawPercent}
+          tokenAmount={tokenAmount}
+          token2Amount={token2Amount}
+          confirming={confirming}
+          redeemHandler={withdrawHandler}
         />
       )}
 

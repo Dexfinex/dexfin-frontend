@@ -1,31 +1,33 @@
-import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {Skeleton, SkeletonCircle, Spinner, useToast} from '@chakra-ui/react';
-import {ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle} from 'lucide-react';
-import {FieldValues, useForm} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { Skeleton, SkeletonCircle, Spinner, useToast } from '@chakra-ui/react';
+import { ArrowLeft, ArrowRight, ChevronDown, Search, Wallet, XCircle, Loader, Trash2 } from 'lucide-react';
+import { FieldValues, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {useEnsAddress, useEnsAvatar} from 'wagmi';
-import {normalize} from 'viem/ens';
-import {ethers} from 'ethers';
+import { useEnsAddress, useEnsAvatar } from 'wagmi';
+import { normalize } from 'viem/ens';
+import { ethers } from 'ethers';
+import { RiQrScanLine } from 'react-icons/ri';
 
-import {TransactionModal} from '../swap/modals/TransactionModal.tsx';
+import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useTokenStore from "../../store/useTokenStore.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
-import {formatNumberByFrac, isValidAddress, shrinkAddress} from '../../utils/common.util';
-import {Web3AuthContext} from "../../providers/Web3AuthContext.tsx";
-import {mapChainId2ExplorerUrl, mapChainId2NativeAddress} from "../../config/networks.ts";
-import {useSendTransactionMutation} from '../../hooks/useSendTransactionMutation.ts';
-import {TransactionError} from '../../types';
-import {TokenChainIcon, TokenIcon} from '../swap/components/TokenIcon.tsx';
-import {useStore} from '../../store/useStore.ts';
-import {PageType} from '../WalletDrawer.tsx';
-import useTokenBalanceStore, {TokenBalance} from '../../store/useTokenBalanceStore.ts';
+import { formatNumberByFrac, isValidAddress, shrinkAddress } from '../../utils/common.util';
+import { Web3AuthContext } from "../../providers/Web3AuthContext.tsx";
+import { mapChainId2ExplorerUrl, mapChainId2NativeAddress } from "../../config/networks.ts";
+import { useSendTransactionMutation } from '../../hooks/useSendTransactionMutation.ts';
+import { TransactionError } from '../../types';
+import { TokenChainIcon, TokenIcon } from '../swap/components/TokenIcon.tsx';
+import { useStore } from '../../store/useStore.ts';
+import { PageType } from '../WalletDrawer.tsx';
+import useTokenBalanceStore, { TokenBalance } from '../../store/useTokenBalanceStore.ts';
 import makeBlockie from 'ethereum-blockies-base64';
-import {SOLANA_CHAIN_ID} from "../../constants/solana.constants.ts";
-import {LOCAL_STORAGE_RECENT_ADDRESSES} from '../../constants';
-import {getGasEstimationForNativeTokenTransfer} from '../../utils/chains.util.tsx';
-import {getRealNativeTokenAddress} from "../../utils/token.util.ts";
+import { SOLANA_CHAIN_ID, SOLANA_TOKEN_ID } from "../../constants/solana.constants.ts";
+import { LOCAL_STORAGE_RECENT_ADDRESSES } from '../../constants';
+import { getGasEstimationForNativeTokenTransfer } from '../../utils/chains.util.tsx';
+import { getRealNativeTokenAddress } from "../../utils/token.util.ts";
+import { Html5QrcodeScanner } from "html5-qrcode";
 
 interface SendDrawerProps {
     setPage: (type: PageType) => void;
@@ -54,6 +56,8 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     const [recentAddresses, setRecentAddresses] = useState<string[]>([]);
     const [isTokenSwitching, setIsTokenSwitching] = useState(false);
     const [currentNativeTokenGasfee, setCurrentNativeTokenGasfee] = useState(0); //only used for native tokens
+    const [scanning, setScanning] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         if (tokenBalances.length > 0 && Object.keys(selectedAsset).length === 0) {
@@ -67,6 +71,19 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
             const addresses = JSON.parse(item)
             setRecentAddresses(addresses)
         }
+
+        const handleResize = () => {
+            const width = window.innerWidth;
+            if (width <= 640) {
+                setIsMobile(true)
+            } else {
+                setIsMobile(false)
+            }
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, [])
 
     const switching = useMemo(() => {
@@ -116,39 +133,46 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
         if (selectedAsset) {
             const targetChainId = Number(selectedAsset.chain)
             // if (targetChainId !== SOLANA_CHAIN_ID && Number(chainId) !== targetChainId) {
-            const nativeTokenAddress = getRealNativeTokenAddress(tokenChainId)
             if (Number(chainId) !== targetChainId) {
-                switchToken(nativeTokenAddress)
+                switchToken()
+            } else if (currentNativeTokenGasfee == 0) {
+                setNativeTokenGasFee()
             }
         }
     }, [chainId, selectedAsset])
 
-    const setNativeTokenGasFee = async (nativeTokenAddress: string) => {
-        if (selectedAsset.network?.name === "Solana") {
-            if (selectedAsset.tokenId === "solana") {
-                const gasFee = await getGasEstimationForNativeTokenTransfer(address, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
-                setCurrentNativeTokenGasfee(gasFee)
-            } else if (currentNativeTokenGasfee != 0) {
-                setCurrentNativeTokenGasfee(0)
+    const setNativeTokenGasFee = async () => {
+        if (isNativeToken()) {
+            let tokenAddress = address
+            if (selectedAsset.network?.chainId != SOLANA_CHAIN_ID) {
+                tokenAddress = showSelectedEnsInfo ? ensAddress as unknown as string : address
             }
-        } else {
-            if (nativeTokenAddress.toLowerCase() == selectedAsset.address) {
-                const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
-                const gasFee = await getGasEstimationForNativeTokenTransfer(_address, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
-                setCurrentNativeTokenGasfee(gasFee)
-            } else if (currentNativeTokenGasfee != 0) {
-                setCurrentNativeTokenGasfee(0)
-            }
+            const gasFee = await getGasEstimationForNativeTokenTransfer(tokenAddress, selectedAsset.balance.toString(), selectedAsset.decimals, selectedAsset.network?.chainId || 0)
+            setCurrentNativeTokenGasfee(gasFee)
+        } else if (currentNativeTokenGasfee != 0) {
+            setCurrentNativeTokenGasfee(0)
         }
     }
 
-    const switchToken = async (nativeTokenAddress: string) => {
+    const switchToken = async () => {
         setIsTokenSwitching(true)
-        await setNativeTokenGasFee(nativeTokenAddress)
-        if (selectedAsset.network?.name != "Solana" && nativeTokenAddress.toLowerCase() != selectedAsset.address) {
+        await setNativeTokenGasFee()
+        if (selectedAsset.network?.chainId != SOLANA_CHAIN_ID) {
             await switchChain(Number(selectedAsset.chain))
         }
         setIsTokenSwitching(false)
+    }
+
+    const isNativeToken = () => {
+        const nativeTokenAddress = getRealNativeTokenAddress(tokenChainId)
+
+        if (selectedAsset.network?.chainId === SOLANA_CHAIN_ID && selectedAsset.tokenId === SOLANA_TOKEN_ID) {
+            return true
+        } else if (nativeTokenAddress.toLowerCase() == selectedAsset.address.toLowerCase()) {
+            return true
+        }
+
+        return false
     }
 
     const ensAddressDataResponse = useEnsAddress({
@@ -164,7 +188,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     const { isLoading: ensAvatarLoading, data: ensAvatar } = ensAvatarDataResponse
 
     const submitDisabled = useMemo(() => {
-        if (selectedAsset.network?.name != "Solana") {
+        if (selectedAsset.network?.chainId != SOLANA_CHAIN_ID) {
             return !amount || isConfirming || !(ethers.utils.isAddress(address) || showSelectedEnsInfo)
         } else {
             return !amount || isConfirming || !isValidAddress(address, SOLANA_CHAIN_ID) || showSelectedEnsInfo
@@ -172,7 +196,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     }, [amount, address, isConfirming, showSelectedEnsInfo])
 
     const showPreview = useMemo(() => {
-        if (selectedAsset.network?.name != "Solana") {
+        if (selectedAsset.network?.chainId != SOLANA_CHAIN_ID) {
             return (amount && address && (ethers.utils.isAddress(address) || showSelectedEnsInfo))
         } else {
             return (amount && address && isValidAddress(address, SOLANA_CHAIN_ID) || showSelectedEnsInfo)
@@ -230,16 +254,25 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
         setTokenBalances([...updated])
     }
 
+    const getRealAmount = () => {
+        let realAmount: number = Number(amount)
+
+        if (selectedAsset.tokenId === SOLANA_TOKEN_ID && amount === selectedAsset.balance) {
+            console.log('minus sol')
+            realAmount -= currentNativeTokenGasfee
+        } else if (isNativeToken() && amount === selectedAsset.balance) {
+            console.log('minus evm')
+            realAmount -= currentNativeTokenGasfee
+        }
+
+        return realAmount
+    }
+
     const onSubmit = async () => {
         setIsConfirming(true)
-        if (selectedAsset.network?.name === "Solana") {
+        if (selectedAsset.network?.chainId === SOLANA_CHAIN_ID) {
             if (Number(amount) > 0) {
-                let realAmount: number = Number(amount)
-
-                if (currentNativeTokenGasfee) {
-                    realAmount -= currentNativeTokenGasfee
-                }
-
+                const realAmount = getRealAmount()
                 const signature = await transferSolToken(address, selectedAsset.address, realAmount, selectedAsset.decimals)
                 if (signature) {
                     updateBalance()
@@ -265,12 +298,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                 });
             }
             const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
-            let realAmount: number = Number(amount)
-
-            if (currentNativeTokenGasfee) {
-                realAmount -= currentNativeTokenGasfee
-            }
-
+            const realAmount = getRealAmount()
             sendTransactionMutate(
                 {
                     tokenAddress: selectedAsset.address,
@@ -302,7 +330,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                     },
                 },
             );
-            setIsConfirming(false);
         }
     };
 
@@ -314,6 +341,39 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
         );
     }, [tokenBalances, searchQuery]);
 
+    const startScanner = () => {
+        const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+        console.log('scanner = ', scanner)
+        scanner.render(
+            (decodedText) => {
+                setAddress(decodedText)
+                setScanning(false)
+                scanner.clear()
+            },
+            (error) => {
+                console.log(error)
+            }
+        );
+    };
+
+    const handleQrCodeScan = () => {
+        setScanning(true);
+        setTimeout(() => {
+            startScanner()
+        }, 1000);
+    }
+
+    const handleRemoveRecent = (event: any, address: string) => {
+        event.preventDefault();
+        const item = localStorage.getItem(LOCAL_STORAGE_RECENT_ADDRESSES)
+        if (item) {
+            const addresses = JSON.parse(item)
+            const newAddresses = addresses.filter((addr: string) => addr != address)
+            localStorage.setItem(LOCAL_STORAGE_RECENT_ADDRESSES, JSON.stringify(newAddresses))
+            setRecentAddresses(newAddresses)
+        }
+    }
+
     // if (!isOpen) return null;
     const renderUsdValue = () => {
         const price = tokenBalances.find(token => token.address === selectedAsset.address && token.tokenId === selectedAsset.tokenId)?.usdPrice || 0
@@ -324,15 +384,20 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
     const renderRecent = () => {
         let filtered: string[] = []
 
-        if (selectedAsset.network?.name === "Solana") {
+        if (selectedAsset.network?.chainId === SOLANA_CHAIN_ID) {
             filtered = recentAddresses.filter(address => /^[1-9A-HJ-NP-Za-km-zZ]{32,44}$/.test(address))
         } else {
             filtered = recentAddresses.filter(address => /^0x[a-fA-F0-9]{40}$/.test(address))
         }
 
-        return filtered.map((address, index) => <div key={index} onClick={() => setAddress(address)} className='cursor-pointer text-sm py-2 px-1 rounded-md text-white/70 hover:bg-white/10 flex items-center gap-2'>
-            <img src={makeBlockie(address)} className='w-8 h-8 rounded-full' />
-            <span>{shrinkAddress(address)}</span>
+        return filtered.map((address, index) => <div key={index} className={`text-sm flex items-center justify-between`}>
+            <div className={`flex items-center py-2 px-2 gap-2 cursor-pointer  rounded-md ${theme === 'dark' ? 'text-white/70' : 'text-black/70'} hover:bg-white/10 flex-1`} onClick={() => setAddress(address)} >
+                <img src={makeBlockie(address)} className='w-8 h-8 rounded-full' />
+                <span>{shrinkAddress(address)}</span>
+            </div>
+            <div className='p-2 hover:bg-white/5 rounded-full cursor-pointer text-red-500' onClick={e => handleRemoveRecent(e, address)}>
+                <Trash2 className='w-4 h-4' />
+            </div>
         </div>)
     }
 
@@ -496,19 +561,34 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
 
                 {/* Address Input */}
                 <div className='relative'>
-                    <label className="block text-sm text-white/60 mb-2">Send To</label>
+                    {isMobile && scanning && <div id="reader" className='!w-screen !h-screen !fixed !top-0 !left-0 !z-[100] bg-gray-400'></div>}
+                    <label className="block text-sm text-white/60">Send To</label>
                     {errorAddress && <p className='text-red-500 text-xs italic mb-1'>Incorrect address</p>}
                     {
                         !showSelectedEnsInfo ?
-                            <input
-                                type="text"
-                                value={address}
-                                placeholder="Enter wallet address or ENS name"
-                                className={`w-full bg-white/5 border ${errorAddress ? "border-red-500" : "border-white/10"} rounded-lg px-4 py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
-                                onChange={(e) => {
-                                    setAddress(e.target.value)
-                                }}
-                            />
+                            <div className='relative'>
+                                <input
+                                    type="text"
+                                    value={address}
+                                    placeholder="Enter wallet address or ENS name"
+                                    className={`w-full bg-white/5 border ${errorAddress ? "border-red-500" : "border-white/10"} rounded-lg 
+                                                ${!isMobile ? "px-4" : "pl-4 pr-10"}
+                                                py-3 outline-none focus:${errorAddress ? "border-red-500" : "border-white/10"}`}
+                                    onChange={(e) => {
+                                        setAddress(e.target.value)
+                                    }}
+                                />
+                                {
+                                    isMobile && <div className='absolute right-0 top-1.5'>
+                                        {!scanning ?
+                                            <button className='mr-1 p-2 rounded-full hover:bg-white/10' onClick={handleQrCodeScan}>
+                                                <RiQrScanLine className='w-5 h-5' />
+                                            </button>
+                                            :
+                                            <Loader className="w-8 h-8 animate-spin text-blue-400" />}
+                                    </div>
+                                }
+                            </div>
                             :
                             <div
                                 className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">
@@ -535,6 +615,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                 }} />
                             </div>
                     }
+
                     {
                         showEnsList && ensAddress &&
                         <div onClick={() => setShowEnsList(false)}>
@@ -570,63 +651,67 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                 </div>
 
                 {/* recent addresses */}
-                {recentAddresses.length > 0 && <div>
-                    <label className="block text-sm text-white/60 mb-2">Recent</label>
-                    {
-                        renderRecent()
-                    }
-                </div>}
+                {
+                    recentAddresses.length > 0 && <div>
+                        <label className="block text-sm text-white/60 mb-2">Recent</label>
+                        {
+                            renderRecent()
+                        }
+                    </div>
+                }
 
                 {/* Preview */}
-                {showPreview ? (
-                    <div className="p-4 bg-white/5 rounded-lg">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center">
-                                <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"}
-                                    chainId={Number(selectedAsset.chain)} />
-                                <div className='ml-3'>
-                                    <div className="text-sm text-white/60">You send</div>
-                                    <div className="font-medium">
-                                        {`${formatNumberByFrac(Number(amount) - currentNativeTokenGasfee, 5)} ${selectedAsset.symbol}`}
+                {
+                    showPreview ? (
+                        <div className="p-4 bg-white/5 rounded-lg">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center">
+                                    <TokenChainIcon src={selectedAsset.logo} alt={selectedAsset.name} size={"lg"}
+                                        chainId={Number(selectedAsset.chain)} />
+                                    <div className='ml-3'>
+                                        <div className="text-sm text-white/60">You send</div>
+                                        <div className="font-medium">
+                                            {`${formatNumberByFrac(getRealAmount(), 5)} ${selectedAsset.symbol}`}
+                                        </div>
+                                    </div>
+                                </div>
+                                <ArrowRight className="w-5 h-5 text-white/40" />
+                                <div>
+                                    <div className="text-sm text-white/60">To</div>
+                                    <div className="font-medium font-mono">
+                                        {
+                                            showSelectedEnsInfo ?
+                                                <div className='flex flex-row justify-items-center items-center'>
+                                                    {
+                                                        (ensAvatarLoading || !ensAvatar) ?
+                                                            <SkeletonCircle startColor="#444" endColor="#1d2837"
+                                                                w={'2rem'} h={'2rem'}></SkeletonCircle> :
+                                                            <TokenIcon src={ensAvatar as string} alt={address}
+                                                                size='lg' />
+                                                    }
+                                                    <div className='flex flex-col ml-2'>
+                                                        <div>{address}</div>
+                                                        <div>{shrinkAddress(ensAddress || "", 4)}</div>
+                                                    </div>
+                                                </div> : `${shrinkAddress(address)}`
+                                        }
                                     </div>
                                 </div>
                             </div>
-                            <ArrowRight className="w-5 h-5 text-white/40" />
-                            <div>
-                                <div className="text-sm text-white/60">To</div>
-                                <div className="font-medium font-mono">
-                                    {
-                                        showSelectedEnsInfo ?
-                                            <div className='flex flex-row justify-items-center items-center'>
-                                                {
-                                                    (ensAvatarLoading || !ensAvatar) ?
-                                                        <SkeletonCircle startColor="#444" endColor="#1d2837"
-                                                            w={'2rem'} h={'2rem'}></SkeletonCircle> :
-                                                        <TokenIcon src={ensAvatar as string} alt={address}
-                                                            size='lg' />
-                                                }
-                                                <div className='flex flex-col ml-2'>
-                                                    <div>{address}</div>
-                                                    <div>{shrinkAddress(ensAddress || "", 4)}</div>
-                                                </div>
-                                            </div> : `${shrinkAddress(address)}`
-                                    }
-                                </div>
+                            <div className='w-full flex justify-end items-end'>
+                                {
+                                    walletType === "EMBEDDED" ?
+                                        <span className='text-sm text-green-500'>Network Fee: Free</span> :
+                                        <div className="text-sm text-white/60">
+                                            Network Fee: {
+                                                isGasEstimationLoading ?
+                                                    <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
+                                                    : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
+                                        </div>}
                             </div>
                         </div>
-                        <div className='w-full flex justify-end items-end'>
-                            {
-                                walletType === "EMBEDDED" ?
-                                    <span className='text-sm text-green-500'>Network Fee: Free</span> :
-                                    <div className="text-sm text-white/60">
-                                        Network Fee: {
-                                            isGasEstimationLoading ?
-                                                <Skeleton startColor="#444" endColor="#1d2837" w={'4rem'} h={'1rem'}></Skeleton>
-                                                : `${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2) === "0" ? "< 0.01$" : `$ ${formatNumberByFrac(nativeTokenPrice * gasData.gasEstimate, 2)}`}`}
-                                    </div>}
-                        </div>
-                    </div>
-                ) : null}
+                    ) : null
+                }
 
                 {
                     isConnected ?
@@ -641,7 +726,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                         <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Confirming...
                                         </div>
-                                    ) : (switching && selectedAsset.network?.name != "Solana") ? (
+                                    ) : (switching && selectedAsset.network?.chainId != SOLANA_CHAIN_ID) ? (
                                         <div className='flex items-center'>
                                             <Spinner size="md" className='mr-2' /> Switching Chain...
                                         </div>
@@ -658,7 +743,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                             <Wallet className="w-5 h-5 mr-2" /> Connect
                         </button>
                 }
-            </form>
-        </div>
+            </form >
+        </div >
     );
 };

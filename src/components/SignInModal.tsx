@@ -89,8 +89,6 @@ const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
           </div>
         </div>
 
-        <AuthAlert error={error} />
-
         <LoginMethods
           handleGoogleLogin={handleGoogleLogin}
           handleDiscordLogin={handleDiscordLogin}
@@ -100,7 +98,11 @@ const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
           error={error}
           hasReferral={hasReferral}
         />
-        
+
+        <div className="mt-3">
+          <AuthAlert error={error} />
+        </div>
+
         <div className="mt-6 text-center">
           <p className="text-white/60 mb-3">
             Don't have an account yet?

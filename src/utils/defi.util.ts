@@ -1,5 +1,5 @@
-import {mapChainId2ChainName, mapChainId2Network} from "../config/networks";
-import {Position} from "../store/useDefiStore";
+import { mapChainId2ChainName, mapChainId2Network } from "../config/networks";
+import { Position } from "../store/useDefiStore";
 
 export const capitalizeFirstLetter = (val: string) => {
     return String(val).charAt(0).toUpperCase() + String(val.toLowerCase()).slice(1);
@@ -79,11 +79,24 @@ export const getAddActionName = ({ type }: { type: string }) => {
         case "liquidity":
             return "deposit";
         case "supplied":
-            return "deposit";
+            return "lend";
         case "borrowing":
             return "borrow";
         case "lending":
             return "lend";
+        default:
+            return "";
+    }
+}
+
+export const getRemoveActionName = ({ type }: { type: string }) => {
+    switch (type.toLowerCase()) {
+        case "staking":
+            return "unstake";
+        case "liquidity":
+            return "redeem";
+        case "supplied":
+            return "withdraw";
         default:
             return "";
     }

@@ -7,7 +7,7 @@ import { TransactionModal } from '../swap/modals/TransactionModal.tsx';
 import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon";
 import { Position } from "../../store/useDefiStore";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
-import { formatNumberByFrac } from "../../utils/common.util";
+import { formatNumberByFrac, compareStringUppercase } from "../../utils/common.util";
 
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
@@ -22,7 +22,6 @@ import { getChainIcon } from "../../utils/defi.util.ts";
 import { getChainNameById } from "../../utils/defi.util.ts";
 
 import { mapChainId2ExplorerUrl } from '../../config/networks.ts';
-import { WalletTypeEnum } from "../../types/wallet.type.ts";
 import { EnSoResponse } from "../../services/enso.service.ts";
 
 interface ModalState {
@@ -53,17 +52,29 @@ const LendModal: React.FC<LendModalProps> = ({
     const [txModalOpen, setTxModalOpen] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
 
+    const { chainId: connectedChainId, switchChain, isChainSwitching, signer, address } = useContext(Web3AuthContext)
+
     const { mutate: enSoActionMutation } = useEnSoActionMutation();
     const { getTokenBalance } = useTokenBalanceStore();
-    const { chainId: connectedChainId, switchChain, isChainSwitching, signer, address, walletType } = useContext(Web3AuthContext)
-    const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
     const { getOfferingPoolByChainId } = useDefillamaStore();
-    const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
-    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
+
+    const protocolId = modalState.position?.protocol_id || ""
+
+    const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
+    const poolInfo = getOfferingPoolByChainId(Number(chainId), protocolId, modalState.apyToken || "");
+    const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation(chainId);
+
     const lendTokenInfo = LENDING_LIST.find((token) => {
-        return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
+        return token.chainId === Number(chainId)
+            && compareStringUppercase(token?.protocol_id, protocolId)
+            && (modalState?.position?.tokens.length === 1
+                ? compareStringUppercase(token.tokenIn.symbol, modalState?.position.tokens[0].symbol)
+                : compareStringUppercase(token.tokenOut.symbol, modalState?.position?.tokens[0].symbol || "")
+            );
     });
+
     const tokenInBalance = lendTokenInfo?.tokenIn ? getTokenBalance(lendTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
+
     const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
 
     const nativeTokenAddress = mapChainId2NativeAddress[Number(chainId)];
@@ -162,54 +173,27 @@ const LendModal: React.FC<LendModalProps> = ({
     const lendHandler = async () => {
         if (signer && Number(tokenAmount) > 0) {
             setConfirming("Approving...");
-            const lendTokenInfo = LENDING_LIST.find((token) => {
-                return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenIn.symbol === modalState?.position.tokens[0].symbol
-            });
+
             const tokenInInfo = lendTokenInfo?.tokenIn ? lendTokenInfo?.tokenIn : null;
             const tokenOutInfo = lendTokenInfo?.tokenOut ? lendTokenInfo?.tokenOut : null;
 
-            switch (walletType) {
-                case WalletTypeEnum.EOA:
-                    enSoActionMutation({
-                        chainId: Number(chainId),
-                        fromAddress: address,
-                        routingStrategy: "router",
-                        action: "deposit",
-                        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
-                        tokenIn: [tokenInInfo?.contract_address || ""],
-                        tokenOut: [tokenOutInfo?.contract_address || ""],
-                        amountIn: [Number(tokenAmount)],
-                        signer: signer,
-                        receiver: address,
-                        gasPrice: gasData.gasPrice,
-                        gasLimit: gasData.gasLimit
-                    }, {
-                        onSuccess: onSuccessCallback,
-                        onError: onErrorCallback
-                    })
-                    break;
-                case WalletTypeEnum.EMBEDDED:
-                    enSoActionMutation({
-                        chainId: Number(chainId),
-                        fromAddress: address,
-                        routingStrategy: "router",
-                        action: "deposit",
-                        protocol: (modalState.position?.protocol_id || "").toLowerCase(),
-                        tokenIn: [tokenInInfo?.contract_address || ""],
-                        tokenOut: [tokenOutInfo?.contract_address || ""],
-                        amountIn: [Number(tokenAmount)],
-                        signer: signer,
-                        receiver: address,
-                        gasPrice: gasData.gasPrice,
-                        gasLimit: gasData.gasLimit
-                    }, {
-                        onSuccess: onSuccessCallback,
-                        onError: onErrorCallback
-                    })
-                    break;
-                default:
-                    break;
-            }
+            enSoActionMutation({
+                chainId: Number(chainId),
+                fromAddress: address,
+                routingStrategy: "router",
+                action: "deposit",
+                protocol: protocolId,
+                tokenIn: [tokenInInfo?.contract_address || ""],
+                tokenOut: [tokenOutInfo?.contract_address || ""],
+                amountIn: [Number(tokenAmount)],
+                signer: signer,
+                receiver: address,
+                gasPrice: gasData.gasPrice,
+                gasLimit: gasData.gasLimit
+            }, {
+                onSuccess: onSuccessCallback,
+                onError: onErrorCallback
+            })
         }
     }
 
