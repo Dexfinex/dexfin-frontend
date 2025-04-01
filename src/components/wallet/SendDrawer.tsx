@@ -254,15 +254,25 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
         setTokenBalances([...updated])
     }
 
+    const getRealAmount = () => {
+        let realAmount: number = Number(amount)
+
+        if (selectedAsset.tokenId === SOLANA_TOKEN_ID && amount === selectedAsset.balance) {
+            console.log('minus sol')
+            realAmount -= currentNativeTokenGasfee
+        } else if (isNativeToken() && amount === selectedAsset.balance) {
+            console.log('minus evm')
+            realAmount -= currentNativeTokenGasfee
+        }
+
+        return realAmount
+    }
+
     const onSubmit = async () => {
         setIsConfirming(true)
         if (selectedAsset.network?.chainId === SOLANA_CHAIN_ID) {
             if (Number(amount) > 0) {
-                let realAmount: number = Number(amount)
-
-                if (selectedAsset.tokenId === SOLANA_TOKEN_ID && amount === selectedAsset.balance) {
-                    realAmount -= currentNativeTokenGasfee
-                }
+                const realAmount = getRealAmount()
                 const signature = await transferSolToken(address, selectedAsset.address, realAmount, selectedAsset.decimals)
                 if (signature) {
                     updateBalance()
@@ -288,11 +298,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                 });
             }
             const _address = showSelectedEnsInfo ? ensAddress as unknown as string : address
-            let realAmount: number = Number(amount)
-
-            if (isNativeToken() && amount === selectedAsset.balance) {
-                realAmount -= currentNativeTokenGasfee
-            }
+            const realAmount = getRealAmount()
             sendTransactionMutate(
                 {
                     tokenAddress: selectedAsset.address,
@@ -346,7 +352,6 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
             },
             (error) => {
                 console.log(error)
-                setScanning(false)
             }
         );
     };
@@ -666,7 +671,7 @@ export const SendDrawer: React.FC<SendDrawerProps> = ({ setPage }) => {
                                     <div className='ml-3'>
                                         <div className="text-sm text-white/60">You send</div>
                                         <div className="font-medium">
-                                            {`${formatNumberByFrac(Number(amount) - currentNativeTokenGasfee, 5)} ${selectedAsset.symbol}`}
+                                            {`${formatNumberByFrac(getRealAmount(), 5)} ${selectedAsset.symbol}`}
                                         </div>
                                     </div>
                                 </div>

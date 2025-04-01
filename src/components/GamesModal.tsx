@@ -24,38 +24,10 @@ interface Game {
   name: string;
   description: string;
   icon: React.ReactNode;
-  component?: React.ComponentType<{ gameType?: string }>;
+  component?: React.ComponentType<any>; // Changed to 'any' to be more flexible with props
   comingSoon?: boolean;
   createdAt?: string;
 }
-interface MemeArenaProps {
-  gameType?: string;
-}
-
-interface CryptoPexesoProps {
-  gameType?: string;
-}
-interface CryptoWordHuntProps {
-  gameType?: string;
-}
-// Mapping for game icons based on type
-const gameIconMap: Record<string, React.ReactNode> = {
-  'TRIVIA': <Brain className="w-6 h-6" />,
-  'ARENA': <Swords className="w-6 h-6" />,
-  'PEXESO': <Grid className="w-6 h-6" />,
-  'WORDHUNT': <Search className="w-6 h-6" />,
-  'SIMULATOR': <BarChart2 className="w-6 h-6" />,
-  'PREDICTION': <Target className="w-6 h-6" />,
-  'TOURNAMENT': <Trophy className="w-6 h-6" />
-};
-
-
-const gameComponentMap: Record<string, React.ComponentType<{ gameType?: string }>> = {
-  'TRIVIA': CryptoTrivia,
-  'ARENA': MemeArena,
-  'PEXESO': CryptoPexeso,
-  'WORDHUNT': CryptoWordHunt
-};
 
 export interface GameSession {
   id?: string;
@@ -68,8 +40,18 @@ export interface GameSession {
   streak: number;
   words?:number;
   perfectStatus?:boolean;
-
 }
+
+// Mapping for game icons based on type
+const gameIconMap: Record<string, React.ReactNode> = {
+  'TRIVIA': <Brain className="w-6 h-6" />,
+  'ARENA': <Swords className="w-6 h-6" />,
+  'PEXESO': <Grid className="w-6 h-6" />,
+  'WORDHUNT': <Search className="w-6 h-6" />,
+  'SIMULATOR': <BarChart2 className="w-6 h-6" />,
+  'PREDICTION': <Target className="w-6 h-6" />,
+  'TOURNAMENT': <Trophy className="w-6 h-6" />
+};
 
 export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -84,6 +66,12 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
+  };
+
+  // Handle returning to game selection
+  const handleBackToGames = () => {
+    setActiveGame(null);
+    setShowStats(false);
   };
 
   useEffect(() => {
@@ -107,7 +95,14 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
                 name: dbGame.name,
                 description: dbGame.description,
                 icon: gameIconMap[dbGame.type] || <Gamepad2 className="w-6 h-6" />,
-                component: hasComponent ? gameComponentMap[dbGame.type] : undefined,
+                component: hasComponent ? 
+                  // We don't store the component mapping in a variable anymore,
+                  // but directly determine which component to use
+                  dbGame.type === 'TRIVIA' ? CryptoTrivia :
+                  dbGame.type === 'ARENA' ? MemeArena :
+                  dbGame.type === 'PEXESO' ? CryptoPexeso :
+                  dbGame.type === 'WORDHUNT' ? CryptoWordHunt :
+                  undefined : undefined,
                 comingSoon: !hasComponent,
                 createdAt: dbGame.createdAt
               };
@@ -146,6 +141,21 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  // Render the active game component
+  const renderActiveGame = () => {
+    if (!activeGame || !activeGame.component) return null;
+
+    const GameComponent = activeGame.component;
+
+    // For CryptoPexeso, we pass the onClose prop
+    if (activeGame.type.toUpperCase() === 'PEXESO') {
+      return <GameComponent gameType={activeGame.type.toUpperCase()} onClose={handleBackToGames} />;
+    }
+    
+    // For other games, we pass only the gameType
+    return <GameComponent gameType={activeGame.type.toUpperCase()} />;
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -160,10 +170,7 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center gap-2 sm:gap-4">
             {activeGame && (
               <button
-                onClick={() => {
-                  setActiveGame(null);
-                  setShowStats(false);
-                }}
+                onClick={handleBackToGames}
                 className="p-1.5 sm:p-2 transition-colors rounded-lg hover:bg-white/10"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -221,7 +228,7 @@ export const GamesModal: React.FC<GamesModalProps> = ({ isOpen, onClose }) => {
           {showStats ? (
             <GameStats />
           ) : activeGame?.component ? (
-            <activeGame.component gameType={activeGame.type.toUpperCase()} />
+            renderActiveGame()
           ) : (
             <div className="p-3 sm:p-6">
               {gamesLoading ? (

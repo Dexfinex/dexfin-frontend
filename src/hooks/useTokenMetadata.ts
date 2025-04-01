@@ -17,13 +17,6 @@ export const useEvmTokenMetadata = ({
     if (!chainId || !tokenAddress) {
       return null;
     }
-    const storedMetadata = useTokenStore
-      .getState()
-      .getTokenMetadata(tokenAddress, chainId);
-
-    if (storedMetadata) {
-      return storedMetadata;
-    }
 
     const data = await dexfinv3Service.getEvmTokenMetadata({
       chainId: chainId,

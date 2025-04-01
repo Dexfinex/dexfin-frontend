@@ -16,6 +16,7 @@ import {
     ChevronRight,
     Landmark,
     Wallet,
+    Clock
 } from 'lucide-react';
 import { WalletTab } from '../../types/agent.type.ts';
 import { mockDeFiPositions } from "../../constants/defi.constants.ts";
@@ -29,6 +30,7 @@ import PNLPercent from '../common/PNLPercent.tsx';
 import { formatNumberByFrac } from '../../utils/common.util.ts';
 import useDefiStore from '../../store/useDefiStore.ts';
 import NumberFormat from '../common/NumberFormat.tsx';
+import RenderActivity from '../wallet/RenderActivity.tsx';
 
 interface WalletPanelProps {
     isWalletPanelOpen: boolean;
@@ -100,12 +102,22 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                                 <Landmark className="w-4 h-4" />
                                 DeFi
                             </button>
+                            <button
+                                onClick={() => setActiveWalletTab('activity')}
+                                className={`flex items-center gap-2 flex-1 p-2 text-sm transition-colors ${activeWalletTab === 'activity'
+                                    ? 'bg-white/10 font-medium'
+                                    : 'hover:bg-white/5'
+                                    }`}
+                            >
+                                <Clock className="w-4 h-4" />
+                                Activity
+                            </button>
                         </div>
 
                         {/* Assets List */}
                         <div className="flex-1 overflow-y-auto ai-chat-scrollbar">
                             <div className="p-1 space-y-2">
-                                {activeWalletTab === 'assets' ? (
+                                {activeWalletTab === 'assets' && (
                                     // Assets Tab
                                     <div className="space-y-2">
                                         {
@@ -135,10 +147,18 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                                                 ))
                                         }
                                     </div>
-                                ) : (
-                                    // DeFi Tab
-                                    <PositionList isLoading={false} />
                                 )}
+                                {activeWalletTab === 'defi' &&
+                                    (
+                                        // DeFi Tab
+                                        <PositionList isLoading={false} />
+                                    )}
+
+                                {activeWalletTab === 'activity' &&
+                                    (
+                                        <RenderActivity/>
+                                    )
+                                }
                             </div>
                         </div>
                     </div>
@@ -209,12 +229,22 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                                                 <Landmark className="w-4 h-4" />
                                                 DeFi
                                             </button>
+                                            <button
+                                                onClick={() => setActiveWalletTab('activity')}
+                                                className={`flex items-center gap-2 flex-1 p-2 text-sm transition-colors ${activeWalletTab === 'activity'
+                                                    ? 'bg-white/10 font-medium'
+                                                    : 'hover:bg-white/5'
+                                                    }`}
+                                            >
+                                                <Landmark className="w-4 h-4" />
+                                                Activity
+                                            </button>
                                         </div>
 
                                         {/* Assets List */}
                                         <div className="flex-1 overflow-y-auto ai-chat-scrollbar">
                                             <div className="p-1 space-y-2">
-                                                {activeWalletTab === 'assets' ? (
+                                                {activeWalletTab === 'assets' && (
                                                     // Assets Tab
                                                     <div className="space-y-2">
                                                         {
@@ -248,34 +278,18 @@ export function WalletPanel({ isWalletPanelOpen, setIsWalletPanelOpen }: WalletP
                                                                 ))
                                                         }
                                                     </div>
-                                                ) : (
-                                                    // DeFi Tab
-                                                    defiPositions.map((position) => (
-                                                        <div
-                                                            key={position.id}
-                                                            className="flex items-center justify-between p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                                                        >
-                                                            <div className="flex items-center gap-2">
-                                                                <img src={position.protocolLogo} alt={position.protocol}
-                                                                    className="w-6 h-6" />
-                                                                <div>
-                                                                    <div
-                                                                        className="font-medium text-sm">{position.protocol}</div>
-                                                                    <div className="text-xs text-white/60">
-                                                                        {position.amount.toLocaleString()} {position.token.symbol}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <div
-                                                                    className="text-sm">${position.value.toLocaleString()}</div>
-                                                                <div className="text-xs text-green-400">
-                                                                    {position.apy}% APY
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                )}
+                                                )} 
+                                                {activeWalletTab === 'defi' &&
+                                                    (
+                                                        // DeFi Tab
+                                                        <PositionList isLoading={false} />
+                                                    )}
+                
+                                                {activeWalletTab === 'activity' &&
+                                                    (
+                                                        <RenderActivity/>
+                                                    )
+                                                }
                                             </div>
                                         </div>
                                     </div>

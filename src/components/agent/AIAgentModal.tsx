@@ -7,11 +7,11 @@ import useTrendingTokensStore from '../../store/useTrendingTokensStore.ts';
 import {
   convertBrianKnowledgeToPlainText,
   convertCryptoAmount,
+  depositAddress,
   getSolAddressFromSNS,
   isValidSolanaAddress,
   parseChainedCommands,
   resolveEnsToAddress,
-  symbolToToken
 } from '../../utils/agent.util.tsx';
 import { Mic, Send, Trash2, } from 'lucide-react';
 import { VoiceModal } from './VoiceModal.tsx';
@@ -37,6 +37,7 @@ import { TopBar } from './TopBar.tsx';
 import { Protocol, Step, TokenType, Yield } from '../../types/brian.type.ts';
 import useTokenBalanceStore from '../../store/useTokenBalanceStore.ts';
 import { DepositProcess } from './components/EVM/DepositProcess.tsx';
+import { EVMDepositProcess } from './components/EVM/EVMDepositProcess.tsx';
 import { WithdrawProcess } from './components/EVM/WithdrawProcess.tsx';
 import { BorrowProcess } from './components/EVM/BorrowProcess.tsx';
 import { RepayProcess } from './components/EVM/RepayProcess.tsx';
@@ -78,6 +79,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
   const [showProjectAnalysis, setShowProjectAnalysis] = useState(false);
   const [isWalletPanelOpen, setIsWalletPanelOpen] = useState(true);
   const [showDepositProcess, setShowDepositProcess] = useState(false);
+  const [showEVMDepositProcess, setShowEVMDepositProcess] = useState(false);
   const [showWithdrawProcess, setShowWithdrawProcess] = useState(false);
   const [showBorrowProcess, setShowBorrowProcess] = useState(false);
   const [showRepayProcess, setShowRepayProcess] = useState(false);
@@ -111,6 +113,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
     setShowStakeProcess(false);
     setShowProjectAnalysis(false);
     setShowDepositProcess(false);
+    setShowEVMDepositProcess(false);
     setShowWithdrawProcess(false);
     setShowBorrowProcess(false);
     setShowRepayProcess(false);
@@ -348,7 +351,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
         brianData: brianTransactionData.data,
         type: brianTransactionData.type
       }
-    } else if (sol_response && sol_response.type == "deposit_evm") {
+    } else if (sol_response && sol_response.type == "deposit_evm" && sol_response.args.chainName != "solana") {
       const brianTransactionData = await brianService.getBrianTransactionData(message, address, chainId);
       return {
         text: brianTransactionData.message,
@@ -432,7 +435,7 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           content: command
         }]);
         response = await generateResponse(normalizedCommand, address, chainId);
-
+        console.log(response);
         if (response.type == "action" && response.brianData.type == "write") {
           if (response.brianData.action == 'transfer') {
             const data = response.brianData.data;
@@ -881,6 +884,67 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           } else {
             response = { text: `bridge ${response.args.amount} ${response.args.inputSymbol} on ${fromNetwork.id} to ${response.args.outputSymbol} on ${toNetwork.id}`, insufficient: 'Insufficient balance to perform the transaction.' };
           }
+        } else if (response.type == "deposit_evm") {
+          resetProcessStates();
+          console.log(response);
+          const fromNetwork = mapChainName2Network[response.args.chainName];
+
+          if (chainId != fromNetwork.chainId) {
+            await switchChain(fromNetwork.chainId);
+          }
+
+          const token = tokenBalances.find(item => item.symbol.toLowerCase() === response.args.inputSymbol.toLowerCase() && item.network?.id === fromNetwork.id);
+
+          if (token && token.balance > response.args.amount) {
+            
+            const toAddress = depositAddress(token.address, fromNetwork.chainId, response.args.protocolName);
+
+            if (toAddress) {
+              if (token.symbol == 'POL') {
+                setFromToken({
+                  symbol: token.symbol,
+                  name: token.name,
+                  address: mapChainId2NativeAddress[Number(token.chain)],
+                  chainId: Number(token.chain),
+                  decimals: token.decimals,
+                  logoURI: token.logo,
+                  priceUSD: token.usdPrice
+                });
+              } else {
+                setFromToken({
+                  symbol: token.symbol,
+                  name: token.name,
+                  address: token.address,
+                  chainId: Number(token.chain),
+                  decimals: token.decimals,
+                  logoURI: token.logo,
+                  priceUSD: token.usdPrice
+                });
+              }
+
+              setProtocol({
+                key: "",
+                logoURI: "",
+                name: response.args.protocolName,
+              });
+              setToToken({
+                symbol: '',
+                name: '',
+                address: toAddress,
+                chainId: Number(token.chain),
+                decimals: 0,
+                logoURI: '',
+                priceUSD: 0,
+              });
+
+              setFromAmount(response.args.amount);
+              setShowEVMDepositProcess(true);
+            } else {
+              response = { text: 'Missing mandatory parameter(s) in the prompt: address. Please rewrite the entire prompt.' }
+            }
+          } else {
+            response = { text: `deposit ${response.args.amount} ${response.args.inputSymbol} into ${response.args.protocolName} on ${fromNetwork.id}`, insufficient: 'Insufficient balance to perform the transaction.' };            
+          }
         }
 
         if (response) {
@@ -1121,6 +1185,12 @@ export default function AIAgentModal({ isOpen, widgetCommand, onClose }: AIAgent
           <EVMBridgeProcess steps={steps} receiver={receiver} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol} solver={solver}
             onClose={() => {
               setShowEVMBridgeProcess(false);
+              setMessages([]);
+            }} />
+        ) : showEVMDepositProcess && fromToken && toToken ? (
+          <EVMDepositProcess steps={steps} fromAmount={fromAmount} toToken={toToken} fromToken={fromToken} protocol={protocol}
+            onClose={() => {
+              setShowEVMDepositProcess(false);
               setMessages([]);
             }} />
         ) :

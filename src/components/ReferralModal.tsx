@@ -49,6 +49,7 @@ export const ReferralSettings: React.FC<ReferralSettingsProps> = ({ onSwitchToUs
       setCheckingUsername(false);
     }
   };
+  
   const fetchReferralStats = async () => {
     try {
       setLoading(true);

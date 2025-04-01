@@ -1,4 +1,4 @@
-export type WalletTab = 'assets' | 'defi';
+export type WalletTab = 'assets' | 'defi' | 'activity';
 
 
 
