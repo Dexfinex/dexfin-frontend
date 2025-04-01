@@ -196,7 +196,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const pkpWalletRef = useRef<PKPEthersWallet | null>(null);
     const hasGetSolanaWalletInfo = useRef(false);
 
-
     const {
         isConnected: isWagmiWalletConnected,
         address: connectedWalletAddress,

@@ -18,6 +18,7 @@ import { authService } from "../services/auth.service";
 import { useStore } from "../store/useStore";
 import SignUpMethods from "./auth/SignUpMethods";
 import { getReferralCodeFromStorage } from "./ReferralHandler";
+import {LOCAL_STORAGE_SIGNUP_FLAG} from "../constants";
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -93,6 +94,10 @@ const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
       setRegistrationError(null);
       setRegisteringUsername(false);
     }
+    if (isOpen)
+      localStorage.setItem(LOCAL_STORAGE_SIGNUP_FLAG, 'yes');
+    else
+      localStorage.removeItem(LOCAL_STORAGE_SIGNUP_FLAG);
   }, [isOpen]);
 
   useEffect(() => {

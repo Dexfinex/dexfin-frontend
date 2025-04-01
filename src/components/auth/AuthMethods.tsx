@@ -1,6 +1,6 @@
 import {Button, VStack,} from '@chakra-ui/react';
 import {Chrome, Mail, Wallet} from 'lucide-react';
-import { TbBrandDiscord as Discord } from "react-icons/tb";
+import {TbBrandDiscord as Discord} from "react-icons/tb";
 import {useContext} from "react";
 import {Web3AuthContext} from "../../providers/Web3AuthContext.tsx";
 
@@ -65,7 +65,7 @@ const AuthMethods = ({
                 >
                     Continue with email
                 </Button>
-{/*
+                {/*
                 <Button
                     w="full"
                     leftIcon={<Smartphone size={20}/>}
@@ -95,7 +95,7 @@ const AuthMethods = ({
                 >
                     Connect your web3 wallet
                 </Button>
-{/*
+                {/*
                 <Button
                     w="full"
                     leftIcon={<Bot size={20}/>}
