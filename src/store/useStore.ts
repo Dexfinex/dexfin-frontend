@@ -816,7 +816,7 @@ const useStore = create<StoreState>((set, get) => ({
       },
       {
         id: "flash-multiply",
-        name: "Trivia Master",
+        name: "Learn to Earn",
         description: "Play Trivia game",
         image:
           "https://api.dicebear.com/7.x/shapes/svg?seed=multiply&backgroundColor=f59e0b",
