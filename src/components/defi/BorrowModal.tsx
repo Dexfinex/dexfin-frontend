@@ -6,7 +6,7 @@ import { TokenChainIcon } from "../swap/components/TokenIcon";
 import { Web3AuthContext } from "../../providers/Web3AuthContext";
 import { Position } from "../../store/useDefiStore";
 import { mapChainId2NativeAddress } from "../../config/networks.ts";
-import { formatNumberByFrac } from "../../utils/common.util";
+import { compareStringUppercase, formatNumberByFrac } from "../../utils/common.util";
 
 import useGasEstimation from "../../hooks/useGasEstimation.ts";
 import useGetTokenPrices from '../../hooks/useGetTokenPrices';
@@ -44,13 +44,21 @@ interface BorrowModalProps {
 const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, modalState, setShowPreview, tokenAmount, confirming, setConfirming, borrowHandler, depositHandler, setTokenAmount, setBorrowingTokenAmount, borrowingTokenAmount }) => {
     const { getTokenBalance } = useTokenBalanceStore();
     const { getOfferingPoolByChainId } = useDefillamaStore();
+
     const { chainId: connectedChainId, switchChain, isChainSwitching } = useContext(Web3AuthContext)
+
     const [chainId, setChainId] = useState(modalState?.supportedChains ? modalState?.supportedChains[0] : connectedChainId)
+
     const poolInfo = getOfferingPoolByChainId(Number(chainId), modalState.position?.protocol_id || "", modalState.apyToken || "");
+
     const { isLoading: isGasEstimationLoading, data: gasData } = useGasEstimation();
+
     const borrowTokenInfo = BORROWING_LIST.find((token) => {
-        return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[1].symbol
+        return token.chainId === Number(chainId)
+            && compareStringUppercase(token.protocol_id, modalState.position?.protocol_id || "")
+            && compareStringUppercase(token.tokenOut.symbol, modalState?.position?.tokens[1].symbol || "")
     });
+
     const tokenInBalance = borrowTokenInfo?.tokenIn ? getTokenBalance(borrowTokenInfo?.tokenIn?.contract_address || "", Number(chainId)) : null;
     const tokenInInfo = borrowTokenInfo?.tokenIn ? borrowTokenInfo?.tokenIn : null;
     const tokenOutBalance = borrowTokenInfo?.tokenOut ? getTokenBalance(borrowTokenInfo?.tokenOut?.contract_address || "", Number(chainId)) : null;
@@ -347,7 +355,7 @@ const BorrowModal: React.FC<BorrowModalProps> = ({ setModalState, showPreview, m
                                         <div className='items-center flex'>
                                             <TokenChainIcon src={tokenOutInfo?.logo || ""} alt={tokenOutInfo?.symbol || ""} size={"md"} chainId={Number(chainId)} />
                                             <span className='ml-2 text-sm text-white/60'>
-                                                {`${availableBorrowAmount}${tokenOutInfo?.symbol}`}
+                                                {`${availableBorrowAmount} ${tokenOutInfo?.symbol}`}
                                             </span>
                                         </div>
                                     </div>
