@@ -1,12 +1,25 @@
+import { useEffect, useRef } from "react";
 import { CheckCircle2 } from 'lucide-react';
 import { Link } from '@chakra-ui/react';
-
+import { useWalletBalance } from '../../../hooks/useBalance';
 interface SuccessModalProps {
   onClose: () => void;
   description: string;
   scan: string;
 }
+
 export const SuccessModal: React.FC<SuccessModalProps> = ({ onClose, description, scan }) => {
+
+  const { refetch: refetchWalletBalance } = useWalletBalance();
+  const hasRefetched = useRef(false);
+
+  useEffect(() => {
+    if (!hasRefetched.current) {
+      refetchWalletBalance();
+      hasRefetched.current = true;
+    }
+  }, [refetchWalletBalance]);
+
   return (
     <>
       <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-6">
