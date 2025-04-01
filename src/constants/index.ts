@@ -12,7 +12,7 @@ export const LOCAL_STORAGE_BRIDGE_RECENT_WALLETS = 'LOCAL_STORAGE_BRIDGE_RECENT_
 export const LOCAL_STORAGE_PUSH_KEY = 'PgpPK'
 export const LOCAL_STORAGE_LAST_CHAT_USER = 'LOCAL_STORAGE_LAST_CHAT_USER'
 export const LOCAL_STORAGE_RECENT_ADDRESSES = 'recentSendAddresses'
-
+export const AUTH_TOKEN_KEY = "auth_token";
 export const LIT_SESSION_UPDATE_INTERVAL = 580 * 1000
 
 export const mapRpcUrls: Record<number, string> = {
