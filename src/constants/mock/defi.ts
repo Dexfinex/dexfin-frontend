@@ -51,7 +51,11 @@ export const ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN: Record<number, Record<string,
             {
                 "token": "aEthUSDT,USDT",
                 "type": "Supplied"
-            }
+            },
+            {
+                "token": "variableDebtEthUSDC,USDC",
+                "type": "Borrowed"
+            },
         ],
     },
     8453: {
@@ -71,7 +75,11 @@ export const ALLOWED_PROTOCOL_TOKEN_PAIR_BY_CHAIN: Record<number, Record<string,
             {
                 "token": "aBasUSDT,USDT",
                 "type": "Supplied"
-            }
+            },
+            {
+                "token": "variableDebtBasUSDC,USDC",
+                "type": "Borrowed"
+            },
         ],
     },
 }
@@ -159,39 +167,77 @@ export const BORROWING_LIST = [
         },
         "borrowContract": {
             "contract_address": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
-            "abi": `[{
-                "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "asset",
-                    "type": "address"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "amount",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "interestRateMode",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint16",
-                    "name": "referralCode",
-                    "type": "uint16"
-                },
-                {
-                    "internalType": "address",
-                    "name": "onBehalfOf",
-                    "type": "address"
-                }
-                ],
-                "name": "borrow",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            }]`
+            "abi": `
+                [
+                    {
+                        "inputs": [
+                            {
+                                "internalType": "address",
+                                "name": "asset",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "interestRateMode",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint16",
+                                "name": "referralCode",
+                                "type": "uint16"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "onBehalfOf",
+                                "type": "address"
+                            }
+                        ],
+                        "name": "borrow",
+                        "outputs": [],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [
+                            {
+                                "internalType": "address",
+                                "name": "asset",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "interestRateMode",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "onBehalfOf",
+                                "type": "address"
+                            }
+                        ],
+                        "name": "repay",
+                        "outputs": [
+                            {
+                                "internalType": "uint256",
+                                "name": "",
+                                "type": "uint256"
+                            }
+                        ],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    }
+                ]
+            `
         },
         "tokenOut": {
             "token_type": "erc20",
@@ -228,39 +274,77 @@ export const BORROWING_LIST = [
         },
         "borrowContract": {
             "contract_address": "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
-            "abi": `[{
-                "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "asset",
-                    "type": "address"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "amount",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "interestRateMode",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint16",
-                    "name": "referralCode",
-                    "type": "uint16"
-                },
-                {
-                    "internalType": "address",
-                    "name": "onBehalfOf",
-                    "type": "address"
-                }
-                ],
-                "name": "borrow",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            }]`
+            "abi": `
+                [
+                    {
+                        "inputs": [
+                            {
+                                "internalType": "address",
+                                "name": "asset",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "interestRateMode",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint16",
+                                "name": "referralCode",
+                                "type": "uint16"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "onBehalfOf",
+                                "type": "address"
+                            }
+                        ],
+                        "name": "borrow",
+                        "outputs": [],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [
+                            {
+                                "internalType": "address",
+                                "name": "asset",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "interestRateMode",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "onBehalfOf",
+                                "type": "address"
+                            }
+                        ],
+                        "name": "repay",
+                        "outputs": [
+                            {
+                                "internalType": "uint256",
+                                "name": "",
+                                "type": "uint256"
+                            }
+                        ],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    }
+                ]
+            `
         },
         "tokenOut": {
             "token_type": "erc20",
