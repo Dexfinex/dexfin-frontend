@@ -7,6 +7,7 @@ import LoginMethods from "./auth/LoginMethods";
 import CreateAccount from "./auth/CreateAccount";
 import {Web3AuthContext} from "../providers/Web3AuthContext";
 import {getReferralCodeFromStorage} from './ReferralHandler';
+import {LOCAL_STORAGE_SIGNUP_FLAG} from "../constants";
 
 interface SigninModalProps {
   isOpen: boolean;
@@ -45,6 +46,12 @@ const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
       fetchAccounts(authMethod);
     }
   }, [authMethod, fetchAccounts]);
+
+  useEffect(() => {
+    if (isOpen) {
+      localStorage.removeItem(LOCAL_STORAGE_SIGNUP_FLAG);
+    }
+  }, [isOpen])
 
   useEffect(() => {
     // If user is authenticated and has selected an account, initialize session

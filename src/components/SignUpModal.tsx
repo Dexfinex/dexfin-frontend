@@ -96,8 +96,6 @@ const SignUpModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
     }
     if (isOpen)
       localStorage.setItem(LOCAL_STORAGE_SIGNUP_FLAG, 'yes');
-    else
-      localStorage.removeItem(LOCAL_STORAGE_SIGNUP_FLAG);
   }, [isOpen]);
 
   useEffect(() => {
