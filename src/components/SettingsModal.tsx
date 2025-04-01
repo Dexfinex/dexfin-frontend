@@ -103,7 +103,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
           </div>
 
           {/* Main content - scrollable container with fixed height */}
-          <div className="flex-1 p-6 overflow-y-auto h-[calc(800px-65px)] w-full">
+          <div className="flex-1 p-6 overflow-y-auto  w-full">
             {activeTab === 'widgets' && (
               <>
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
