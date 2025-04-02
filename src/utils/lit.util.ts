@@ -39,23 +39,10 @@ const litRelay = new LitRelay({
 });
 
 /**
- * Validate provider
- */
-export function isSocialLoginSupported(provider: string): boolean {
-    return ['google', 'discord'].includes(provider);
-}
-
-/**
  * Redirect to Lit login
  */
 export async function signInWithGoogle(redirectUri: string): Promise<void> {
     const googleProvider = new GoogleProvider({relay: litRelay, litNodeClient, redirectUri});
-    /*
-      const googleProvider = litAuthClient.initProvider<GoogleProvider>(
-        PROVIDER_TYPE.Google,
-        { redirectUri }
-      );
-    */
     await googleProvider.signIn((loginUrl) => {
         window.location.href = loginUrl.replace('https://login.litgateway.com', 'https://defi-os-lit-login-server-production.up.railway.app');
     });
@@ -68,12 +55,6 @@ export async function authenticateWithGoogle(
     redirectUri: string
 ): Promise<ExAuthType | undefined> {
     const googleProvider = new GoogleProvider({relay: litRelay, litNodeClient, redirectUri});
-    /*
-      const googleProvider = litAuthClient.initProvider<GoogleProvider>(
-        PROVIDER_TYPE.Google,
-        { redirectUri }
-      );
-    */
     return await googleProvider.authenticate();
 }
 
@@ -94,12 +75,6 @@ export async function authenticateWithDiscord(
     redirectUri: string
 ): Promise<ExAuthType | undefined> {
     const discordProvider = new DiscordProvider({relay: litRelay, litNodeClient, redirectUri});
-    /*
-      const discordProvider = litAuthClient.initProvider<DiscordProvider>(
-        PROVIDER_TYPE.Discord,
-        { redirectUri }
-      );
-    */
     return await discordProvider.authenticate();
 }
 
@@ -113,15 +88,6 @@ export async function authenticateWithEthWallet(
     const ethWalletProvider = new EthWalletProvider({
         relay: litRelay, litNodeClient, domain: DOMAIN, origin: ORIGIN,
     });
-    /*
-        const ethWalletProvider = litAuthClient.initProvider<EthWalletProvider>(
-            PROVIDER_TYPE.EthWallet,
-            {
-                domain: DOMAIN,
-                origin: ORIGIN,
-            }
-        );
-    */
     return await ethWalletProvider.authenticate({
         address,
         signMessage,
@@ -133,13 +99,6 @@ export async function authenticateWithEthWallet(
  */
 export async function registerWebAuthn(): Promise<IRelayPKP> {
     const provider = new WebAuthnProvider({relay: litRelay, litNodeClient});
-    /*
-        const provider = litAuthClient.initProvider<WebAuthnProvider>(
-            PROVIDER_TYPE.WebAuthn
-        );
-    */
-    // Register new WebAuthn credential
-
     const options = await provider.register();
 
     // Verify registration and mint PKP through relay server
@@ -162,14 +121,6 @@ export async function authenticateWithWebAuthn(): Promise<
     ExAuthType | undefined
 > {
     const provider = new WebAuthnProvider({relay: litRelay, litNodeClient});
-    /*
-        let provider = litAuthClient.getProvider(PROVIDER_TYPE.WebAuthn);
-        if (!provider) {
-            provider = litAuthClient.initProvider<WebAuthnProvider>(
-                PROVIDER_TYPE.WebAuthn
-            );
-        }
-    */
     return await provider.authenticate();
 }
 
@@ -187,21 +138,11 @@ export async function authenticateWithStytch(
             appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
             userId: userId,
         })
-        /*
-                provider = litAuthClient.initProvider(PROVIDER_TYPE.StytchEmailFactorOtp, {
-                    appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
-                });
-        */
     } else {
         provider = new StytchOtpProvider({relay: litRelay, litNodeClient,}, {
             appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
             userId: userId,
         })
-        /*
-                provider = litAuthClient.initProvider(PROVIDER_TYPE.StytchSmsFactorOtp, {
-                    appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
-                });
-        */
     }
 
     return await provider?.authenticate({accessToken, userId});
@@ -339,43 +280,6 @@ function getProviderByAuthMethod(authMethod: ExAuthType) {
             return;
     }
 }
-
-/*
-export function initProviderByMethod(authMethod: ExAuthType) {
-    switch (authMethod.authMethodType) {
-        case AUTH_METHOD_TYPE.GoogleJwt:
-            litAuthClient.initProvider<GoogleProvider>(
-                PROVIDER_TYPE.Google,
-                {redirectUri: ORIGIN}
-            );
-            break;
-        case AUTH_METHOD_TYPE.Discord:
-            litAuthClient.initProvider<DiscordProvider>(
-                PROVIDER_TYPE.Discord,
-                {redirectUri: ORIGIN}
-            );
-            break;
-        case AUTH_METHOD_TYPE.WebAuthn:
-            litAuthClient.initProvider<WebAuthnProvider>(
-                PROVIDER_TYPE.WebAuthn
-            )
-            break;
-        case AUTH_METHOD_TYPE.StytchEmailFactorOtp:
-            litAuthClient.initProvider(PROVIDER_TYPE.StytchEmailFactorOtp, {
-                appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
-            })
-            break;
-        case AUTH_METHOD_TYPE.StytchSmsFactorOtp:
-            litAuthClient.initProvider(PROVIDER_TYPE.StytchSmsFactorOtp, {
-                appId: import.meta.env.VITE_STYTCH_PROJECT_ID,
-            })
-            break;
-        default:
-            break;
-    }
-}
-*/
-
 
 export const getWrappedKeyMetaDataList = async (sessionSigs: SessionSigs): Promise<StoredKeyMetadata[] | null> => {
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

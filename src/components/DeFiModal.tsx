@@ -21,6 +21,7 @@ import { OfferingList } from './defi/OfferlingList.tsx';
 import GlobalMetric from './defi/GlobalMetric.tsx';
 import RedeemModal from './defi/RedeemModal.tsx';
 import WithdrawModal from './defi/WithdrawModal.tsx';
+import RepayModal from './defi/RepayModal.tsx';
 import DepositModal from './defi/DepositModal.tsx';
 import StakeModal from './defi/StakeModal.tsx';
 import BorrowModal from './defi/BorrowModal.tsx';
@@ -28,6 +29,7 @@ import UnStakeModal from './defi/UnStakeModal.tsx';
 import LendModal from './defi/LendModal.tsx';
 
 import { compareStringUppercase } from '../utils/common.util.ts';
+import { getTokenOutAmountByPercent } from '../utils/token.util.ts';
 
 interface DeFiModalProps {
   isOpen: boolean;
@@ -318,57 +320,62 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
 
   const borrowHandler = async () => {
     if (signer && Number(tokenAmount) > 0) {
-      setConfirming("Borrowing...");
-      const borrowTokenInfo = BORROWING_LIST.find((token) => {
-        return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[1].symbol
-      });
-      if (borrowTokenInfo?.borrowContract?.abi) {
-        const borrowContract = new ethers.Contract(borrowTokenInfo?.borrowContract?.contract_address || "", borrowTokenInfo?.borrowContract?.abi, signer);
-        const tokenContract = new ethers.Contract(
-          borrowTokenInfo?.tokenOut.contract_address,
-          erc20Abi,
-          signer
-        );
-        const decimals = await tokenContract.decimals();
-        const amountValue = Number(ethers.utils.parseUnits(
-          Number(borrowingTokenAmount).toFixed(8).replace(/\.?0+$/, ""),
-          decimals
-        ));
-        const tx = {
-          to: borrowTokenInfo?.borrowContract?.contract_address,
-          data: borrowContract.interface.encodeFunctionData("borrow", [
-            borrowTokenInfo?.tokenOut.contract_address, amountValue, 2, 0, address
-          ]),
-          // gasPrice: ethers.parseUnits('10', 'gwei'),
-          gasPrice: gasData.gasPrice,
-          gasLimit: Number(gasData.gasLimit) * 2, // Example static gas limit
-          value: 0n,
-        };
-
-        const transactionResponse = await signer?.sendTransaction(tx);
-        const receipt = await transactionResponse.wait().catch(() => {
-          setConfirming("");
-          throw Error("transaction error");
+      try {
+        setConfirming("Borrowing...");
+        const borrowTokenInfo = BORROWING_LIST.find((token) => {
+          return token.chainId === Number(chainId) && token.protocol === modalState.position?.protocol && token.tokenOut.symbol === modalState?.position.tokens[1].symbol
         });
+        if (borrowTokenInfo?.borrowContract?.abi) {
+          const borrowContract = new ethers.Contract(borrowTokenInfo?.borrowContract?.contract_address || "", borrowTokenInfo?.borrowContract?.abi, signer);
+          const tokenContract = new ethers.Contract(
+            borrowTokenInfo?.tokenOut.contract_address,
+            erc20Abi,
+            signer
+          );
+          const decimals = await tokenContract.decimals();
+          const amountValue = Number(ethers.utils.parseUnits(
+            Number(borrowingTokenAmount).toFixed(8).replace(/\.?0+$/, ""),
+            decimals
+          ));
+          const tx = {
+            to: borrowTokenInfo?.borrowContract?.contract_address,
+            data: borrowContract.interface.encodeFunctionData("borrow", [
+              borrowTokenInfo?.tokenOut.contract_address, amountValue, 2, 0, address
+            ]),
+            // gasPrice: ethers.parseUnits('10', 'gwei'),
+            gasPrice: gasData.gasPrice,
+            gasLimit: Number(gasData.gasLimit) * 2, // Example static gas limit
+            value: 0n,
+          };
 
-        setHash(receipt.transactionHash);
-        setTxModalOpen(true);
-        await refetchDefiPositionByWallet();
-        await refetchDefiProtocolByWallet();
+          const transactionResponse = await signer?.sendTransaction(tx);
+          const receipt = await transactionResponse.wait().catch(() => {
+            setConfirming("");
+            throw Error("transaction error");
+          });
 
-        setTokenAmount("");
-        setToken2Amount("");
+          setHash(receipt.transactionHash);
+          setTxModalOpen(true);
+          await refetchDefiPositionByWallet();
+          await refetchDefiProtocolByWallet();
 
-        setBorrowingTokenAmount("");
+          setTokenAmount("");
+          setToken2Amount("");
 
-        setShowPreview(false);
-        setModalState({ type: null });
-        setSelectedTab('overview');
+          setBorrowingTokenAmount("");
+
+          setShowPreview(false);
+          setModalState({ type: null });
+          setSelectedTab('overview');
+          setConfirming("");
+
+        } else {
+          setConfirming("");
+          throw Error("borrow token contract error")
+        }
+      } catch (e) {
+        console.error(e);
         setConfirming("");
-
-      } else {
-        setConfirming("");
-        throw Error("borrow token contract error")
       }
     }
   }
@@ -481,6 +488,60 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
         setConfirming("");
       }
     })
+  }
+
+  const repayHandler = async () => {
+    if (!signer) return;
+
+    setConfirming("Repaying...");
+
+    try {
+      const protocolId = modalState.position?.protocol_id?.toLowerCase() || "";
+
+      const borrowTokenInfo = BORROWING_LIST.find((token) => {
+        return token.chainId === Number(chainId)
+          && compareStringUppercase(token?.protocol_id, protocolId)
+          && compareStringUppercase(token.tokenOut.symbol, modalState?.position?.tokens[1].symbol || "");
+      });
+
+      if (borrowTokenInfo?.borrowContract?.abi) {
+        const borrowContract = new ethers.Contract(borrowTokenInfo?.borrowContract?.contract_address || "", borrowTokenInfo?.borrowContract?.abi, signer);
+
+        const amountValue = await getTokenOutAmountByPercent(Number(withdrawPercent), address, borrowTokenInfo?.tokenOut.contract_address, signer);
+        const tx = {
+          to: borrowTokenInfo?.borrowContract?.contract_address,
+          data: borrowContract.interface.encodeFunctionData("repay", [
+            borrowTokenInfo?.tokenOut.contract_address, amountValue, 2, address
+          ]),
+          // gasPrice: ethers.parseUnits('10', 'gwei'),
+          gasPrice: gasData.gasPrice,
+          gasLimit: Number(gasData.gasLimit) * 2, // Example static gas limit
+          value: 0n,
+        };
+
+        const transactionResponse = await signer?.sendTransaction(tx);
+        const receipt = await transactionResponse.wait();
+
+        setHash(receipt.transactionHash);
+        setTxModalOpen(true);
+        await refetchDefiPositionByWallet();
+        await refetchDefiProtocolByWallet();
+
+        setWithdrawPercent("");
+
+        setShowPreview(false);
+        setModalState({ type: null });
+        setSelectedTab('overview');
+        setConfirming("");
+
+      } else {
+        setConfirming("");
+        throw Error("borrow token contract error")
+      }
+    } catch (e) {
+      setConfirming("");
+      throw Error("transaction error");
+    }
   }
 
   if (!isOpen) return null;
@@ -662,6 +723,17 @@ export const DeFiModal: React.FC<DeFiModalProps> = ({ isOpen, onClose }) => {
           token2Amount={token2Amount}
           confirming={confirming}
           redeemHandler={redeemHandler}
+        />
+      )}
+
+      {modalState?.type === 'repay' && modalState.position && (
+        <RepayModal
+          setModalState={setModalState}
+          modalState={modalState}
+          withdrawPercent={withdrawPercent}
+          setWithdrawPercent={setWithdrawPercent}
+          confirming={confirming}
+          repayHandler={repayHandler}
         />
       )}
     </div>
