@@ -11,11 +11,13 @@ import useAuthenticate from "../hooks/auth/useAuthenticate";
 import useAccounts from "../hooks/auth/useAccounts";
 import useSession from "../hooks/auth/useSession";
 import { AuthMethod, ILitNodeClient, IRelayPKP, SessionSigs } from "@lit-protocol/types";
+import {LOCAL_STORAGE_KEYS} from "@lit-protocol/constants";
 import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { ExternalProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/providers";
 import { Connector, useAccount, useSwitchChain } from "wagmi";
 import useLocalStorage from "../hooks/useLocalStorage";
 import {
+    AUTH_TOKEN_KEY,
     LOCAL_STORAGE_AUTH_REDIRECT_TYPE,
     LOCAL_STORAGE_WALLET_INFO,
     mapBundlerUrls,
@@ -245,6 +247,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         loading: sessionLoading,
         error: sessionError,
         setError: setSessionError,
+        setSessionSigs,
     } = useSession();
 
     // console.log("authMethod", authMethod)
@@ -495,7 +498,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [currentAccount, initSessionUnSafe, sessionSigs, setAuthMethod, setCurrentAccount, storedWalletInfo])
 
     useEffect(() => {
-        const AUTH_TOKEN_KEY = "auth_token";
         if (currentAccount && sessionSigs && !solanaWalletInfo) {
             if (hasGetSolanaWalletInfo.current)
                 return
@@ -521,6 +523,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSolanaWalletInfo(undefined)
         setCurrentAccount(undefined)
         setAuthMethod(undefined)
+        setSessionSigs(undefined)
         setIsConnected(false)
         setChainId(undefined)
         setWalletClient(undefined)
@@ -528,6 +531,13 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         hasGetSolanaWalletInfo.current = false
         pkpWalletRef.current = null
         localStorage.removeItem(AUTH_TOKEN_KEY);
+
+        // remove lit storage keys
+        localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_SIGNATURE);
+        localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_SOL_SIGNATURE);
+        localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_COSMOS_SIGNATURE);
+        localStorage.removeItem(LOCAL_STORAGE_KEYS.WEB3_PROVIDER);
+        localStorage.removeItem(LOCAL_STORAGE_KEYS.WALLET_SIGNATURE);
 
         setWalletType(WalletTypeEnum.UNKNOWN)
         delete axios.defaults.headers.common['Authorization'];
@@ -675,7 +685,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = async () => {
         if (connector) { // disconnect connector
             await connector.disconnect()
-        } else if (isConnected) {
+        }
+        if (isConnected) {
             initializeAllVariables()
         }
     }

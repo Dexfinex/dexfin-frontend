@@ -14,7 +14,7 @@ export default function CreateAccount({ signUp, error }: CreateAccountProp) {
         <VStack spacing={3}>
           <Text fontSize="2xl" fontWeight="bold" textAlign={'left'} w="full">New To Dexfin?</Text>
           <Text color="whiteAlpha.800">
-            There doesn&apos;t seem to be a Lit wallet associated with your
+            There doesn&apos;t seem to be a Dexfin wallet associated with your
             credentials. Create one today.
           </Text>
           <VStack spacing={4} w="full">

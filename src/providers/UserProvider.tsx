@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {createContext, useContext, useEffect, useRef, useState} from "react";
 import { useAccount } from "wagmi";
 import { type SolanaWalletInfoType } from "../types/auth.type";
 import { authService } from "../services/auth.service";
@@ -7,6 +7,8 @@ import { useStore } from "../store/useStore.ts";
 import { setAuthToken } from "../services/api.service";
 import { WalletTypeEnum } from "../types/wallet.type.ts";
 import { clearReferralCode, getReferralCodeFromStorage } from '../components/ReferralHandler.tsx';
+import {useToast} from "@chakra-ui/react";
+import {LOCAL_STORAGE_SIGNUP_FLAG} from "../constants";
 
 interface UserContextType {
   userData: {
@@ -36,7 +38,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [error, setError] = useState<Error | null>(null);
   const [isNewRegistration, setIsNewRegistration] = useState(false);
   const [authenticatedWallets, setAuthenticatedWallets] = useState<Set<string>>(new Set());
-
+  const toast = useToast()
+  const hasPassedAuthCall = useRef(false);
   const { address: wagmiAddress, isConnected: isWagmiWalletConnected } =
     useAccount();
   const {
@@ -45,15 +48,30 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     address: kernelAddress,
     walletType,
     isConnected,
+<<<<<<< HEAD
     requires2FA,
     pending2FAUserId,
+=======
+    logout,
+>>>>>>> dev
   } = useContext(Web3AuthContext);
+
+  useEffect(() => {
+    if (!isConnected) {
+      hasPassedAuthCall.current = false
+    }
+  }, [isConnected])
+
 
   const handleWalletAuth = async (
     walletType: WalletTypeEnum,
     evmAddress?: string,
     solAddress?: string
   ) => {
+    if (hasPassedAuthCall.current || walletType === WalletTypeEnum.UNKNOWN)
+      return
+
+    hasPassedAuthCall.current = true
     // Skip if already authenticated with this wallet
     if (evmAddress && authenticatedWallets.has(evmAddress.toLowerCase())) {
       console.log("Wallet already authenticated:", evmAddress);
@@ -109,7 +127,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (loginError) {
         console.log("Login failed, attempting registration...", loginError);
       }
+      // ------------- for invite only mode ------------
+      if (!localStorage.getItem(LOCAL_STORAGE_SIGNUP_FLAG)) { // this is not for sign up
+        logout()
+        toast({
+          status: 'info',
+          description: `Please signup before you connect your wallet`,
+          duration: 3500
+        })
+        return
+      }
 
+      // ------------- end of invite only mode ------------
+      localStorage.removeItem(LOCAL_STORAGE_SIGNUP_FLAG)
       // If login fails, attempt registration
       authResponse = await authService.register(
         walletType,

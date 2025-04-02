@@ -82,6 +82,8 @@ export const getAddActionName = ({ type }: { type: string }) => {
             return "lend";
         case "borrowing":
             return "borrow";
+        case "borrowed":
+            return "borrow";
         case "lending":
             return "lend";
         default:
@@ -97,6 +99,8 @@ export const getRemoveActionName = ({ type }: { type: string }) => {
             return "redeem";
         case "supplied":
             return "withdraw";
+        case "borrowed":
+            return "repay";
         default:
             return "";
     }
