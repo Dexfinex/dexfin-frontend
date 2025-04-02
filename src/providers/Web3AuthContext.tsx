@@ -62,6 +62,8 @@ import axios from "axios";
 import { NATIVE_MINT } from "../constants/solana.constants.ts";
 import { solToWSol } from "../utils/solana.util.ts";
 import { WalletTypeEnum } from "../types/wallet.type.ts";
+import { setAuthToken } from "../services/api.service";
+import { authService } from "../services/auth.service";
 
 interface Web3AuthContextType {
     login: () => void;
@@ -104,6 +106,10 @@ interface Web3AuthContextType {
     getWalletType: () => WalletTypeEnum,
     walletType: WalletTypeEnum,
     isPreparingAccounts: boolean,
+    requires2FA: boolean;
+    pending2FAUserId: string | null;
+    complete2FAAuthentication: (code: string) => Promise<boolean>;
+    cancel2FAAuthentication: () => void;
 }
 
 
@@ -168,6 +174,10 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     getWalletType: () => WalletTypeEnum.UNKNOWN,
     walletType: WalletTypeEnum.UNKNOWN,
     isPreparingAccounts: false,
+    requires2FA: false,
+    pending2FAUserId: null,
+    complete2FAAuthentication: async () => false,
+    cancel2FAAuthentication: () => {},
 };
 
 export const Web3AuthContext = createContext<Web3AuthContextType>(defaultWeb3AuthContextValue);
@@ -194,7 +204,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const pkpWalletRef = useRef<PKPEthersWallet | null>(null);
     const hasGetSolanaWalletInfo = useRef(false);
     const AUTH_TOKEN_KEY = "auth_token";
-
+    const [requires2FA, setRequires2FA] = useState(false);
+    const [pending2FAUserId, setPending2FAUserId] = useState<string | null>(null);
 
     const {
         isConnected: isWagmiWalletConnected,
@@ -689,6 +700,35 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }
 
+    const complete2FAAuthentication = async (code: string): Promise<boolean> => {
+        if (!pending2FAUserId) return false;
+        
+        try {
+          const response = await authService.completeTwoFactorLogin(pending2FAUserId, code);
+          
+          if (response && response.accessToken) {
+            setRequires2FA(false);
+            setPending2FAUserId(null);
+
+            setAuthToken(response.accessToken);
+            localStorage.setItem(AUTH_TOKEN_KEY, "true");
+            setIsConnected(true);
+            
+            return true;
+          }
+          
+          return false;
+        } catch (error) {
+          console.error("2FA authentication error:", error);
+          return false;
+        }
+    };
+      
+    const cancel2FAAuthentication = () => {
+    setRequires2FA(false);
+    setPending2FAUserId(null);
+    };
+
     const value = {
         login,
         logout,
@@ -738,6 +778,10 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isPreparingAccounts,
         getWalletType,
         walletType,
+        requires2FA,
+        pending2FAUserId,
+        complete2FAAuthentication,
+        cancel2FAAuthentication,
     }
 
     return (

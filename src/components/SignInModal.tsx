@@ -1,12 +1,13 @@
-import React, {useContext, useEffect, useState} from "react";
-import {ChevronRight, LogIn, X,} from "lucide-react";
-import {Modal, ModalContent, ModalOverlay} from "@chakra-ui/react";
-import {AuthAlert} from "./AuthAlert.tsx";
+import React, { useContext, useEffect, useState } from "react";
+import { ChevronRight, LogIn, X } from "lucide-react";
+import { Modal, ModalContent, ModalOverlay } from "@chakra-ui/react";
+import { AuthAlert } from "./AuthAlert.tsx";
 import Loading from "./auth/Loading";
 import LoginMethods from "./auth/LoginMethods";
 import CreateAccount from "./auth/CreateAccount";
-import {Web3AuthContext} from "../providers/Web3AuthContext";
-import {getReferralCodeFromStorage} from './ReferralHandler';
+import { Web3AuthContext } from "../providers/Web3AuthContext";
+import { getReferralCodeFromStorage } from "./ReferralHandler";
+import TwoFactorAuthModal from "./TwoFactorAuthModal";
 
 interface SigninModalProps {
   isOpen: boolean;
@@ -14,7 +15,11 @@ interface SigninModalProps {
   goToSignUp: () => void;
 }
 
-const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }) => {
+const SignInModal: React.FC<SigninModalProps> = ({
+  isOpen,
+  onClose,
+  goToSignUp,
+}) => {
   const [hasReferral, setHasReferral] = useState(false);
 
   const {
@@ -35,6 +40,8 @@ const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
     handleGoogleLogin,
     handleDiscordLogin,
     isPreparingAccounts,
+    requires2FA,
+    pending2FAUserId,
   } = useContext(Web3AuthContext);
 
   const error = authError || accountsError || sessionError;
@@ -60,7 +67,9 @@ const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
 
   const renderContent = () => {
     if (authLoading) {
-      return <Loading copy="Authenticating your credentials..." error={error} />;
+      return (
+        <Loading copy="Authenticating your credentials..." error={error} />
+      );
     }
 
     if (accountsLoading) {
@@ -104,9 +113,7 @@ const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
         </div>
 
         <div className="mt-6 text-center">
-          <p className="text-white/60 mb-3">
-            Don't have an account yet?
-          </p>
+          <p className="text-white/60 mb-3">Don't have an account yet?</p>
           <button
             onClick={goToSignUp}
             className="py-3 px-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors font-medium flex items-center justify-center gap-2 mx-auto"
@@ -120,37 +127,44 @@ const SignInModal: React.FC<SigninModalProps> = ({ isOpen, onClose, goToSignUp }
   };
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      isCentered={true}
-      motionPreset="slideInBottom"
-      size="md"
-    >
-      <ModalOverlay 
-        backdropFilter="blur(8px)" 
-        backgroundColor="rgba(0, 0, 0, 0.75)" 
-      />
-      <ModalContent
-        bg="rgba(0, 0, 0, 0.95)"
-        color="white"
-        borderRadius="xl"
-        p={6}
-        maxW="450px"
-        mx={4}
-        boxShadow="0 4px 30px rgba(0, 0, 0, 0.3)"
-        border="1px solid rgba(255, 255, 255, 0.1)"
+    <>
+      <Modal
+        isOpen={isOpen && !requires2FA}
+        onClose={onClose}
+        isCentered={true}
+        motionPreset="slideInBottom"
+        size="md"
       >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
+        <ModalOverlay
+          backdropFilter="blur(8px)"
+          backgroundColor="rgba(0, 0, 0, 0.75)"
+        />
+        <ModalContent
+          bg="rgba(0, 0, 0, 0.95)"
+          color="white"
+          borderRadius="xl"
+          p={6}
+          maxW="450px"
+          mx={4}
+          boxShadow="0 4px 30px rgba(0, 0, 0, 0.3)"
+          border="1px solid rgba(255, 255, 255, 0.1)"
         >
-          <X className="w-5 h-5" />
-        </button>
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-        {renderContent()}
-      </ModalContent>
-    </Modal>
+          {renderContent()}
+        </ModalContent>
+      </Modal>
+
+      {/* Show 2FA modal when required */}
+      {requires2FA && pending2FAUserId && (
+        <TwoFactorAuthModal isOpen={requires2FA} onClose={onClose} />
+      )}
+    </>
   );
 };
 

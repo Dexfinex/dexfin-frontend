@@ -45,6 +45,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     address: kernelAddress,
     walletType,
     isConnected,
+    requires2FA,
+    pending2FAUserId,
   } = useContext(Web3AuthContext);
 
   const handleWalletAuth = async (
@@ -69,8 +71,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
       let authResponse;
       try {
-        // Attempt login first
         authResponse = await authService.login(evmAddress || "");
+        
+        if (authResponse?.requiresTwoFactor) {
+          useStore.getState().setIsSigninModalOpen(true);
+          return;
+        }
+        
         if (authResponse?.accessToken) {
           console.log("Login successful");
           setAuthToken(authResponse.accessToken);
@@ -206,6 +213,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       initializeAllVariables();
     }
   }, [isConnected]);
+
+  // Monitor 2FA status changes
+  useEffect(() => {
+    if (requires2FA && pending2FAUserId) {
+      // Open the sign-in modal when 2FA is required
+      useStore.getState().setIsSigninModalOpen(true);
+    }
+  }, [requires2FA, pending2FAUserId]);
 
   const value = {
     userData,

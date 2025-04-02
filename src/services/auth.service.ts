@@ -30,6 +30,26 @@ export const authService = {
     }
   },
 
+  completeTwoFactorLogin: async (userId: string, token: string) => {
+    try {
+      const response = await userAuthApi.post("/gauth/login-verify", {
+        userId,
+        token
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      console.error("Error verifying 2FA:", error);
+      
+      const errorMessage = 
+        error.response?.data?.message || "Failed to verify 2FA code";
+        
+      const enhancedError = new Error(errorMessage) as EnhancedError;
+      enhancedError.original = error;
+      throw enhancedError;
+    }
+  },
+
   checkCode: async (code: string) => {
     try {
       if (!code) {
