@@ -6,6 +6,7 @@ import useTokenStore from "../../../../store/useTokenStore.ts";
 import { convertCryptoAmount } from '../../../../utils/agent.util.tsx';
 import { formatNumberByFrac } from '../../../../utils/common.util.ts';
 import { useBrianTransactionMutation } from '../../../../hooks/useBrianTransaction.ts';
+import { getBridgingSpendTime, getUSDAmount } from "../../../../utils/swap.util.ts";
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 import { TokenChainIcon } from '../../../swap/components/TokenIcon.tsx';
@@ -164,15 +165,20 @@ export const EVMBridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmou
   const {
     fromTokenPrice,
     toTokenPrice,
+    additionalAmountString,
   } = useMemo(() => {
     const fromTokenPrice = fromToken ? getTokenPrice(fromToken?.address, fromToken?.chainId) : 0
+    const fromUsdAmount = fromToken ? getUSDAmount(fromToken, fromTokenPrice, fromAmount) : 0
     const toTokenPrice = toToken ? getTokenPrice(toToken?.address, toToken?.chainId) : 0
-    console.log(fromTokenPrice);
-    console.log(toTokenPrice);
-    console.log(toToken);
+    const additionalTokenAmount = fromUsdAmount > 0 ? Number(fromAmount) / fromUsdAmount : 0 // give 1$ additional approve amount for fluctuation
+    const additionalAmountString = new BigNumber(toFixedFloat(additionalTokenAmount, 4))
+      .times(new BigNumber(10)
+        .pow(fromToken?.decimals ?? 1))
+      .toFixed(0)
     return {
       fromTokenPrice,
       toTokenPrice,
+      additionalAmountString,
     }
   }, [fromToken, getTokenPrice, toToken, nativeTokenAddress, toTokenChainId, fromTokenChainId, tokenPrices])
 
@@ -208,7 +214,7 @@ export const EVMBridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmou
 
   const handleSwap = async () => {
     if (!isApproved) {
-      approve?.()
+      approve?.(additionalAmountString)
       return
     }
 
@@ -346,31 +352,19 @@ export const EVMBridgeProcess: React.FC<BridgeProcessProps> = ({ steps, fromAmou
           </div>
         </div>
 
-        {!isQuoteLoading && (
-          isApproved ?
-            (
-              <Button
-                isLoading={isApproving}
-                className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
-                loadingText={'Approving...'}
-                colorScheme="blue"
-                onClick={() => {
-                  approve?.()
-                }}
-                isDisabled={false}
-              >
-                Approve {fromToken?.symbol}
-              </Button>
-            ) :
-            (<Button
-              onClick={() => handleSwap()}
-              colorScheme="blue"
-              className="w-full mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 transition-colors rounded-lg font-medium"
-            >
-              Confirm Bridge
-            </Button>)
-        )
-        }
+        <Button
+          isLoading={isQuoteLoading || isApproving}
+          loadingText={(isApproving ? 'Approving...' : 'Computing...')}
+          width="full"
+          colorScheme="blue"
+          onClick={() => {
+            if (isApproved) handleSwap()
+            else approve?.(additionalAmountString)
+          }}
+          isDisabled={!(Number(fromAmount) > 0) || isQuoteLoading || isApproving || !!quoteResponse.errorMessage || Number(quoteResponse.outputAmount) <= 0}
+        >
+          {isApproved ? 'Bridge' : 'Approve'}
+        </Button>
 
 
       </div>
