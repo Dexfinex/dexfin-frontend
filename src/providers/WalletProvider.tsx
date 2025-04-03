@@ -1,14 +1,17 @@
 import {WagmiProvider} from 'wagmi';
 import {createConfig, http} from '@wagmi/core'
 import {coinbaseWallet, injected} from '@wagmi/connectors'
+import { metaMask } from '@wagmi/connectors'
+
 import {mainnet, polygon, arbitrum, base, linea, optimism, bsc, avalanche} from '@wagmi/core/chains';
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 
 const config = createConfig({
     chains: [mainnet, polygon, arbitrum, base, linea, optimism, bsc],
     connectors: [
-        injected({target: 'metaMask'}),
+        metaMask(),
         coinbaseWallet(),
+        injected(),
     ],
     transports: {
         [mainnet.id]: http('https://mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8'),

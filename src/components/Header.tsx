@@ -12,9 +12,6 @@ import {Web3AuthContext} from "../providers/Web3AuthContext";
 import {useWebSocket} from '../providers/WebSocketProvider';
 import {useBreakpointValue, useToast} from '@chakra-ui/react';
 
-// Auth token key - must match the one in App.js
-const AUTH_TOKEN_KEY = "auth_token";
-
 export const Header: React.FC = () => {
   const navigate = useNavigate();
   const { isConnected } = useContext(Web3AuthContext);
@@ -35,7 +32,6 @@ export const Header: React.FC = () => {
   const { unreadCount } = useWebSocket();
 
   const handleSignOut = () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
     navigate("/");
   };
 

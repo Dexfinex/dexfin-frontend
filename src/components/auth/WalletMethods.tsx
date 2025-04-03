@@ -13,13 +13,15 @@ const WalletMethods = ({ authWithEthWallet, setView }: WalletMethodsProps) => {
         const result: Connector<CreateConnectorFn>[] = []
         const vis: Record<string, boolean> = {}
         connectors.map(connector => {
-            if (!vis[connector.name])
+            if (!vis[connector.name] && connector.name.toLowerCase() !== 'injected')
                 result.push(connector)
             vis[connector.name] = true
         })
 
         return result
     }, [connectors])
+
+    console.log("filteredConnectors", filteredConnectors)
 
     return (
         <>

@@ -20,7 +20,7 @@ export function convertBrianKnowledgeToPlainText(text: string) {
     .replace(/###\s(.*?)(\n|$)/g, "<span style='font-size: 24px; font-weight: bold;'>$1</span>$2")
     .replace(/\*\*([^*]+)\*\*/g, "<span style='font-weight: bold;'>$1</span>")
     .replace(/\[([^\]]+)\]\((https?:\/\/[^\s]+)\)/g,
-      ( text, url) => {
+      (match, text, url) => {
         return `<a href="${url}" style="color: var(--chakra-colors-green-400)">${text}</a>`;
       })
     .replace(/\n"\n/g, '')
@@ -64,7 +64,7 @@ export function symbolToToken(symbol: string): any {
 }
 
 export function depositAddress(address: string, chainId: number, protocol: string): string {
-  const token = deposit_token_data.find(token => token.chainId === chainId && token.protocol === protocol && token.underlyingTokens?.some(underlyingToken => underlyingToken.address.toLocaleLowerCase() === address.toLocaleLowerCase()));
+  const token = deposit_token_data.find(token => token.chainId === chainId && token.protocol.toLocaleLowerCase() === protocol.toLocaleLowerCase() && token.underlyingTokens?.some(underlyingToken => underlyingToken.address.toLocaleLowerCase() === address.toLocaleLowerCase()));
   return token?.address || '';
 }
 

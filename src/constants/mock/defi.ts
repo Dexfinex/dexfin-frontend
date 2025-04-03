@@ -253,6 +253,113 @@ export const BORROWING_LIST = [
         "protocol": "Aave V3",
         "protocol_id": "aave-v3",
         "logo": "https://cdn.moralis.io/defi/aave.png",
+        "chainId": 1,
+        "tokenIn": {
+            "token_type": "native",
+            "name": "ETH",
+            "symbol": "ETH",
+            "contract_address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+            "decimals": "18",
+            "logo": "/images/token/eth.png",
+            "thumbnail": "/images/token/eth.png",
+        },
+        "liquidityToken": {
+            "token_type": "erc20",
+            "name": "Aave Ethereum WETH",
+            "symbol": "aEthWETH",
+            "contract_address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+            "decimals": "18",
+            "logo": "https://etherscan.io/token/images/aave_weth.png",
+            "thumbnail": "https://etherscan.io/token/images/aave_weth.png",
+        },
+        "borrowContract": {
+            "contract_address": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+            "abi": `
+                [
+                    {
+                        "inputs": [
+                            {
+                                "internalType": "address",
+                                "name": "asset",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "interestRateMode",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint16",
+                                "name": "referralCode",
+                                "type": "uint16"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "onBehalfOf",
+                                "type": "address"
+                            }
+                        ],
+                        "name": "borrow",
+                        "outputs": [],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [
+                            {
+                                "internalType": "address",
+                                "name": "asset",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "interestRateMode",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "onBehalfOf",
+                                "type": "address"
+                            }
+                        ],
+                        "name": "repay",
+                        "outputs": [
+                            {
+                                "internalType": "uint256",
+                                "name": "",
+                                "type": "uint256"
+                            }
+                        ],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    }
+                ]
+            `
+        },
+        "tokenOut": {
+            "token_type": "erc20",
+            "name": "USDT",
+            "symbol": "USDT",
+            "contract_address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "decimals": "6",
+            "logo": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+            "thumbnail": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+        }
+    },
+    {
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "logo": "https://cdn.moralis.io/defi/aave.png",
         "chainId": 8453,
         "tokenIn": {
             "token_type": "native",
@@ -584,88 +691,6 @@ export const offerings: Offering[] = [
     },
     {
         "chainId": 1,
-        "apy": 1.63,
-        "apyToken": "USDC",
-        "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
-        "protocol": "Aave V3",
-        "protocol_id": "aave-v3",
-        "type": "Borrowing",
-        "amount": 0,
-        "tokens": [
-            {
-                "token_type": "native",
-                "name": "ETH",
-                "symbol": "ETH",
-                "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-                "decimals": "18",
-                "logo": "/images/token/eth.png",
-                "thumbnail": "/images/token/eth.png",
-                "balance": "0",
-                "balance_formatted": "0",
-                "usd_price": 0,
-                "usd_value": 0
-            },
-            {
-                "token_type": "erc20",
-                "name": "USDC",
-                "symbol": "USDC",
-                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-                "decimals": "6",
-                "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
-                "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
-                "balance": "0",
-                "balance_formatted": "0",
-                "usd_price": 0,
-                "usd_value": 0
-            }
-        ],
-        "rewards": 0,
-        "healthFactor": 17.41,
-        "logo": "https://cdn.moralis.io/defi/aave.png"
-    },
-    {
-        "chainId": 8453,
-        "apy": 1.63,
-        "apyToken": "USDC",
-        "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
-        "protocol": "Aave V3",
-        "protocol_id": "aave-v3",
-        "type": "Borrowing",
-        "amount": 0,
-        "tokens": [
-            {
-                "token_type": "native",
-                "name": "ETH",
-                "symbol": "ETH",
-                "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-                "decimals": "18",
-                "logo": "/images/token/eth.png",
-                "thumbnail": "/images/token/eth.png",
-                "balance": "0",
-                "balance_formatted": "0",
-                "usd_price": 0,
-                "usd_value": 0
-            },
-            {
-                "token_type": "erc20",
-                "name": "USDC",
-                "symbol": "USDC",
-                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-                "decimals": "6",
-                "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
-                "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
-                "balance": "0",
-                "balance_formatted": "0",
-                "usd_price": 0,
-                "usd_value": 0
-            }
-        ],
-        "rewards": 0,
-        "healthFactor": 17.41,
-        "logo": "https://cdn.moralis.io/defi/aave.png"
-    },
-    {
-        "chainId": 1,
         "apy": 0,
         "apyToken": "wETH",
         "address": "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
@@ -888,6 +913,129 @@ export const offerings: Offering[] = [
         "rewards": 0,
         "healthFactor": 0,
         "logo": "https://cryptologos.cc/logos/pendle-pendle-logo.svg?v=040"
+    },
+    {
+        "chainId": 1,
+        "apy": 1.63,
+        "apyToken": "USDC",
+        "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Borrowing",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "native",
+                "name": "ETH",
+                "symbol": "ETH",
+                "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": "18",
+                "logo": "/images/token/eth.png",
+                "thumbnail": "/images/token/eth.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            },
+            {
+                "token_type": "erc20",
+                "name": "USDC",
+                "symbol": "USDC",
+                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": "6",
+                "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 17.41,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": 8453,
+        "apy": 1.63,
+        "apyToken": "USDC",
+        "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Borrowing",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "native",
+                "name": "ETH",
+                "symbol": "ETH",
+                "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": "18",
+                "logo": "/images/token/eth.png",
+                "thumbnail": "/images/token/eth.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            },
+            {
+                "token_type": "erc20",
+                "name": "USDC",
+                "symbol": "USDC",
+                "contract_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": "6",
+                "logo": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "thumbnail": "https://assets.coingecko.com/coins/images/30691/thumb/usdc.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 17.41,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
+    },
+    {
+        "chainId": 1,
+        "apy": 1.63,
+        "apyToken": "USDT",
+        "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+        "protocol": "Aave V3",
+        "protocol_id": "aave-v3",
+        "type": "Borrowing",
+        "amount": 0,
+        "tokens": [
+            {
+                "token_type": "native",
+                "name": "ETH",
+                "symbol": "ETH",
+                "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "decimals": "18",
+                "logo": "/images/token/eth.png",
+                "thumbnail": "/images/token/eth.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            },
+            {
+                "token_type": "erc20",
+                "name": "USDT",
+                "symbol": "USDT",
+                "contract_address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+                "decimals": "6",
+                "logo": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+                "thumbnail": "https://logo.moralis.io/0x38_0x55d398326f99059ff775485246999027b3197955_017c31aed33715dffcd9c5175133fbdb.png",
+                "balance": "0",
+                "balance_formatted": "0",
+                "usd_price": 0,
+                "usd_value": 0
+            }
+        ],
+        "rewards": 0,
+        "healthFactor": 17.41,
+        "logo": "https://cdn.moralis.io/defi/aave.png"
     },
     {
         "chainId": 56,

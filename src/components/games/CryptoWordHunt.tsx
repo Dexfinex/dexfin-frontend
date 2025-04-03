@@ -149,22 +149,17 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
   const [currentWord, setCurrentWord] = useState<string>('');
   const [selectionStart, setSelectionStart] = useState<{ row: number; col: number } | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  // State for mobile responsiveness
   const [showWordList, setShowWordList] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  // Ref for touch handling
   const gridRef = useRef<HTMLDivElement>(null);
+  // Add a ref to track the last found word to prevent duplicate processing
+  const lastFoundWordRef = useRef<string | null>(null);
 
   const { userData } = useUserData();
-
-  // Flag to track if game session has been saved
   const gameSessionSaved = useRef(false);
-
-  // State for game data and ID
   const [gameData, setGameData] = useState<any[]>([]);
   const [gameId, setGameId] = useState<string>("");
   const [timeTaken, setTimeTaken] = useState(0);
-  // Get game stats and updateGameStats from useStore
   const { gameStats, updateGameStats } = useStore();
 
   useEffect(() => {
@@ -173,22 +168,17 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
     };
 
     checkMobile();
-
     window.addEventListener('resize', checkMobile);
-
-    // Clean up
+    
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Effect to handle mobile touch behavior
   useEffect(() => {
     if (gameState === 'game') {
-      // Prevent scrolling while the game is active
       const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-
+      
       return () => {
-        // Re-enable scrolling when game ends or component unmounts
         document.body.style.overflow = originalOverflow;
       };
     }
@@ -202,8 +192,6 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
 
           if (Array.isArray(data)) {
             setGameData(data);
-
-            // Find the WORDHUNT game type
             const game = data.find(g => g.type === gameType);
             if (game) {
               console.log(`Found game with type ${gameType}:`, game);
@@ -224,6 +212,8 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
   useEffect(() => {
     if (gameState === 'menu') {
       gameSessionSaved.current = false;
+      // Reset lastFoundWordRef when returning to menu
+      lastFoundWordRef.current = null;
     }
   }, [gameState]);
 
@@ -254,7 +244,6 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
       streak: foundWords.length,
     };
 
-    // Save to DB
     try {
       const response = await GameService.gameHistory(userData.accessToken, gameSession);
       console.log(response);
@@ -272,7 +261,6 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
         };
 
         updateGameStats(updatedStats);
-
         setShowSuccessModal(true);
       }
     } catch (error) {
@@ -308,17 +296,14 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
       const maxAttempts = 100;
 
       while (!placed && attempts < maxAttempts) {
-        // Pick random direction and starting position
         const direction = directions[Math.floor(Math.random() * directions.length)];
         const startRow = Math.floor(Math.random() * size);
         const startCol = Math.floor(Math.random() * size);
 
-        // Check if word fits in this direction
         const endRow = startRow + (word.text.length - 1) * direction.dy;
         const endCol = startCol + (word.text.length - 1) * direction.dx;
 
         if (endRow >= 0 && endRow < size && endCol >= 0 && endCol < size) {
-          // Check if path is clear
           let canPlace = true;
           const positions = [];
 
@@ -335,7 +320,6 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
           }
 
           if (canPlace) {
-            // Place the word
             for (let i = 0; i < word.text.length; i++) {
               const row = startRow + (i * direction.dy);
               const col = startCol + (i * direction.dx);
@@ -362,7 +346,6 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
       }
     }
 
-    // Fill empty cells with random letters
     for (let i = 0; i < size; i++) {
       for (let j = 0; j < size; j++) {
         if (!newGrid[i][j].letter) {
@@ -384,18 +367,16 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
     setTimeTaken(0);
     setScore(0);
     setWordsToFind(selectedWords);
-    setFoundWords([]);
+    setFoundWords([]);  // Reset found words
+    lastFoundWordRef.current = null;  // Reset the last found word ref
     setGameState('game');
     setShowWordList(false);
   };
 
   useEffect(() => {
-    // Check if game is completed by finding all words
     if (gameState === 'game' && foundWords.length === wordsToFind.length && foundWords.length > 0) {
-      // Game is completed - stop the timer and show success
       setShowSuccessModal(true);
-
-      // Save game session if it hasn't been saved yet
+      
       if (!gameSessionSaved.current && userData && userData.accessToken && gameId) {
         saveGameSession();
       }
@@ -404,25 +385,22 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-
-    // Only run the timer if game is active AND not all words have been found
+    
     if (gameState === 'game' && timeLeft > 0 && foundWords.length < wordsToFind.length) {
       timer = setInterval(() => {
         setTimeLeft(prev => prev - 1);
         setTimeTaken(prev => prev + 1);
       }, 1000);
     } else if (timeLeft === 0 && gameState === 'game') {
-      // Handle game over due to timeout
       if (foundWords.length === wordsToFind.length) {
         setShowSuccessModal(true);
-
-        // Save game session if it hasn't been saved yet
+        
         if (!gameSessionSaved.current && userData && userData.accessToken && gameId) {
           saveGameSession();
         }
       }
     }
-
+    
     return () => clearInterval(timer);
   }, [timeLeft, gameState, foundWords.length, wordsToFind.length]);
 
@@ -438,48 +416,41 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
     ));
   };
 
-  // Improved touch handling function
   const handleTouchStart = (row: number, col: number) => {
     handleCellMouseDown(row, col);
   };
 
   const handleCellMouseEnter = (row: number, col: number) => {
     if (!isSelecting || !selectionStart) return;
-
-    // Calculate direction
+  
     const dx = Math.sign(col - selectionStart.col);
     const dy = Math.sign(row - selectionStart.row);
-
-    // Allow any of the 8 directions (horizontal, vertical, and diagonal)
-    // This check ensures the selection follows a straight line in any of these directions
+  
     if ((dx === 0 && dy === 0) || (Math.abs(dx) > 0 && Math.abs(dy) > 0 &&
-      Math.abs(row - selectionStart.row) !== Math.abs(col - selectionStart.col))) {
-      // Either same cell (dx=0,dy=0) or not a straight line in diagonal direction
+        Math.abs(row - selectionStart.row) !== Math.abs(col - selectionStart.col))) {
       return;
     }
-
+  
     const newSelection: { row: number; col: number }[] = [];
     let currentRow = selectionStart.row;
     let currentCol = selectionStart.col;
-
-    // Build the selection path
+  
     while (true) {
       newSelection.push({ row: currentRow, col: currentCol });
       if (currentRow === row && currentCol === col) break;
-
-      // Move in the determined direction
+      
       currentRow += dy;
       currentCol += dx;
     }
-
+  
     const word = newSelection.map(pos => grid[pos.row][pos.col].letter).join('');
     setCurrentWord(word);
-
+  
     const reversedWord = word.split('').reverse().join('');
     const isValidWord = wordsToFind.some(w =>
       !foundWords.includes(w.text) && (w.text === word || w.text === reversedWord)
     );
-
+  
     setGrid(prev => prev.map((r, i) =>
       r.map((cell, j) => ({
         ...cell,
@@ -487,17 +458,16 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
         isHighlighted: isValidWord && newSelection.some(pos => pos.row === i && pos.col === j)
       }))
     ));
-
+  
     setSelection(newSelection);
   };
 
-  // Improved touch move handler
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isSelecting) return;
-
+    
     const touch = e.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
-
+    
     if (element) {
       const cellCoords = element.getAttribute('data-coords');
       if (cellCoords) {
@@ -507,23 +477,48 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
     }
   };
 
+  // FIX: Updated handleCellMouseUp to prevent duplicate word counting
   const handleCellMouseUp = () => {
     if (!isSelecting) return;
     setIsSelecting(false);
     setSelectionStart(null);
-
+  
     const selectedWord = selection.map(pos => grid[pos.row][pos.col].letter).join('');
     const reversedWord = selectedWord.split('').reverse().join('');
-
-    const foundWord = wordsToFind.find(w =>
-      !foundWords.includes(w.text) && (w.text === selectedWord || w.text === reversedWord)
-    );
-
+  
+    // Check if we've already processed this word to prevent double-counting
+    if (selectedWord === lastFoundWordRef.current || reversedWord === lastFoundWordRef.current) {
+      // Reset the grid selection without adding the word again
+      setGrid(prev => prev.map(row =>
+        row.map(cell => ({
+          ...cell,
+          isSelected: false,
+          isHighlighted: false
+        }))
+      ));
+      setSelection([]);
+      setCurrentWord('');
+      return;
+    }
+  
+    // Find exactly one word that matches and isn't already found
+    let foundWord: Word | undefined;
+    for (const word of wordsToFind) {
+      if (!foundWords.includes(word.text) && 
+          (word.text === selectedWord || word.text === reversedWord)) {
+        foundWord = word;
+        break; // Only find the first matching word
+      }
+    }
+  
     if (foundWord) {
-      // Update foundWords - this will trigger the effect that stops the timer
-      setFoundWords(prev => [...prev, foundWord.text]);
+      // Update lastFoundWordRef to prevent duplicate processing
+      lastFoundWordRef.current = foundWord.text;
+      
+      // Update foundWords with just this one word
+      setFoundWords(prev => [...prev, foundWord!.text]);
       setScore(prev => prev + foundWord.points);
-
+  
       setGrid(prev => prev.map((row, i) =>
         row.map((cell, j) => ({
           ...cell,
@@ -532,6 +527,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
         }))
       ));
     } else {
+      // Reset selection if no valid word was found
       setGrid(prev => prev.map(row =>
         row.map(cell => ({
           ...cell,
@@ -540,7 +536,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
         }))
       ));
     }
-
+  
     setSelection([]);
     setCurrentWord('');
   };
@@ -819,7 +815,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
           </div>
         )}
 
-        {isMobile && !showWordList && (
+        {/* {isMobile && !showWordList && (
           <div className="fixed bottom-0 left-0 right-0 bg-[#1a237e]/90 backdrop-blur-md border-t border-[#3949ab]/30 p-2 flex justify-between items-center z-30">
             <button
               onClick={() => setGameState('menu')}
@@ -853,7 +849,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
               </span>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     );
   };
@@ -901,7 +897,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
             </div>
           </div>
           <div className="flex gap-3 md:gap-4">
-            <button
+            {/* <button
               onClick={() => {
                 setShowSuccessModal(false);
                 setGameState('menu');
@@ -909,7 +905,7 @@ const CryptoWordHunt: React.FC<CryptoWordHuntProps> = ({ gameType = 'WORDHUNT' }
               className="flex-1 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors text-sm md:text-base"
             >
               Menu
-            </button>
+            </button> */}
             <button
               onClick={() => {
                 setShowSuccessModal(false);
