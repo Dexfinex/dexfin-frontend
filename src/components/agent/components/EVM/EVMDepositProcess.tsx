@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Bot, ArrowRight, CheckCircle2, X } from 'lucide-react';
 import { TokenType, Step, Protocol } from '../../../../types/brian.type.ts';
 import { convertCryptoAmount } from '../../../../utils/agent.util.tsx';
@@ -7,7 +7,8 @@ import { TokenChainIcon } from '../../../swap/components/TokenIcon.tsx';
 import { FailedTransaction } from '../../modals/FailedTransaction.tsx';
 import { SuccessModal } from '../../modals/SuccessModal.tsx';
 import { useEvmTokenMetadata } from '../../../../hooks/useTokenMetadata.ts';
-
+import { useAgentDepositMutation } from '../../../../hooks/useAgentAction.ts';
+import { Web3AuthContext } from '../../../../providers/Web3AuthContext.tsx';
 interface EVMDepositProcessProps {
   onClose: () => void;
   fromToken: TokenType;
@@ -28,14 +29,35 @@ export const EVMDepositProcess: React.FC<EVMDepositProcessProps> = ({ fromAmount
   const [failedTransaction, setFailedTransaction] = useState(false);
   const [transactionProgress, setTransactionProgress] = useState(0);
   const [transactionStatus, setTransactionStatus] = useState('Initializing transaction...');
-
+const { address } = useContext(Web3AuthContext);
   const [scan, setScan] = useState<string>('https://etherscan.io/');
+  const { mutate: sendTransactionMutate } = useAgentDepositMutation();
+
 
   const handleTransaction = async () => {
     try {
 
       setShowConfirmation(true);
-
+      sendTransactionMutate(
+        { fromToken: fromToken, fromAddress: address, tokenAddress: toToken.address, amount: Number(fromAmount) },
+        {
+          onSuccess: (receipt) => {
+            if(receipt) {
+              setTransactionProgress(100);
+              setTransactionStatus('Transaction confirmed!');
+              setScan(receipt ?? '');
+            } else {
+              setShowConfirmation(false);
+              setFailedTransaction(true);  
+            }
+          },
+          onError: (error) => {
+            console.log(error);
+            setShowConfirmation(false);
+            setFailedTransaction(true);
+          },
+        },
+      );
 
 
     } catch (error) {
