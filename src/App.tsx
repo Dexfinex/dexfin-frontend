@@ -19,8 +19,6 @@ import CartModal from "./components/ShoppingCart/CartModal.tsx";
 import { SocialFeedModal } from "./components/SocialFeedModal";
 import { GamesModal } from "./components/GamesModal";
 import { RewardsModal } from "./components/RewardsModal";
-// import SignUpModal from "./components/SignUpModal.tsx";
-// import SignInModal from "./components/SignInModal.tsx";
 import { AUTH_METHOD_TYPE } from "@lit-protocol/constants";
 import { Web3AuthContext } from "./providers/Web3AuthContext.tsx";
 import {
@@ -30,7 +28,6 @@ import {
 import { TradingViewModal } from "./components/TradingViewModal.tsx";
 import { initStream } from "./utils/chat.util.ts";
 import { PushAPI, CONSTANTS } from "@pushprotocol/restapi";
-import UsernameModal from "./components/UsernameModal.tsx";
 import WalletDrawer from "./components/WalletDrawer.tsx";
 import LandingPage from "./components/mainpage/LandingPage.tsx";
 import Privacy from "./components/Privacy.tsx";
@@ -38,15 +35,11 @@ import Terms from "./components/Terms.tsx";
 import AppPage from "./AppPage";
 import GlobalLoading from "./components/GlobalLoading.tsx";
 import TrackingScripts from "./components/TrackingScripts";
-import {
-  trackPageView,
-  trackModalInteraction,
-} from "./services/analytics";
-import {
-  trackMouseflowPageView,
-  addMouseflowTag,
-} from "./services/mouseflow";
+import { trackPageView, trackModalInteraction } from "./services/analytics";
+import { trackMouseflowPageView, addMouseflowTag } from "./services/mouseflow";
 import ReferralHandler from "./components/ReferralHandler.tsx";
+import TwoFactorAuthPage from "./components/TwoFactorAuthPage";
+import { useUserData } from "./providers/UserProvider.tsx";
 
 export default function App() {
   const { theme } = useStore();
@@ -54,7 +47,7 @@ export default function App() {
   const [isStylesApplied, setIsStylesApplied] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
+  const { userData } = useUserData();
   const {
     isAIAgentOpen,
     setIsAIAgentOpen,
@@ -99,37 +92,30 @@ export default function App() {
     authError,
     accountsLoading,
     accountsError,
+    requires2FA,
     sessionLoading,
     sessionError,
     isPreparingAccounts,
   } = useContext(Web3AuthContext);
 
-  // Track page views
   useEffect(() => {
-    // Track in Google Analytics
     trackPageView(location.pathname);
 
-    // Track in Mouseflow
     trackMouseflowPageView(location.pathname);
 
-    // Add page path as a tag in Mouseflow
     addMouseflowTag(`page_${location.pathname.replace(/\//g, "_") || "home"}`);
   }, [location.pathname]);
 
-  // Custom hook to track modal state changes in both GA and Mouseflow
   const useTrackModalState = (isOpen: boolean, modalName: string) => {
     useEffect(() => {
       if (isOpen) {
-        // Track in Google Analytics
         trackModalInteraction(modalName, "open");
 
-        // Track in Mouseflow
         addMouseflowTag(`modal_open_${modalName}`);
       }
     }, [isOpen]);
   };
 
-  // Track all modals
   useTrackModalState(isAIAgentOpen, "AIAgent");
   useTrackModalState(isSwapOpen, "Swap");
   useTrackModalState(isDefiOpen, "DeFi");
@@ -172,7 +158,8 @@ export default function App() {
   }, [theme, isStylesApplied]);
 
   useEffect(() => {
-    if (location.pathname === "/") { /* empty */ } else {
+    if (location.pathname === "/") {
+    } else {
       window.scrollTo(0, 0);
     }
   }, [location.pathname]);
@@ -189,11 +176,9 @@ export default function App() {
       if (redirectType === "sign-up") {
         setIsSignupModalOpen(false);
         setIsSigninModalOpen(false);
-        // Track in Mouseflow
         addMouseflowTag(`auth_signup_${authMethod.authMethodType}`);
       } else {
         setIsSigninModalOpen(false);
-        // Track in Mouseflow
         addMouseflowTag(`auth_signin_${authMethod.authMethodType}`);
       }
     }
@@ -201,22 +186,29 @@ export default function App() {
 
   useEffect(() => {
     if (isConnected) {
-      setIsSigninModalOpen(false);
-      setIsSignupModalOpen(false);
+      if (requires2FA) {
+        if (location.pathname !== "/verify-2fa") {
+          navigate("/verify-2fa");
+        }
+      } else if (userData?.accessToken) {
+        setIsSigninModalOpen(false);
+        setIsSignupModalOpen(false);
 
-      if (!chatUser) {
-        unlockProfile();
+        if (!chatUser) {
+          unlockProfile();
+        }
+
+        if (location.pathname === "/" || location.pathname === "/verify-2fa") {
+          navigate("/app");
+        }
+
+        addMouseflowTag("user_connected");
       }
-
-      if (location.pathname === "/") {
-        navigate("/app");
-      }
-
-      // Track connection in Mouseflow
-      addMouseflowTag("user_connected");
     }
   }, [
     isConnected,
+    requires2FA,
+    userData,
     navigate,
     setIsSigninModalOpen,
     setIsSignupModalOpen,
@@ -242,7 +234,6 @@ export default function App() {
           setChatUser(pushUser);
           initStream(pushUser);
 
-          // Track in Mouseflow
           addMouseflowTag("chat_user_initialized");
         }
       } catch (error) {
@@ -259,6 +250,22 @@ export default function App() {
     }
   }, [authMethod, initializeErrors, isSignupTriggered, setIsSignupModalOpen]);
 
+  useEffect(() => {
+    if (authMethod && requires2FA) {
+      if (location.pathname !== "/verify-2fa") {
+        navigate("/verify-2fa");
+      }
+    }
+  }, [authMethod, requires2FA, navigate, location.pathname]);
+
+  const isAuthenticated = () => {
+    return isConnected && !requires2FA && userData?.accessToken;
+  };
+
+  const isInTwoFactorAuthStage = () => {
+    return isConnected && requires2FA;
+  };
+
   const isLoading =
     authLoading || accountsLoading || sessionLoading || isPreparingAccounts;
   const loadingMessage = authLoading
@@ -273,7 +280,6 @@ export default function App() {
 
   const loadingError = authError || accountsError || sessionError;
 
-  // Custom wrappers for setting modal states with analytics tracking
   const closeAIAgentModal = () => {
     trackModalInteraction("AIAgent", "close");
     addMouseflowTag("modal_close_AIAgent");
@@ -350,7 +356,6 @@ export default function App() {
     <Box className="min-h-screen flex flex-col">
       <TrackingScripts />
       <ReferralHandler />
-      {/* Global loading overlay */}
       <GlobalLoading
         isOpen={isLoading}
         message={loadingMessage}
@@ -362,13 +367,37 @@ export default function App() {
         <Route
           path="/"
           element={
-            isConnected ? <Navigate to="/app" replace /> : <LandingPage />
+            isAuthenticated() ? (
+              <Navigate to="/app" replace />
+            ) : isInTwoFactorAuthStage() ? (
+              <Navigate to="/verify-2fa" replace />
+            ) : (
+              <LandingPage />
+            )
           }
         />
         <Route
           path="/app"
           element={
-            isConnected ? <AppPage /> : <Navigate to="/" replace />
+            isAuthenticated() ? (
+              <AppPage />
+            ) : isInTwoFactorAuthStage() ? (
+              <Navigate to="/verify-2fa" replace />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/verify-2fa"
+          element={
+            isInTwoFactorAuthStage() ? (
+              <TwoFactorAuthPage />
+            ) : isAuthenticated() ? (
+              <Navigate to="/app" replace />
+            ) : (
+              <Navigate to="/" replace />
+            )
           }
         />
         <Route path="/privacy" element={<Privacy />} />
@@ -408,17 +437,6 @@ export default function App() {
 
       {isTradeOpen && (
         <TradingViewModal isOpen={isTradeOpen} onClose={closeTradeModal} />
-      )}
-
-      {isUsernameModalOpen && (
-        <UsernameModal
-          isOpen={true}
-          onClose={() => {
-            trackModalInteraction("Username", "close");
-            addMouseflowTag("modal_close_Username");
-            useStore.getState().setIsUsernameModalOpen(false);
-          }}
-        />
       )}
 
       <WalletDrawer isOpen={isWalletDrawerOpen} onClose={closeWalletDrawer} />

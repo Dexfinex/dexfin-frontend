@@ -64,6 +64,8 @@ import axios from "axios";
 import { NATIVE_MINT } from "../constants/solana.constants.ts";
 import { solToWSol } from "../utils/solana.util.ts";
 import { WalletTypeEnum } from "../types/wallet.type.ts";
+import { setAuthToken } from "../services/api.service";
+import { authService } from "../services/auth.service";
 
 interface Web3AuthContextType {
     login: () => void;
@@ -106,6 +108,10 @@ interface Web3AuthContextType {
     getWalletType: () => WalletTypeEnum,
     walletType: WalletTypeEnum,
     isPreparingAccounts: boolean,
+    requires2FA: boolean;
+    setRequires2FA: React.Dispatch<React.SetStateAction<boolean>>;
+    complete2FAAuthentication: (code: string) => Promise<boolean>;
+    cancel2FAAuthentication: () => void;
 }
 
 
@@ -170,6 +176,10 @@ const defaultWeb3AuthContextValue: Web3AuthContextType = {
     getWalletType: () => WalletTypeEnum.UNKNOWN,
     walletType: WalletTypeEnum.UNKNOWN,
     isPreparingAccounts: false,
+    requires2FA: false,
+    setRequires2FA: () => {},
+    complete2FAAuthentication: async () => false,
+    cancel2FAAuthentication: () => {},
 };
 
 export const Web3AuthContext = createContext<Web3AuthContextType>(defaultWeb3AuthContextValue);
@@ -195,6 +205,8 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [walletType, setWalletType] = useState<WalletTypeEnum>(WalletTypeEnum.UNKNOWN);
     const pkpWalletRef = useRef<PKPEthersWallet | null>(null);
     const hasGetSolanaWalletInfo = useRef(false);
+    const AUTH_TOKEN_KEY = "auth_token";
+    const [requires2FA, setRequires2FA] = useState(false);
 
     const {
         isConnected: isWagmiWalletConnected,
@@ -248,6 +260,14 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         return WalletTypeEnum.UNKNOWN;
     }, [isConnected, isWagmiWalletConnected])
+
+    useEffect(() => {
+        const verified2FA = localStorage.getItem('2fa_verified') === 'true';
+        
+        if (verified2FA) {
+          setRequires2FA(false);
+        }
+    }, [isConnected]);
 
     const getWalletType = (): WalletTypeEnum => {
         return detectWalletType();
@@ -524,6 +544,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setAuthMethod(undefined)
         setSessionSigs(undefined)
         setIsConnected(false)
+        setRequires2FA(false)
         setChainId(undefined)
         setWalletClient(undefined)
         setIsLoadingStoredWallet(false)
@@ -685,6 +706,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await connector.disconnect()
         }
         if (isConnected) {
+            localStorage.removeItem('2fa_verified');
             initializeAllVariables()
         }
     }
@@ -708,6 +730,51 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.error("switchChain error", err)
         }
     }
+
+    const complete2FAAuthentication = async (code: string): Promise<boolean> => {
+        try {
+          setIsChainSwitching(true);
+          const response = await authService.completeTwoFactorLogin(code);
+          
+          if (response.success) {
+            localStorage.setItem('2fa_verified', 'true');
+            
+            setRequires2FA(false);
+            setIsConnected(true);
+            
+            if (authMethod && currentAccount) {
+              await initSession(authMethod, currentAccount);
+              
+              setIsPreparingAccounts(true);
+              await setProviderByPKPWallet(chainId ?? 1);
+              await getSolanaWalletOrGenerateNewWallet(sessionSigs!, currentAccount);
+            }
+            
+            return true;
+          }
+          
+          return false;
+        } catch (error) {
+          console.error("2FA authentication error:", error);
+          return false;
+        } finally {
+          setIsChainSwitching(false);
+        }
+    };
+      
+    const cancel2FAAuthentication = () => {
+        setRequires2FA(false);
+        
+        localStorage.removeItem('2fa_verified');
+    
+        setAuthMethod(undefined);
+        setCurrentAccount(undefined);
+        setSessionSigs(undefined);
+        setIsConnected(false);
+
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        setAuthToken(null);
+    };
 
     const value = {
         login,
@@ -758,6 +825,10 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isPreparingAccounts,
         getWalletType,
         walletType,
+        requires2FA,
+        setRequires2FA,
+        complete2FAAuthentication,
+        cancel2FAAuthentication,
     }
 
     return (
