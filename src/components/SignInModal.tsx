@@ -1,19 +1,15 @@
+// Update the conditional rendering in SignInModal.tsx
 import React, { useContext, useEffect, useState } from "react";
 import { ChevronRight, LogIn, X } from "lucide-react";
-import { Modal, ModalContent, ModalOverlay } from "@chakra-ui/react";
+import { Modal, ModalContent, ModalOverlay, useToast } from "@chakra-ui/react";
 import { AuthAlert } from "./AuthAlert.tsx";
 import Loading from "./auth/Loading";
 import LoginMethods from "./auth/LoginMethods";
 import CreateAccount from "./auth/CreateAccount";
-<<<<<<< HEAD
 import { Web3AuthContext } from "../providers/Web3AuthContext";
 import { getReferralCodeFromStorage } from "./ReferralHandler";
-import TwoFactorAuthModal from "./TwoFactorAuthModal";
-=======
-import {Web3AuthContext} from "../providers/Web3AuthContext";
-import {getReferralCodeFromStorage} from './ReferralHandler';
-import {LOCAL_STORAGE_SIGNUP_FLAG} from "../constants";
->>>>>>> dev
+import { LOCAL_STORAGE_SIGNUP_FLAG } from "../constants";
+import { useNavigate } from "react-router-dom";
 
 interface SigninModalProps {
   isOpen: boolean;
@@ -27,6 +23,8 @@ const SignInModal: React.FC<SigninModalProps> = ({
   goToSignUp,
 }) => {
   const [hasReferral, setHasReferral] = useState(false);
+  const navigate = useNavigate();
+  const toast = useToast();
 
   const {
     authMethod,
@@ -47,7 +45,6 @@ const SignInModal: React.FC<SigninModalProps> = ({
     handleDiscordLogin,
     isPreparingAccounts,
     requires2FA,
-    pending2FAUserId,
   } = useContext(Web3AuthContext);
 
   const error = authError || accountsError || sessionError;
@@ -63,7 +60,7 @@ const SignInModal: React.FC<SigninModalProps> = ({
     if (isOpen) {
       localStorage.removeItem(LOCAL_STORAGE_SIGNUP_FLAG);
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   useEffect(() => {
     // If user is authenticated and has selected an account, initialize session
@@ -71,6 +68,21 @@ const SignInModal: React.FC<SigninModalProps> = ({
       initSession(authMethod, currentAccount);
     }
   }, [authMethod, currentAccount, initSession]);
+
+  useEffect(() => {
+    // If 2FA is required, close this modal and redirect to 2FA page
+    if (requires2FA) {
+      onClose();
+      navigate("/verify-2fa");
+      toast({
+        title: "Two-Factor Authentication Required",
+        description: "Please complete the verification process to continue.",
+        status: "info",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [requires2FA, navigate, onClose, toast]);
 
   useEffect(() => {
     const referralCode = getReferralCodeFromStorage();
@@ -141,7 +153,7 @@ const SignInModal: React.FC<SigninModalProps> = ({
   return (
     <>
       <Modal
-        isOpen={isOpen && !requires2FA}
+        isOpen={isOpen}
         onClose={onClose}
         isCentered={true}
         motionPreset="slideInBottom"
@@ -171,11 +183,6 @@ const SignInModal: React.FC<SigninModalProps> = ({
           {renderContent()}
         </ModalContent>
       </Modal>
-
-      {/* Show 2FA modal when required */}
-      {requires2FA && pending2FAUserId && (
-        <TwoFactorAuthModal isOpen={requires2FA} onClose={onClose} />
-      )}
     </>
   );
 };

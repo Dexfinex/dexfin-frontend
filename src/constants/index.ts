@@ -29,7 +29,7 @@ export const mapRpcUrls: Record<number, string> = {
     [avalanche.id]: 'https://avalanche-mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',
 }
 
-// const BASE_HOST_DOMAIN = 'http://localhost:3000'
+// const BASE_HOST_DOMAIN = 'http://195.201.160.220:3000'
 const BASE_HOST_DOMAIN = import.meta.env.VITE_BACKEND_DOMAIN || 'https://dexfinv3-backend-production.up.railway.app'
 
 export const COINGECKO_BASE_URL = `${BASE_HOST_DOMAIN}/coingecko`

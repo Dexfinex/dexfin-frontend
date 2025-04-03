@@ -1,4 +1,4 @@
-import {createContext, useContext, useEffect, useRef, useState} from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useAccount } from "wagmi";
 import { type SolanaWalletInfoType } from "../types/auth.type";
 import { authService } from "../services/auth.service";
@@ -6,10 +6,13 @@ import { Web3AuthContext } from "./Web3AuthContext";
 import { useStore } from "../store/useStore.ts";
 import { setAuthToken } from "../services/api.service";
 import { WalletTypeEnum } from "../types/wallet.type.ts";
-import { clearReferralCode, getReferralCodeFromStorage } from '../components/ReferralHandler.tsx';
-import {useToast} from "@chakra-ui/react";
-import {LOCAL_STORAGE_SIGNUP_FLAG} from "../constants";
-
+import {
+  clearReferralCode,
+  getReferralCodeFromStorage,
+} from "../components/ReferralHandler.tsx";
+import { useToast } from "@chakra-ui/react";
+import { LOCAL_STORAGE_SIGNUP_FLAG } from "../constants";
+import { dexfinv3Service } from "../services/dexfin.service.ts";
 interface UserContextType {
   userData: {
     accessToken: string;
@@ -37,8 +40,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isNewRegistration, setIsNewRegistration] = useState(false);
-  const [authenticatedWallets, setAuthenticatedWallets] = useState<Set<string>>(new Set());
-  const toast = useToast()
+  const [authenticatedWallets, setAuthenticatedWallets] = useState<Set<string>>(
+    new Set()
+  );
+  const toast = useToast();
   const hasPassedAuthCall = useRef(false);
   const { address: wagmiAddress, isConnected: isWagmiWalletConnected } =
     useAccount();
@@ -48,20 +53,33 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     address: kernelAddress,
     walletType,
     isConnected,
-<<<<<<< HEAD
     requires2FA,
-    pending2FAUserId,
-=======
+    setRequires2FA,
     logout,
->>>>>>> dev
   } = useContext(Web3AuthContext);
 
   useEffect(() => {
     if (!isConnected) {
-      hasPassedAuthCall.current = false
+      hasPassedAuthCall.current = false;
     }
-  }, [isConnected])
+  }, [isConnected]);
 
+  const checkFor2FA = async (identifier: string) => {
+    try {
+      const verified2FA = localStorage.getItem('2fa_verified') === 'true';
+      if (verified2FA) {
+        return false;
+      }
+      const authCheckResponse = await dexfinv3Service.get2FAStatus(identifier);
+      if (authCheckResponse) {
+        setRequires2FA(true);
+        return true;
+      }
+    } catch (error) {
+      console.error("Error checking 2FA status:", error);
+    }
+    return false;
+  };
 
   const handleWalletAuth = async (
     walletType: WalletTypeEnum,
@@ -69,10 +87,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     solAddress?: string
   ) => {
     if (hasPassedAuthCall.current || walletType === WalletTypeEnum.UNKNOWN)
-      return
+      return;
 
-    hasPassedAuthCall.current = true
-    // Skip if already authenticated with this wallet
+    hasPassedAuthCall.current = true;
     if (evmAddress && authenticatedWallets.has(evmAddress.toLowerCase())) {
       console.log("Wallet already authenticated:", evmAddress);
       return;
@@ -86,67 +103,75 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setIsLoading(true);
       setError(null);
-
+      console.log("checking now the response");
       let authResponse;
       try {
         authResponse = await authService.login(evmAddress || "");
-        
-        if (authResponse?.requiresTwoFactor) {
-          useStore.getState().setIsSigninModalOpen(true);
-          return;
-        }
-        
+
         if (authResponse?.accessToken) {
           console.log("Login successful");
           setAuthToken(authResponse.accessToken);
+
+          const requires2FA = await checkFor2FA(authResponse?.accessToken);
+
+          if (requires2FA) {
+            setUserData({
+              accessToken: authResponse.accessToken,
+              userId: authResponse.userId,
+              walletType,
+            });
+            return;
+          }
+
           setUserData({
             accessToken: authResponse.accessToken,
             userId: authResponse.userId,
             walletType,
           });
+
           setIsNewRegistration(false);
-          
-          // Track the authenticated wallet
+
           if (evmAddress) {
-            setAuthenticatedWallets(prev => {
+            setAuthenticatedWallets((prev) => {
               const updated = new Set(prev);
               updated.add(evmAddress.toLowerCase());
               return updated;
             });
           }
           if (solAddress) {
-            setAuthenticatedWallets(prev => {
+            setAuthenticatedWallets((prev) => {
               const updated = new Set(prev);
               updated.add(solAddress);
               return updated;
             });
           }
-          
+
           return;
         }
       } catch (loginError) {
         console.log("Login failed, attempting registration...", loginError);
       }
       // ------------- for invite only mode ------------
-      if (!localStorage.getItem(LOCAL_STORAGE_SIGNUP_FLAG)) { // this is not for sign up
-        logout()
+      if (!localStorage.getItem(LOCAL_STORAGE_SIGNUP_FLAG)) {
+        // this is not for sign up
+        logout();
         toast({
-          status: 'info',
+          status: "info",
           description: `Please signup before you connect your wallet`,
-          duration: 3500
-        })
-        return
+          duration: 3500,
+        });
+        return;
       }
 
       // ------------- end of invite only mode ------------
-      localStorage.removeItem(LOCAL_STORAGE_SIGNUP_FLAG)
+      localStorage.removeItem(LOCAL_STORAGE_SIGNUP_FLAG);
       // If login fails, attempt registration
       authResponse = await authService.register(
         walletType,
         evmAddress,
         solAddress
       );
-
+      console.log(authResponse);
       if (authResponse?.accessToken) {
         console.log("Registration successful");
         setAuthToken(authResponse.accessToken);
@@ -156,17 +181,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           walletType,
         });
         setIsNewRegistration(true);
-        
+
         // Track the authenticated wallet
         if (evmAddress) {
-          setAuthenticatedWallets(prev => {
+          setAuthenticatedWallets((prev) => {
             const updated = new Set(prev);
             updated.add(evmAddress.toLowerCase());
             return updated;
           });
         }
         if (solAddress) {
-          setAuthenticatedWallets(prev => {
+          setAuthenticatedWallets((prev) => {
             const updated = new Set(prev);
             updated.add(solAddress);
             return updated;
@@ -243,14 +268,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       initializeAllVariables();
     }
   }, [isConnected]);
-
-  // Monitor 2FA status changes
-  useEffect(() => {
-    if (requires2FA && pending2FAUserId) {
-      // Open the sign-in modal when 2FA is required
-      useStore.getState().setIsSigninModalOpen(true);
-    }
-  }, [requires2FA, pending2FAUserId]);
 
   const value = {
     userData,
