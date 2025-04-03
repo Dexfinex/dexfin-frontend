@@ -1,6 +1,6 @@
 import {Button, VStack,} from '@chakra-ui/react';
 import {Chrome, Mail, Wallet} from 'lucide-react';
-import {TbBrandDiscord as Discord} from "react-icons/tb";
+// import {TbBrandDiscord as Discord} from "react-icons/tb";
 import {useContext} from "react";
 import {Web3AuthContext} from "../../providers/Web3AuthContext.tsx";
 
@@ -13,7 +13,7 @@ interface AuthMethodsProps {
 
 const AuthMethods = ({
                          handleGoogleLogin,
-                         handleDiscordLogin,
+                         // handleDiscordLogin,
                          setView,
                          isSignIn,
                      }: AuthMethodsProps) => {
@@ -36,6 +36,7 @@ const AuthMethods = ({
                     Continue with Google
                 </Button>
 
+{/*
                 <Button
                     w="full"
                     leftIcon={<Discord size={20}/>}
@@ -50,6 +51,7 @@ const AuthMethods = ({
                 >
                     Continue with Discord
                 </Button>
+*/}
 
                 <Button
                     w="full"
