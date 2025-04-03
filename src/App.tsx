@@ -48,9 +48,6 @@ import {
 } from "./services/mouseflow";
 import ReferralHandler from "./components/ReferralHandler.tsx";
 
-// Simple auth persistence key
-const AUTH_TOKEN_KEY = "auth_token";
-
 export default function App() {
   const { theme } = useStore();
   const [isSignupTriggered, setIsSignupTriggered] = useState(false);
@@ -262,10 +259,6 @@ export default function App() {
     }
   }, [authMethod, initializeErrors, isSignupTriggered, setIsSignupModalOpen]);
 
-  const isAuthenticated = () => {
-    return isConnected || localStorage.getItem(AUTH_TOKEN_KEY) === "true";
-  };
-
   const isLoading =
     authLoading || accountsLoading || sessionLoading || isPreparingAccounts;
   const loadingMessage = authLoading
@@ -369,13 +362,13 @@ export default function App() {
         <Route
           path="/"
           element={
-            isAuthenticated() ? <Navigate to="/app" replace /> : <LandingPage />
+            isConnected ? <Navigate to="/app" replace /> : <LandingPage />
           }
         />
         <Route
           path="/app"
           element={
-            isAuthenticated() ? <AppPage /> : <Navigate to="/" replace />
+            isConnected ? <AppPage /> : <Navigate to="/" replace />
           }
         />
         <Route path="/privacy" element={<Privacy />} />

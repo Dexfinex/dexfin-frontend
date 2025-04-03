@@ -17,7 +17,7 @@ import { ExternalProvider, JsonRpcSigner, Web3Provider } from "@ethersproject/pr
 import { Connector, useAccount, useSwitchChain } from "wagmi";
 import useLocalStorage from "../hooks/useLocalStorage";
 import {
-    AUTH_TOKEN_KEY,
+    LIT_SESSION_UPDATE_INTERVAL,
     LOCAL_STORAGE_AUTH_REDIRECT_TYPE,
     LOCAL_STORAGE_WALLET_INFO,
     mapBundlerUrls,
@@ -230,6 +230,7 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const {
         initSession,
         initSessionUnSafe,
+        initSessionRepeatedly,
         sessionSigs,
         loading: sessionLoading,
         error: sessionError,
@@ -493,7 +494,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     setIsPreparingAccounts(true)
                     await setProviderByPKPWallet(chainId ?? 1)
                     setIsConnected(true)
-                    localStorage.setItem(AUTH_TOKEN_KEY, "true");
                     // store variables to localstorage
                     setStoredWalletInfo({
                         authMethod: authMethod!,
@@ -504,6 +504,18 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 })()
         }
     }, [authMethod, chainId, currentAccount, getSolanaWalletOrGenerateNewWallet, sessionSigs, setProviderByPKPWallet, setStoredWalletInfo, solanaWalletInfo])
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            if (authMethod && currentAccount) {
+                console.log("called initSessionRepeatedly")
+                initSessionRepeatedly(authMethod, currentAccount)
+                hasGetSolanaWalletInfo.current = false
+            }
+        }, LIT_SESSION_UPDATE_INTERVAL);
+
+        return () => clearInterval(intervalId); // Cleanup on unmount
+    }, [authMethod, currentAccount, initSessionRepeatedly]);
 
     const initializeAllVariables = () => {
         setStoredWalletInfo(null)
@@ -517,7 +529,6 @@ const Web3AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsLoadingStoredWallet(false)
         hasGetSolanaWalletInfo.current = false
         pkpWalletRef.current = null
-        localStorage.removeItem(AUTH_TOKEN_KEY);
 
         // remove lit storage keys
         localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_SIGNATURE);
