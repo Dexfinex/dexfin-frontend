@@ -120,3 +120,10 @@ export interface DeFiStats {
     monthly: number;
   };
 }
+
+
+export interface AllocationData {
+  type: string
+  percentage: number
+  color: string
+}
