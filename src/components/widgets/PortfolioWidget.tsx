@@ -1,6 +1,8 @@
 import React, { useState } from "react"
 import { Wallet, Landmark } from "lucide-react"
 import { Skeleton } from "@chakra-ui/react"
+
+import PortfolioChart from "./PortfolioChart"
 import { TokenChainIcon, TokenIcon } from "../swap/components/TokenIcon"
 import { formatNumberByFrac } from "../../utils/common.util"
 import PNL from "../common/PNL"
@@ -9,16 +11,13 @@ import useDefiStore from "../../store/useDefiStore"
 import useTokenBalanceStore from "../../store/useTokenBalanceStore"
 import { useWalletBalance } from "../../hooks/useBalance"
 import NumberFormat from "../common/NumberFormat"
+import { formatCurrency } from "../../utils/formatter.util"
+import { AllocationData } from "../../types/wallet.type"
 
-interface AllocationData {
-  type: string
-  percentage: number
-  color: string
-}
-
-type WalletTab = "assets" | "defi"
 
 export const PortfolioWidget: React.FC = () => {
+  type WalletTab = "assets" | "defi"
+
   const [activeTab, setActiveTab] = useState<WalletTab>("assets")
 
   const { positions = [], totalLockedValue } = useDefiStore();
@@ -64,6 +63,7 @@ export const PortfolioWidget: React.FC = () => {
     const spotPercentage = totalPortfolioValue > 0 ? Math.round((spotValue / totalPortfolioValue) * 100) : 0
     const stakingPercentage = totalPortfolioValue > 0 ? Math.round((stakingValue / totalPortfolioValue) * 100) : 0
     const lendingPercentage = totalPortfolioValue > 0 ? Math.round((lendingValue / totalPortfolioValue) * 100) : 0
+    const othersPercentage = totalPortfolioValue > 0 ? (100 - spotPercentage - stakingPercentage - lendingPercentage) : 0
 
     return [
       {
@@ -81,45 +81,13 @@ export const PortfolioWidget: React.FC = () => {
         percentage: lendingPercentage,
         color: "#8B5CF6",
       },
+      {
+        type: "Others",
+        percentage: othersPercentage,
+        color: "#FFBB28",
+      },
     ].filter((item) => item.percentage > 0)
   }, [totalLockedValue, positions, totalUsdValue, totalPortfolioValue])
-
-  const createPieSegments = () => {
-    const radius = 40
-    const circumference = 2 * Math.PI * radius
-    let currentAngle = 0
-
-    return allocation.map((item) => {
-      const angle = (item.percentage / 100) * 360
-      const gap = 1
-      const length = (angle / 360) * circumference - gap;
-
-      const segment = {
-        offset: currentAngle,
-        length: length,
-        color: item.color,
-      }
-
-      currentAngle += length
-      return segment
-    })
-  }
-
-  const pieSegments = createPieSegments()
-
-  const formatCurrency = (value: number) => {
-    // Handle potential NaN and undefined values
-    if (isNaN(value) || value === undefined) {
-      return "$0.00"
-    }
-
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value)
-  }
 
   if (isLoading) {
     return (
@@ -137,30 +105,15 @@ export const PortfolioWidget: React.FC = () => {
           <div className="p-4">
             <div className="text-sm">Total Balance</div>
             <div className="text-2xl font-bold mt-1">
-              {formatCurrency(totalPortfolioValue)}
+              {formatCurrency(totalPortfolioValue, { symbol: "$" })}
             </div>
             <PNL pnlUsd={pnlUsd} pnlPercent={pnlPercent} label="Today" />
           </div>
 
           {/* Chart Section */}
           <div className="flex gap-4 p-4">
-            <div className="relative">
-              <svg className="w-[120px] h-[120px] -rotate-90">
-                {pieSegments.map((segment, index) => (
-                  <circle
-                    key={index}
-                    cx="60"
-                    cy="60"
-                    r="35"
-                    fill="none"
-                    stroke={segment.color}
-                    strokeWidth="28"
-                    strokeDasharray={`${segment.length} ${251.2 - segment.length}`}
-                    strokeDashoffset={segment.offset}
-                    className="transition-all duration-1000 ease-out"
-                  />
-                ))}
-              </svg>
+            <div className="relative w-[120px] h-[120px]">
+              <PortfolioChart data={allocation} />
             </div>
 
             <div className="flex flex-col justify-center gap-1">
@@ -278,7 +231,7 @@ export const PortfolioWidget: React.FC = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div>{formatCurrency(Number(position.amount) || 0)}</div>
+                        <div>{formatCurrency(Number(position.amount) || 0, { symbol: "$" })}</div>
                         <div className="text-xs text-green-400">{formatNumberByFrac(Number(position.apy) || 0)}% APY</div>
                       </div>
                     </div>
